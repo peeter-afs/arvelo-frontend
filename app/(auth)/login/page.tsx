@@ -11,6 +11,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/dashboard';
+  const verified = searchParams.get('verified');
 
   const { setSession } = useAuthStore();
 
@@ -18,10 +19,12 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showVerificationError, setShowVerificationError] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setShowVerificationError(false);
     setIsLoading(true);
 
     try {
@@ -38,7 +41,13 @@ function LoginForm() {
       // Redirect to return URL or dashboard
       router.push(returnUrl);
     } catch (err) {
-      setError(getErrorMessage(err));
+      const errorMsg = getErrorMessage(err);
+      setError(errorMsg);
+
+      // Check if error is about email verification
+      if (errorMsg.toLowerCase().includes('verify your email')) {
+        setShowVerificationError(true);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -48,9 +57,25 @@ function LoginForm() {
     <div className="bg-white shadow-xl rounded-lg p-8">
       <h2 className="text-2xl font-semibold text-gray-900 mb-6">Sign in to your account</h2>
 
+      {verified && (
+        <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
+          Your email has been verified! You can now log in.
+        </div>
+      )}
+
       {error && (
         <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
           {error}
+          {showVerificationError && (
+            <div className="mt-2">
+              <Link
+                href="/resend-verification"
+                className="text-sm font-medium underline hover:no-underline"
+              >
+                Resend verification email
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
