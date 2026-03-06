@@ -1,7 +1,27 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { getAuthStore } from '../stores/auth.store';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const resolveApiUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl && !envUrl.includes('localhost')) return envUrl;
+
+  if (typeof window === 'undefined') {
+    return envUrl || 'http://localhost:3000';
+  }
+
+  const { protocol, hostname, host } = window.location;
+
+  // CodeSandbox: Frontend and backend on same domain (different ports in dev)
+  // In production CodeSandbox, they share the same URL
+  if (host.endsWith('.csb.app')) {
+    // If already on a port-specific URL, backend is likely on same domain
+    return `${protocol}//${host}`;
+  }
+
+  return `${protocol}//${hostname}:3000`;
+};
+
+const API_URL = resolveApiUrl();
 
 // Create axios instance
 export const apiClient: AxiosInstance = axios.create({
@@ -30,7 +50,8 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as any;
+    const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    if (!originalRequest) return Promise.reject(error);
 
     // If 401 and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
@@ -71,11 +92,23 @@ apiClient.interceptors.response.use(
 );
 
 // Helper function to extract error message
-export const getErrorMessage = (error: any): string => {
+const hasMessage = (value: unknown): value is { message: string } => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    typeof (value as { message?: unknown }).message === 'string'
+  );
+};
+
+export const getErrorMessage = (error: unknown): string => {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.error?.message || error.message || 'An error occurred';
+    const data = error.response?.data as { error?: { message?: string } } | undefined;
+    return data?.error?.message || error.message || 'An error occurred';
   }
-  return error?.message || 'An error occurred';
+  if (error instanceof Error) return error.message || 'An error occurred';
+  if (hasMessage(error)) return error.message || 'An error occurred';
+  return 'An error occurred';
 };
 
 export default apiClient;
