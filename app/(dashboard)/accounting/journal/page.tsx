@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { BookOpen, Plus, Search, Filter, Download, Eye, Edit2 } from 'lucide-react';
+import { Plus, Search, Filter, Download, Eye, Edit2, MoreHorizontal } from 'lucide-react';
 
 export default function JournalEntriesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -60,128 +60,166 @@ export default function JournalEntriesPage() {
     },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'posted': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'reversed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Journal Entries</h1>
-        <p className="text-gray-600 mt-1">Record and manage all financial transactions</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900">Journal Entries</h1>
+        <p className="text-sm text-slate-500 mt-1">Record and manage all financial transactions</p>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex space-x-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search entries..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+      {/* Actions Bar - Desktop */}
+      <div className="hidden md:flex mb-6 justify-between items-center gap-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-72 h-10 pl-9 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
+        </div>
 
+        <div className="flex items-center gap-3 ml-auto">
           {/* Filter */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Filter className="h-4 w-4" />
             <span>Filter</span>
           </button>
 
-          {/* Download */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Download className="h-5 w-5" />
+          {/* Export */}
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
-        </div>
 
-        {/* Create Button */}
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-          <Plus className="h-5 w-5" />
-          <span>New Entry</span>
-        </button>
+          {/* Create Button */}
+          <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
+            <Plus className="h-4 w-4" />
+            <span>New Entry</span>
+          </button>
+        </div>
       </div>
 
-      {/* Journal Entries Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Actions Bar - Mobile */}
+      <div className="md:hidden mb-4 space-y-3">
+        {/* Search - Full width */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search entries..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
+        </div>
+
+        {/* Action buttons row */}
+        <div className="flex items-center gap-2">
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Filter className="h-4 w-4" />
+            <span>Filter</span>
+          </button>
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Download className="h-4 w-4" />
+            <span>Export</span>
+          </button>
+          <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Action Button - Mobile */}
+      <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block card overflow-hidden">
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-50/80">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Reference
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Description
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Debit Account
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
                 Debit
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Credit Account
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
                 Credit
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white">
             {entries.map((entry) => (
-              <tr key={entry.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+              <tr
+                key={entry.id}
+                className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${
+                  entry.status === 'draft' ? 'border-l-2 border-l-amber-300' : ''
+                }`}
+              >
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
                   {entry.date}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-[var(--primary)] hover:underline cursor-pointer">
                   {entry.number}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-600">
+                <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">
                   {entry.description}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {entry.debit.code} - {entry.debit.name}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                  {entry.debit.account} · {entry.debit.name}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono tabular-nums text-slate-900 text-right">
                   €{entry.debit.amount.toFixed(2)}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {entry.credit.code} - {entry.credit.name}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                  {entry.credit.account} · {entry.credit.name}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono tabular-nums text-slate-900 text-right">
                   €{entry.credit.amount.toFixed(2)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(entry.status)}`}>
-                    {entry.status}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className={`h-1.5 w-1.5 rounded-full ${
+                      entry.status === 'posted' ? 'bg-emerald-500' :
+                      entry.status === 'draft' ? 'bg-amber-500' :
+                      'bg-red-500'
+                    }`}></div>
+                    <span className="text-xs text-slate-600 capitalize">{entry.status}</span>
+                  </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center gap-1">
+                    <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
                       <Eye className="h-4 w-4" />
                     </button>
                     {entry.status === 'draft' && (
-                      <button className="text-blue-600 hover:text-blue-900">
+                      <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
                         <Edit2 className="h-4 w-4" />
                       </button>
                     )}
@@ -193,19 +231,110 @@ export default function JournalEntriesPage() {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex justify-between items-center">
-        <p className="text-sm text-gray-700">
-          Showing 1 to 5 of 5 results
+      {/* Mobile Card List */}
+      <div className="md:hidden space-y-2">
+        {entries.map((entry) => (
+          <div
+            key={entry.id}
+            className={`card p-4 active:bg-slate-50 transition-colors cursor-pointer ${
+              entry.status === 'draft' ? 'border-l-2 border-l-amber-300' : ''
+            }`}
+          >
+            {/* Top row: date + status */}
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-500">{entry.date}</span>
+              <div className="flex items-center gap-1.5">
+                <div className={`h-1.5 w-1.5 rounded-full ${
+                  entry.status === 'posted' ? 'bg-emerald-500' :
+                  entry.status === 'draft' ? 'bg-amber-500' :
+                  'bg-red-500'
+                }`}></div>
+                <span className="text-xs text-slate-600 capitalize">{entry.status}</span>
+              </div>
+            </div>
+
+            {/* Reference number */}
+            <div className="font-mono text-sm text-[var(--primary)] mb-1">
+              {entry.number}
+            </div>
+
+            {/* Description */}
+            <div className="text-sm text-slate-600 mb-3">
+              {entry.description}
+            </div>
+
+            {/* Debit/Credit details */}
+            <div className="space-y-2 mb-3 bg-slate-50 rounded-lg p-3">
+              <div className="flex justify-between text-xs">
+                <div className="text-slate-500">
+                  <div className="font-medium mb-0.5">Debit</div>
+                  <div>{entry.debit.account} · {entry.debit.name}</div>
+                </div>
+                <div className="font-mono tabular-nums text-slate-900">
+                  €{entry.debit.amount.toFixed(2)}
+                </div>
+              </div>
+              <div className="flex justify-between text-xs">
+                <div className="text-slate-500">
+                  <div className="font-medium mb-0.5">Credit</div>
+                  <div>{entry.credit.account} · {entry.credit.name}</div>
+                </div>
+                <div className="font-mono tabular-nums text-slate-900">
+                  €{entry.credit.amount.toFixed(2)}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom row: reference + actions */}
+            <div className="flex items-center justify-between">
+              <div className="text-xs text-slate-500">
+                Ref: {entry.reference}
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Eye className="h-4 w-4" />
+                </button>
+                {entry.status === 'draft' && (
+                  <button
+                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pagination - Desktop */}
+      <div className="hidden md:flex mt-6 justify-between items-center">
+        <p className="text-sm text-slate-600">
+          Showing 1-5 of 5
         </p>
-        <div className="flex space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+        <div className="flex gap-2">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Previous
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Next
           </button>
         </div>
+      </div>
+
+      {/* Pagination - Mobile */}
+      <div className="md:hidden mt-4 flex items-center justify-center gap-4">
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&lt;</span>
+        </button>
+        <p className="text-sm text-slate-600">Page 1 of 1</p>
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&gt;</span>
+        </button>
       </div>
     </div>
   );
