@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { User, Tenant, UserRole } from '../types/auth.types';
 
 interface AuthState {
@@ -83,7 +83,8 @@ export const useAuthStore = create<AuthState>()(
         })),
     }),
     {
-      name: 'auth-storage', // name of item in storage
+      name: 'auth-storage',
+      storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         // Only persist these fields
         user: state.user,
@@ -94,8 +95,17 @@ export const useAuthStore = create<AuthState>()(
         isAuthenticated: state.isAuthenticated,
       }),
       onRehydrateStorage: () => {
+        console.log('Starting auth hydration from localStorage...');
         return (state, error) => {
-          if (!error && state) {
+          if (error) {
+            console.error('Hydration error:', error);
+          }
+          if (state) {
+            console.log('Hydration complete:', {
+              isAuthenticated: state.isAuthenticated,
+              hasUser: !!state.user,
+              hasTenant: !!state.tenant
+            });
             state.isLoading = false;
           }
         };
