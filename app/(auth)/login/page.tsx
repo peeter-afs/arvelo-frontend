@@ -49,7 +49,27 @@ function LoginForm() {
       // Wait a bit for zustand persist to save to localStorage
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      console.log('LocalStorage auth-storage:', localStorage.getItem('auth-storage'));
+      const authStorage = localStorage.getItem('auth-storage');
+      console.log('LocalStorage auth-storage:', authStorage);
+
+      // Parse and log the stored state
+      if (authStorage) {
+        try {
+          const parsed = JSON.parse(authStorage);
+          console.log('Parsed auth state:', {
+            isAuthenticated: parsed.state?.isAuthenticated,
+            hasUser: !!parsed.state?.user,
+            hasTenant: !!parsed.state?.tenant
+          });
+        } catch (e) {
+          console.error('Failed to parse auth storage:', e);
+        }
+      } else {
+        console.error('❌ AUTH STORAGE IS NULL - NOT PERSISTING!');
+      }
+
+      // Wait longer to see logs
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Redirect to return URL or dashboard
       console.log('Redirecting to:', returnUrl);
