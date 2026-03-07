@@ -1,0 +1,102 @@
+{
+  "common": {
+    "welcome": "Tere tulemast",
+    "save": "Salvesta",
+    "cancel": "Tühista",
+    "delete": "Kustuta",
+    "edit": "Muuda",
+    "add": "Lisa",
+    "search": "Otsi",
+    "filter": "Filtreeri",
+    "export": "Ekspordi",
+    "loading": "Laadimine...",
+    "noData": "Andmed puuduvad",
+    "actions": "Tegevused",
+    "status": "Olek",
+    "date": "Kuupäev",
+    "amount": "Summa",
+    "total": "Kokku",
+    "signOut": "Logi välja"
+  },
+  "navigation": {
+    "dashboard": "Juhtpaneel",
+    "accounting": "Raamatupidamine",
+    "invoices": "Arved",
+    "reports": "Aruanded",
+    "fixedAssets": "Põhivara",
+    "settings": "Seaded"
+  },
+  "accounting": {
+    "chartOfAccounts": "Kontoplaan",
+    "journalEntries": "Päevaraamatu kanded",
+    "partners": "Partnerid",
+    "accounts": "Kontod",
+    "journal": "Päevaraamat",
+    "accountCode": "Konto kood",
+    "accountName": "Konto nimi",
+    "accountType": "Konto tüüp",
+    "balance": "Saldo",
+    "debit": "Deebet",
+    "credit": "Kreedit"
+  },
+  "reports": {
+    "balanceSheet": "Bilanss",
+    "profitLoss": "Kasumiaruanne",
+    "trialBalance": "Proovibilanss",
+    "generalLedger": "Pearaamat",
+    "assets": "Varad",
+    "liabilities": "Kohustused",
+    "equity": "Omakapital",
+    "revenue": "Tulud",
+    "expenses": "Kulud",
+    "netIncome": "Puhaskasum"
+  },
+  "invoices": {
+    "title": "Arved",
+    "description": "Halda müügiarved ja arveldust",
+    "invoiceNumber": "Arve number",
+    "customer": "Klient",
+    "status": "Olek",
+    "paid": "Makstud",
+    "pending": "Ootel",
+    "overdue": "Tähtaja ületanud",
+    "newInvoice": "Uus arve"
+  },
+  "settings": {
+    "title": "Seaded",
+    "description": "Halda oma konto ja ettevõtte eelistusi",
+    "company": "Ettevõte",
+    "profile": "Profiil",
+    "billing": "Arveldus",
+    "notifications": "Teated",
+    "security": "Turvalisus",
+    "localization": "Lokaliseerimine",
+    "companyInformation": "Ettevõtte andmed",
+    "companyName": "Ettevõtte nimi",
+    "taxId": "Registrikood",
+    "address": "Aadress",
+    "baseCurrency": "Põhivaluuta",
+    "saveChanges": "Salvesta muudatused"
+  },
+  "dashboard": {
+    "welcomeBack": "Tere tulemast tagasi",
+    "happeningToday": "Täna toimub",
+    "totalRevenue": "Kogutulu",
+    "newCustomers": "Uued kliendid",
+    "pendingInvoices": "Ootel arved",
+    "activeProjects": "Aktiivsed projektid"
+  },
+  "auth": {
+    "login": "Logi sisse",
+    "register": "Registreeru",
+    "email": "E-post",
+    "password": "Parool",
+    "confirmPassword": "Kinnita parool",
+    "name": "Nimi",
+    "forgotPassword": "Unustasid parooli?",
+    "noAccount": "Pole kontot?",
+    "hasAccount": "On juba konto?",
+    "signUp": "Registreeru",
+    "signIn": "Logi sisse"
+  }
+}

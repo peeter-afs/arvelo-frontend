@@ -1,0 +1,102 @@
+{
+  "common": {
+    "welcome": "Välkommen",
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "add": "Lägg till",
+    "search": "Sök",
+    "filter": "Filtrera",
+    "export": "Exportera",
+    "loading": "Laddar...",
+    "noData": "Ingen data",
+    "actions": "Åtgärder",
+    "status": "Status",
+    "date": "Datum",
+    "amount": "Belopp",
+    "total": "Totalt",
+    "signOut": "Logga ut"
+  },
+  "navigation": {
+    "dashboard": "Instrumentpanel",
+    "accounting": "Bokföring",
+    "invoices": "Fakturor",
+    "reports": "Rapporter",
+    "fixedAssets": "Anläggningstillgångar",
+    "settings": "Inställningar"
+  },
+  "accounting": {
+    "chartOfAccounts": "Kontoplan",
+    "journalEntries": "Journalposter",
+    "partners": "Partners",
+    "accounts": "Konton",
+    "journal": "Journal",
+    "accountCode": "Kontokod",
+    "accountName": "Kontonamn",
+    "accountType": "Kontotyp",
+    "balance": "Saldo",
+    "debit": "Debet",
+    "credit": "Kredit"
+  },
+  "reports": {
+    "balanceSheet": "Balansräkning",
+    "profitLoss": "Resultaträkning",
+    "trialBalance": "Råbalans",
+    "generalLedger": "Huvudbok",
+    "assets": "Tillgångar",
+    "liabilities": "Skulder",
+    "equity": "Eget kapital",
+    "revenue": "Intäkter",
+    "expenses": "Kostnader",
+    "netIncome": "Nettoresultat"
+  },
+  "invoices": {
+    "title": "Fakturor",
+    "description": "Hantera dina försäljningsfakturor och fakturering",
+    "invoiceNumber": "Fakturanummer",
+    "customer": "Kund",
+    "status": "Status",
+    "paid": "Betald",
+    "pending": "Väntande",
+    "overdue": "Förfallen",
+    "newInvoice": "Ny faktura"
+  },
+  "settings": {
+    "title": "Inställningar",
+    "description": "Hantera ditt konto och företagsinställningar",
+    "company": "Företag",
+    "profile": "Profil",
+    "billing": "Fakturering",
+    "notifications": "Aviseringar",
+    "security": "Säkerhet",
+    "localization": "Lokalisering",
+    "companyInformation": "Företagsinformation",
+    "companyName": "Företagsnamn",
+    "taxId": "Organisationsnummer",
+    "address": "Adress",
+    "baseCurrency": "Basvaluta",
+    "saveChanges": "Spara ändringar"
+  },
+  "dashboard": {
+    "welcomeBack": "Välkommen tillbaka",
+    "happeningToday": "Här är vad som händer idag",
+    "totalRevenue": "Totala intäkter",
+    "newCustomers": "Nya kunder",
+    "pendingInvoices": "Väntande fakturor",
+    "activeProjects": "Aktiva projekt"
+  },
+  "auth": {
+    "login": "Logga in",
+    "register": "Registrera",
+    "email": "E-post",
+    "password": "Lösenord",
+    "confirmPassword": "Bekräfta lösenord",
+    "name": "Namn",
+    "forgotPassword": "Glömt lösenord?",
+    "noAccount": "Har du inget konto?",
+    "hasAccount": "Har du redan ett konto?",
+    "signUp": "Registrera dig",
+    "signIn": "Logga in"
+  }
+}

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import {
   Home,
   BookOpen,
@@ -17,36 +18,41 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
-
-const navigation = [
-  { name: 'Dashboard', href: '/', icon: Home },
-  {
-    name: 'Accounting',
-    icon: Calculator,
-    children: [
-      { name: 'Chart of Accounts', href: '/accounting/accounts' },
-      { name: 'Journal Entries', href: '/accounting/journal' },
-      { name: 'Partners', href: '/accounting/partners' },
-    ]
-  },
-  { name: 'Invoices', href: '/invoices', icon: FileText },
-  {
-    name: 'Reports',
-    icon: TrendingUp,
-    children: [
-      { name: 'Balance Sheet', href: '/reports/balance-sheet' },
-      { name: 'Profit & Loss', href: '/reports/profit-loss' },
-      { name: 'Trial Balance', href: '/reports/trial-balance' },
-      { name: 'General Ledger', href: '/reports/general-ledger' },
-    ]
-  },
-  { name: 'Fixed Assets', href: '/assets', icon: PiggyBank },
-  { name: 'Settings', href: '/settings', icon: Settings },
-];
+import LanguageSwitcher from '../LanguageSwitcher';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, tenant, role, logout } = useAuthStore();
+  const t = useTranslations('navigation');
+  const tAccounting = useTranslations('accounting');
+  const tReports = useTranslations('reports');
+  const tCommon = useTranslations('common');
+
+  const navigation = [
+    { name: t('dashboard'), href: '/', icon: Home },
+    {
+      name: t('accounting'),
+      icon: Calculator,
+      children: [
+        { name: tAccounting('chartOfAccounts'), href: '/accounting/accounts' },
+        { name: tAccounting('journalEntries'), href: '/accounting/journal' },
+        { name: tAccounting('partners'), href: '/accounting/partners' },
+      ]
+    },
+    { name: t('invoices'), href: '/invoices', icon: FileText },
+    {
+      name: t('reports'),
+      icon: TrendingUp,
+      children: [
+        { name: tReports('balanceSheet'), href: '/reports/balance-sheet' },
+        { name: tReports('profitLoss'), href: '/reports/profit-loss' },
+        { name: tReports('trialBalance'), href: '/reports/trial-balance' },
+        { name: tReports('generalLedger'), href: '/reports/general-ledger' },
+      ]
+    },
+    { name: t('fixedAssets'), href: '/assets', icon: PiggyBank },
+    { name: t('settings'), href: '/settings', icon: Settings },
+  ];
 
   const handleLogout = async () => {
     await authApi.logout();
@@ -135,14 +141,17 @@ export default function Sidebar() {
         })}
       </nav>
 
-      {/* Logout button */}
-      <div className="p-4 border-t border-gray-800">
+      {/* Language Switcher & Logout */}
+      <div className="p-4 border-t border-gray-800 space-y-2">
+        <div className="mb-2">
+          <LanguageSwitcher />
+        </div>
         <button
           onClick={handleLogout}
           className="flex items-center w-full px-2 py-2 text-sm font-medium text-gray-300 rounded-md hover:bg-gray-800 hover:text-white transition-colors"
         >
           <LogOut className="mr-3 h-5 w-5" />
-          Sign out
+          {tCommon('signOut')}
         </button>
       </div>
     </div>

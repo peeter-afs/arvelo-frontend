@@ -1,0 +1,102 @@
+{
+  "common": {
+    "welcome": "Tervetuloa",
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "delete": "Poista",
+    "edit": "Muokkaa",
+    "add": "Lisää",
+    "search": "Etsi",
+    "filter": "Suodata",
+    "export": "Vie",
+    "loading": "Ladataan...",
+    "noData": "Ei tietoja",
+    "actions": "Toiminnot",
+    "status": "Tila",
+    "date": "Päivämäärä",
+    "amount": "Summa",
+    "total": "Yhteensä",
+    "signOut": "Kirjaudu ulos"
+  },
+  "navigation": {
+    "dashboard": "Hallintapaneeli",
+    "accounting": "Kirjanpito",
+    "invoices": "Laskut",
+    "reports": "Raportit",
+    "fixedAssets": "Käyttöomaisuus",
+    "settings": "Asetukset"
+  },
+  "accounting": {
+    "chartOfAccounts": "Tilikartta",
+    "journalEntries": "Päiväkirjamerkinnät",
+    "partners": "Kumppanit",
+    "accounts": "Tilit",
+    "journal": "Päiväkirja",
+    "accountCode": "Tilikoodi",
+    "accountName": "Tilin nimi",
+    "accountType": "Tilityyppi",
+    "balance": "Saldo",
+    "debit": "Debet",
+    "credit": "Kredit"
+  },
+  "reports": {
+    "balanceSheet": "Tase",
+    "profitLoss": "Tuloslaskelma",
+    "trialBalance": "Pääkirjan tarkistus",
+    "generalLedger": "Pääkirja",
+    "assets": "Varat",
+    "liabilities": "Velat",
+    "equity": "Oma pääoma",
+    "revenue": "Tulot",
+    "expenses": "Kulut",
+    "netIncome": "Nettotulos"
+  },
+  "invoices": {
+    "title": "Laskut",
+    "description": "Hallitse myyntilaskuja ja laskutusta",
+    "invoiceNumber": "Laskunumero",
+    "customer": "Asiakas",
+    "status": "Tila",
+    "paid": "Maksettu",
+    "pending": "Odottaa",
+    "overdue": "Erääntynyt",
+    "newInvoice": "Uusi lasku"
+  },
+  "settings": {
+    "title": "Asetukset",
+    "description": "Hallitse tilisi ja yrityksen asetuksia",
+    "company": "Yritys",
+    "profile": "Profiili",
+    "billing": "Laskutus",
+    "notifications": "Ilmoitukset",
+    "security": "Turvallisuus",
+    "localization": "Lokalisointi",
+    "companyInformation": "Yrityksen tiedot",
+    "companyName": "Yrityksen nimi",
+    "taxId": "Y-tunnus",
+    "address": "Osoite",
+    "baseCurrency": "Perusvaluutta",
+    "saveChanges": "Tallenna muutokset"
+  },
+  "dashboard": {
+    "welcomeBack": "Tervetuloa takaisin",
+    "happeningToday": "Tässä mitä tapahtuu tänään",
+    "totalRevenue": "Kokonaistulot",
+    "newCustomers": "Uudet asiakkaat",
+    "pendingInvoices": "Odottavat laskut",
+    "activeProjects": "Aktiiviset projektit"
+  },
+  "auth": {
+    "login": "Kirjaudu sisään",
+    "register": "Rekisteröidy",
+    "email": "Sähköposti",
+    "password": "Salasana",
+    "confirmPassword": "Vahvista salasana",
+    "name": "Nimi",
+    "forgotPassword": "Unohditko salasanan?",
+    "noAccount": "Ei tiliä?",
+    "hasAccount": "Onko sinulla jo tili?",
+    "signUp": "Rekisteröidy",
+    "signIn": "Kirjaudu sisään"
+  }
+}

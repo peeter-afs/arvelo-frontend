@@ -1,0 +1,102 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "loading": "Loading...",
+    "noData": "No data available",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "amount": "Amount",
+    "total": "Total",
+    "signOut": "Sign out"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "accounting": "Accounting",
+    "invoices": "Invoices",
+    "reports": "Reports",
+    "fixedAssets": "Fixed Assets",
+    "settings": "Settings"
+  },
+  "accounting": {
+    "chartOfAccounts": "Chart of Accounts",
+    "journalEntries": "Journal Entries",
+    "partners": "Partners",
+    "accounts": "Accounts",
+    "journal": "Journal",
+    "accountCode": "Account Code",
+    "accountName": "Account Name",
+    "accountType": "Account Type",
+    "balance": "Balance",
+    "debit": "Debit",
+    "credit": "Credit"
+  },
+  "reports": {
+    "balanceSheet": "Balance Sheet",
+    "profitLoss": "Profit & Loss",
+    "trialBalance": "Trial Balance",
+    "generalLedger": "General Ledger",
+    "assets": "Assets",
+    "liabilities": "Liabilities",
+    "equity": "Equity",
+    "revenue": "Revenue",
+    "expenses": "Expenses",
+    "netIncome": "Net Income"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "description": "Manage your sales invoices and billing",
+    "invoiceNumber": "Invoice Number",
+    "customer": "Customer",
+    "status": "Status",
+    "paid": "Paid",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "newInvoice": "New Invoice"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account and company preferences",
+    "company": "Company",
+    "profile": "Profile",
+    "billing": "Billing",
+    "notifications": "Notifications",
+    "security": "Security",
+    "localization": "Localization",
+    "companyInformation": "Company Information",
+    "companyName": "Company Name",
+    "taxId": "Tax ID",
+    "address": "Address",
+    "baseCurrency": "Base Currency",
+    "saveChanges": "Save Changes"
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back",
+    "happeningToday": "Here's what's happening today",
+    "totalRevenue": "Total Revenue",
+    "newCustomers": "New Customers",
+    "pendingInvoices": "Pending Invoices",
+    "activeProjects": "Active Projects"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Name",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "signUp": "Sign up",
+    "signIn": "Sign in"
+  }
+}

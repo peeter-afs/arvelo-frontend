@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { useTranslations } from 'next-intl';
 import {
   TrendingUp,
   TrendingDown,
@@ -12,6 +13,7 @@ import {
 
 export default function DashboardPage() {
   const { user, tenant } = useAuthStore();
+  const t = useTranslations('dashboard');
 
   const stats = [
     {
@@ -61,10 +63,10 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.name || user?.email}
+          {t('welcomeBack')}, {user?.name || user?.email}
         </h1>
         <p className="text-gray-600 mt-1">
-          Here's what's happening with {tenant?.name || 'your business'} today
+          {t('happeningToday')} {tenant?.name || 'your business'}
         </p>
       </div>
 
