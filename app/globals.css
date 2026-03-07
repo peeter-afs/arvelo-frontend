@@ -1,28 +1,140 @@
 @import "tailwindcss";
 
+/* Design System Variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+
+  /* Surface Colors */
+  --surface: #FFFFFF;
+  --surface-elevated: #F8FAFC;
+
+  /* Border Colors */
+  --border: #E2E8F0;
+  --border-hover: #CBD5E1;
+
+  /* Text Colors */
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  --text-muted: #94A3B8;
+
+  /* Status Colors */
+  --success: #059669;
+  --warning: #D97706;
+  --danger: #DC2626;
+
+  /* Sidebar Colors */
+  --sidebar-bg: #0F172A;
+  --sidebar-text: #CBD5E1;
+  --sidebar-active: rgba(59,130,246,0.15);
+
+  /* Safe Area Insets for mobile devices */
+  --safe-area-inset-top: env(safe-area-inset-top, 0);
+  --safe-area-inset-right: env(safe-area-inset-right, 0);
+  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0);
+  --safe-area-inset-left: env(safe-area-inset-left, 0);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  --font-display: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Global Styles */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Prevent iOS zoom on input focus */
+  font-size: 16px;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
   font-family: var(--font-sans);
+  color: var(--text-primary);
+  background: var(--surface-elevated);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Improved Focus Styles */
+*:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--primary);
+  border-radius: 0.375rem;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+}
+
+/* Remove 300ms tap delay on mobile */
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* Smooth Transitions */
+button,
+a,
+input,
+select,
+textarea {
+  transition-property: color, background-color, border-color, box-shadow, transform;
+  transition-timing-function: ease-in-out;
+  transition-duration: 150ms;
+}
+
+/* Utility Classes */
+.card {
+  background: var(--surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.card-hover {
+  transition: box-shadow 200ms ease-in-out;
+}
+
+.card-hover:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+
+/* Mobile Safe Area Support */
+@supports (padding: max(0px)) {
+  body {
+    padding-top: var(--safe-area-inset-top);
+    padding-right: var(--safe-area-inset-right);
+    padding-bottom: var(--safe-area-inset-bottom);
+    padding-left: var(--safe-area-inset-left);
+  }
+}
+
+/* Breakpoint Reference (for developer reference)
+   sm: 640px  — small phones → larger phones
+   md: 768px  — phones → tablets (table ↔ card switch point)
+   lg: 1024px — tablets → desktop (sidebar visibility switch point)
+   xl: 1280px — desktop → wide desktop
+*/
