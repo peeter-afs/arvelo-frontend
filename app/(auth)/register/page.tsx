@@ -62,6 +62,9 @@ export default function RegisterPage() {
         session.refresh_token
       );
 
+      // Wait a bit for zustand persist to save to localStorage
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Redirect to dashboard
       router.push('/dashboard');
     } catch (err) {

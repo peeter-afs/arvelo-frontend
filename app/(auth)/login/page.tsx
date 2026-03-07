@@ -38,6 +38,9 @@ function LoginForm() {
         session.refresh_token
       );
 
+      // Wait a bit for zustand persist to save to localStorage
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       // Redirect to return URL or dashboard
       router.push(returnUrl);
     } catch (err) {
