@@ -19,29 +19,29 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: Home },
+  { name: 'Dashboard', href: '/', icon: Home },
   {
     name: 'Accounting',
     icon: Calculator,
     children: [
-      { name: 'Chart of Accounts', href: '/dashboard/accounting/accounts' },
-      { name: 'Journal Entries', href: '/dashboard/accounting/journal' },
-      { name: 'Partners', href: '/dashboard/accounting/partners' },
+      { name: 'Chart of Accounts', href: '/accounting/accounts' },
+      { name: 'Journal Entries', href: '/accounting/journal' },
+      { name: 'Partners', href: '/accounting/partners' },
     ]
   },
-  { name: 'Invoices', href: '/dashboard/invoices', icon: FileText },
+  { name: 'Invoices', href: '/invoices', icon: FileText },
   {
     name: 'Reports',
     icon: TrendingUp,
     children: [
-      { name: 'Balance Sheet', href: '/dashboard/reports/balance-sheet' },
-      { name: 'Profit & Loss', href: '/dashboard/reports/profit-loss' },
-      { name: 'Trial Balance', href: '/dashboard/reports/trial-balance' },
-      { name: 'General Ledger', href: '/dashboard/reports/general-ledger' },
+      { name: 'Balance Sheet', href: '/reports/balance-sheet' },
+      { name: 'Profit & Loss', href: '/reports/profit-loss' },
+      { name: 'Trial Balance', href: '/reports/trial-balance' },
+      { name: 'General Ledger', href: '/reports/general-ledger' },
     ]
   },
-  { name: 'Fixed Assets', href: '/dashboard/assets', icon: PiggyBank },
-  { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+  { name: 'Fixed Assets', href: '/assets', icon: PiggyBank },
+  { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export default function Sidebar() {
