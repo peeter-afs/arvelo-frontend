@@ -20,29 +20,41 @@ export default function ProtectedRoute({
   const { isAuthenticated, tenant, role, isLoading } = useAuthStore();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    // Don't do anything while still loading
+    if (isLoading) {
+      console.log('ProtectedRoute: Still loading, waiting...');
+      return;
+    }
+
+    console.log('ProtectedRoute check:', { isAuthenticated, hasTenant: !!tenant, requireTenant });
+
+    if (!isAuthenticated) {
+      console.log('ProtectedRoute: Not authenticated, redirecting to login');
       // Redirect to login with return URL
       router.push(`/login?returnUrl=${encodeURIComponent(pathname)}`);
       return;
     }
 
     // Check if tenant is required but not selected
-    if (!isLoading && isAuthenticated && requireTenant && !tenant) {
+    if (isAuthenticated && requireTenant && !tenant) {
+      console.log('ProtectedRoute: Tenant required but not found, redirecting to select-tenant');
       router.push('/select-tenant');
       return;
     }
 
     // Check role requirements
     if (
-      !isLoading &&
       isAuthenticated &&
       requiredRole.length > 0 &&
       role &&
       !requiredRole.includes(role)
     ) {
+      console.log('ProtectedRoute: Role requirement not met, redirecting to unauthorized');
       router.push('/unauthorized');
       return;
     }
+
+    console.log('ProtectedRoute: All checks passed, rendering protected content');
   }, [isAuthenticated, tenant, role, isLoading, requireTenant, requiredRole, router, pathname]);
 
   // Show loading state
