@@ -6,17 +6,27 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 
 export default function Home() {
   const router = useRouter();
-  const { isAuthenticated, tenant } = useAuthStore();
+  const { isAuthenticated, tenant, isLoading } = useAuthStore();
 
   useEffect(() => {
+    // Don't redirect while still loading/hydrating
+    if (isLoading) {
+      console.log('Still loading auth state...');
+      return;
+    }
+
+    console.log('Auth state:', { isAuthenticated, hasTenant: !!tenant });
+
     // Redirect authenticated users to dashboard
     if (isAuthenticated) {
+      console.log('Redirecting to dashboard');
       router.push('/dashboard');
     } else {
       // Redirect unauthenticated users to login
+      console.log('Redirecting to login');
       router.push('/login');
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, isLoading, router]);
 
   // Show loading spinner while redirecting
   return (
