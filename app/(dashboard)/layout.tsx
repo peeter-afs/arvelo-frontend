@@ -1,6 +1,7 @@
 'use client';
 
 import Sidebar from '@/components/layout/Sidebar';
+import MobileNav from '@/components/layout/MobileNav';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function DashboardLayout({
@@ -8,20 +9,25 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Note: Removed requireTenant prop from ProtectedRoute
-  // The user already has a tenant assigned during login
-  // No need for tenant selection flow
-
   return (
     <ProtectedRoute>
-      <div className="flex h-screen bg-gray-50">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-8">
+      {/* Desktop Layout (lg and above) */}
+      <div className="flex h-screen bg-slate-50">
+        {/* Desktop Sidebar - hidden on mobile */}
+        <div className="hidden lg:block">
+          <Sidebar />
+        </div>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+          <div className="p-4 sm:p-6 lg:p-8 xl:px-10 pb-6">
             {children}
           </div>
         </main>
       </div>
+
+      {/* Mobile Navigation - only visible below lg */}
+      <MobileNav />
     </ProtectedRoute>
   );
 }
