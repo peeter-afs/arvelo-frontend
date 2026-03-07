@@ -10,7 +10,7 @@ import { getErrorMessage } from '@/lib/api/client';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get('returnUrl') || '/dashboard';
+  const returnUrl = searchParams.get('returnUrl') || '/';
   const verified = searchParams.get('verified');
 
   const { setSession } = useAuthStore();

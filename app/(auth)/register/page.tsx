@@ -65,8 +65,8 @@ export default function RegisterPage() {
       // Wait a bit for zustand persist to save to localStorage
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Redirect to dashboard
-      router.push('/dashboard');
+      // Redirect to dashboard (root page)
+      router.push('/');
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
