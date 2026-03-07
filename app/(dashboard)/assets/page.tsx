@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Package, Plus, Search, Filter, Download, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Filter, Download, Trash2, Edit2, MoreHorizontal, DollarSign, TrendingDown, Wallet } from 'lucide-react';
 
 export default function AssetsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,154 +15,286 @@ export default function AssetsPage() {
     { id: 5, name: 'Manufacturing Machinery', category: 'Machinery', purchaseDate: '2019-09-05', cost: 85000.00, depreciation: 22100.00, netValue: 62900.00, status: 'active' },
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'depreciated': return 'bg-yellow-100 text-yellow-800';
-      case 'disposed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Real Estate': return 'bg-violet-50 text-violet-700';
+      case 'Equipment': return 'bg-blue-50 text-blue-700';
+      case 'Fixtures': return 'bg-amber-50 text-amber-700';
+      case 'Machinery': return 'bg-emerald-50 text-emerald-700';
+      default: return 'bg-slate-50 text-slate-700';
     }
+  };
+
+  const getDepreciationPercent = (cost: number, depreciation: number) => {
+    return (depreciation / cost) * 100;
+  };
+
+  const getDepreciationColor = (percent: number) => {
+    if (percent < 30) return 'bg-emerald-500';
+    if (percent < 60) return 'bg-amber-500';
+    return 'bg-red-500';
   };
 
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Fixed Assets</h1>
-        <p className="text-gray-600 mt-1">Manage and track your company's fixed assets and depreciation</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900">Fixed Assets</h1>
+        <p className="text-sm text-slate-500 mt-1">Manage and track your company's fixed assets and depreciation</p>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex space-x-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search assets..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Filter */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Filter</span>
-          </button>
+      {/* Actions Bar - Desktop */}
+      <div className="hidden md:flex mb-6 justify-between items-center gap-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search assets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-72 h-10 pl-9 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
         </div>
 
-        {/* Create Button */}
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-          <Plus className="h-5 w-5" />
-          <span>Add Asset</span>
-        </button>
+        <div className="flex items-center gap-3 ml-auto">
+          {/* Filter */}
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Filter className="h-4 w-4" />
+            <span>Filter</span>
+          </button>
+
+          {/* Export */}
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Download className="h-4 w-4" />
+            <span>Export</span>
+          </button>
+
+          {/* Create Button */}
+          <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
+            <Plus className="h-4 w-4" />
+            <span>Add Asset</span>
+          </button>
+        </div>
       </div>
 
-      {/* Assets Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Actions Bar - Mobile */}
+      <div className="md:hidden mb-4 space-y-3">
+        {/* Search - Full width */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search assets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
+        </div>
+
+        {/* Action buttons row */}
+        <div className="flex items-center gap-2">
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Filter className="h-4 w-4" />
+            <span>Filter</span>
+          </button>
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Download className="h-4 w-4" />
+            <span>Export</span>
+          </button>
+          <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Action Button - Mobile */}
+      <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block card overflow-hidden mb-6">
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-50/80">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Asset Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Purchase Date
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Cost
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Depreciation
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
                 Net Value
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {assets.map((asset) => (
-              <tr key={asset.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {asset.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {asset.category}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {asset.purchaseDate}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
-                  €{asset.cost.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-                  €{asset.depreciation.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium text-right">
-                  €{asset.netValue.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(asset.status)}`}>
-                    {asset.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+          <tbody className="bg-white">
+            {assets.map((asset) => {
+              const depreciationPercent = getDepreciationPercent(asset.cost, asset.depreciation);
+              const depreciationColor = getDepreciationColor(depreciationPercent);
+              return (
+                <tr key={asset.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                    {asset.name}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getCategoryColor(asset.category)}`}>
+                      {asset.category}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                    {asset.purchaseDate}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="w-32">
+                      <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                        <span>{depreciationPercent.toFixed(0)}%</span>
+                        <span className="font-mono">€{asset.depreciation.toFixed(0)}</span>
+                      </div>
+                      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${depreciationColor}`}
+                          style={{ width: `${depreciationPercent}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 text-right">
+                    €{asset.netValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Summary Section */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Asset Cost</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">€290,500.00</p>
+      {/* Mobile Card List */}
+      <div className="md:hidden space-y-2 mb-6">
+        {assets.map((asset) => {
+          const depreciationPercent = getDepreciationPercent(asset.cost, asset.depreciation);
+          const depreciationColor = getDepreciationColor(depreciationPercent);
+          return (
+            <div key={asset.id} className="card p-4 active:bg-slate-50 transition-colors cursor-pointer relative">
+              {/* Status dot */}
+              <div className={`absolute top-4 right-4 h-2 w-2 rounded-full ${asset.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+
+              {/* Header: asset name + category badge */}
+              <div className="flex items-start justify-between mb-3 pr-6">
+                <span className="text-base font-medium text-slate-900">{asset.name}</span>
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getCategoryColor(asset.category)}`}>
+                  {asset.category}
+                </span>
+              </div>
+
+              {/* Body: purchase date + depreciation bar */}
+              <div className="mb-3">
+                <div className="text-xs text-slate-500 mb-2">Purchased: {asset.purchaseDate}</div>
+                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                  <span>Depreciation: {depreciationPercent.toFixed(0)}%</span>
+                  <span className="font-mono">€{asset.depreciation.toFixed(0)}</span>
+                </div>
+                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${depreciationColor}`}
+                    style={{ width: `${depreciationPercent}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Footer: cost + net value */}
+              <div className="flex items-center justify-between text-sm font-mono">
+                <div>
+                  <span className="text-slate-500">Cost </span>
+                  <span className="text-slate-900">€{asset.cost.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">Net </span>
+                  <span className="text-slate-900 font-medium">€{asset.netValue.toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-6">
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Asset Cost</p>
+          <p className="text-xl md:text-2xl font-bold text-slate-900 mt-1">€290,500.00</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Depreciation</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">€60,975.00</p>
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <TrendingDown className="h-5 w-5 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Depreciation</p>
+          <p className="text-xl md:text-2xl font-bold text-amber-600 mt-1">€60,975.00</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Net Book Value</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">€229,525.00</p>
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Wallet className="h-5 w-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Net Book Value</p>
+          <p className="text-xl md:text-2xl font-bold text-emerald-600 mt-1">€229,525.00</p>
         </div>
       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex justify-between items-center">
-        <p className="text-sm text-gray-700">
-          Showing 1 to 5 of 5 results
+      {/* Pagination - Desktop */}
+      <div className="hidden md:flex justify-between items-center">
+        <p className="text-sm text-slate-600">
+          Showing 1-5 of 5
         </p>
-        <div className="flex space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+        <div className="flex gap-2">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Previous
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Next
           </button>
         </div>
+      </div>
+
+      {/* Pagination - Mobile */}
+      <div className="md:hidden flex items-center justify-center gap-4">
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&lt;</span>
+        </button>
+        <p className="text-sm text-slate-600">Page 1 of 1</p>
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&gt;</span>
+        </button>
       </div>
     </div>
   );
