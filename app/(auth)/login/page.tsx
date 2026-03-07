@@ -30,6 +30,12 @@ function LoginForm() {
     try {
       const session = await authApi.login({ email, password });
 
+      console.log('Login response:', {
+        hasUser: !!session.user,
+        hasTenant: !!session.tenant,
+        hasTokens: !!(session.access_token && session.refresh_token)
+      });
+
       setSession(
         session.user,
         session.tenant || null,
@@ -38,10 +44,15 @@ function LoginForm() {
         session.refresh_token
       );
 
+      console.log('Session set, checking localStorage...');
+
       // Wait a bit for zustand persist to save to localStorage
       await new Promise(resolve => setTimeout(resolve, 100));
 
+      console.log('LocalStorage auth-storage:', localStorage.getItem('auth-storage'));
+
       // Redirect to return URL or dashboard
+      console.log('Redirecting to:', returnUrl);
       router.push(returnUrl);
     } catch (err) {
       const errorMsg = getErrorMessage(err);
