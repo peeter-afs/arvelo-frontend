@@ -1,10 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { Users, Plus, Search, Filter, Download, Edit2, Trash2, Mail, Phone } from 'lucide-react';
+import { Plus, Search, Filter, Download, Edit2, Trash2, Mail, Phone, MoreHorizontal, Users, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function BusinessPartnersPage() {
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Helper function to get avatar initials
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  };
 
   // Mock data for business partners (customers and vendors)
   const partners = [
@@ -72,182 +82,320 @@ export default function BusinessPartnersPage() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'customer': return 'bg-blue-100 text-blue-800';
-      case 'vendor': return 'bg-green-100 text-green-800';
-      case 'both': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'customer': return 'bg-blue-50 text-blue-700';
+      case 'vendor': return 'bg-emerald-50 text-emerald-700';
+      case 'both': return 'bg-violet-50 text-violet-700';
+      default: return 'bg-slate-50 text-slate-700';
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      case 'suspended': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getBalanceDisplay = (balance: number) => {
+    const absBalance = Math.abs(balance);
+    if (balance < 0) {
+      return {
+        text: `€${absBalance.toFixed(2)} receivable`,
+        color: 'text-emerald-600',
+      };
+    } else if (balance > 0) {
+      return {
+        text: `€${absBalance.toFixed(2)} payable`,
+        color: 'text-amber-600',
+      };
     }
-  };
-
-  const getBalanceColor = (balance: number) => {
-    if (balance < 0) return 'text-green-600';
-    if (balance > 0) return 'text-red-600';
-    return 'text-gray-600';
+    return {
+      text: '€0.00',
+      color: 'text-slate-600',
+    };
   };
 
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Business Partners</h1>
-        <p className="text-gray-600 mt-1">Manage customers, vendors, and business relationships</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900">Business Partners</h1>
+        <p className="text-sm text-slate-500 mt-1">Manage customers, vendors, and business relationships</p>
       </div>
 
-      {/* Actions Bar */}
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex space-x-4">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search partners..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+      {/* Actions Bar - Desktop */}
+      <div className="hidden md:flex mb-6 justify-between items-center gap-3">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search partners..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-72 h-10 pl-9 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
+        </div>
 
+        <div className="flex items-center gap-3 ml-auto">
           {/* Filter */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Filter className="h-4 w-4" />
             <span>Filter</span>
           </button>
 
-          {/* Download */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center space-x-2">
-            <Download className="h-5 w-5" />
+          {/* Export */}
+          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
+            <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
-        </div>
 
-        {/* Create Button */}
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2">
-          <Plus className="h-5 w-5" />
-          <span>Add Partner</span>
-        </button>
+          {/* Create Button */}
+          <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
+            <Plus className="h-4 w-4" />
+            <span>Add Partner</span>
+          </button>
+        </div>
       </div>
 
-      {/* Partners Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Actions Bar - Mobile */}
+      <div className="md:hidden mb-4 space-y-3">
+        {/* Search - Full width */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search partners..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ fontSize: '16px' }}
+            className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+          />
+        </div>
+
+        {/* Action buttons row */}
+        <div className="flex items-center gap-2">
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Filter className="h-4 w-4" />
+            <span>Filter</span>
+          </button>
+          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
+            <Download className="h-4 w-4" />
+            <span>Export</span>
+          </button>
+          <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Action Button - Mobile */}
+      <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
+        <Plus className="h-6 w-6" />
+      </button>
+
+      {/* Desktop Table */}
+      <div className="hidden md:block card overflow-hidden mb-6">
         <table className="min-w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-slate-50/80">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Partner Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Contact
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Location
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
                 Balance
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {partners.map((partner) => (
-              <tr key={partner.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {partner.name}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getTypeColor(partner.type)}`}>
-                    {partner.type === 'customer' ? 'Customer' : 'Vendor'}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex flex-col">
-                    <a href={`mailto:${partner.email}`} className="text-blue-600 hover:text-blue-900 flex items-center">
-                      <Mail className="h-4 w-4 mr-1" />
-                      {partner.email}
-                    </a>
-                    <a href={`tel:${partner.phone}`} className="text-blue-600 hover:text-blue-900 flex items-center">
-                      <Phone className="h-4 w-4 mr-1" />
-                      {partner.phone}
-                    </a>
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {partner.city}, {partner.country}
-                </td>
-                <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${getBalanceColor(partner.balance)}`}>
-                  €{Math.abs(partner.balance).toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(partner.status)}`}>
-                    {partner.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="flex space-x-2">
-                    <button className="text-blue-600 hover:text-blue-900">
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button className="text-red-600 hover:text-red-900">
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+          <tbody className="bg-white">
+            {partners.map((partner) => {
+              const balanceDisplay = getBalanceDisplay(partner.balance);
+              return (
+                <tr key={partner.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-xs font-medium">
+                        {getInitials(partner.name)}
+                      </div>
+                      <span className="text-sm font-medium text-slate-900">{partner.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getTypeColor(partner.type)}`}>
+                      {partner.type === 'customer' ? 'Customer' : 'Vendor'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-col gap-0.5">
+                      <div className="text-sm text-slate-600">{partner.email}</div>
+                      <div className="text-xs text-slate-400">{partner.phone}</div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
+                    {partner.city}, {partner.country}
+                  </td>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium text-right ${balanceDisplay.color}`}>
+                    {balanceDisplay.text}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-1.5 w-1.5 rounded-full ${partner.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                      <span className="text-xs text-slate-600 capitalize">{partner.status}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
+      {/* Mobile Card List */}
+      <div className="md:hidden space-y-2 mb-6">
+        {partners.map((partner) => {
+          const balanceDisplay = getBalanceDisplay(partner.balance);
+          return (
+            <div key={partner.id} className="card p-4 active:bg-slate-50 transition-colors cursor-pointer">
+              {/* Header: avatar + name + type badge */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[var(--primary)]/10 text-[var(--primary)] flex items-center justify-center text-sm font-medium">
+                    {getInitials(partner.name)}
+                  </div>
+                  <span className="text-base font-medium text-slate-900">{partner.name}</span>
+                </div>
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(partner.type)}`}>
+                  {partner.type === 'customer' ? 'Customer' : 'Vendor'}
+                </span>
+              </div>
+
+              {/* Body: contact info */}
+              <div className="mb-3 space-y-1">
+                <a href={`mailto:${partner.email}`} className="block text-sm text-slate-600 hover:text-[var(--primary)] active:text-[var(--primary-hover)]">
+                  {partner.email}
+                </a>
+                <a href={`tel:${partner.phone}`} className="block text-xs text-slate-400 hover:text-[var(--primary)] active:text-[var(--primary-hover)]">
+                  {partner.phone}
+                </a>
+                <div className="text-xs text-slate-400">
+                  {partner.city}, {partner.country}
+                </div>
+              </div>
+
+              {/* Footer: balance + status */}
+              <div className="flex items-center justify-between">
+                <div className={`text-sm font-medium ${balanceDisplay.color}`}>
+                  {balanceDisplay.text}
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-1.5 w-1.5 rounded-full ${partner.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                    <span className="text-xs text-slate-600 capitalize">{partner.status}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Summary Statistics */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Customers</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">3</p>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 mb-6">
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+              <Users className="h-5 w-5 text-blue-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Customers</p>
+          <p className="text-xl md:text-2xl font-bold text-slate-900 mt-1">3</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Vendors</p>
-          <p className="text-2xl font-bold text-gray-900 mt-2">2</p>
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <Users className="h-5 w-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Vendors</p>
+          <p className="text-xl md:text-2xl font-bold text-slate-900 mt-1">2</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Receivables</p>
-          <p className="text-2xl font-bold text-green-600 mt-2">€5,340.00</p>
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
+              <TrendingDown className="h-5 w-5 text-emerald-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Receivables</p>
+          <p className="text-xl md:text-2xl font-bold text-emerald-600 mt-1">€5,340.00</p>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <p className="text-sm text-gray-600">Total Payables</p>
-          <p className="text-2xl font-bold text-red-600 mt-2">€6,800.00</p>
+        <div className="card p-4 md:p-6">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+              <TrendingUp className="h-5 w-5 text-amber-600" />
+            </div>
+          </div>
+          <p className="text-xs md:text-sm text-slate-500">Total Payables</p>
+          <p className="text-xl md:text-2xl font-bold text-amber-600 mt-1">€6,800.00</p>
         </div>
       </div>
 
-      {/* Pagination */}
-      <div className="mt-4 flex justify-between items-center">
-        <p className="text-sm text-gray-700">
-          Showing 1 to 5 of 5 results
+      {/* Pagination - Desktop */}
+      <div className="hidden md:flex justify-between items-center">
+        <p className="text-sm text-slate-600">
+          Showing 1-5 of 5
         </p>
-        <div className="flex space-x-2">
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+        <div className="flex gap-2">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Previous
           </button>
-          <button className="px-3 py-1 border border-gray-300 rounded hover:bg-gray-50 text-sm">
+          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
             Next
           </button>
         </div>
+      </div>
+
+      {/* Pagination - Mobile */}
+      <div className="md:hidden flex items-center justify-center gap-4">
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&lt;</span>
+        </button>
+        <p className="text-sm text-slate-600">Page 1 of 1</p>
+        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
+          <span className="text-sm">&gt;</span>
+        </button>
       </div>
     </div>
   );
