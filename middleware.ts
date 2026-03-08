@@ -1,16 +1,12 @@
-import createMiddleware from 'next-intl/middleware';
-import { defaultLocale, locales } from './i18n/config';
+import { NextRequest, NextResponse } from 'next/server';
+import { defaultLocale } from './i18n/config';
 
-export default createMiddleware({
-  // A list of all locales that are supported
-  locales,
-
-  // Used when no locale matches
-  defaultLocale,
-
-  // Never use locale prefix in URL
-  localePrefix: 'never',
-});
+export function middleware(request: NextRequest) {
+  // Set the locale header for next-intl
+  const response = NextResponse.next();
+  response.headers.set('x-next-intl-locale', defaultLocale);
+  return response;
+}
 
 export const config = {
   // Match all pathnames except for
