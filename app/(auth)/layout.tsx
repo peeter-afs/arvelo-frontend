@@ -1,3 +1,5 @@
+'use client';
+
 import { Shield, TrendingUp, Globe } from 'lucide-react';
 
 export default function AuthLayout({
