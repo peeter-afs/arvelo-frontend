@@ -14,8 +14,11 @@ import {
   PiggyBank,
   ChevronRight,
   X,
+  Menu,
+  ChevronLeft,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { useSidebarStore } from '@/lib/stores/sidebar.store';
 import { authApi } from '@/lib/api/auth.api';
 import LanguageSwitcher from '../LanguageSwitcher';
 
@@ -27,6 +30,7 @@ interface SidebarProps {
 export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
   const { user, tenant, role, logout } = useAuthStore();
+  const { isCollapsed, toggleSidebar } = useSidebarStore();
   const t = useTranslations('navigation');
   const tAccounting = useTranslations('accounting');
   const tReports = useTranslations('reports');
@@ -83,13 +87,16 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     }
   };
 
-  const widthClass = isMobile ? 'w-72' : 'w-64';
+  // Don't use collapsed state on mobile
+  const effectiveCollapsed = isMobile ? false : isCollapsed;
+
+  const widthClass = isMobile ? 'w-72' : (effectiveCollapsed ? 'w-16' : 'w-64');
   const navPadding = isMobile ? 'py-2.5' : 'py-2';
   const subItemPadding = isMobile ? 'py-2' : 'py-1';
 
   return (
     <div
-      className={`flex flex-col h-full bg-[var(--sidebar-bg)] text-white ${widthClass} overflow-y-auto`}
+      className={`flex flex-col h-full bg-[var(--sidebar-bg)] text-white ${widthClass} transition-all duration-300 overflow-y-auto`}
       style={{
         paddingBottom: isMobile ? 'env(safe-area-inset-bottom, 0)' : '0',
         WebkitOverflowScrolling: 'touch',
@@ -97,7 +104,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     >
       {/* Logo Section */}
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-        <div>
+        <div className={effectiveCollapsed ? 'hidden' : ''}>
           <h1
             className="text-xl font-bold text-white"
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
@@ -110,6 +117,21 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             </p>
           )}
         </div>
+        {/* Collapse/Expand button for desktop */}
+        {!isMobile && (
+          <button
+            onClick={toggleSidebar}
+            className={`p-1.5 hover:bg-slate-800 rounded-md transition-colors ${effectiveCollapsed ? 'mx-auto' : ''}`}
+            aria-label={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {effectiveCollapsed ? (
+              <Menu className="h-5 w-5 text-slate-400" />
+            ) : (
+              <ChevronLeft className="h-5 w-5 text-slate-400" />
+            )}
+          </button>
+        )}
         {/* Close button for mobile */}
         {isMobile && onClose && (
           <button
@@ -123,21 +145,23 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       </div>
 
       {/* User Section */}
-      <div className="p-4 border-b border-slate-800">
-        <div className="flex items-center space-x-3 px-2 py-1.5 rounded-lg hover:bg-slate-800/50 transition-all duration-200">
+      <div className={`${effectiveCollapsed ? 'p-2' : 'p-4'} border-b border-slate-800`}>
+        <div className={`flex items-center ${effectiveCollapsed ? 'justify-center' : 'space-x-3 px-2'} py-1.5 rounded-lg hover:bg-slate-800/50 transition-all duration-200`}>
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-sm font-semibold text-white">
               {user?.name?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
             </span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-200 truncate">
-              {user?.name || 'User'}
-            </p>
-            <p className="text-xs text-slate-500 capitalize">
-              {role || 'viewer'}
-            </p>
-          </div>
+          {!effectiveCollapsed && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-slate-200 truncate">
+                {user?.name || 'User'}
+              </p>
+              <p className="text-xs text-slate-500 capitalize">
+                {role || 'viewer'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -148,6 +172,46 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           if ('children' in item && item.children) {
             const isExpanded = expandedSections.includes(item.id || '');
             const Icon = item.icon;
+
+            // In collapsed mode, show just the icon as a dropdown trigger
+            if (effectiveCollapsed) {
+              return (
+                <div key={item.id} className="relative group">
+                  <button
+                    className="flex items-center justify-center w-full p-2 text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 rounded-lg transition-all duration-200"
+                    title={item.name}
+                  >
+                    <Icon className="h-[18px] w-[18px]" strokeWidth={1.5} />
+                  </button>
+                  {/* Dropdown on hover */}
+                  <div className="absolute left-full top-0 ml-2 hidden group-hover:block z-50">
+                    <div className="bg-slate-900 border border-slate-700 rounded-lg shadow-xl p-2 min-w-[200px]">
+                      <div className="text-xs font-semibold text-slate-400 px-2 py-1">{item.name}</div>
+                      {item.children.map((child) => {
+                        const isActive = pathname === child.href;
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            onClick={handleNavClick}
+                            className={`
+                              block px-2 py-1.5 text-sm rounded transition-all duration-200
+                              ${
+                                isActive
+                                  ? 'bg-[var(--sidebar-active)] text-white'
+                                  : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
+                              }
+                            `}
+                          >
+                            {child.name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
 
             return (
               <div key={item.id}>
@@ -166,7 +230,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 </button>
 
                 {/* Sub-items */}
-                {isExpanded && (
+                {isExpanded && !effectiveCollapsed && (
                   <div className="ml-9 mt-1 space-y-0.5 border-l border-slate-700/50 pl-3">
                     {item.children.map((child) => {
                       const isActive = pathname === child.href;
@@ -204,32 +268,36 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
               href={item.href}
               onClick={handleNavClick}
               className={`
-                flex items-center px-3 ${navPadding} text-sm rounded-lg transition-all duration-200
+                flex items-center ${effectiveCollapsed ? 'justify-center px-2' : 'px-3'} ${navPadding} text-sm rounded-lg transition-all duration-200
                 ${
                   isActive
                     ? 'bg-[var(--sidebar-active)] text-white border-l-2 border-primary'
                     : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
                 }
               `}
+              title={effectiveCollapsed ? item.name : undefined}
             >
-              <Icon className="h-[18px] w-[18px] mr-3" strokeWidth={1.5} />
-              <span className="font-medium">{item.name}</span>
+              <Icon className={`h-[18px] w-[18px] ${effectiveCollapsed ? '' : 'mr-3'}`} strokeWidth={1.5} />
+              {!effectiveCollapsed && <span className="font-medium">{item.name}</span>}
             </Link>
           );
         })}
       </nav>
 
       {/* Language Switcher & Logout */}
-      <div className="p-4 border-t border-slate-800 space-y-2">
-        <div className="mb-2">
-          <LanguageSwitcher />
-        </div>
+      <div className={`${effectiveCollapsed ? 'p-2' : 'p-4'} border-t border-slate-800 space-y-2`}>
+        {!effectiveCollapsed && (
+          <div className="mb-2">
+            <LanguageSwitcher />
+          </div>
+        )}
         <button
           onClick={handleLogout}
-          className="flex items-center w-full px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800/50 transition-all duration-200"
+          className={`flex items-center ${effectiveCollapsed ? 'justify-center' : 'w-full px-3'} py-2 text-sm font-medium text-slate-500 hover:text-slate-300 rounded-lg hover:bg-slate-800/50 transition-all duration-200`}
+          title={effectiveCollapsed ? tCommon('signOut') : undefined}
         >
-          <LogOut className="mr-3 h-[18px] w-[18px]" strokeWidth={1.5} />
-          {tCommon('signOut')}
+          <LogOut className={`${effectiveCollapsed ? '' : 'mr-3'} h-[18px] w-[18px]`} strokeWidth={1.5} />
+          {!effectiveCollapsed && tCommon('signOut')}
         </button>
       </div>
     </div>
