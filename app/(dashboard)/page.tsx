@@ -12,6 +12,15 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 
+type DashboardStat = {
+  label: string;
+  value: string;
+  change: string;
+  trend: 'up' | 'down' | 'neutral';
+  icon: typeof DollarSign;
+  colorClass: string;
+};
+
 export default function DashboardPage() {
   const { user, tenant } = useAuthStore();
   const t = useTranslations('dashboard');
@@ -24,7 +33,7 @@ export default function DashboardPage() {
     day: 'numeric',
   }).format(new Date());
 
-  const stats = [
+  const stats: DashboardStat[] = [
     {
       label: 'Total Revenue',
       value: '€12,450',

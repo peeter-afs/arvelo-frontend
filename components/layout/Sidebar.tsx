@@ -49,6 +49,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tAccounting('chartOfAccounts'), href: '/accounting/accounts' },
         { name: tAccounting('journalEntries'), href: '/accounting/journal' },
         { name: tAccounting('partners'), href: '/accounting/partners' },
+        { name: tAccounting('openingBalances'), href: '/accounting/opening-balances' },
       ]
     },
     { name: t('invoices'), href: '/invoices', icon: FileText },
