@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   AlertCircle,
   CheckCircle2,
+  Download,
   ExternalLink,
   FileCheck2,
   FileX2,
@@ -15,7 +16,7 @@ import {
   Stamp,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { accountingApi, type PartnerOption } from '@/lib/api/accounting.api';
+import { accountingApi, type PartnerRecord } from '@/lib/api/accounting.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 
 type InvoiceDetail = {
@@ -55,12 +56,14 @@ export default function InvoiceListWorkspace({
 }: InvoiceListWorkspaceProps) {
   const isPurchase = invoiceType === 'purchase_invoice';
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
-  const [partners, setPartners] = useState<PartnerOption[]>([]);
+  const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<InvoiceDetail | null>(null);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [sendRecipient, setSendRecipient] = useState('');
+  const [sendMessage, setSendMessage] = useState('');
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -126,7 +129,7 @@ export default function InvoiceListWorkspace({
       try {
         const [invoiceItems, partnerItems] = await Promise.all([
           invoicesApi.listInvoices({ type: invoiceType, limit: 200 }),
-          accountingApi.getPartners(),
+          accountingApi.listPartners(),
         ]);
         setInvoices(invoiceItems);
         setPartners(partnerItems);
@@ -154,6 +157,9 @@ export default function InvoiceListWorkspace({
         const result = await invoicesApi.getInvoice(selectedInvoiceId);
         setSelectedInvoiceDetail(result);
         setRejectReason(result.invoice.rejection_reason || '');
+        const selectedPartner = partners.find((partner) => partner.id === result.invoice.partner_id);
+        setSendRecipient(selectedPartner?.email || '');
+        setSendMessage('');
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -162,7 +168,7 @@ export default function InvoiceListWorkspace({
     };
 
     void loadDetail();
-  }, [selectedInvoiceId]);
+  }, [partners, selectedInvoiceId]);
 
   const refreshInvoices = async (preferredId?: string | null) => {
     const invoiceItems = await invoicesApi.listInvoices({ type: invoiceType, limit: 200 });
@@ -219,6 +225,34 @@ export default function InvoiceListWorkspace({
       const result = await invoicesApi.confirm(selectedInvoiceId);
       setSuccessMessage(`Invoice posted. Journal entry ${result.journal_entry_id}.`);
       await refreshInvoices(selectedInvoiceId);
+    });
+  };
+
+  const handleSend = async () => {
+    if (!selectedInvoiceId) return;
+    await runAction('send', async () => {
+      const result = await invoicesApi.sendInvoice(selectedInvoiceId, {
+        to: sendRecipient || undefined,
+        message: sendMessage || undefined,
+      });
+      setSuccessMessage(`Invoice sent to ${result.sent_to}.`);
+      await refreshInvoices(selectedInvoiceId);
+    });
+  };
+
+  const handleExport = async (format: 'html' | 'json') => {
+    if (!selectedInvoiceId) return;
+    await runAction(`export-${format}`, async () => {
+      const result = await invoicesApi.exportInvoice(selectedInvoiceId, format);
+      const url = window.URL.createObjectURL(result.blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = result.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+      setSuccessMessage(`Invoice exported as ${result.filename}.`);
     });
   };
 
@@ -389,7 +423,51 @@ export default function InvoiceListWorkspace({
                       <span>Edit draft</span>
                     </Link>
                   )}
+                  <button
+                    onClick={() => void handleExport('html')}
+                    disabled={!!actionLoading}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {actionLoading === 'export-html' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    <span>Export HTML</span>
+                  </button>
+                  <button
+                    onClick={() => void handleExport('json')}
+                    disabled={!!actionLoading}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {actionLoading === 'export-json' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    <span>Export JSON</span>
+                  </button>
                 </div>
+
+                {!isPurchase && (
+                  <div className="border-t border-slate-200 p-5">
+                    <div className="mb-3 text-sm font-semibold text-slate-900">Send invoice</div>
+                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
+                      <input
+                        value={sendRecipient}
+                        onChange={(event) => setSendRecipient(event.target.value)}
+                        placeholder="Recipient email"
+                        className="h-10 rounded-lg border border-slate-200 px-3"
+                      />
+                      <input
+                        value={sendMessage}
+                        onChange={(event) => setSendMessage(event.target.value)}
+                        placeholder="Optional message"
+                        className="h-10 rounded-lg border border-slate-200 px-3"
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={!!actionLoading}
+                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                      >
+                        {actionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                        <span>Send invoice</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {isPurchase && (
                   <div className="border-t border-slate-200 p-5">

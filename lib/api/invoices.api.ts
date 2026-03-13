@@ -141,4 +141,28 @@ export const invoicesApi = {
     }>>(`/api/invoices/${id}`, payload);
     return response.data.data;
   },
+
+  async sendInvoice(id: string, payload?: { to?: string; message?: string }) {
+    const response = await apiClient.post<ApiResponse<{
+      invoice: InvoiceListItem;
+      sent_to: string;
+      subject: string;
+    }>>(`/api/invoices/${id}/send`, payload || {});
+    return response.data.data;
+  },
+
+  async exportInvoice(id: string, format: 'html' | 'json' = 'html') {
+    const response = await apiClient.get<Blob>(`/api/invoices/${id}/export`, {
+      params: { format },
+      responseType: 'blob',
+    });
+
+    const disposition = response.headers['content-disposition'] as string | undefined;
+    const match = disposition?.match(/filename="([^"]+)"/);
+    return {
+      blob: response.data,
+      filename: match?.[1] || `invoice-${id}.${format}`,
+      contentType: response.headers['content-type'] as string | undefined,
+    };
+  },
 };
