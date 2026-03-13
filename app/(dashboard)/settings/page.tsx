@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [billingSubscription, setBillingSubscription] = useState<BillingSubscription | null>(null);
   const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
+  const [billingReminderOperations, setBillingReminderOperations] = useState<BillingReminderOperationItem[]>([]);
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
   const [billingAnnualBalanceHistory, setBillingAnnualBalanceHistory] = useState<BillingAnnualBalanceHistoryItem[]>([]);
   const [billingAnnualBalanceMismatches, setBillingAnnualBalanceMismatches] = useState<BillingAnnualBalanceMismatchItem[]>([]);
@@ -96,6 +97,7 @@ export default function SettingsPage() {
         setBillingPlans(overview.plans);
         setBillingSubscription(overview.subscription);
         setBillingInvoices(overview.invoices);
+        setBillingReminderOperations(overview.reminder_operations || []);
         setBillingReminderHistory(overview.reminder_history || []);
         setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
         setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
@@ -218,6 +220,7 @@ export default function SettingsPage() {
     setBillingPlans(overview.plans);
     setBillingSubscription(overview.subscription);
     setBillingInvoices(overview.invoices);
+    setBillingReminderOperations(overview.reminder_operations || []);
     setBillingReminderHistory(overview.reminder_history || []);
     setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
     setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
@@ -844,6 +847,65 @@ export default function SettingsPage() {
                           <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">{billingMessagePreview.text}</pre>
                         </div>
                       )}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Reminder operations</h3>
+                        <p className="mt-1 text-xs text-slate-600">Operational queue for overdue billing invoices, reminder eligibility, and follow-up timing.</p>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingReminderOperations.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No open billing invoices eligible for reminder operations.</div>
+                        ) : (
+                          billingReminderOperations.map((invoice) => (
+                            <div key={invoice.id} className="flex flex-col gap-3 p-5 xl:flex-row xl:items-center xl:justify-between">
+                              <div className="space-y-1">
+                                <div className="text-sm font-medium text-slate-900">
+                                  Invoice #{invoice.invoice_no} · {Number(invoice.total || 0).toFixed(2)} {invoice.currency}
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  Due {invoice.due_date} · overdue {invoice.overdue_days} day(s) · sent {invoice.reminder_sent_count} reminder(s)
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  Recipient: {invoice.recipient || 'missing'} · next eligible: {invoice.next_eligible_reminder_date}
+                                </div>
+                              </div>
+                              <div className="flex flex-col items-start gap-2 xl:items-end">
+                                <div className={`rounded-full px-3 py-1 text-xs font-medium ${
+                                  invoice.eligible_now
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}>
+                                  {invoice.eligible_now
+                                    ? 'Eligible now'
+                                    : invoice.blocking_reason === 'disabled'
+                                      ? 'Reminders disabled'
+                                      : invoice.blocking_reason === 'not_overdue_enough'
+                                        ? 'Too early'
+                                        : invoice.blocking_reason === 'frequency_not_reached'
+                                          ? 'Waiting frequency'
+                                          : invoice.blocking_reason === 'weekday_mismatch'
+                                            ? 'Wrong weekday'
+                                            : 'Not eligible'}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => void runBillingAction(`send-invoice-reminder-${invoice.id}`, async () => {
+                                    const result = await billingApi.sendReminders({ force: true });
+                                    await reloadBilling();
+                                    setSettingsSuccess(result.sent_count > 0 ? `Sent ${result.sent_count} reminder(s).` : 'No reminders were sent.');
+                                  })}
+                                  disabled={billingAction !== null}
+                                  className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                                >
+                                  {billingAction === `send-invoice-reminder-${invoice.id}` ? 'Sending…' : 'Send Reminders'}
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">

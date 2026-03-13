@@ -99,6 +99,23 @@ export type BillingReminderHistoryItem = {
   created_at: string;
 };
 
+export type BillingReminderOperationItem = {
+  id: string;
+  invoice_no: string | number;
+  status: 'issued' | 'overdue';
+  due_date: string;
+  total: number | string;
+  currency: string;
+  recipient?: string | null;
+  overdue_days: number;
+  reminder_sent_count: number;
+  reminder_last_sent_at?: string | null;
+  days_since_last_reminder?: number | null;
+  next_eligible_reminder_date: string;
+  eligible_now: boolean;
+  blocking_reason?: 'disabled' | 'not_overdue_enough' | 'frequency_not_reached' | 'weekday_mismatch' | null;
+};
+
 export type BillingAnnualBalanceHistoryItem = {
   id: string;
   tenant_id: string;
@@ -170,6 +187,7 @@ export const billingApi = {
       subscription: BillingSubscription | null;
       plans: BillingPlan[];
       invoices: BillingInvoice[];
+      reminder_operations: BillingReminderOperationItem[];
       reminder_history: BillingReminderHistoryItem[];
       annual_balance_history: BillingAnnualBalanceHistoryItem[];
       annual_balance_mismatches: BillingAnnualBalanceMismatchItem[];
