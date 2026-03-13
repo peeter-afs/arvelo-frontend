@@ -111,6 +111,7 @@ export type BillingAnnualBalanceHistoryItem = {
     open_invoice_count?: number;
     send_event_id?: string;
     decision?: 'confirm' | 'mismatch';
+    note?: string;
   } | null;
   created_at: string;
 };

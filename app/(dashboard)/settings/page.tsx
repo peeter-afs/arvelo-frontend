@@ -927,6 +927,11 @@ export default function SettingsPage() {
                                     ? `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'}`
                                     : `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'} · ${event.payload?.open_invoice_count || 0} open invoice(s)`}
                                 </div>
+                                {event.type === 'annual_balance_confirmation_response' && event.payload?.decision === 'mismatch' && event.payload?.note && (
+                                  <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                                    {event.payload.note}
+                                  </div>
+                                )}
                               </div>
                               <div className="text-xs text-slate-500">
                                 {new Date(event.created_at).toLocaleString()}
