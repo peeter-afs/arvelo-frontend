@@ -547,6 +547,9 @@ export default function SettingsPage() {
                           {billingAction === 'send-annual-balance' ? 'Sending…' : 'Send Annual Balance Confirmation'}
                         </button>
                       </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        The sent email includes one-click links for <strong>Confirm balance</strong> and <strong>Report mismatch</strong>. Those clicks are recorded in annual balance history.
+                      </p>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
@@ -909,14 +912,20 @@ export default function SettingsPage() {
                             <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
                               <div>
                                 <div className="text-sm font-medium text-slate-900">
-                                  {event.payload?.balance_direction === 'we_owe_you'
-                                    ? `We owe them ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
-                                    : event.payload?.balance_direction === 'you_owe_us'
-                                      ? `They owe us ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
-                                      : 'Balance settled'}
+                                  {event.type === 'annual_balance_confirmation_response'
+                                    ? event.payload?.decision === 'confirm'
+                                      ? 'Customer confirmed balance'
+                                      : 'Customer reported mismatch'
+                                    : event.payload?.balance_direction === 'we_owe_you'
+                                      ? `We owe them ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                      : event.payload?.balance_direction === 'you_owe_us'
+                                        ? `They owe us ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                        : 'Balance settled'}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  As of {event.payload?.reference_date || 'unknown'} · {event.payload?.recipient || 'no recipient'} · {event.payload?.open_invoice_count || 0} open invoice(s)
+                                  {event.type === 'annual_balance_confirmation_response'
+                                    ? `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'}`
+                                    : `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'} · ${event.payload?.open_invoice_count || 0} open invoice(s)`}
                                 </div>
                               </div>
                               <div className="text-xs text-slate-500">

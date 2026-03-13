@@ -102,13 +102,15 @@ export type BillingReminderHistoryItem = {
 export type BillingAnnualBalanceHistoryItem = {
   id: string;
   tenant_id: string;
-  type: string;
+  type: 'annual_balance_confirmation_sent' | 'annual_balance_confirmation_response';
   payload?: {
     recipient?: string;
     reference_date?: string;
     balance_amount?: number;
     balance_direction?: 'you_owe_us' | 'we_owe_you' | 'settled';
     open_invoice_count?: number;
+    send_event_id?: string;
+    decision?: 'confirm' | 'mismatch';
   } | null;
   created_at: string;
 };
