@@ -33,6 +33,28 @@ export type InvoiceListItem = {
   rejection_reason?: string | null;
 };
 
+export type InvoiceLineInput = {
+  description: string;
+  account_id?: string | null;
+  quantity?: number;
+  unit_price: number;
+  discount_percent?: number;
+  tax_rate?: number;
+  meta?: Record<string, any>;
+};
+
+export type InvoiceDraftPayload = {
+  type: string;
+  partner_id?: string;
+  invoice_number?: string;
+  invoice_date: string;
+  due_date?: string;
+  currency?: string;
+  notes?: string;
+  payment_reference?: string;
+  lines: InvoiceLineInput[];
+};
+
 export const invoicesApi = {
   async listInvoices(params?: {
     type?: string;
@@ -81,6 +103,42 @@ export const invoicesApi = {
 
   async confirm(id: string) {
     const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem; journal_entry_id: string }>>(`/api/invoices/${id}/confirm`);
+    return response.data.data;
+  },
+
+  async createInvoice(payload: InvoiceDraftPayload) {
+    const response = await apiClient.post<ApiResponse<{
+      invoice: InvoiceListItem;
+      lines: Array<{
+        id: string;
+        description: string;
+        quantity: number;
+        unit_price: number | string;
+        discount_percent?: number | string | null;
+        tax_rate?: number | string | null;
+        line_total: number | string;
+        account_id?: string | null;
+        meta?: Record<string, any> | null;
+      }>;
+    }>>('/api/invoices', payload);
+    return response.data.data;
+  },
+
+  async updateInvoice(id: string, payload: InvoiceDraftPayload) {
+    const response = await apiClient.put<ApiResponse<{
+      invoice: InvoiceListItem;
+      lines: Array<{
+        id: string;
+        description: string;
+        quantity: number;
+        unit_price: number | string;
+        discount_percent?: number | string | null;
+        tax_rate?: number | string | null;
+        line_total: number | string;
+        account_id?: string | null;
+        meta?: Record<string, any> | null;
+      }>;
+    }>>(`/api/invoices/${id}`, payload);
     return response.data.data;
   },
 };

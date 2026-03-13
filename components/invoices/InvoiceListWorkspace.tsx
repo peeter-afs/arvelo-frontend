@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import {
   AlertCircle,
   CheckCircle2,
+  ExternalLink,
   FileCheck2,
   FileX2,
   Loader2,
@@ -77,21 +79,20 @@ export default function InvoiceListWorkspace({
       ];
     }
 
-    const uniqueStatuses = Array.from(new Set(invoices.map((invoice) => invoice.status).filter(Boolean))).sort();
     return [
       { id: 'all', label: 'All' },
-      ...uniqueStatuses.map((status) => ({
-        id: status,
-        label: humanizeStatus(status),
-        count: invoices.filter((invoice) => invoice.status === status).length,
-      })),
+      { id: 'overdue', label: 'Overdue', count: invoices.filter((invoice) => isOverdue(invoice)).length },
+      { id: 'open', label: 'Open', count: invoices.filter((invoice) => isOpenInvoice(invoice)).length },
+      { id: 'paid', label: 'Paid', count: invoices.filter((invoice) => invoice.status === 'paid').length },
+      { id: 'draft', label: 'Draft', count: invoices.filter((invoice) => invoice.status === 'draft').length },
+      { id: 'confirmed', label: 'Confirmed', count: invoices.filter((invoice) => invoice.status === 'confirmed').length },
     ];
   }, [invoices, isPurchase]);
 
   const filteredInvoices = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     return invoices.filter((invoice) => {
-      const matchesTab = activeTab === 'all' ? true : invoice.status === activeTab;
+      const matchesTab = matchesInvoiceTab(invoice, activeTab, isPurchase);
       const partnerName = partners.find((partner) => partner.id === invoice.partner_id)?.name || '';
       const haystack = [
         invoice.invoice_number,
@@ -113,7 +114,9 @@ export default function InvoiceListWorkspace({
     const confirmed = invoices.filter((invoice) => invoice.status === 'confirmed').length;
     const paid = invoices.filter((invoice) => invoice.status === 'paid').length;
     const openTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.open_amount || 0), 0);
-    return { draft, approved, payable, confirmed, paid, openTotal };
+    const overdue = invoices.filter((invoice) => isOverdue(invoice)).length;
+    const open = invoices.filter((invoice) => isOpenInvoice(invoice)).length;
+    return { draft, approved, payable, confirmed, paid, openTotal, overdue, open };
   }, [invoices]);
 
   useEffect(() => {
@@ -229,13 +232,21 @@ export default function InvoiceListWorkspace({
           <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
           <p className="mt-1 text-sm text-slate-500">{description}</p>
         </div>
-        <button
-          onClick={() => void refreshInvoices(selectedInvoiceId)}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Refresh</span>
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <Link
+            href={`/invoices/new?type=${invoiceType}`}
+            className="inline-flex h-10 items-center rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+          >
+            New invoice
+          </Link>
+          <button
+            onClick={() => void refreshInvoices(selectedInvoiceId)}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Refresh</span>
+          </button>
+        </div>
       </div>
 
       {errorMessage && (
@@ -258,8 +269,8 @@ export default function InvoiceListWorkspace({
 
       <div className="grid gap-3 md:grid-cols-4">
         <Metric label="Draft" value={summary.draft} />
-        <Metric label={isPurchase ? 'Approved' : 'Confirmed'} value={isPurchase ? summary.approved : summary.confirmed} tone="success" />
-        <Metric label={isPurchase ? 'Payable' : 'Paid'} value={isPurchase ? summary.payable : summary.paid} tone="success" />
+        <Metric label={isPurchase ? 'Approved' : 'Overdue'} value={isPurchase ? summary.approved : summary.overdue} tone={isPurchase ? 'success' : 'danger'} />
+        <Metric label={isPurchase ? 'Payable' : 'Open'} value={isPurchase ? summary.payable : summary.open} tone="warning" />
         <Metric label="Open total" value={summary.openTotal.toFixed(2)} tone="warning" />
       </div>
 
@@ -320,7 +331,7 @@ export default function InvoiceListWorkspace({
                       </span>
                     </div>
                     <div className="mt-2 text-xs text-slate-500">
-                      {humanizeStatus(invoice.status)} · {invoice.invoice_date}
+                      {renderListMeta(invoice, isPurchase)} · {invoice.invoice_date}
                     </div>
                   </button>
                 ))
@@ -363,6 +374,21 @@ export default function InvoiceListWorkspace({
                   <InfoBox label="Paid amount" value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
                   <InfoBox label="Payment reference" value={selectedInvoiceDetail.invoice.payment_reference || '-'} />
                   <InfoBox label={isPurchase ? 'Approval requested' : 'Journal entry'} value={isPurchase ? selectedInvoiceDetail.invoice.approval_requested_at || '-' : selectedInvoiceDetail.invoice.journal_entry_id || '-'} />
+                </div>
+
+                <div className="flex flex-wrap gap-2 border-t border-slate-200 px-5 py-4">
+                  <StatePill tone={isPurchase ? 'neutral' : (isOverdue(selectedInvoiceDetail.invoice) ? 'danger' : isOpenInvoice(selectedInvoiceDetail.invoice) ? 'warning' : 'success')}>
+                    {isPurchase ? humanizeStatus(selectedInvoiceDetail.invoice.status) : derivedSalesState(selectedInvoiceDetail.invoice)}
+                  </StatePill>
+                  {canEditInvoice(selectedInvoiceDetail.invoice) && (
+                    <Link
+                      href={`/invoices/${selectedInvoiceDetail.invoice.id}/edit`}
+                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      <span>Edit draft</span>
+                    </Link>
+                  )}
                 </div>
 
                 {isPurchase && (
@@ -488,4 +514,61 @@ function humanizeStatus(status: string | null | undefined) {
     .split('_')
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
+}
+
+function matchesInvoiceTab(invoice: InvoiceListItem, activeTab: string, isPurchase: boolean) {
+  if (activeTab === 'all') return true;
+  if (isPurchase) return invoice.status === activeTab;
+  if (activeTab === 'overdue') return isOverdue(invoice);
+  if (activeTab === 'open') return isOpenInvoice(invoice);
+  return invoice.status === activeTab;
+}
+
+function isOpenInvoice(invoice: InvoiceListItem) {
+  return Number(invoice.open_amount || 0) > 0 && !['paid', 'cancelled'].includes(invoice.status);
+}
+
+function isOverdue(invoice: InvoiceListItem) {
+  if (!invoice.due_date) return false;
+  if (!isOpenInvoice(invoice)) return false;
+  const due = new Date(invoice.due_date);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return due < today;
+}
+
+function derivedSalesState(invoice: InvoiceListItem) {
+  if (invoice.status === 'draft') return 'Draft';
+  if (invoice.status === 'paid') return 'Paid';
+  if (isOverdue(invoice)) return 'Overdue';
+  if (isOpenInvoice(invoice)) return 'Open';
+  return humanizeStatus(invoice.status);
+}
+
+function renderListMeta(invoice: InvoiceListItem, isPurchase: boolean) {
+  return isPurchase ? humanizeStatus(invoice.status) : derivedSalesState(invoice);
+}
+
+function canEditInvoice(invoice: InvoiceListItem) {
+  return ['draft', 'rejected'].includes(invoice.status) && !invoice.journal_entry_id;
+}
+
+function StatePill({
+  children,
+  tone,
+}: {
+  children: ReactNode;
+  tone: 'neutral' | 'success' | 'warning' | 'danger';
+}) {
+  const className =
+    tone === 'success'
+      ? 'bg-emerald-100 text-emerald-700'
+      : tone === 'warning'
+        ? 'bg-amber-100 text-amber-700'
+        : tone === 'danger'
+          ? 'bg-red-100 text-red-700'
+          : 'bg-slate-100 text-slate-700';
+
+  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${className}`}>{children}</span>;
 }
