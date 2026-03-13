@@ -42,6 +42,23 @@ export type BusinessRegistryCompany = {
   sourceTimestamp: string;
 };
 
+export type PartnerRegistrySyncLogItem = {
+  id: string;
+  tenant_id: string;
+  partner_id?: string | null;
+  registry_code?: string | null;
+  sync_type: string;
+  request_source?: string | null;
+  status: string;
+  response_hash?: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  duration_ms?: number | null;
+  meta?: Record<string, any> | null;
+  performed_at: string;
+  performed_by?: string | null;
+};
+
 export const businessRegistryApi = {
   async getSettings() {
     const response = await apiClient.get<ApiResponse<BusinessRegistrySettings>>('/api/admin/integrations/business-registry');
@@ -85,6 +102,25 @@ export const businessRegistryApi = {
       correlation_id: string;
       company: BusinessRegistryCompany;
     }>>(`/api/business-registry/company/${registryCode}`);
+    return response.data.data;
+  },
+
+  async refreshPartner(partnerId: string, payload?: { include_tax_arrears?: boolean; request_source?: string }) {
+    const response = await apiClient.post<ApiResponse<{
+      partner: Record<string, any>;
+      company: BusinessRegistryCompany;
+      tax_arrears?: Record<string, any> | null;
+    }>>(`/api/business-registry/refresh/${partnerId}`, payload || {});
+    return response.data.data;
+  },
+
+  async getPartnerSyncLog(partnerId: string, params?: { limit?: number; offset?: number }) {
+    const response = await apiClient.get<ApiResponse<{
+      items: PartnerRegistrySyncLogItem[];
+      total: number;
+      limit: number;
+      offset: number;
+    }>>(`/api/business-registry/partners/${partnerId}/sync-log`, { params });
     return response.data.data;
   },
 };

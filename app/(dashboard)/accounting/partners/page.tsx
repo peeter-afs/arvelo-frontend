@@ -16,6 +16,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import {
   businessRegistryApi,
   type BusinessRegistryCompany,
+  type PartnerRegistrySyncLogItem,
   type BusinessRegistrySearchItem,
 } from '@/lib/api/businessRegistry.api';
 import {
@@ -110,6 +111,9 @@ export default function BusinessPartnersPage() {
   const [registryQuery, setRegistryQuery] = useState('');
   const [registrySearchResults, setRegistrySearchResults] = useState<BusinessRegistrySearchItem[]>([]);
   const [selectedRegistryCompany, setSelectedRegistryCompany] = useState<BusinessRegistryCompany | null>(null);
+  const [registrySyncLog, setRegistrySyncLog] = useState<PartnerRegistrySyncLogItem[]>([]);
+  const [includeTaxArrearsOnRefresh, setIncludeTaxArrearsOnRefresh] = useState(false);
+  const [latestTaxArrears, setLatestTaxArrears] = useState<Record<string, any> | null>(null);
 
   const filteredPartners = useMemo(() => {
     return partners.filter((partner) => {
@@ -154,6 +158,8 @@ export default function BusinessPartnersPage() {
       setRegistryQuery('');
       setRegistrySearchResults([]);
       setSelectedRegistryCompany(null);
+      setRegistrySyncLog([]);
+      setLatestTaxArrears(null);
       return;
     }
 
@@ -177,6 +183,14 @@ export default function BusinessPartnersPage() {
         setForm(mapPartnerToForm(partner));
         setDuplicateWarnings([]);
         setSelectedRegistryCompany(null);
+        setLatestTaxArrears(null);
+
+        if (partner.reg_code) {
+          const syncLog = await businessRegistryApi.getPartnerSyncLog(selectedPartnerId, { limit: 10 });
+          setRegistrySyncLog(syncLog.items);
+        } else {
+          setRegistrySyncLog([]);
+        }
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -266,6 +280,26 @@ export default function BusinessPartnersPage() {
         country_code: company.countryCode || current.country_code,
       }));
       setSuccessMessage(`Autofilled partner data from Business Registry for ${company.registryCode || company.name || 'selected company'}.`);
+    });
+  };
+
+  const handleRegistryRefresh = async () => {
+    if (!selectedPartnerId) return;
+
+    await runAction('registry-refresh', async () => {
+      const result = await businessRegistryApi.refreshPartner(selectedPartnerId, {
+        include_tax_arrears: includeTaxArrearsOnRefresh,
+        request_source: 'partner_form',
+      });
+      const refreshedPartner = result.partner as PartnerRecord;
+      setSelectedPartner(refreshedPartner);
+      setForm(mapPartnerToForm(refreshedPartner));
+      setSelectedRegistryCompany(result.company);
+      setLatestTaxArrears(result.tax_arrears || null);
+      const syncLog = await businessRegistryApi.getPartnerSyncLog(selectedPartnerId, { limit: 10 });
+      setRegistrySyncLog(syncLog.items);
+      await refreshPartners(selectedPartnerId);
+      setSuccessMessage('Partner refreshed from Business Registry.');
     });
   };
 
@@ -554,31 +588,70 @@ export default function BusinessPartnersPage() {
                 )}
 
                 {!isCreatingNew && selectedPartnerId && (
-                  <div className="rounded-xl border border-slate-200 p-4">
-                    <div className="mb-3 text-sm font-semibold text-slate-900">Partner roles</div>
-                    <div className="flex flex-wrap gap-2">
-                      {roles.map((role) => (
-                        <span key={role.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                          {role.role}
-                        </span>
-                      ))}
-                      {!roles.some((role) => role.role === 'customer') && (
+                  <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="mb-3 text-sm font-semibold text-slate-900">Partner roles</div>
+                      <div className="flex flex-wrap gap-2">
+                        {roles.map((role) => (
+                          <span key={role.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                            {role.role}
+                          </span>
+                        ))}
+                        {!roles.some((role) => role.role === 'customer') && (
+                          <button
+                            onClick={() => handleAddRole('customer')}
+                            disabled={!!actionLoading}
+                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Add customer role
+                          </button>
+                        )}
+                        {!roles.some((role) => role.role === 'supplier') && (
+                          <button
+                            onClick={() => handleAddRole('supplier')}
+                            disabled={!!actionLoading}
+                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Add supplier role
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-4">
+                      <div className="mb-3 text-sm font-semibold text-slate-900">Registry refresh</div>
+                      <div className="flex flex-wrap gap-4">
+                        <label className="flex items-center gap-2 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            checked={includeTaxArrearsOnRefresh}
+                            onChange={(event) => setIncludeTaxArrearsOnRefresh(event.target.checked)}
+                          />
+                          <span>Include tax arrears check</span>
+                        </label>
                         <button
-                          onClick={() => handleAddRole('customer')}
-                          disabled={!!actionLoading}
-                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          onClick={handleRegistryRefresh}
+                          disabled={!selectedPartner?.reg_code || !!actionLoading}
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          Add customer role
+                          {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                          <span>Refresh from registry</span>
                         </button>
-                      )}
-                      {!roles.some((role) => role.role === 'supplier') && (
-                        <button
-                          onClick={() => handleAddRole('supplier')}
-                          disabled={!!actionLoading}
-                          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                        >
-                          Add supplier role
-                        </button>
+                      </div>
+
+                      <div className="mt-3 text-xs text-slate-500">
+                        {selectedPartner?.reg_code ? `Using registry code ${selectedPartner.reg_code}.` : 'Partner has no registry code yet.'}
+                      </div>
+
+                      {(latestTaxArrears || selectedPartner?.tax_arrears_status) && (
+                        <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+                          <div className="font-medium text-slate-900">Latest tax arrears status</div>
+                          <div className="mt-1 text-xs text-slate-600">
+                            Status {(latestTaxArrears?.status || selectedPartner?.tax_arrears_status || 'n/a')} ·
+                            Amount {latestTaxArrears?.arrearsAmount ?? selectedPartner?.tax_arrears_amount ?? 'n/a'} ·
+                            Note {latestTaxArrears?.note || selectedPartner?.tax_arrears_note || 'n/a'}
+                          </div>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -663,6 +736,45 @@ export default function BusinessPartnersPage() {
               )}
             </div>
           </div>
+
+          {!isCreatingNew && selectedPartnerId && (
+            <div className="card overflow-hidden">
+              <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+                <h2 className="text-base font-semibold text-slate-900">Registry sync log</h2>
+                <p className="mt-1 text-sm text-slate-500">Recent Business Registry search, autofill, refresh, and tax arrears sync events for this partner.</p>
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {registrySyncLog.length === 0 ? (
+                  <div className="p-4 text-sm text-slate-500">No registry sync events for this partner yet.</div>
+                ) : (
+                  registrySyncLog.map((item) => (
+                    <div key={item.id} className="p-4">
+                      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">
+                            {item.sync_type} · {item.status}
+                          </div>
+                          <div className="mt-1 text-xs text-slate-500">
+                            {item.request_source || 'unknown source'} · {item.registry_code || 'no registry code'} · {formatDateTime(item.performed_at)}
+                          </div>
+                          {(item.error_message || item.error_code) && (
+                            <div className="mt-2 text-xs text-red-600">
+                              {item.error_code ? `${item.error_code}: ` : ''}{item.error_message}
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          <div>Duration {item.duration_ms ?? 'n/a'} ms</div>
+                          <div>Actor {item.performed_by || 'n/a'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </div>
     </div>
@@ -789,4 +901,17 @@ function sortBankAccounts(accounts: SupplierBankAccount[]) {
     if (a.is_default !== b.is_default) return a.is_default ? -1 : 1;
     return a.created_at.localeCompare(b.created_at);
   });
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return 'n/a';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
