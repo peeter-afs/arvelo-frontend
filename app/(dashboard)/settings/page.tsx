@@ -35,6 +35,7 @@ export default function SettingsPage() {
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
   const [billingAnnualBalanceHistory, setBillingAnnualBalanceHistory] = useState<BillingAnnualBalanceHistoryItem[]>([]);
   const [billingAnnualBalanceMismatches, setBillingAnnualBalanceMismatches] = useState<BillingAnnualBalanceMismatchItem[]>([]);
+  const [billingMismatchFilter, setBillingMismatchFilter] = useState<'open' | 'resolved' | 'all'>('open');
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingMessagePreview, setBillingMessagePreview] = useState<BillingMessagePreview | null>(null);
@@ -269,6 +270,13 @@ export default function SettingsPage() {
     reminder_template_third: billingForm.reminder_template_third || null,
     annual_balance_template: billingForm.annual_balance_template || null,
   };
+
+  const visibleBillingMismatches = billingAnnualBalanceMismatches.filter((event) => {
+    const isResolved = Boolean(event.payload?.resolved_at);
+    if (billingMismatchFilter === 'open') return !isResolved;
+    if (billingMismatchFilter === 'resolved') return isResolved;
+    return true;
+  });
 
   const runBillingAction = async (key: string, fn: () => Promise<void>) => {
     setBillingAction(key);
@@ -879,14 +887,40 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-amber-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Annual balance mismatch inbox</h3>
-                        <p className="mt-1 text-xs text-slate-600">All reported balance issues are collected here so they can be reviewed from one place.</p>
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-900">Annual balance mismatch inbox</h3>
+                            <p className="mt-1 text-xs text-slate-600">All reported balance issues are collected here so they can be reviewed from one place.</p>
+                          </div>
+                          <div className="flex gap-2">
+                            {(['open', 'resolved', 'all'] as const).map((filterKey) => (
+                              <button
+                                key={filterKey}
+                                type="button"
+                                onClick={() => setBillingMismatchFilter(filterKey)}
+                                className={`h-9 rounded-lg px-3 text-xs font-medium transition-colors ${
+                                  billingMismatchFilter === filterKey
+                                    ? 'bg-slate-900 text-white'
+                                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                }`}
+                              >
+                                {filterKey === 'open' ? 'Open' : filterKey === 'resolved' ? 'Resolved' : 'All'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                       <div className="divide-y divide-slate-100">
-                        {billingAnnualBalanceMismatches.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No balance mismatches reported.</div>
+                        {visibleBillingMismatches.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">
+                            {billingMismatchFilter === 'resolved'
+                              ? 'No resolved balance mismatches.'
+                              : billingMismatchFilter === 'all'
+                                ? 'No balance mismatches reported.'
+                                : 'No open balance mismatches.'}
+                          </div>
                         ) : (
-                          billingAnnualBalanceMismatches.map((event) => (
+                          visibleBillingMismatches.map((event) => (
                             <div key={event.id} className="space-y-3 p-5">
                               <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                                 <div>
@@ -902,36 +936,44 @@ export default function SettingsPage() {
                                   </div>
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  {new Date(event.created_at).toLocaleString()}
+                                  {event.payload?.resolved_at
+                                    ? `Resolved ${new Date(event.payload.resolved_at).toLocaleString()}`
+                                    : new Date(event.created_at).toLocaleString()}
                                 </div>
                               </div>
                               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
                                 {event.payload?.note || 'No mismatch note provided.'}
                               </div>
-                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                                <input
-                                  value={mismatchResolutionNotes[event.id] || ''}
-                                  onChange={(e) => setMismatchResolutionNotes((current) => ({ ...current, [event.id]: e.target.value }))}
-                                  placeholder="Optional resolution note"
-                                  className="h-11 flex-1 rounded-lg border border-slate-200 px-4"
-                                  style={{ fontSize: '16px' }}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => void runBillingAction(`resolve-mismatch-${event.id}`, async () => {
-                                    await billingApi.resolveAnnualBalanceMismatch(event.id, {
-                                      resolution_note: mismatchResolutionNotes[event.id] || undefined,
-                                    });
-                                    setMismatchResolutionNotes((current) => ({ ...current, [event.id]: '' }));
-                                    await reloadBilling();
-                                    setSettingsSuccess('Mismatch marked resolved.');
-                                  })}
-                                  disabled={billingAction !== null}
-                                  className="h-11 px-5 rounded-lg border border-emerald-200 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
-                                >
-                                  {billingAction === `resolve-mismatch-${event.id}` ? 'Saving…' : 'Mark Resolved'}
-                                </button>
-                              </div>
+                              {event.payload?.resolved_at ? (
+                                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+                                  Resolved{event.payload?.resolution_note ? `: ${event.payload.resolution_note}` : '.'}
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                                  <input
+                                    value={mismatchResolutionNotes[event.id] || ''}
+                                    onChange={(e) => setMismatchResolutionNotes((current) => ({ ...current, [event.id]: e.target.value }))}
+                                    placeholder="Optional resolution note"
+                                    className="h-11 flex-1 rounded-lg border border-slate-200 px-4"
+                                    style={{ fontSize: '16px' }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => void runBillingAction(`resolve-mismatch-${event.id}`, async () => {
+                                      await billingApi.resolveAnnualBalanceMismatch(event.id, {
+                                        resolution_note: mismatchResolutionNotes[event.id] || undefined,
+                                      });
+                                      setMismatchResolutionNotes((current) => ({ ...current, [event.id]: '' }));
+                                      await reloadBilling();
+                                      setSettingsSuccess('Mismatch marked resolved.');
+                                    })}
+                                    disabled={billingAction !== null}
+                                    className="h-11 px-5 rounded-lg border border-emerald-200 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
+                                  >
+                                    {billingAction === `resolve-mismatch-${event.id}` ? 'Saving…' : 'Mark Resolved'}
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ))
                         )}
