@@ -36,6 +36,45 @@ export type BankImportPreviewRow = {
   parsed_payload: Record<string, any>;
 };
 
+export type BankMatchCandidate = {
+  invoice_id: string;
+  invoice_number?: string;
+  type: string;
+  status: string;
+  invoice_date: string;
+  due_date?: string | null;
+  total: number;
+  open_amount: number;
+  currency: string;
+  partner_id?: string | null;
+  partner_name?: string | null;
+  partner_reg_code?: string | null;
+  partner_vat_number?: string | null;
+  partner_is_registry_linked?: boolean;
+  match_reasons: string[];
+  score: number;
+};
+
+export type BankReviewQueueItem = {
+  transaction_id: string;
+  tx_date: string;
+  value_date?: string | null;
+  amount: number;
+  currency: string;
+  counterparty_name?: string | null;
+  counterparty_account?: string | null;
+  description?: string | null;
+  reference?: string | null;
+  matched_status: string;
+  review_state?: string | null;
+  review_note?: string | null;
+  reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  is_reconciled: boolean;
+  auto_match_ready: boolean;
+  top_candidates: BankMatchCandidate[];
+};
+
 export const bankingApi = {
   async createImportJob(payload: {
     file_name: string;
@@ -62,6 +101,62 @@ export const bankingApi = {
       job: BankImportJob;
       summary: Record<string, any>;
     }>>(`/api/banking/import-jobs/${id}/commit`);
+    return response.data.data;
+  },
+
+  async getReviewQueue(params?: {
+    limit?: number;
+    offset?: number;
+    auto_matchable_only?: boolean;
+    review_state?: 'pending' | 'reviewed';
+  }) {
+    const response = await apiClient.get<ApiResponse<{
+      items: BankReviewQueueItem[];
+      total: number;
+    }>>('/api/banking/transactions/review-queue', { params });
+    return response.data.data;
+  },
+
+  async suggestMatches(id: string) {
+    const response = await apiClient.get<ApiResponse<{
+      transaction_id: string;
+      candidates: BankMatchCandidate[];
+    }>>(`/api/banking/transactions/${id}/suggest-matches`);
+    return response.data.data;
+  },
+
+  async autoMatch(id: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/auto-match`);
+    return response.data.data;
+  },
+
+  async reviewTransaction(id: string, payload: { review_state?: 'pending' | 'reviewed'; note?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/review`, payload);
+    return response.data.data;
+  },
+
+  async ignoreTransaction(id: string, payload?: { reason?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/ignore`, payload || {});
+    return response.data.data;
+  },
+
+  async matchInvoice(id: string, payload: { invoice_id: string; reference?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/match-invoice`, payload);
+    return response.data.data;
+  },
+
+  async matchInvoices(id: string, payload: { allocations: Array<{ invoice_id: string; amount?: number }>; reference?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/match-invoices`, payload);
+    return response.data.data;
+  },
+
+  async manualPost(id: string, payload: { counter_account_id: string; description?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/manual-post`, payload);
+    return response.data.data;
+  },
+
+  async unmatch(id: string, payload?: { reason?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/unmatch`, payload || {});
     return response.data.data;
   },
 };

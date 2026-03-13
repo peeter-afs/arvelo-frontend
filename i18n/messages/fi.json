@@ -32,6 +32,7 @@
     "partners": "Kumppanit",
     "openingBalances": "Avaussaldot",
     "bankImport": "Pankin tuonti",
+    "bankReview": "Pankkitapahtumien tarkistus",
     "accounts": "Tilit",
     "journal": "Päiväkirja",
     "accountCode": "Tilikoodi",
