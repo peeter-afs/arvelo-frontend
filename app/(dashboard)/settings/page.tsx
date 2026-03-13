@@ -1,12 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { getErrorMessage } from '@/lib/api/client';
+import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 
 export default function SettingsPage() {
-  const { user, tenant } = useAuthStore();
+  const { user, tenant, role } = useAuthStore();
   const [activeTab, setActiveTab] = useState('company');
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+  const [registrySettings, setRegistrySettings] = useState<BusinessRegistrySettings | null>(null);
+  const [registryForm, setRegistryForm] = useState({
+    enabled: false,
+    provider_type: 'rik_soap_v6',
+    username: '',
+    password: '',
+    service_url: 'https://ariregxmlv6.rik.ee/',
+    search_path: 'ettevotjaRekvisiidid_v1',
+    company_path: 'ettevotjaRekvisiidid_v1',
+    test_path: '?wsdl',
+  });
+  const [registryLoading, setRegistryLoading] = useState(false);
+  const [registrySaving, setRegistrySaving] = useState(false);
+  const [registryTesting, setRegistryTesting] = useState(false);
+  const canManageRegistry = role === 'owner' || role === 'admin';
 
   const tabs = [
     { id: 'company', label: 'Company', icon: Building, category: 'organization' },
@@ -15,7 +34,80 @@ export default function SettingsPage() {
     { id: 'notifications', label: 'Notifications', icon: Bell, category: 'preferences' },
     { id: 'security', label: 'Security', icon: Shield, category: 'account' },
     { id: 'localization', label: 'Localization', icon: Globe, category: 'preferences' },
+    { id: 'business-registry', label: 'Business Registry', icon: Settings, category: 'organization' },
   ];
+
+  useEffect(() => {
+    if (activeTab !== 'business-registry' || !canManageRegistry) {
+      return;
+    }
+
+    const load = async () => {
+      setRegistryLoading(true);
+      setSettingsError(null);
+      try {
+        const settings = await businessRegistryApi.getSettings();
+        setRegistrySettings(settings);
+        setRegistryForm({
+          enabled: settings.enabled,
+          provider_type: settings.provider_type || 'rik_soap_v6',
+          username: '',
+          password: '',
+          service_url: settings.service_url || 'https://ariregxmlv6.rik.ee/',
+          search_path: settings.search_path || 'ettevotjaRekvisiidid_v1',
+          company_path: settings.company_path || 'ettevotjaRekvisiidid_v1',
+          test_path: settings.test_path || '?wsdl',
+        });
+      } catch (error) {
+        setSettingsError(getErrorMessage(error));
+      } finally {
+        setRegistryLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeTab, canManageRegistry]);
+
+  const saveRegistrySettings = async () => {
+    setRegistrySaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const updated = await businessRegistryApi.updateSettings({
+        enabled: registryForm.enabled,
+        provider_type: registryForm.provider_type,
+        username: registryForm.username || undefined,
+        password: registryForm.password || undefined,
+        service_url: registryForm.service_url,
+        search_path: registryForm.search_path,
+        company_path: registryForm.company_path,
+        test_path: registryForm.test_path,
+      });
+      setRegistrySettings(updated);
+      setRegistryForm((current) => ({ ...current, username: '', password: '' }));
+      setSettingsSuccess('Business Registry settings saved.');
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setRegistrySaving(false);
+    }
+  };
+
+  const testRegistrySettings = async () => {
+    setRegistryTesting(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await businessRegistryApi.testSettings();
+      setSettingsSuccess(`Connection test ${result.status} at ${new Date(result.tested_at).toLocaleString()}.`);
+      const refreshed = await businessRegistryApi.getSettings();
+      setRegistrySettings(refreshed);
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setRegistryTesting(false);
+    }
+  };
 
   return (
     <div>
@@ -75,6 +167,17 @@ export default function SettingsPage() {
         {/* Content Area */}
         <div className="flex-1">
           <div className="card rounded-xl p-6 md:p-8">
+            {settingsError && (
+              <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                {settingsError}
+              </div>
+            )}
+            {settingsSuccess && (
+              <div className="mb-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+                {settingsSuccess}
+              </div>
+            )}
+
             {activeTab === 'company' && (
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">Company Information</h2>
@@ -299,9 +402,153 @@ export default function SettingsPage() {
                 </form>
               </div>
             )}
+
+            {activeTab === 'business-registry' && (
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">Business Registry Integration</h2>
+                <p className="text-sm text-slate-500 mb-6">
+                  Configure the backend-only Estonian Business Registry integration. Credentials remain masked after save.
+                </p>
+
+                {!canManageRegistry ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    Only owner or admin users can manage Business Registry integration settings.
+                  </div>
+                ) : registryLoading ? (
+                  <div className="text-sm text-slate-500">Loading integration settings…</div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4">
+                        <input
+                          type="checkbox"
+                          checked={registryForm.enabled}
+                          onChange={(event) => setRegistryForm((current) => ({ ...current, enabled: event.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">Integration enabled</div>
+                          <div className="text-xs text-slate-500">Turns authenticated registry lookup on or off.</div>
+                        </div>
+                      </label>
+
+                      <div className="rounded-lg border border-slate-200 p-4">
+                        <div className="text-sm font-medium text-slate-900">Stored credentials</div>
+                        <div className="mt-2 text-xs text-slate-500">
+                          Username {registrySettings?.username_masked || 'not set'} · Password {registrySettings?.has_password ? 'stored' : 'not set'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <Field
+                        label="Provider type"
+                        value={registryForm.provider_type}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, provider_type: value }))}
+                      />
+                      <Field
+                        label="Service URL"
+                        value={registryForm.service_url}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, service_url: value }))}
+                      />
+                      <Field
+                        label="Search path"
+                        value={registryForm.search_path}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, search_path: value }))}
+                      />
+                      <Field
+                        label="Company path"
+                        value={registryForm.company_path}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, company_path: value }))}
+                      />
+                      <Field
+                        label="Test path"
+                        value={registryForm.test_path}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, test_path: value }))}
+                      />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <Field
+                        label={`Username ${registrySettings?.username_masked ? `(current ${registrySettings.username_masked})` : ''}`}
+                        value={registryForm.username}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, username: value }))}
+                        placeholder="Leave blank to keep existing username"
+                      />
+                      <Field
+                        label={`Password ${registrySettings?.has_password ? '(stored)' : ''}`}
+                        value={registryForm.password}
+                        onChange={(value) => setRegistryForm((current) => ({ ...current, password: value }))}
+                        placeholder="Leave blank to keep existing password"
+                        type="password"
+                      />
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <div className="font-medium text-slate-900">Status</div>
+                      <div className="mt-2 space-y-1 text-xs text-slate-600">
+                        <div>Last test status: {registrySettings?.last_test_status || 'not run'}</div>
+                        <div>Last test at: {registrySettings?.last_test_at ? new Date(registrySettings.last_test_at).toLocaleString() : 'n/a'}</div>
+                        <div>Last error: {registrySettings?.last_error_message || 'none'}</div>
+                        <div>Updated at: {registrySettings?.updated_at ? new Date(registrySettings.updated_at).toLocaleString() : 'n/a'}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={saveRegistrySettings}
+                        disabled={registrySaving}
+                        className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                      >
+                        {registrySaving ? 'Saving…' : 'Save Settings'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={testRegistrySettings}
+                        disabled={registryTesting}
+                        className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                      >
+                        {registryTesting ? 'Testing…' : 'Test Connection'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+        style={{ fontSize: '16px' }}
+      />
     </div>
   );
 }
