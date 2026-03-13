@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -25,7 +26,30 @@ export default function SettingsPage() {
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registrySaving, setRegistrySaving] = useState(false);
   const [registryTesting, setRegistryTesting] = useState(false);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingSaving, setBillingSaving] = useState(false);
+  const [billingAction, setBillingAction] = useState<string | null>(null);
+  const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
+  const [billingSubscription, setBillingSubscription] = useState<BillingSubscription | null>(null);
+  const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
+  const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
+  const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
+  const [billingForm, setBillingForm] = useState({
+    plan_id: '',
+    status: 'active',
+    billing_day: '1',
+    unit_price: '49',
+    quantity: '1',
+    discount_percent: '0',
+    vat_rate: '22',
+    currency: 'EUR',
+    current_period_start: new Date().toISOString().slice(0, 10),
+    current_period_end: new Date().toISOString().slice(0, 10),
+    next_invoice_date: new Date().toISOString().slice(0, 10),
+    cancel_at_period_end: false,
+  });
   const canManageRegistry = role === 'owner' || role === 'admin';
+  const canManageBilling = role === 'owner' || role === 'admin';
 
   const tabs = [
     { id: 'company', label: 'Company', icon: Building, category: 'organization' },
@@ -36,6 +60,45 @@ export default function SettingsPage() {
     { id: 'localization', label: 'Localization', icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: 'Business Registry', icon: Settings, category: 'organization' },
   ];
+
+  useEffect(() => {
+    if (activeTab !== 'billing' || !canManageBilling) {
+      return;
+    }
+
+    const load = async () => {
+      setBillingLoading(true);
+      setSettingsError(null);
+      try {
+        const overview = await billingApi.getOverview();
+        setBillingPlans(overview.plans);
+        setBillingSubscription(overview.subscription);
+        setBillingInvoices(overview.invoices);
+        setBillingEntitlement(overview.entitlement);
+        setBillingSettingsState(overview.settings);
+        setBillingForm({
+          plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
+          status: overview.subscription?.status || 'active',
+          billing_day: String(overview.subscription?.billing_day || 1),
+          unit_price: String(overview.subscription?.unit_price || 49),
+          quantity: String(overview.subscription?.quantity || 1),
+          discount_percent: String(overview.subscription?.discount_percent || 0),
+          vat_rate: String(overview.subscription?.vat_rate ?? overview.settings?.vat_rate ?? 22),
+          currency: overview.subscription?.currency || overview.settings?.currency || tenant?.base_currency || 'EUR',
+          current_period_start: overview.subscription?.current_period_start || new Date().toISOString().slice(0, 10),
+          current_period_end: overview.subscription?.current_period_end || new Date().toISOString().slice(0, 10),
+          next_invoice_date: overview.subscription?.next_invoice_date || new Date().toISOString().slice(0, 10),
+          cancel_at_period_end: Boolean(overview.subscription?.cancel_at_period_end),
+        });
+      } catch (error) {
+        setSettingsError(getErrorMessage(error));
+      } finally {
+        setBillingLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeTab, canManageBilling, tenant?.base_currency]);
 
   useEffect(() => {
     if (activeTab !== 'business-registry' || !canManageRegistry) {
@@ -106,6 +169,57 @@ export default function SettingsPage() {
       setSettingsError(getErrorMessage(error));
     } finally {
       setRegistryTesting(false);
+    }
+  };
+
+  const reloadBilling = async () => {
+    const overview = await billingApi.getOverview();
+    setBillingPlans(overview.plans);
+    setBillingSubscription(overview.subscription);
+    setBillingInvoices(overview.invoices);
+    setBillingEntitlement(overview.entitlement);
+    setBillingSettingsState(overview.settings);
+  };
+
+  const saveBillingSubscription = async () => {
+    setBillingSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await billingApi.upsertSubscription({
+        plan_id: billingForm.plan_id,
+        status: billingForm.status,
+        billing_day: Number(billingForm.billing_day || 1),
+        unit_price: Number(billingForm.unit_price || 0),
+        quantity: Number(billingForm.quantity || 1),
+        discount_percent: Number(billingForm.discount_percent || 0),
+        vat_rate: billingForm.vat_rate === '' ? null : Number(billingForm.vat_rate),
+        currency: billingForm.currency,
+        current_period_start: billingForm.current_period_start,
+        current_period_end: billingForm.current_period_end,
+        next_invoice_date: billingForm.next_invoice_date,
+        cancel_at_period_end: billingForm.cancel_at_period_end,
+      });
+      setBillingSubscription(result.subscription);
+      await reloadBilling();
+      setSettingsSuccess('Billing subscription saved.');
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setBillingSaving(false);
+    }
+  };
+
+  const runBillingAction = async (key: string, fn: () => Promise<void>) => {
+    setBillingAction(key);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      await fn();
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setBillingAction(null);
     }
   };
 
@@ -290,12 +404,174 @@ export default function SettingsPage() {
             {activeTab === 'billing' && (
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">Billing & Subscription</h2>
-                <p className="text-sm text-slate-500 mb-6">Manage your subscription and payment methods</p>
-                <div className="rounded-lg bg-slate-50 border border-slate-200 p-6 text-center">
-                  <CreditCard className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-                  <p className="text-sm text-slate-600">Billing features coming soon</p>
-                  <p className="text-xs text-slate-500 mt-1">We're working on payment integration</p>
-                </div>
+                <p className="text-sm text-slate-500 mb-6">Manage the recurring SaaS billing subscription, invoices, and entitlement state.</p>
+
+                {!canManageBilling ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    Only owner or admin users can manage billing.
+                  </div>
+                ) : billingLoading ? (
+                  <div className="text-sm text-slate-500">Loading billing configuration…</div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Access State</div>
+                        <div className="mt-2 text-lg font-semibold text-slate-900">{billingEntitlement?.access_state || 'active'}</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Invoice Next No</div>
+                        <div className="mt-2 text-lg font-semibold text-slate-900">{billingSettingsState?.invoice_next_no ?? 1}</div>
+                      </div>
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Open Billing Invoices</div>
+                        <div className="mt-2 text-lg font-semibold text-slate-900">
+                          {billingInvoices.filter((invoice) => invoice.status !== 'paid' && invoice.status !== 'void').length}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-slate-900">Subscription</h3>
+                          <p className="mt-1 text-sm text-slate-500">One recurring subscription per tenant in the current MVP.</p>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <BillingField label="Plan">
+                          <select
+                            value={billingForm.plan_id}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, plan_id: event.target.value }))}
+                            className="w-full h-11 px-4 border border-slate-200 rounded-lg"
+                            style={{ fontSize: '16px' }}
+                          >
+                            <option value="">Select plan</option>
+                            {billingPlans.map((plan) => (
+                              <option key={plan.id} value={plan.id}>{plan.code} - {plan.name}</option>
+                            ))}
+                          </select>
+                        </BillingField>
+                        <BillingField label="Status">
+                          <select
+                            value={billingForm.status}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, status: event.target.value }))}
+                            className="w-full h-11 px-4 border border-slate-200 rounded-lg"
+                            style={{ fontSize: '16px' }}
+                          >
+                            <option value="active">Active</option>
+                            <option value="paused">Paused</option>
+                            <option value="canceled">Canceled</option>
+                          </select>
+                        </BillingField>
+                        <BillingField label="Billing day">
+                          <input value={billingForm.billing_day} onChange={(event) => setBillingForm((current) => ({ ...current, billing_day: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Currency">
+                          <input value={billingForm.currency} onChange={(event) => setBillingForm((current) => ({ ...current, currency: event.target.value.toUpperCase() }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Unit price">
+                          <input value={billingForm.unit_price} onChange={(event) => setBillingForm((current) => ({ ...current, unit_price: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Quantity">
+                          <input value={billingForm.quantity} onChange={(event) => setBillingForm((current) => ({ ...current, quantity: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Discount %">
+                          <input value={billingForm.discount_percent} onChange={(event) => setBillingForm((current) => ({ ...current, discount_percent: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="VAT rate">
+                          <input value={billingForm.vat_rate} onChange={(event) => setBillingForm((current) => ({ ...current, vat_rate: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Current period start">
+                          <input type="date" value={billingForm.current_period_start} onChange={(event) => setBillingForm((current) => ({ ...current, current_period_start: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Current period end">
+                          <input type="date" value={billingForm.current_period_end} onChange={(event) => setBillingForm((current) => ({ ...current, current_period_end: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Next invoice date">
+                          <input type="date" value={billingForm.next_invoice_date} onChange={(event) => setBillingForm((current) => ({ ...current, next_invoice_date: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <label className="flex items-center gap-3 pt-8">
+                          <input type="checkbox" checked={billingForm.cancel_at_period_end} onChange={(event) => setBillingForm((current) => ({ ...current, cancel_at_period_end: event.target.checked }))} />
+                          <span className="text-sm text-slate-700">Cancel at period end</span>
+                        </label>
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={saveBillingSubscription}
+                          disabled={billingSaving}
+                          className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingSaving ? 'Saving…' : 'Save Subscription'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('generate', async () => {
+                            const result = await billingApi.generateInvoices();
+                            await reloadBilling();
+                            setSettingsSuccess(`Generated ${result.created_count} billing invoice(s).`);
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'generate' ? 'Generating…' : 'Generate Invoices'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('entitlements', async () => {
+                            const result = await billingApi.recomputeEntitlements();
+                            await reloadBilling();
+                            setSettingsSuccess(`Entitlements recomputed: ${result.entitlement.access_state}.`);
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'entitlements' ? 'Recomputing…' : 'Recompute Entitlements'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Billing invoices</h3>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingInvoices.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No billing invoices generated yet.</div>
+                        ) : (
+                          billingInvoices.map((invoice) => (
+                            <div key={invoice.id} className="flex flex-col gap-3 p-5 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-slate-900">#{invoice.invoice_no} · {invoice.status}</div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  {invoice.issue_date} to {invoice.period_end} · due {invoice.due_date}
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="font-mono text-sm text-slate-900">{Number(invoice.total || 0).toFixed(2)} {invoice.currency}</div>
+                                {invoice.status !== 'paid' && invoice.status !== 'void' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void runBillingAction(`pay-${invoice.id}`, async () => {
+                                      await billingApi.markInvoicePaid(invoice.id);
+                                      await reloadBilling();
+                                      setSettingsSuccess(`Billing invoice #${invoice.invoice_no} marked paid.`);
+                                    })}
+                                    disabled={billingAction !== null}
+                                    className="h-9 px-4 border border-emerald-200 rounded-lg hover:bg-emerald-50 text-sm text-emerald-700 font-medium transition-colors disabled:opacity-50"
+                                  >
+                                    {billingAction === `pay-${invoice.id}` ? 'Saving…' : 'Mark Paid'}
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -520,6 +796,15 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function BillingField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-sm font-medium text-slate-700 mb-1.5">{label}</div>
+      {children}
+    </label>
   );
 }
 

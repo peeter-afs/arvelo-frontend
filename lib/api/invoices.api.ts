@@ -151,7 +151,7 @@ export const invoicesApi = {
     return response.data.data;
   },
 
-  async exportInvoice(id: string, format: 'html' | 'json' = 'html') {
+  async exportInvoice(id: string, format: 'pdf' | 'html' | 'json' = 'pdf') {
     const response = await apiClient.get<Blob>(`/api/invoices/${id}/export`, {
       params: { format },
       responseType: 'blob',

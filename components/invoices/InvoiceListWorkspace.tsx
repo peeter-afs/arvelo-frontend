@@ -240,7 +240,7 @@ export default function InvoiceListWorkspace({
     });
   };
 
-  const handleExport = async (format: 'html' | 'json') => {
+  const handleExport = async (format: 'pdf' | 'html' | 'json') => {
     if (!selectedInvoiceId) return;
     await runAction(`export-${format}`, async () => {
       const result = await invoicesApi.exportInvoice(selectedInvoiceId, format);
@@ -423,13 +423,20 @@ export default function InvoiceListWorkspace({
                       <span>Edit draft</span>
                     </Link>
                   )}
+                  <Link
+                    href={`/invoices/${selectedInvoiceDetail.invoice.id}/preview`}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Preview PDF</span>
+                  </Link>
                   <button
-                    onClick={() => void handleExport('html')}
+                    onClick={() => void handleExport('pdf')}
                     disabled={!!actionLoading}
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
-                    {actionLoading === 'export-html' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>Export HTML</span>
+                    {actionLoading === 'export-pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                    <span>Export PDF</span>
                   </button>
                   <button
                     onClick={() => void handleExport('json')}
