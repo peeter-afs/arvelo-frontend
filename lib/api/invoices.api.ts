@@ -24,6 +24,13 @@ export type InvoiceListItem = {
   journal_entry_id?: string | null;
   created_at: string;
   updated_at: string;
+  approval_requested_at?: string | null;
+  approval_requested_by_user_id?: string | null;
+  approved_at?: string | null;
+  approved_by_user_id?: string | null;
+  rejected_at?: string | null;
+  rejected_by_user_id?: string | null;
+  rejection_reason?: string | null;
 };
 
 export const invoicesApi = {
@@ -34,6 +41,46 @@ export const invoicesApi = {
     offset?: number;
   }) {
     const response = await apiClient.get<ApiResponse<InvoiceListItem[]>>('/api/invoices', { params });
+    return response.data.data;
+  },
+
+  async getInvoice(id: string) {
+    const response = await apiClient.get<ApiResponse<{
+      invoice: InvoiceListItem;
+      lines: Array<{
+        id: string;
+        description: string;
+        quantity: number;
+        unit_price: number | string;
+        discount_percent?: number | string | null;
+        tax_rate?: number | string | null;
+        line_total: number | string;
+        account_id?: string | null;
+        meta?: Record<string, any> | null;
+      }>;
+    }>>(`/api/invoices/${id}`);
+    return response.data.data;
+  },
+
+  async submitApproval(id: string) {
+    const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem }>>(`/api/invoices/${id}/submit-approval`);
+    return response.data.data;
+  },
+
+  async approve(id: string) {
+    const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem }>>(`/api/invoices/${id}/approve`);
+    return response.data.data;
+  },
+
+  async reject(id: string, reason?: string) {
+    const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem }>>(`/api/invoices/${id}/reject`, {
+      reason,
+    });
+    return response.data.data;
+  },
+
+  async confirm(id: string) {
+    const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem; journal_entry_id: string }>>(`/api/invoices/${id}/confirm`);
     return response.data.data;
   },
 };
