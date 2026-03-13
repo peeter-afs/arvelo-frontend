@@ -33,6 +33,7 @@
     "openingBalances": "Opening Balances",
     "bankImport": "Bank Import",
     "bankReview": "Bank Review",
+    "paymentBatches": "Payment Batches",
     "accounts": "Accounts",
     "journal": "Journal",
     "accountCode": "Account Code",

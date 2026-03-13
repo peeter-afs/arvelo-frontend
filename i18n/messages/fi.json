@@ -33,6 +33,7 @@
     "openingBalances": "Avaussaldot",
     "bankImport": "Pankin tuonti",
     "bankReview": "Pankkitapahtumien tarkistus",
+    "paymentBatches": "Maksuerät",
     "accounts": "Tilit",
     "journal": "Päiväkirja",
     "accountCode": "Tilikoodi",
