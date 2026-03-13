@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -36,6 +36,7 @@ export default function SettingsPage() {
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
   const [billingAnnualBalanceHistory, setBillingAnnualBalanceHistory] = useState<BillingAnnualBalanceHistoryItem[]>([]);
   const [billingAnnualBalanceMismatches, setBillingAnnualBalanceMismatches] = useState<BillingAnnualBalanceMismatchItem[]>([]);
+  const [billingAnnualBalanceNotifications, setBillingAnnualBalanceNotifications] = useState<BillingAnnualBalanceNotificationItem[]>([]);
   const [billingMismatchFilter, setBillingMismatchFilter] = useState<'open' | 'resolved' | 'all'>('open');
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
@@ -104,6 +105,7 @@ export default function SettingsPage() {
         setBillingReminderHistory(overview.reminder_history || []);
         setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
         setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
+        setBillingAnnualBalanceNotifications(overview.annual_balance_notifications || []);
         setBillingEntitlement(overview.entitlement);
         setBillingSettingsState(overview.settings);
         setBillingForm({
@@ -229,6 +231,7 @@ export default function SettingsPage() {
     setBillingReminderHistory(overview.reminder_history || []);
     setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
     setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
+    setBillingAnnualBalanceNotifications(overview.annual_balance_notifications || []);
     setBillingEntitlement(overview.entitlement);
     setBillingSettingsState(overview.settings);
   };
@@ -987,9 +990,18 @@ export default function SettingsPage() {
                                       ) : 'No response'}
                                     </td>
                                     <td className="px-4 py-3 text-slate-700">
-                                      {row.resolved_at
-                                        ? `${new Date(row.resolved_at).toLocaleString()}${row.resolution_note ? ` - ${row.resolution_note}` : ''}`
-                                        : '-'}
+                                      <div className="space-y-1">
+                                        <div>
+                                          {row.resolved_at
+                                            ? `${new Date(row.resolved_at).toLocaleString()}${row.resolution_note ? ` - ${row.resolution_note}` : ''}`
+                                            : '-'}
+                                        </div>
+                                        <div className="text-xs text-slate-500">
+                                          Notification: {row.notification_status || 'not recorded'}
+                                          {row.notified_internal_emails?.length ? ` · ${row.notified_internal_emails.join(', ')}` : ''}
+                                          {row.notification_error_message ? ` · ${row.notification_error_message}` : ''}
+                                        </div>
+                                      </div>
                                     </td>
                                   </tr>
                                 ))}
@@ -1091,6 +1103,44 @@ export default function SettingsPage() {
                                     {billingAction === `pay-${invoice.id}` ? 'Saving…' : 'Mark Paid'}
                                   </button>
                                 )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Internal notification status</h3>
+                        <p className="mt-1 text-xs text-slate-600">Latest internal alerts sent when customers report annual balance mismatches.</p>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingAnnualBalanceNotifications.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No internal annual balance notifications recorded.</div>
+                        ) : (
+                          billingAnnualBalanceNotifications.map((event) => (
+                            <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-slate-900">
+                                  {event.payload?.status === 'sent'
+                                    ? 'Internal notification sent'
+                                    : event.payload?.status === 'failed'
+                                      ? 'Internal notification failed'
+                                      : 'Internal notification skipped'}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  As of {event.payload?.reference_date || 'unknown'} · customer {event.payload?.recipient || 'unknown'}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  {event.payload?.notified_internal_emails?.length
+                                    ? event.payload.notified_internal_emails.join(', ')
+                                    : 'No internal recipients'}
+                                  {event.payload?.error_message ? ` · ${event.payload.error_message}` : ''}
+                                </div>
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {new Date(event.created_at).toLocaleString()}
                               </div>
                             </div>
                           ))
