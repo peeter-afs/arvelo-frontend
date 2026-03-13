@@ -38,6 +38,7 @@ export default function SettingsPage() {
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingMessagePreview, setBillingMessagePreview] = useState<BillingMessagePreview | null>(null);
+  const [mismatchResolutionNotes, setMismatchResolutionNotes] = useState<Record<string, string>>({});
   const [billingForm, setBillingForm] = useState({
     bill_to_name: '',
     bill_to_registry_code: '',
@@ -906,6 +907,30 @@ export default function SettingsPage() {
                               </div>
                               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
                                 {event.payload?.note || 'No mismatch note provided.'}
+                              </div>
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                                <input
+                                  value={mismatchResolutionNotes[event.id] || ''}
+                                  onChange={(e) => setMismatchResolutionNotes((current) => ({ ...current, [event.id]: e.target.value }))}
+                                  placeholder="Optional resolution note"
+                                  className="h-11 flex-1 rounded-lg border border-slate-200 px-4"
+                                  style={{ fontSize: '16px' }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => void runBillingAction(`resolve-mismatch-${event.id}`, async () => {
+                                    await billingApi.resolveAnnualBalanceMismatch(event.id, {
+                                      resolution_note: mismatchResolutionNotes[event.id] || undefined,
+                                    });
+                                    setMismatchResolutionNotes((current) => ({ ...current, [event.id]: '' }));
+                                    await reloadBilling();
+                                    setSettingsSuccess('Mismatch marked resolved.');
+                                  })}
+                                  disabled={billingAction !== null}
+                                  className="h-11 px-5 rounded-lg border border-emerald-200 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
+                                >
+                                  {billingAction === `resolve-mismatch-${event.id}` ? 'Saving…' : 'Mark Resolved'}
+                                </button>
                               </div>
                             </div>
                           ))

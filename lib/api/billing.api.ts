@@ -126,6 +126,9 @@ export type BillingAnnualBalanceMismatchItem = {
     send_event_id?: string;
     decision?: 'mismatch';
     note?: string;
+    resolved_at?: string;
+    resolved_by_user_id?: string;
+    resolution_note?: string | null;
   } | null;
   sent_payload?: {
     recipient?: string;
@@ -222,6 +225,11 @@ export const billingApi = {
       skipped_reason?: string;
       balance?: BillingMessagePreview['balance'];
     }>>('/api/billing/jobs/send-annual-balance', payload || {});
+    return response.data.data;
+  },
+
+  async resolveAnnualBalanceMismatch(id: string, payload?: { resolution_note?: string }) {
+    const response = await apiClient.post<ApiResponse<{ mismatch: BillingAnnualBalanceMismatchItem }>>(`/api/billing/annual-balance-mismatches/${id}/resolve`, payload || {});
     return response.data.data;
   },
 
