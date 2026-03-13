@@ -55,6 +55,7 @@
   "invoices": {
     "title": "Invoices",
     "description": "Manage your sales invoices and billing",
+    "purchaseImports": "Purchase Imports",
     "invoiceNumber": "Invoice Number",
     "customer": "Customer",
     "status": "Status",

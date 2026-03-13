@@ -33,11 +33,12 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const { isCollapsed, toggleSidebar } = useSidebarStore();
   const t = useTranslations('navigation');
   const tAccounting = useTranslations('accounting');
+  const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
   const tCommon = useTranslations('common');
 
   // State for expandable sections
-  const [expandedSections, setExpandedSections] = useState<string[]>(['accounting', 'reports']);
+  const [expandedSections, setExpandedSections] = useState<string[]>(['accounting', 'invoices', 'reports']);
 
   const navigation = [
     { name: t('dashboard'), href: '/', icon: Home },
@@ -52,7 +53,15 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tAccounting('openingBalances'), href: '/accounting/opening-balances' },
       ]
     },
-    { name: t('invoices'), href: '/invoices', icon: FileText },
+    {
+      id: 'invoices',
+      name: t('invoices'),
+      icon: FileText,
+      children: [
+        { name: tInvoices('title'), href: '/invoices' },
+        { name: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
+      ]
+    },
     {
       id: 'reports',
       name: t('reports'),

@@ -55,6 +55,7 @@
   "invoices": {
     "title": "Fakturor",
     "description": "Hantera dina försäljningsfakturor och fakturering",
+    "purchaseImports": "Import av leverantörsfakturor",
     "invoiceNumber": "Fakturanummer",
     "customer": "Kund",
     "status": "Status",

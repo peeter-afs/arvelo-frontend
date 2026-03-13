@@ -55,6 +55,7 @@
   "invoices": {
     "title": "Laskut",
     "description": "Hallitse myyntilaskuja ja laskutusta",
+    "purchaseImports": "Ostolaskujen tuonti",
     "invoiceNumber": "Laskunumero",
     "customer": "Asiakas",
     "status": "Tila",

@@ -55,6 +55,7 @@
   "invoices": {
     "title": "Arved",
     "description": "Halda müügiarved ja arveldust",
+    "purchaseImports": "Ostuarvete import",
     "invoiceNumber": "Arve number",
     "customer": "Klient",
     "status": "Olek",
