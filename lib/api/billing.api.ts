@@ -78,6 +78,24 @@ export type BillingSettings = {
   reminder_weekday: number;
   reminder_frequency_days: number;
   reminder_start_after_days: number;
+  reminder_template_first?: string | null;
+  reminder_template_second?: string | null;
+  reminder_template_third?: string | null;
+};
+
+export type BillingReminderHistoryItem = {
+  id: string;
+  tenant_id: string;
+  type: string;
+  payload?: {
+    billing_invoice_id?: string;
+    recipient?: string;
+    invoice_no?: string | number;
+    due_date?: string;
+    reminder_index?: number;
+    template_kind?: 'first' | 'second' | 'third';
+  } | null;
+  created_at: string;
 };
 
 export const billingApi = {
@@ -88,6 +106,7 @@ export const billingApi = {
       subscription: BillingSubscription | null;
       plans: BillingPlan[];
       invoices: BillingInvoice[];
+      reminder_history: BillingReminderHistoryItem[];
     }>>('/api/billing/overview');
     return response.data.data;
   },

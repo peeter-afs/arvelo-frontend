@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [billingSubscription, setBillingSubscription] = useState<BillingSubscription | null>(null);
   const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
+  const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingForm, setBillingForm] = useState({
@@ -45,6 +46,9 @@ export default function SettingsPage() {
     reminder_weekday: '2',
     reminder_frequency_days: '7',
     reminder_start_after_days: '7',
+    reminder_template_first: 'Hello {{bill_to_name}}, this is a gentle reminder that invoice #{{invoice_no}} for {{total}} was due on {{due_date}}.',
+    reminder_template_second: 'Reminder {{reminder_index}}: invoice #{{invoice_no}} for {{total}} is still unpaid. The due date was {{due_date}}.',
+    reminder_template_third: 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
     plan_id: '',
     status: 'active',
     billing_day: '1',
@@ -84,6 +88,7 @@ export default function SettingsPage() {
         setBillingPlans(overview.plans);
         setBillingSubscription(overview.subscription);
         setBillingInvoices(overview.invoices);
+        setBillingReminderHistory(overview.reminder_history || []);
         setBillingEntitlement(overview.entitlement);
         setBillingSettingsState(overview.settings);
         setBillingForm({
@@ -97,6 +102,9 @@ export default function SettingsPage() {
           reminder_weekday: String(overview.settings?.reminder_weekday || 2),
           reminder_frequency_days: String(overview.settings?.reminder_frequency_days || 7),
           reminder_start_after_days: String(overview.settings?.reminder_start_after_days || 7),
+          reminder_template_first: overview.settings?.reminder_template_first || 'Hello {{bill_to_name}}, this is a gentle reminder that invoice #{{invoice_no}} for {{total}} was due on {{due_date}}.',
+          reminder_template_second: overview.settings?.reminder_template_second || 'Reminder {{reminder_index}}: invoice #{{invoice_no}} for {{total}} is still unpaid. The due date was {{due_date}}.',
+          reminder_template_third: overview.settings?.reminder_template_third || 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
           plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
           status: overview.subscription?.status || 'active',
           billing_day: String(overview.subscription?.billing_day || 1),
@@ -197,6 +205,7 @@ export default function SettingsPage() {
     setBillingPlans(overview.plans);
     setBillingSubscription(overview.subscription);
     setBillingInvoices(overview.invoices);
+    setBillingReminderHistory(overview.reminder_history || []);
     setBillingEntitlement(overview.entitlement);
     setBillingSettingsState(overview.settings);
   };
@@ -495,6 +504,35 @@ export default function SettingsPage() {
                           <span className="text-sm text-slate-700">Enable reminders</span>
                         </label>
                       </div>
+                      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                        <BillingField label="First reminder text">
+                          <textarea
+                            value={billingForm.reminder_template_first}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_first: event.target.value }))}
+                            className="min-h-[140px] w-full rounded-lg border border-slate-200 px-4 py-3"
+                            style={{ fontSize: '16px' }}
+                          />
+                        </BillingField>
+                        <BillingField label="Second reminder text">
+                          <textarea
+                            value={billingForm.reminder_template_second}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_second: event.target.value }))}
+                            className="min-h-[140px] w-full rounded-lg border border-slate-200 px-4 py-3"
+                            style={{ fontSize: '16px' }}
+                          />
+                        </BillingField>
+                        <BillingField label="Third reminder text">
+                          <textarea
+                            value={billingForm.reminder_template_third}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_third: event.target.value }))}
+                            className="min-h-[140px] w-full rounded-lg border border-slate-200 px-4 py-3"
+                            style={{ fontSize: '16px' }}
+                          />
+                        </BillingField>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        Available placeholders: <code>{'{{invoice_no}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{due_date}}'}</code>, <code>{'{{bill_to_name}}'}</code>, <code>{'{{reminder_index}}'}</code>
+                      </p>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <button
                           type="button"
@@ -510,6 +548,9 @@ export default function SettingsPage() {
                               reminder_weekday: Number(billingForm.reminder_weekday || 2),
                               reminder_frequency_days: Number(billingForm.reminder_frequency_days || 7),
                               reminder_start_after_days: Number(billingForm.reminder_start_after_days || 7),
+                              reminder_template_first: billingForm.reminder_template_first || null,
+                              reminder_template_second: billingForm.reminder_template_second || null,
+                              reminder_template_third: billingForm.reminder_template_third || null,
                             });
                             await reloadBilling();
                             setSettingsSuccess('Billing settings saved.');
@@ -670,6 +711,33 @@ export default function SettingsPage() {
                                     {billingAction === `pay-${invoice.id}` ? 'Saving…' : 'Mark Paid'}
                                   </button>
                                 )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Reminder history</h3>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingReminderHistory.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No reminders sent yet.</div>
+                        ) : (
+                          billingReminderHistory.map((event) => (
+                            <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-slate-900">
+                                  Reminder {event.payload?.reminder_index || '?'} · {event.payload?.template_kind || 'custom'}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  Invoice #{event.payload?.invoice_no || 'unknown'} · due {event.payload?.due_date || 'unknown'} · {event.payload?.recipient || 'no recipient'}
+                                </div>
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {new Date(event.created_at).toLocaleString()}
                               </div>
                             </div>
                           ))
