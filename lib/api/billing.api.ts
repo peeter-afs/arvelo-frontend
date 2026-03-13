@@ -179,6 +179,37 @@ export type BillingMessagePreview = {
   };
 };
 
+export type BillingAnnualBalanceReportRow = {
+  id: string;
+  sent_at: string;
+  responded_at?: string | null;
+  recipient?: string | null;
+  reference_date?: string | null;
+  balance_amount?: number | null;
+  balance_direction?: 'you_owe_us' | 'we_owe_you' | 'settled' | null;
+  open_invoice_count?: number;
+  response_decision?: 'confirm' | 'mismatch' | null;
+  response_note?: string | null;
+  resolved_at?: string | null;
+  resolution_note?: string | null;
+};
+
+export type BillingAnnualBalanceReport = {
+  period: {
+    start_date: string;
+    end_date: string;
+  };
+  summary: {
+    sent_count: number;
+    responded_count: number;
+    confirmed_count: number;
+    mismatch_count: number;
+    open_mismatch_count: number;
+    resolved_mismatch_count: number;
+  };
+  rows: BillingAnnualBalanceReportRow[];
+};
+
 export const billingApi = {
   async getOverview() {
     const response = await apiClient.get<ApiResponse<{
@@ -243,6 +274,13 @@ export const billingApi = {
       skipped_reason?: string;
       balance?: BillingMessagePreview['balance'];
     }>>('/api/billing/jobs/send-annual-balance', payload || {});
+    return response.data.data;
+  },
+
+  async getAnnualBalanceReport(params?: { start_date?: string; end_date?: string }) {
+    const response = await apiClient.get<ApiResponse<BillingAnnualBalanceReport>>('/api/billing/reports/annual-balance', {
+      params,
+    });
     return response.data.data;
   },
 

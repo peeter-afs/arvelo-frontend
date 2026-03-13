@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -41,6 +41,7 @@ export default function SettingsPage() {
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingMessagePreview, setBillingMessagePreview] = useState<BillingMessagePreview | null>(null);
   const [mismatchResolutionNotes, setMismatchResolutionNotes] = useState<Record<string, string>>({});
+  const [annualBalanceReport, setAnnualBalanceReport] = useState<BillingAnnualBalanceReport | null>(null);
   const [billingForm, setBillingForm] = useState({
     bill_to_name: '',
     bill_to_registry_code: '',
@@ -58,6 +59,8 @@ export default function SettingsPage() {
     annual_balance_template: 'Hello {{bill_to_name}},\n\nWe hereby confirm that as of {{as_of_date}}, {{balance_statement}}.\nIf this is not correct, please contact us.',
     preview_reminder_index: '1',
     annual_balance_reference_date: new Date().toISOString().slice(0, 10),
+    annual_balance_report_start_date: new Date(new Date().getUTCFullYear(), 0, 1).toISOString().slice(0, 10),
+    annual_balance_report_end_date: new Date().toISOString().slice(0, 10),
     plan_id: '',
     status: 'active',
     billing_day: '1',
@@ -120,6 +123,8 @@ export default function SettingsPage() {
           annual_balance_template: overview.settings?.annual_balance_template || 'Hello {{bill_to_name}},\n\nWe hereby confirm that as of {{as_of_date}}, {{balance_statement}}.\nIf this is not correct, please contact us.',
           preview_reminder_index: '1',
           annual_balance_reference_date: new Date().toISOString().slice(0, 10),
+          annual_balance_report_start_date: new Date(new Date().getUTCFullYear(), 0, 1).toISOString().slice(0, 10),
+          annual_balance_report_end_date: new Date().toISOString().slice(0, 10),
           plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
           status: overview.subscription?.status || 'active',
           billing_day: String(overview.subscription?.billing_day || 1),
@@ -280,6 +285,46 @@ export default function SettingsPage() {
     if (billingMismatchFilter === 'resolved') return isResolved;
     return true;
   });
+
+  const exportAnnualBalanceReportCsv = () => {
+    if (!annualBalanceReport) return;
+    const header = [
+      'sent_at',
+      'reference_date',
+      'recipient',
+      'balance_direction',
+      'balance_amount',
+      'open_invoice_count',
+      'response_decision',
+      'responded_at',
+      'response_note',
+      'resolved_at',
+      'resolution_note',
+    ];
+    const rows = annualBalanceReport.rows.map((row) => [
+      row.sent_at || '',
+      row.reference_date || '',
+      row.recipient || '',
+      row.balance_direction || '',
+      row.balance_amount ?? '',
+      row.open_invoice_count ?? '',
+      row.response_decision || '',
+      row.responded_at || '',
+      row.response_note || '',
+      row.resolved_at || '',
+      row.resolution_note || '',
+    ]);
+    const csv = [header, ...rows]
+      .map((line) => line.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `annual-balance-report-${annualBalanceReport.period.start_date}-${annualBalanceReport.period.end_date}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   const runBillingAction = async (key: string, fn: () => Promise<void>) => {
     setBillingAction(key);
@@ -851,6 +896,112 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                          <div>
+                            <h3 className="text-sm font-semibold text-slate-900">Annual balance reporting</h3>
+                            <p className="mt-1 text-xs text-slate-600">Report, review, and export annual balance confirmations and responses for a selected period.</p>
+                          </div>
+                          <div className="flex flex-wrap gap-3">
+                            <input
+                              type="date"
+                              value={billingForm.annual_balance_report_start_date}
+                              onChange={(event) => setBillingForm((current) => ({ ...current, annual_balance_report_start_date: event.target.value }))}
+                              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <input
+                              type="date"
+                              value={billingForm.annual_balance_report_end_date}
+                              onChange={(event) => setBillingForm((current) => ({ ...current, annual_balance_report_end_date: event.target.value }))}
+                              className="h-10 rounded-lg border border-slate-200 px-3 text-sm"
+                              style={{ fontSize: '16px' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => void runBillingAction('annual-balance-report', async () => {
+                                const report = await billingApi.getAnnualBalanceReport({
+                                  start_date: billingForm.annual_balance_report_start_date,
+                                  end_date: billingForm.annual_balance_report_end_date,
+                                });
+                                setAnnualBalanceReport(report);
+                                setSettingsSuccess('Annual balance report loaded.');
+                              })}
+                              disabled={billingAction !== null}
+                              className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              {billingAction === 'annual-balance-report' ? 'Loading…' : 'Load Report'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={exportAnnualBalanceReportCsv}
+                              disabled={!annualBalanceReport}
+                              className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                            >
+                              Export CSV
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      {!annualBalanceReport ? (
+                        <div className="p-5 text-sm text-slate-500">Load a period to view annual balance report data.</div>
+                      ) : (
+                        <div className="space-y-4 p-5">
+                          <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+                            <ReportStat label="Sent" value={annualBalanceReport.summary.sent_count} />
+                            <ReportStat label="Responded" value={annualBalanceReport.summary.responded_count} />
+                            <ReportStat label="Confirmed" value={annualBalanceReport.summary.confirmed_count} />
+                            <ReportStat label="Mismatches" value={annualBalanceReport.summary.mismatch_count} />
+                            <ReportStat label="Open mismatches" value={annualBalanceReport.summary.open_mismatch_count} />
+                            <ReportStat label="Resolved" value={annualBalanceReport.summary.resolved_mismatch_count} />
+                          </div>
+                          <div className="overflow-x-auto rounded-lg border border-slate-200">
+                            <table className="min-w-full divide-y divide-slate-200 text-sm">
+                              <thead className="bg-slate-50">
+                                <tr>
+                                  {['Sent', 'Reference', 'Recipient', 'Balance', 'Response', 'Resolved'].map((label) => (
+                                    <th key={label} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
+                                      {label}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100 bg-white">
+                                {annualBalanceReport.rows.map((row) => (
+                                  <tr key={row.id}>
+                                    <td className="px-4 py-3 text-slate-700">{new Date(row.sent_at).toLocaleString()}</td>
+                                    <td className="px-4 py-3 text-slate-700">{row.reference_date || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-700">{row.recipient || '-'}</td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                      {row.balance_direction === 'you_owe_us'
+                                        ? `They owe ${Math.abs(Number(row.balance_amount || 0)).toFixed(2)} EUR`
+                                        : row.balance_direction === 'we_owe_you'
+                                          ? `We owe ${Math.abs(Number(row.balance_amount || 0)).toFixed(2)} EUR`
+                                          : 'Settled'}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                      {row.response_decision ? (
+                                        <div>
+                                          <div>{row.response_decision}</div>
+                                          {row.response_note && <div className="mt-1 text-xs text-slate-500">{row.response_note}</div>}
+                                        </div>
+                                      ) : 'No response'}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                      {row.resolved_at
+                                        ? `${new Date(row.resolved_at).toLocaleString()}${row.resolution_note ? ` - ${row.resolution_note}` : ''}`
+                                        : '-'}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
                         <h3 className="text-sm font-semibold text-slate-900">Reminder operations</h3>
                         <p className="mt-1 text-xs text-slate-600">Operational queue for overdue billing invoices, reminder eligibility, and follow-up timing.</p>
                       </div>
@@ -1345,6 +1496,15 @@ function BillingField({ label, children }: { label: string; children: ReactNode 
       <div className="text-sm font-medium text-slate-700 mb-1.5">{label}</div>
       {children}
     </label>
+  );
+}
+
+function ReportStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
+      <div className="mt-2 text-lg font-semibold text-slate-900">{value}</div>
+    </div>
   );
 }
 
