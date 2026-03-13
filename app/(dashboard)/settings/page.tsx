@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingAnnualBalanceHistoryItem, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -34,6 +34,7 @@ export default function SettingsPage() {
   const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
   const [billingAnnualBalanceHistory, setBillingAnnualBalanceHistory] = useState<BillingAnnualBalanceHistoryItem[]>([]);
+  const [billingAnnualBalanceMismatches, setBillingAnnualBalanceMismatches] = useState<BillingAnnualBalanceMismatchItem[]>([]);
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingMessagePreview, setBillingMessagePreview] = useState<BillingMessagePreview | null>(null);
@@ -95,6 +96,7 @@ export default function SettingsPage() {
         setBillingInvoices(overview.invoices);
         setBillingReminderHistory(overview.reminder_history || []);
         setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
+        setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
         setBillingEntitlement(overview.entitlement);
         setBillingSettingsState(overview.settings);
         setBillingForm({
@@ -216,6 +218,7 @@ export default function SettingsPage() {
     setBillingInvoices(overview.invoices);
     setBillingReminderHistory(overview.reminder_history || []);
     setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
+    setBillingAnnualBalanceMismatches(overview.annual_balance_mismatches || []);
     setBillingEntitlement(overview.entitlement);
     setBillingSettingsState(overview.settings);
   };
@@ -866,6 +869,43 @@ export default function SettingsPage() {
                                     {billingAction === `pay-${invoice.id}` ? 'Saving…' : 'Mark Paid'}
                                   </button>
                                 )}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-amber-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Annual balance mismatch inbox</h3>
+                        <p className="mt-1 text-xs text-slate-600">All reported balance issues are collected here so they can be reviewed from one place.</p>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingAnnualBalanceMismatches.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No balance mismatches reported.</div>
+                        ) : (
+                          billingAnnualBalanceMismatches.map((event) => (
+                            <div key={event.id} className="space-y-3 p-5">
+                              <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                  <div className="text-sm font-medium text-slate-900">
+                                    {event.sent_payload?.balance_direction === 'we_owe_you'
+                                      ? `Mismatch on balance where we owe ${Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                      : event.sent_payload?.balance_direction === 'you_owe_us'
+                                        ? `Mismatch on balance where they owe ${Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                        : 'Mismatch on settled balance confirmation'}
+                                  </div>
+                                  <div className="mt-1 text-xs text-slate-500">
+                                    As of {event.payload?.reference_date || event.sent_payload?.reference_date || 'unknown'} · {event.payload?.recipient || event.sent_payload?.recipient || 'no recipient'}
+                                  </div>
+                                </div>
+                                <div className="text-xs text-slate-500">
+                                  {new Date(event.created_at).toLocaleString()}
+                                </div>
+                              </div>
+                              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+                                {event.payload?.note || 'No mismatch note provided.'}
                               </div>
                             </div>
                           ))

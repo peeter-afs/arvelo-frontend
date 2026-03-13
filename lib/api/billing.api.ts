@@ -116,6 +116,26 @@ export type BillingAnnualBalanceHistoryItem = {
   created_at: string;
 };
 
+export type BillingAnnualBalanceMismatchItem = {
+  id: string;
+  tenant_id: string;
+  created_at: string;
+  payload?: {
+    recipient?: string;
+    reference_date?: string;
+    send_event_id?: string;
+    decision?: 'mismatch';
+    note?: string;
+  } | null;
+  sent_payload?: {
+    recipient?: string;
+    reference_date?: string;
+    balance_amount?: number;
+    balance_direction?: 'you_owe_us' | 'we_owe_you' | 'settled';
+    open_invoice_count?: number;
+  } | null;
+};
+
 export type BillingMessagePreview = {
   kind: 'reminder' | 'annual_balance';
   subject: string;
@@ -149,6 +169,7 @@ export const billingApi = {
       invoices: BillingInvoice[];
       reminder_history: BillingReminderHistoryItem[];
       annual_balance_history: BillingAnnualBalanceHistoryItem[];
+      annual_balance_mismatches: BillingAnnualBalanceMismatchItem[];
     }>>('/api/billing/overview');
     return response.data.data;
   },
