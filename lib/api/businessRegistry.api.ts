@@ -21,6 +21,27 @@ export type BusinessRegistrySettings = {
   updated_at: string | null;
 };
 
+export type BusinessRegistrySearchItem = {
+  registryCode: string | null;
+  name: string | null;
+  vatNumber?: string | null;
+  registryStatus?: string | null;
+  source: 'business_registry';
+};
+
+export type BusinessRegistryCompany = {
+  registryCode: string | null;
+  name: string | null;
+  vatNumber?: string | null;
+  registryStatus?: string | null;
+  legalAddress?: string | null;
+  postalCode?: string | null;
+  city?: string | null;
+  countryCode?: string | null;
+  source: 'business_registry';
+  sourceTimestamp: string;
+};
+
 export const businessRegistryApi = {
   async getSettings() {
     const response = await apiClient.get<ApiResponse<BusinessRegistrySettings>>('/api/admin/integrations/business-registry');
@@ -46,6 +67,24 @@ export const businessRegistryApi = {
       status: string;
       tested_at: string;
     }>>('/api/admin/integrations/business-registry/test');
+    return response.data.data;
+  },
+
+  async searchCompanies(q: string) {
+    const response = await apiClient.get<ApiResponse<{
+      correlation_id: string;
+      items: BusinessRegistrySearchItem[];
+    }>>('/api/business-registry/search', {
+      params: { q }
+    });
+    return response.data.data;
+  },
+
+  async getCompany(registryCode: string) {
+    const response = await apiClient.get<ApiResponse<{
+      correlation_id: string;
+      company: BusinessRegistryCompany;
+    }>>(`/api/business-registry/company/${registryCode}`);
     return response.data.data;
   },
 };

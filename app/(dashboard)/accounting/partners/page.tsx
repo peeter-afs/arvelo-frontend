@@ -14,6 +14,11 @@ import {
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import {
+  businessRegistryApi,
+  type BusinessRegistryCompany,
+  type BusinessRegistrySearchItem,
+} from '@/lib/api/businessRegistry.api';
+import {
   accountingApi,
   type PartnerRecord,
   type PartnerRole,
@@ -102,6 +107,9 @@ export default function BusinessPartnersPage() {
   const [form, setForm] = useState<PartnerFormState>(emptyPartnerForm());
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [newBankAccount, setNewBankAccount] = useState<BankAccountDraft>(emptyBankAccountDraft());
+  const [registryQuery, setRegistryQuery] = useState('');
+  const [registrySearchResults, setRegistrySearchResults] = useState<BusinessRegistrySearchItem[]>([]);
+  const [selectedRegistryCompany, setSelectedRegistryCompany] = useState<BusinessRegistryCompany | null>(null);
 
   const filteredPartners = useMemo(() => {
     return partners.filter((partner) => {
@@ -143,6 +151,9 @@ export default function BusinessPartnersPage() {
       setForm(emptyPartnerForm());
       setDuplicateWarnings([]);
       setNewBankAccount(emptyBankAccountDraft());
+      setRegistryQuery('');
+      setRegistrySearchResults([]);
+      setSelectedRegistryCompany(null);
       return;
     }
 
@@ -165,6 +176,7 @@ export default function BusinessPartnersPage() {
         setBankAccounts(supplierBankAccounts);
         setForm(mapPartnerToForm(partner));
         setDuplicateWarnings([]);
+        setSelectedRegistryCompany(null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -222,6 +234,38 @@ export default function BusinessPartnersPage() {
       });
       setDuplicateWarnings(duplicates);
       setSuccessMessage(duplicates.length > 0 ? 'Potential duplicates found.' : 'No partner duplicates found.');
+    });
+  };
+
+  const handleRegistrySearch = async () => {
+    await runAction('registry-search', async () => {
+      const result = await businessRegistryApi.searchCompanies(registryQuery);
+      setRegistrySearchResults(result.items);
+      setSuccessMessage(result.items.length > 0 ? 'Business Registry results loaded.' : 'No Business Registry matches found.');
+    });
+  };
+
+  const handleRegistryAutofill = async (item: BusinessRegistrySearchItem) => {
+    if (!item.registryCode) {
+      setErrorMessage('Selected Business Registry result has no registry code.');
+      return;
+    }
+
+    await runAction(`registry-company-${item.registryCode}`, async () => {
+      const result = await businessRegistryApi.getCompany(item.registryCode as string);
+      const company = result.company;
+      setSelectedRegistryCompany(company);
+      setForm((current) => ({
+        ...current,
+        name: company.name || current.name,
+        reg_code: company.registryCode || current.reg_code,
+        vat_number: company.vatNumber || current.vat_number,
+        address: company.legalAddress || current.address,
+        postal_code: company.postalCode || current.postal_code,
+        city: company.city || current.city,
+        country_code: company.countryCode || current.country_code,
+      }));
+      setSuccessMessage(`Autofilled partner data from Business Registry for ${company.registryCode || company.name || 'selected company'}.`);
     });
   };
 
@@ -400,6 +444,55 @@ export default function BusinessPartnersPage() {
               <div className="p-6 text-sm text-slate-500">Loading partner detail…</div>
             ) : (
               <div className="space-y-5 p-5">
+                <div className="rounded-xl border border-slate-200 p-4">
+                  <div className="mb-3 text-sm font-semibold text-slate-900">Business Registry lookup</div>
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <input
+                      value={registryQuery}
+                      onChange={(event) => setRegistryQuery(event.target.value)}
+                      placeholder="Company name or registry code"
+                      className="h-11 rounded-lg border border-slate-200 px-3"
+                    />
+                    <button
+                      onClick={handleRegistrySearch}
+                      disabled={registryQuery.trim().length < 2 || !!actionLoading}
+                      className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {actionLoading === 'registry-search' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                      <span>Search registry</span>
+                    </button>
+                  </div>
+
+                  {selectedRegistryCompany && (
+                    <div className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
+                      Autofill source: {selectedRegistryCompany.name || '-'} · {selectedRegistryCompany.registryCode || '-'} · {selectedRegistryCompany.sourceTimestamp}
+                    </div>
+                  )}
+
+                  {registrySearchResults.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {registrySearchResults.map((item) => (
+                        <div key={`${item.registryCode}-${item.name}`} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <div className="text-sm font-medium text-slate-900">{item.name || 'Unnamed company'}</div>
+                            <div className="mt-1 text-xs text-slate-500">
+                              {item.registryCode || 'No registry code'} · {item.vatNumber || 'No VAT'} · {item.registryStatus || 'No status'}
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRegistryAutofill(item)}
+                            disabled={!item.registryCode || !!actionLoading}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          >
+                            {actionLoading === `registry-company-${item.registryCode}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                            <span>Use this company</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <Field label="Type" value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
                     { label: 'Customer', value: 'customer' },
