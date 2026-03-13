@@ -5,7 +5,7 @@ import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingAnnualBalanceHistoryItem, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -33,8 +33,10 @@ export default function SettingsPage() {
   const [billingSubscription, setBillingSubscription] = useState<BillingSubscription | null>(null);
   const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
+  const [billingAnnualBalanceHistory, setBillingAnnualBalanceHistory] = useState<BillingAnnualBalanceHistoryItem[]>([]);
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
+  const [billingMessagePreview, setBillingMessagePreview] = useState<BillingMessagePreview | null>(null);
   const [billingForm, setBillingForm] = useState({
     bill_to_name: '',
     bill_to_registry_code: '',
@@ -49,6 +51,9 @@ export default function SettingsPage() {
     reminder_template_first: 'Hello {{bill_to_name}}, this is a gentle reminder that invoice #{{invoice_no}} for {{total}} was due on {{due_date}}.',
     reminder_template_second: 'Reminder {{reminder_index}}: invoice #{{invoice_no}} for {{total}} is still unpaid. The due date was {{due_date}}.',
     reminder_template_third: 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
+    annual_balance_template: 'Hello {{bill_to_name}},\n\nWe hereby confirm that as of {{as_of_date}}, {{balance_statement}}.\nIf this is not correct, please contact us.',
+    preview_reminder_index: '1',
+    annual_balance_reference_date: new Date().toISOString().slice(0, 10),
     plan_id: '',
     status: 'active',
     billing_day: '1',
@@ -89,6 +94,7 @@ export default function SettingsPage() {
         setBillingSubscription(overview.subscription);
         setBillingInvoices(overview.invoices);
         setBillingReminderHistory(overview.reminder_history || []);
+        setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
         setBillingEntitlement(overview.entitlement);
         setBillingSettingsState(overview.settings);
         setBillingForm({
@@ -105,6 +111,9 @@ export default function SettingsPage() {
           reminder_template_first: overview.settings?.reminder_template_first || 'Hello {{bill_to_name}}, this is a gentle reminder that invoice #{{invoice_no}} for {{total}} was due on {{due_date}}.',
           reminder_template_second: overview.settings?.reminder_template_second || 'Reminder {{reminder_index}}: invoice #{{invoice_no}} for {{total}} is still unpaid. The due date was {{due_date}}.',
           reminder_template_third: overview.settings?.reminder_template_third || 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
+          annual_balance_template: overview.settings?.annual_balance_template || 'Hello {{bill_to_name}},\n\nWe hereby confirm that as of {{as_of_date}}, {{balance_statement}}.\nIf this is not correct, please contact us.',
+          preview_reminder_index: '1',
+          annual_balance_reference_date: new Date().toISOString().slice(0, 10),
           plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
           status: overview.subscription?.status || 'active',
           billing_day: String(overview.subscription?.billing_day || 1),
@@ -206,6 +215,7 @@ export default function SettingsPage() {
     setBillingSubscription(overview.subscription);
     setBillingInvoices(overview.invoices);
     setBillingReminderHistory(overview.reminder_history || []);
+    setBillingAnnualBalanceHistory(overview.annual_balance_history || []);
     setBillingEntitlement(overview.entitlement);
     setBillingSettingsState(overview.settings);
   };
@@ -237,6 +247,23 @@ export default function SettingsPage() {
     } finally {
       setBillingSaving(false);
     }
+  };
+
+  const currentBillingSettingsDraft = {
+    bill_to_name: billingForm.bill_to_name,
+    bill_to_email: billingForm.bill_to_email || null,
+    bill_to_registry_code: billingForm.bill_to_registry_code || null,
+    bill_to_vat_number: billingForm.bill_to_vat_number || null,
+    bill_to_address: billingForm.bill_to_address || null,
+    invoice_due_days: Number(billingForm.invoice_due_days || 14),
+    reminders_enabled: billingForm.reminders_enabled,
+    reminder_weekday: Number(billingForm.reminder_weekday || 2),
+    reminder_frequency_days: Number(billingForm.reminder_frequency_days || 7),
+    reminder_start_after_days: Number(billingForm.reminder_start_after_days || 7),
+    reminder_template_first: billingForm.reminder_template_first || null,
+    reminder_template_second: billingForm.reminder_template_second || null,
+    reminder_template_third: billingForm.reminder_template_third || null,
+    annual_balance_template: billingForm.annual_balance_template || null,
   };
 
   const runBillingAction = async (key: string, fn: () => Promise<void>) => {
@@ -461,6 +488,68 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
+                      <h3 className="text-sm font-semibold text-slate-900">Annual balance confirmation</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Send a manual year-end or as-of-date balance confirmation. The backend calculates whether the counterparty owes you, you owe them, or the balance is settled.
+                      </p>
+                      <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
+                        <BillingField label="Annual balance text">
+                          <textarea
+                            value={billingForm.annual_balance_template}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, annual_balance_template: event.target.value }))}
+                            className="min-h-[180px] w-full rounded-lg border border-slate-200 px-4 py-3"
+                            style={{ fontSize: '16px' }}
+                          />
+                        </BillingField>
+                        <div className="space-y-4">
+                          <BillingField label="Balance reference date">
+                            <input
+                              type="date"
+                              value={billingForm.annual_balance_reference_date}
+                              onChange={(event) => setBillingForm((current) => ({ ...current, annual_balance_reference_date: event.target.value }))}
+                              className="w-full h-11 rounded-lg border border-slate-200 px-4"
+                              style={{ fontSize: '16px' }}
+                            />
+                          </BillingField>
+                          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+                            Placeholders: <code>{'{{bill_to_name}}'}</code>, <code>{'{{as_of_date}}'}</code>, <code>{'{{balance_amount}}'}</code>, <code>{'{{balance_direction}}'}</code>, <code>{'{{balance_statement}}'}</code>, <code>{'{{open_invoice_count}}'}</code>, <code>{'{{tenant_name}}'}</code>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('preview-annual-balance', async () => {
+                            const preview = await billingApi.previewAnnualBalance({
+                              reference_date: billingForm.annual_balance_reference_date,
+                              settings_override: currentBillingSettingsDraft,
+                            });
+                            setBillingMessagePreview(preview);
+                            setSettingsSuccess('Annual balance preview loaded.');
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'preview-annual-balance' ? 'Loading…' : 'Preview Annual Balance'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('send-annual-balance', async () => {
+                            const result = await billingApi.sendAnnualBalance({
+                              reference_date: billingForm.annual_balance_reference_date,
+                            });
+                            await reloadBilling();
+                            setSettingsSuccess(result.sent ? `Annual balance confirmation sent to ${result.recipient}.` : `No message sent${result.skipped_reason ? `: ${result.skipped_reason}` : '.'}`);
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'send-annual-balance' ? 'Sending…' : 'Send Annual Balance Confirmation'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
                       <h3 className="text-sm font-semibold text-slate-900">Reminder automation</h3>
                       <p className="mt-1 text-sm text-slate-500">
                         Run the general reminder cron every weekday. Each tenant decides which weekday is valid, how often reminders may repeat, and how many overdue days must pass first.
@@ -533,6 +622,35 @@ export default function SettingsPage() {
                       <p className="mt-3 text-xs text-slate-500">
                         Available placeholders: <code>{'{{invoice_no}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{due_date}}'}</code>, <code>{'{{bill_to_name}}'}</code>, <code>{'{{reminder_index}}'}</code>
                       </p>
+                      <div className="mt-4 flex flex-wrap items-end gap-3">
+                        <BillingField label="Preview reminder stage">
+                          <select
+                            value={billingForm.preview_reminder_index}
+                            onChange={(event) => setBillingForm((current) => ({ ...current, preview_reminder_index: event.target.value }))}
+                            className="h-11 rounded-lg border border-slate-200 px-4"
+                            style={{ fontSize: '16px' }}
+                          >
+                            <option value="1">First</option>
+                            <option value="2">Second</option>
+                            <option value="3">Third</option>
+                          </select>
+                        </BillingField>
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('preview-reminder', async () => {
+                            const preview = await billingApi.previewReminder({
+                              reminder_index: Number(billingForm.preview_reminder_index || 1),
+                              settings_override: currentBillingSettingsDraft,
+                            });
+                            setBillingMessagePreview(preview);
+                            setSettingsSuccess(`Reminder preview loaded for invoice #${preview.invoice?.invoice_no}.`);
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'preview-reminder' ? 'Loading…' : 'Preview Reminder'}
+                        </button>
+                      </div>
                       <div className="mt-5 flex flex-wrap gap-3">
                         <button
                           type="button"
@@ -551,6 +669,7 @@ export default function SettingsPage() {
                               reminder_template_first: billingForm.reminder_template_first || null,
                               reminder_template_second: billingForm.reminder_template_second || null,
                               reminder_template_third: billingForm.reminder_template_third || null,
+                              annual_balance_template: billingForm.annual_balance_template || null,
                             });
                             await reloadBilling();
                             setSettingsSuccess('Billing settings saved.');
@@ -681,6 +800,39 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Message preview</h3>
+                      </div>
+                      {!billingMessagePreview ? (
+                        <div className="p-5 text-sm text-slate-500">Load a reminder or annual balance preview to inspect the rendered text before sending.</div>
+                      ) : (
+                        <div className="space-y-4 p-5">
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Subject</div>
+                            <div className="mt-1 text-sm font-medium text-slate-900">{billingMessagePreview.subject}</div>
+                          </div>
+                          <div className="grid gap-4 lg:grid-cols-3">
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Type</div>
+                              <div className="mt-1 text-sm text-slate-900">{billingMessagePreview.kind}</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Reference</div>
+                              <div className="mt-1 text-sm text-slate-900">{billingMessagePreview.invoice ? `Invoice #${billingMessagePreview.invoice.invoice_no}` : billingMessagePreview.reference_date || '-'}</div>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Balance / Stage</div>
+                              <div className="mt-1 text-sm text-slate-900">
+                                {billingMessagePreview.balance?.balance_statement || (billingMessagePreview.reminder_index ? `Reminder ${billingMessagePreview.reminder_index}` : '-')}
+                              </div>
+                            </div>
+                          </div>
+                          <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">{billingMessagePreview.text}</pre>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
                         <h3 className="text-sm font-semibold text-slate-900">Billing invoices</h3>
                       </div>
                       <div className="divide-y divide-slate-100">
@@ -734,6 +886,37 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
                                   Invoice #{event.payload?.invoice_no || 'unknown'} · due {event.payload?.due_date || 'unknown'} · {event.payload?.recipient || 'no recipient'}
+                                </div>
+                              </div>
+                              <div className="text-xs text-slate-500">
+                                {new Date(event.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 overflow-hidden">
+                      <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+                        <h3 className="text-sm font-semibold text-slate-900">Annual balance history</h3>
+                      </div>
+                      <div className="divide-y divide-slate-100">
+                        {billingAnnualBalanceHistory.length === 0 ? (
+                          <div className="p-5 text-sm text-slate-500">No annual balance confirmations sent yet.</div>
+                        ) : (
+                          billingAnnualBalanceHistory.map((event) => (
+                            <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-slate-900">
+                                  {event.payload?.balance_direction === 'we_owe_you'
+                                    ? `We owe them ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                    : event.payload?.balance_direction === 'you_owe_us'
+                                      ? `They owe us ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                      : 'Balance settled'}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  As of {event.payload?.reference_date || 'unknown'} · {event.payload?.recipient || 'no recipient'} · {event.payload?.open_invoice_count || 0} open invoice(s)
                                 </div>
                               </div>
                               <div className="text-xs text-slate-500">

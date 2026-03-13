@@ -81,6 +81,7 @@ export type BillingSettings = {
   reminder_template_first?: string | null;
   reminder_template_second?: string | null;
   reminder_template_third?: string | null;
+  annual_balance_template?: string | null;
 };
 
 export type BillingReminderHistoryItem = {
@@ -98,6 +99,43 @@ export type BillingReminderHistoryItem = {
   created_at: string;
 };
 
+export type BillingAnnualBalanceHistoryItem = {
+  id: string;
+  tenant_id: string;
+  type: string;
+  payload?: {
+    recipient?: string;
+    reference_date?: string;
+    balance_amount?: number;
+    balance_direction?: 'you_owe_us' | 'we_owe_you' | 'settled';
+    open_invoice_count?: number;
+  } | null;
+  created_at: string;
+};
+
+export type BillingMessagePreview = {
+  kind: 'reminder' | 'annual_balance';
+  subject: string;
+  text: string;
+  html: string;
+  reminder_index?: number;
+  reference_date?: string;
+  invoice?: {
+    id: string;
+    invoice_no: string | number;
+    due_date: string;
+    total: number | string;
+    currency: string;
+  };
+  balance?: {
+    balance_amount: number;
+    balance_amount_formatted: string;
+    balance_direction: 'you_owe_us' | 'we_owe_you' | 'settled';
+    balance_statement: string;
+    open_invoice_count: number;
+  };
+};
+
 export const billingApi = {
   async getOverview() {
     const response = await apiClient.get<ApiResponse<{
@@ -107,6 +145,7 @@ export const billingApi = {
       plans: BillingPlan[];
       invoices: BillingInvoice[];
       reminder_history: BillingReminderHistoryItem[];
+      annual_balance_history: BillingAnnualBalanceHistoryItem[];
     }>>('/api/billing/overview');
     return response.data.data;
   },
@@ -138,6 +177,27 @@ export const billingApi = {
       skipped_reason?: string;
       invoices: BillingInvoice[];
     }>>('/api/billing/jobs/send-reminders', payload || {});
+    return response.data.data;
+  },
+
+  async previewReminder(payload?: { invoice_id?: string; reminder_index?: number; settings_override?: Record<string, any> }) {
+    const response = await apiClient.post<ApiResponse<BillingMessagePreview>>('/api/billing/jobs/preview-reminder', payload || {});
+    return response.data.data;
+  },
+
+  async previewAnnualBalance(payload?: { reference_date?: string; settings_override?: Record<string, any> }) {
+    const response = await apiClient.post<ApiResponse<BillingMessagePreview>>('/api/billing/jobs/preview-annual-balance', payload || {});
+    return response.data.data;
+  },
+
+  async sendAnnualBalance(payload?: { reference_date?: string }) {
+    const response = await apiClient.post<ApiResponse<{
+      sent: boolean;
+      recipient?: string;
+      reference_date?: string;
+      skipped_reason?: string;
+      balance?: BillingMessagePreview['balance'];
+    }>>('/api/billing/jobs/send-annual-balance', payload || {});
     return response.data.data;
   },
 
