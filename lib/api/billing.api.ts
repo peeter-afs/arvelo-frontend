@@ -68,11 +68,16 @@ export type BillingSettings = {
   bill_to_registry_code?: string | null;
   bill_to_vat_number?: string | null;
   bill_to_address?: string | null;
+  bill_to_email?: string | null;
   invoice_due_days: number;
   vat_rate: number | string;
   vat_enabled: boolean;
   currency: string;
   invoice_next_no: number;
+  reminders_enabled: boolean;
+  reminder_weekday: number;
+  reminder_frequency_days: number;
+  reminder_start_after_days: number;
 };
 
 export const billingApi = {
@@ -92,6 +97,11 @@ export const billingApi = {
     return response.data.data;
   },
 
+  async updateSettings(payload: Record<string, any>) {
+    const response = await apiClient.put<ApiResponse<{ settings: BillingSettings }>>('/api/billing/settings', payload);
+    return response.data.data;
+  },
+
   async generateInvoices() {
     const response = await apiClient.post<ApiResponse<{ created_count: number; invoices: BillingInvoice[] }>>('/api/billing/jobs/generate-invoices');
     return response.data.data;
@@ -99,6 +109,16 @@ export const billingApi = {
 
   async recomputeEntitlements() {
     const response = await apiClient.post<ApiResponse<{ entitlement: BillingEntitlement; overdue_invoice_id?: string | null }>>('/api/billing/jobs/recompute-entitlements');
+    return response.data.data;
+  },
+
+  async sendReminders(payload?: { force?: boolean; reference_date?: string }) {
+    const response = await apiClient.post<ApiResponse<{
+      sent_count: number;
+      recipient?: string;
+      skipped_reason?: string;
+      invoices: BillingInvoice[];
+    }>>('/api/billing/jobs/send-reminders', payload || {});
     return response.data.data;
   },
 

@@ -35,6 +35,16 @@ export default function SettingsPage() {
   const [billingEntitlement, setBillingEntitlement] = useState<BillingEntitlement | null>(null);
   const [billingSettingsState, setBillingSettingsState] = useState<BillingSettings | null>(null);
   const [billingForm, setBillingForm] = useState({
+    bill_to_name: '',
+    bill_to_registry_code: '',
+    bill_to_vat_number: '',
+    bill_to_address: '',
+    bill_to_email: '',
+    invoice_due_days: '14',
+    reminders_enabled: true,
+    reminder_weekday: '2',
+    reminder_frequency_days: '7',
+    reminder_start_after_days: '7',
     plan_id: '',
     status: 'active',
     billing_day: '1',
@@ -77,6 +87,16 @@ export default function SettingsPage() {
         setBillingEntitlement(overview.entitlement);
         setBillingSettingsState(overview.settings);
         setBillingForm({
+          bill_to_name: overview.settings?.bill_to_name || tenant?.name || '',
+          bill_to_registry_code: overview.settings?.bill_to_registry_code || '',
+          bill_to_vat_number: overview.settings?.bill_to_vat_number || '',
+          bill_to_address: overview.settings?.bill_to_address || '',
+          bill_to_email: overview.settings?.bill_to_email || tenant?.email || '',
+          invoice_due_days: String(overview.settings?.invoice_due_days || 14),
+          reminders_enabled: overview.settings?.reminders_enabled ?? true,
+          reminder_weekday: String(overview.settings?.reminder_weekday || 2),
+          reminder_frequency_days: String(overview.settings?.reminder_frequency_days || 7),
+          reminder_start_after_days: String(overview.settings?.reminder_start_after_days || 7),
           plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
           status: overview.subscription?.status || 'active',
           billing_day: String(overview.subscription?.billing_day || 1),
@@ -429,6 +449,92 @@ export default function SettingsPage() {
                           {billingInvoices.filter((invoice) => invoice.status !== 'paid' && invoice.status !== 'void').length}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
+                      <h3 className="text-sm font-semibold text-slate-900">Reminder automation</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Run the general reminder cron every weekday. Each tenant decides which weekday is valid, how often reminders may repeat, and how many overdue days must pass first.
+                      </p>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <BillingField label="Bill-to name">
+                          <input value={billingForm.bill_to_name} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_name: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Bill-to email">
+                          <input value={billingForm.bill_to_email} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_email: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Bill-to registry code">
+                          <input value={billingForm.bill_to_registry_code} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_registry_code: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Bill-to VAT number">
+                          <input value={billingForm.bill_to_vat_number} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_vat_number: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Bill-to address">
+                          <input value={billingForm.bill_to_address} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_address: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Invoice due days">
+                          <input value={billingForm.invoice_due_days} onChange={(event) => setBillingForm((current) => ({ ...current, invoice_due_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Reminder weekday">
+                          <select value={billingForm.reminder_weekday} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_weekday: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }}>
+                            <option value="1">Monday</option>
+                            <option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option>
+                            <option value="4">Thursday</option>
+                            <option value="5">Friday</option>
+                          </select>
+                        </BillingField>
+                        <BillingField label="Reminder frequency days">
+                          <input value={billingForm.reminder_frequency_days} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_frequency_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label="Start after overdue days">
+                          <input value={billingForm.reminder_start_after_days} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_start_after_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <label className="flex items-center gap-3 pt-8">
+                          <input type="checkbox" checked={billingForm.reminders_enabled} onChange={(event) => setBillingForm((current) => ({ ...current, reminders_enabled: event.target.checked }))} />
+                          <span className="text-sm text-slate-700">Enable reminders</span>
+                        </label>
+                      </div>
+                      <div className="mt-5 flex flex-wrap gap-3">
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('settings', async () => {
+                            await billingApi.updateSettings({
+                              bill_to_name: billingForm.bill_to_name,
+                              bill_to_email: billingForm.bill_to_email || null,
+                              bill_to_registry_code: billingForm.bill_to_registry_code || null,
+                              bill_to_vat_number: billingForm.bill_to_vat_number || null,
+                              bill_to_address: billingForm.bill_to_address || null,
+                              invoice_due_days: Number(billingForm.invoice_due_days || 14),
+                              reminders_enabled: billingForm.reminders_enabled,
+                              reminder_weekday: Number(billingForm.reminder_weekday || 2),
+                              reminder_frequency_days: Number(billingForm.reminder_frequency_days || 7),
+                              reminder_start_after_days: Number(billingForm.reminder_start_after_days || 7),
+                            });
+                            await reloadBilling();
+                            setSettingsSuccess('Billing settings saved.');
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'settings' ? 'Saving…' : 'Save Reminder Settings'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void runBillingAction('reminders', async () => {
+                            const result = await billingApi.sendReminders({ force: true });
+                            await reloadBilling();
+                            setSettingsSuccess(result.sent_count > 0 ? `Sent ${result.sent_count} reminder(s).` : `No reminders sent${result.skipped_reason ? `: ${result.skipped_reason}` : '.'}`);
+                          })}
+                          disabled={billingAction !== null}
+                          className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                        >
+                          {billingAction === 'reminders' ? 'Sending…' : 'Send Reminders Now'}
+                        </button>
+                      </div>
+                      <p className="mt-4 text-xs text-slate-500">
+                        Cron automation endpoint: `POST /api/billing/jobs/send-reminders-all` with `x-cron-secret`. Run it every weekday; tenant weekday and frequency settings are applied in the backend.
+                      </p>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
