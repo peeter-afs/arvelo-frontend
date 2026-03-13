@@ -57,6 +57,9 @@
   },
   "invoices": {
     "title": "Arved",
+    "overview": "Arvete keskus",
+    "salesList": "Müügiarved",
+    "purchaseList": "Ostuarved",
     "description": "Halda müügiarved ja arveldust",
     "purchaseImports": "Ostuarvete import",
     "invoiceNumber": "Arve number",

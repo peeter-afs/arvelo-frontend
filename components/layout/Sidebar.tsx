@@ -61,7 +61,9 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       name: t('invoices'),
       icon: FileText,
       children: [
-        { name: tInvoices('title'), href: '/invoices' },
+        { name: tInvoices('overview'), href: '/invoices' },
+        { name: tInvoices('salesList'), href: '/invoices/sales' },
+        { name: tInvoices('purchaseList'), href: '/invoices/purchase' },
         { name: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
       ]
     },
