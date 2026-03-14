@@ -65,6 +65,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tInvoices('overview'), href: '/invoices' },
         { name: tInvoices('salesList'), href: '/invoices/sales' },
         { name: tInvoices('purchaseList'), href: '/invoices/purchase' },
+        { name: tInvoices('purchaseApprovals'), href: '/invoices/purchase-approvals' },
         { name: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
       ]
     },

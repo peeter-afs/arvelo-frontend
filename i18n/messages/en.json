@@ -61,6 +61,7 @@
     "overview": "Invoice Hub",
     "salesList": "Sales Invoices",
     "purchaseList": "Purchase Invoices",
+    "purchaseApprovals": "Purchase Approvals",
     "description": "Manage your sales invoices and billing",
     "purchaseImports": "Purchase Imports",
     "invoiceNumber": "Invoice Number",

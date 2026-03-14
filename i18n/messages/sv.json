@@ -61,6 +61,7 @@
     "overview": "Fakturacentral",
     "salesList": "Kundfakturor",
     "purchaseList": "Leverantörsfakturor",
+    "purchaseApprovals": "Leverantörsfakturagodkännanden",
     "description": "Hantera dina försäljningsfakturor och fakturering",
     "purchaseImports": "Import av leverantörsfakturor",
     "invoiceNumber": "Fakturanummer",

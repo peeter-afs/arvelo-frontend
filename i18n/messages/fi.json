@@ -61,6 +61,7 @@
     "overview": "Laskukeskus",
     "salesList": "Myyntilaskut",
     "purchaseList": "Ostolaskut",
+    "purchaseApprovals": "Ostolaskujen hyväksynnät",
     "description": "Hallitse myyntilaskuja ja laskutusta",
     "purchaseImports": "Ostolaskujen tuonti",
     "invoiceNumber": "Laskunumero",

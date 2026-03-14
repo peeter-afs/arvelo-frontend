@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, FileCheck2, FileText, Upload } from 'lucide-react';
+import { ArrowRight, ClipboardCheck, FileCheck2, FileText, Upload } from 'lucide-react';
 
 const sections = [
   {
@@ -17,6 +17,13 @@ const sections = [
     href: '/invoices/purchase',
     icon: FileCheck2,
     accent: 'from-emerald-500/15 to-lime-500/10',
+  },
+  {
+    title: 'Purchase approvals',
+    description: 'Work the dedicated approver queue for pending, approved, rejected, and payable supplier invoices.',
+    href: '/invoices/purchase-approvals',
+    icon: ClipboardCheck,
+    accent: 'from-rose-500/15 to-fuchsia-500/10',
   },
   {
     title: 'Purchase imports',
@@ -38,7 +45,7 @@ export default function InvoicesHubPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-4">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
