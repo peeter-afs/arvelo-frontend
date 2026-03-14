@@ -17,6 +17,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     name: '',
+    create_company_now: false,
     tenant_name: '',
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,7 @@ export default function RegisterPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.type === 'checkbox' ? e.target.checked : e.target.value,
     });
   };
 
@@ -67,7 +68,7 @@ export default function RegisterPage() {
         email: formData.email,
         password: formData.password,
         name: formData.name || undefined,
-        tenant_name: formData.tenant_name || undefined,
+        tenant_name: formData.create_company_now ? formData.tenant_name || undefined : undefined,
       });
 
       setSession(
@@ -81,8 +82,7 @@ export default function RegisterPage() {
       // Wait for zustand persist to save to localStorage
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Redirect to dashboard
-      router.push('/');
+      router.push(session.tenant ? '/' : '/create-company?source=register');
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -225,37 +225,57 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        <div>
-          <div className="flex items-start gap-2 mb-1.5">
-            <label
-              htmlFor="tenant_name"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Company name (optional)
-            </label>
-            <div className="relative group">
-              <Info className="h-4 w-4 text-slate-400 cursor-help" />
-              {/* Mobile: show as inline text, Desktop: show on hover */}
-              <span className="hidden sm:group-hover:block absolute left-6 -top-1 w-48 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
-                You can always add this later
+        <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-4">
+          <label className="flex items-start gap-3">
+            <input
+              id="create_company_now"
+              name="create_company_now"
+              type="checkbox"
+              checked={formData.create_company_now}
+              onChange={handleChange}
+              className="mt-0.5 h-4 w-4 rounded border-slate-300"
+              disabled={isLoading}
+            />
+            <div>
+              <span className="block text-sm font-medium text-slate-800">Create a company workspace now</span>
+              <span className="mt-1 block text-xs leading-relaxed text-slate-500">
+                If unchecked, you will finish company setup after registration or join an existing company later.
               </span>
             </div>
+          </label>
+
+          <div className="mt-4">
+            <div className="flex items-start gap-2 mb-1.5">
+              <label
+                htmlFor="tenant_name"
+                className={`block text-sm font-medium ${formData.create_company_now ? 'text-slate-700' : 'text-slate-400'}`}
+              >
+                Company name
+              </label>
+              <div className="relative group">
+                <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                <span className="hidden sm:group-hover:block absolute left-6 -top-1 w-56 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
+                  You can still add or change company details later.
+                </span>
+              </div>
+            </div>
+            <input
+              id="tenant_name"
+              name="tenant_name"
+              type="text"
+              value={formData.tenant_name}
+              onChange={handleChange}
+              className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="Your Company OÜ"
+              disabled={isLoading || !formData.create_company_now}
+              style={{ fontSize: '16px' }}
+            />
+            <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
+              {formData.create_company_now
+                ? 'A tenant workspace will be created during registration.'
+                : 'No company is created yet. You will land in the company setup step after sign-up.'}
+            </p>
           </div>
-          <input
-            id="tenant_name"
-            name="tenant_name"
-            type="text"
-            value={formData.tenant_name}
-            onChange={handleChange}
-            className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder="Your Company OÜ"
-            disabled={isLoading}
-            style={{ fontSize: '16px' }}
-          />
-          {/* Mobile helper text (instead of hover tooltip) */}
-          <p className="mt-1.5 text-xs text-slate-500 leading-relaxed sm:hidden">
-            You can create or join a company later
-          </p>
         </div>
 
         <button

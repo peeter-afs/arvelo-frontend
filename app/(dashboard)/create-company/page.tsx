@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, Sparkles } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { authApi } from '@/lib/api/auth.api';
 import { tenantsApi } from '@/lib/api/tenants.api';
@@ -20,11 +20,19 @@ const DEFAULT_FORM = {
 
 export default function CreateCompanyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, tenant, setTenant, setTokens } = useAuthStore();
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [availableTenants, setAvailableTenants] = useState<Array<{
+    tenant: { id: string; name: string; base_currency: string };
+    role: 'owner' | 'admin' | 'accountant' | 'viewer';
+    is_default: boolean;
+  }>>([]);
+  const [isLoadingTenants, setIsLoadingTenants] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const fromRegister = searchParams.get('source') === 'register';
 
   const checklist = useMemo(
     () => [
@@ -41,6 +49,26 @@ export default function CreateCompanyPage() {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  useEffect(() => {
+    if (tenant) {
+      return;
+    }
+
+    const loadTenants = async () => {
+      setIsLoadingTenants(true);
+      try {
+        const memberships = await tenantsApi.listUserTenants();
+        setAvailableTenants(memberships);
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+      } finally {
+        setIsLoadingTenants(false);
+      }
+    };
+
+    void loadTenants();
+  }, [tenant]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage(null);
@@ -51,7 +79,7 @@ export default function CreateCompanyPage() {
       return;
     }
 
-    setIsSubmitting(true);
+    setActionLoading('create');
     try {
       const createdTenant = await tenantsApi.createTenant({
         name: form.name.trim(),
@@ -74,7 +102,27 @@ export default function CreateCompanyPage() {
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
-      setIsSubmitting(false);
+      setActionLoading(null);
+    }
+  };
+
+  const handleSwitchTenant = async (tenantId: string, tenantName: string) => {
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setActionLoading(`switch-${tenantId}`);
+    try {
+      const switched = await authApi.switchTenant(tenantId);
+      const memberships = availableTenants.find((item) => item.tenant.id === tenantId);
+      setTokens(switched.access_token, switched.refresh_token);
+      setTenant(memberships?.tenant as any, memberships?.role || null);
+      setSuccessMessage(`Switched to ${tenantName}. Redirecting...`);
+      setTimeout(() => {
+        router.push('/');
+      }, 250);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -120,6 +168,11 @@ export default function CreateCompanyPage() {
             Finish the real backend bootstrap now. This creates the tenant, fiscal year, journals, default accounts,
             VAT settings, and owner access in one step.
           </p>
+          {fromRegister && (
+            <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              Your account is ready. Finish company setup now, or switch into an existing invited company below if one is already available.
+            </div>
+          )}
           {user && (
             <p className="mt-3 text-xs text-slate-500">
               Signed in as <strong>{user.email}</strong>
@@ -153,7 +206,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('name', event.target.value)}
                 placeholder="Your Company OÜ"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
 
@@ -163,7 +216,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('registry_code', event.target.value)}
                 placeholder="12345678"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
 
@@ -173,7 +226,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('vat_number', event.target.value)}
                 placeholder="EE123456789"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
 
@@ -183,7 +236,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('email', event.target.value)}
                 placeholder="finance@company.ee"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
 
@@ -193,7 +246,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('phone', event.target.value)}
                 placeholder="+372 5555 5555"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
 
@@ -203,7 +256,7 @@ export default function CreateCompanyPage() {
                 onChange={(event) => handleChange('address', event.target.value)}
                 placeholder="Street, city"
                 className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={isSubmitting}
+                disabled={actionLoading !== null}
               />
             </FormField>
           </div>
@@ -214,7 +267,7 @@ export default function CreateCompanyPage() {
               checked={form.is_vat_registered}
               onChange={(event) => handleChange('is_vat_registered', event.target.checked)}
               className="mt-0.5 h-4 w-4 rounded border-slate-300"
-              disabled={isSubmitting}
+              disabled={actionLoading !== null}
             />
             <span>
               Mark this company as VAT registered from the start. You can change account and VAT configuration later in settings.
@@ -224,10 +277,10 @@ export default function CreateCompanyPage() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={actionLoading !== null}
               className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {actionLoading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               <span>Create company workspace</span>
             </button>
           </div>
@@ -235,6 +288,70 @@ export default function CreateCompanyPage() {
       </section>
 
       <aside className="space-y-6">
+        <div className="card overflow-hidden">
+          <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Existing access</h2>
+                <p className="mt-1 text-xs text-slate-500">Use an existing company if you were invited already.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAvailableTenants([]);
+                  setErrorMessage(null);
+                  setSuccessMessage(null);
+                  setIsLoadingTenants(true);
+                  void tenantsApi.listUserTenants()
+                    .then((memberships) => setAvailableTenants(memberships))
+                    .catch((error) => setErrorMessage(getErrorMessage(error)))
+                    .finally(() => setIsLoadingTenants(false));
+                }}
+                className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
+              >
+                {isLoadingTenants ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+          <div className="space-y-3 p-5">
+            {isLoadingTenants ? (
+              <div className="text-sm text-slate-500">Checking company memberships...</div>
+            ) : availableTenants.length === 0 ? (
+              <div className="rounded-xl border border-slate-100 bg-white px-4 py-3 text-sm text-slate-600">
+                No existing company access found for this account.
+              </div>
+            ) : (
+              availableTenants.map((membership) => (
+                <div key={membership.tenant.id} className="rounded-xl border border-slate-100 bg-white px-4 py-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">{membership.tenant.name}</div>
+                      <div className="mt-1 text-xs text-slate-500">
+                        Role {membership.role} · Base currency {membership.tenant.base_currency}
+                      </div>
+                    </div>
+                    {membership.is_default && (
+                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
+                        Default
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void handleSwitchTenant(membership.tenant.id, membership.tenant.name)}
+                    disabled={actionLoading !== null}
+                    className="mt-4 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {actionLoading === `switch-${membership.tenant.id}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                    <span>Open this company</span>
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         <div className="card overflow-hidden">
           <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">What happens next</h2>
