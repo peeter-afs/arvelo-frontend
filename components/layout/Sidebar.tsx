@@ -53,6 +53,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tAccounting('openingBalances'), href: '/accounting/opening-balances' },
         { name: tAccounting('bankImport'), href: '/accounting/bank-import' },
         { name: tAccounting('bankReview'), href: '/accounting/bank-review' },
+        { name: tAccounting('payments'), href: '/accounting/payments' },
         { name: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
       ]
     },

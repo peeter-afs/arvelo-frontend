@@ -18,6 +18,7 @@ import {
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type PartnerRecord } from '@/lib/api/accounting.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
+import { paymentsApi, type PaymentListItem } from '@/lib/api/payments.api';
 
 type InvoiceDetail = {
   invoice: InvoiceListItem;
@@ -59,6 +60,7 @@ export default function InvoiceListWorkspace({
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [selectedInvoiceDetail, setSelectedInvoiceDetail] = useState<InvoiceDetail | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentListItem[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [rejectReason, setRejectReason] = useState('');
@@ -66,6 +68,7 @@ export default function InvoiceListWorkspace({
   const [sendMessage, setSendMessage] = useState('');
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [isPaymentHistoryLoading, setIsPaymentHistoryLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -169,6 +172,27 @@ export default function InvoiceListWorkspace({
 
     void loadDetail();
   }, [partners, selectedInvoiceId]);
+
+  useEffect(() => {
+    if (!selectedInvoiceId) {
+      setPaymentHistory([]);
+      return;
+    }
+
+    const loadPayments = async () => {
+      setIsPaymentHistoryLoading(true);
+      try {
+        const result = await paymentsApi.listPayments({ invoice_id: selectedInvoiceId, limit: 20 });
+        setPaymentHistory(result);
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+      } finally {
+        setIsPaymentHistoryLoading(false);
+      }
+    };
+
+    void loadPayments();
+  }, [selectedInvoiceId]);
 
   const refreshInvoices = async (preferredId?: string | null) => {
     const invoiceItems = await invoicesApi.listInvoices({ type: invoiceType, limit: 200 });
@@ -530,6 +554,64 @@ export default function InvoiceListWorkspace({
                     )}
                   </div>
                 )}
+
+                <div className="border-t border-slate-200 p-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-semibold text-slate-900">Payment history</div>
+                    {selectedInvoiceDetail && (
+                      <Link
+                        href={`/accounting/payments?invoice_id=${selectedInvoiceDetail.invoice.id}`}
+                        className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span>Open payments workspace</span>
+                      </Link>
+                    )}
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <InfoBox label="Invoice total" value={Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} />
+                    <InfoBox label="Paid amount" value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
+                    <InfoBox label="Remaining open amount" value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
+                  </div>
+
+                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
+                    <div className="grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
+                      <span>Payment</span>
+                      <span>Date</span>
+                      <span>Amount</span>
+                      <span>Status</span>
+                    </div>
+                    {isPaymentHistoryLoading ? (
+                      <div className="px-4 py-4 text-sm text-slate-500">Loading payment history...</div>
+                    ) : paymentHistory.length === 0 ? (
+                      <div className="px-4 py-4 text-sm text-slate-500">No payments recorded for this invoice yet.</div>
+                    ) : (
+                      paymentHistory.map((payment) => (
+                        <div
+                          key={payment.id}
+                          className="grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr] gap-3 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0"
+                        >
+                          <div className="min-w-0">
+                            <div className="truncate font-medium text-slate-900">
+                              {payment.reference || payment.id.slice(0, 8)}
+                            </div>
+                            <div className="truncate text-xs text-slate-500">{payment.direction}</div>
+                          </div>
+                          <div className="text-slate-700">{payment.payment_date?.slice(0, 10)}</div>
+                          <div className="font-mono text-slate-900">
+                            {Number(payment.amount || 0).toFixed(2)} {payment.currency}
+                          </div>
+                          <div>
+                            <StatePill tone={payment.status === 'posted' ? 'success' : payment.status === 'reversed' ? 'danger' : 'warning'}>
+                              {payment.status}
+                            </StatePill>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="card overflow-hidden">
