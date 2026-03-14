@@ -282,6 +282,93 @@ export default function InvoiceListWorkspace({
 
   const selectedPartnerName =
     partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id)?.name || 'Unknown partner';
+  const selectedPartner = partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id);
+  const lineSummary = useMemo(() => {
+    if (!selectedInvoiceDetail) {
+      return {
+        subtotalBeforeDiscount: 0,
+        totalDiscountValue: 0,
+        averageTaxRate: 0,
+        accountsUsed: [] as string[],
+      };
+    }
+
+    const subtotalBeforeDiscount = selectedInvoiceDetail.lines.reduce((sum, line) => {
+      return sum + Number(line.quantity || 0) * Number(line.unit_price || 0);
+    }, 0);
+    const totalDiscountValue = selectedInvoiceDetail.lines.reduce((sum, line) => {
+      const gross = Number(line.quantity || 0) * Number(line.unit_price || 0);
+      const discountPercent = Number(line.discount_percent || 0);
+      return sum + gross * (discountPercent / 100);
+    }, 0);
+    const averageTaxRate = selectedInvoiceDetail.lines.length > 0
+      ? selectedInvoiceDetail.lines.reduce((sum, line) => sum + Number(line.tax_rate || 0), 0) / selectedInvoiceDetail.lines.length
+      : 0;
+    const accountsUsed = Array.from(
+      new Set(selectedInvoiceDetail.lines.map((line) => line.account_id).filter(Boolean))
+    ) as string[];
+
+    return {
+      subtotalBeforeDiscount,
+      totalDiscountValue,
+      averageTaxRate,
+      accountsUsed,
+    };
+  }, [selectedInvoiceDetail]);
+  const activityTimeline = useMemo(() => {
+    if (!selectedInvoiceDetail) return [];
+    const invoice = selectedInvoiceDetail.invoice;
+    const items = [
+      {
+        label: 'Created',
+        value: invoice.created_at,
+        tone: 'neutral' as const,
+        detail: invoice.created_by_user_id ? `User ${invoice.created_by_user_id}` : null,
+      },
+      invoice.approval_requested_at
+        ? {
+            label: 'Approval requested',
+            value: invoice.approval_requested_at,
+            tone: 'warning' as const,
+            detail: invoice.approval_requested_by_user_id ? `User ${invoice.approval_requested_by_user_id}` : null,
+          }
+        : null,
+      invoice.approved_at
+        ? {
+            label: 'Approved',
+            value: invoice.approved_at,
+            tone: 'success' as const,
+            detail: invoice.approved_by_user_id ? `User ${invoice.approved_by_user_id}` : null,
+          }
+        : null,
+      invoice.rejected_at
+        ? {
+            label: 'Rejected',
+            value: invoice.rejected_at,
+            tone: 'danger' as const,
+            detail: invoice.rejected_by_user_id ? `User ${invoice.rejected_by_user_id}` : invoice.rejection_reason || null,
+          }
+        : null,
+      invoice.journal_entry_id
+        ? {
+            label: 'Posted to ledger',
+            value: invoice.updated_at,
+            tone: 'success' as const,
+            detail: `Journal ${invoice.journal_entry_id}`,
+          }
+        : null,
+      invoice.status === 'paid'
+        ? {
+            label: 'Fully settled',
+            value: invoice.updated_at,
+            tone: 'success' as const,
+            detail: `${Number(invoice.paid_amount || 0).toFixed(2)} ${invoice.currency}`,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return items as Array<{ label: string; value: string; tone: 'neutral' | 'success' | 'warning' | 'danger'; detail: string | null }>;
+  }, [selectedInvoiceDetail]);
 
   return (
     <div className="space-y-6">
@@ -432,6 +519,71 @@ export default function InvoiceListWorkspace({
                   <InfoBox label="Paid amount" value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
                   <InfoBox label="Payment reference" value={selectedInvoiceDetail.invoice.payment_reference || '-'} />
                   <InfoBox label={isPurchase ? 'Approval requested' : 'Journal entry'} value={isPurchase ? selectedInvoiceDetail.invoice.approval_requested_at || '-' : selectedInvoiceDetail.invoice.journal_entry_id || '-'} />
+                </div>
+
+                <div className="grid gap-4 border-t border-slate-200 p-5 xl:grid-cols-[1.1fr_0.9fr]">
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="text-sm font-semibold text-slate-900">Document summary</div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <InfoBox label="Issue date" value={selectedInvoiceDetail.invoice.invoice_date || '-'} />
+                        <InfoBox label="Due date" value={selectedInvoiceDetail.invoice.due_date || '-'} />
+                        <InfoBox label="Currency" value={selectedInvoiceDetail.invoice.currency || '-'} />
+                        <InfoBox label="Line count" value={String(selectedInvoiceDetail.lines.length)} />
+                      </div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        <InfoBox label="Subtotal" value={Number(selectedInvoiceDetail.invoice.subtotal || 0).toFixed(2)} />
+                        <InfoBox label="Tax total" value={Number(selectedInvoiceDetail.invoice.tax_amount || 0).toFixed(2)} />
+                        <InfoBox label="Gross before discount" value={lineSummary.subtotalBeforeDiscount.toFixed(2)} />
+                        <InfoBox label="Discount value" value={lineSummary.totalDiscountValue.toFixed(2)} />
+                      </div>
+                      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+                        <div className="font-medium text-slate-800">Notes</div>
+                        <p className="mt-2 leading-6">{selectedInvoiceDetail.invoice.notes || 'No notes recorded for this invoice.'}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="text-sm font-semibold text-slate-900">Commercial and accounting context</div>
+                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                        <InfoBox label="Average VAT rate" value={`${lineSummary.averageTaxRate.toFixed(2)}%`} />
+                        <InfoBox label="Accounts used" value={lineSummary.accountsUsed.length ? lineSummary.accountsUsed.join(', ') : '-'} />
+                        <InfoBox label="Payment terms" value={selectedInvoiceDetail.invoice.due_date ? `${dateDiffLabel(selectedInvoiceDetail.invoice.invoice_date, selectedInvoiceDetail.invoice.due_date)}` : '-'} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="text-sm font-semibold text-slate-900">{isPurchase ? 'Supplier context' : 'Customer context'}</div>
+                      <div className="mt-4 space-y-3">
+                        <DetailRow label="Name" value={selectedPartnerName} />
+                        <DetailRow label="Email" value={selectedPartner?.email || '-'} />
+                        <DetailRow label="Registry code" value={selectedPartner?.reg_code || '-'} />
+                        <DetailRow label="VAT number" value={selectedPartner?.vat_number || '-'} />
+                        <DetailRow label="Address" value={selectedPartner?.address || '-'} />
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                      <div className="text-sm font-semibold text-slate-900">Activity timeline</div>
+                      <div className="mt-4 space-y-4">
+                        {activityTimeline.length === 0 ? (
+                          <div className="text-sm text-slate-500">No timeline events recorded yet.</div>
+                        ) : (
+                          activityTimeline.map((item) => (
+                            <TimelineRow
+                              key={`${item.label}-${item.value}`}
+                              label={item.label}
+                              value={item.value}
+                              tone={item.tone}
+                              detail={item.detail}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2 border-t border-slate-200 px-5 py-4">
@@ -620,14 +772,38 @@ export default function InvoiceListWorkspace({
                 </div>
                 <div className="divide-y divide-slate-100">
                   {selectedInvoiceDetail.lines.map((line) => (
-                    <div key={line.id} className="grid gap-3 px-5 py-4 lg:grid-cols-[minmax(0,1fr)_120px_120px_120px]">
+                    <div key={line.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1.2fr)_110px_110px_110px_120px]">
                       <div>
                         <div className="text-sm font-medium text-slate-900">{line.description}</div>
-                        <div className="mt-1 text-xs text-slate-500">Qty {line.quantity} · VAT {Number(line.tax_rate || 0).toFixed(2)}%</div>
+                        <div className="mt-1 text-xs text-slate-500">
+                          Qty {line.quantity} · VAT {Number(line.tax_rate || 0).toFixed(2)}% · Account {line.account_id || '-'}
+                        </div>
+                        {line.meta && Object.keys(line.meta).length > 0 && (
+                          <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
+                            {Object.entries(line.meta).slice(0, 4).map(([key, value]) => (
+                              <div key={key}>
+                                {key}: {String(value)}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-slate-700">{Number(line.unit_price || 0).toFixed(2)}</div>
-                      <div className="text-sm text-slate-700">{Number(line.discount_percent || 0).toFixed(2)}%</div>
-                      <div className="text-right font-mono text-sm text-slate-900">{Number(line.line_total || 0).toFixed(2)}</div>
+                      <div className="text-sm text-slate-700">
+                        <div className="font-medium text-slate-900">{Number(line.unit_price || 0).toFixed(2)}</div>
+                        <div className="mt-1 text-xs text-slate-500">Unit price</div>
+                      </div>
+                      <div className="text-sm text-slate-700">
+                        <div className="font-medium text-slate-900">{Number(line.discount_percent || 0).toFixed(2)}%</div>
+                        <div className="mt-1 text-xs text-slate-500">Discount</div>
+                      </div>
+                      <div className="text-sm text-slate-700">
+                        <div className="font-medium text-slate-900">{Number(line.tax_rate || 0).toFixed(2)}%</div>
+                        <div className="mt-1 text-xs text-slate-500">VAT rate</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-mono text-sm text-slate-900">{Number(line.line_total || 0).toFixed(2)}</div>
+                        <div className="mt-1 text-xs text-slate-500">Line total</div>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -671,6 +847,50 @@ function InfoBox({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl bg-slate-50 p-4">
       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
       <div className="mt-2 text-sm text-slate-800">{value}</div>
+    </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
+      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</div>
+      <div className="max-w-[65%] text-right text-sm text-slate-700">{value}</div>
+    </div>
+  );
+}
+
+function TimelineRow({
+  label,
+  value,
+  tone,
+  detail,
+}: {
+  label: string;
+  value: string;
+  tone: 'neutral' | 'success' | 'warning' | 'danger';
+  detail: string | null;
+}) {
+  const dotClass =
+    tone === 'success'
+      ? 'bg-emerald-500'
+      : tone === 'warning'
+        ? 'bg-amber-500'
+        : tone === 'danger'
+          ? 'bg-red-500'
+          : 'bg-slate-400';
+
+  return (
+    <div className="flex gap-3">
+      <div className="flex flex-col items-center">
+        <div className={`mt-1 h-2.5 w-2.5 rounded-full ${dotClass}`} />
+        <div className="mt-1 h-full w-px bg-slate-200 last:hidden" />
+      </div>
+      <div className="min-w-0 pb-2">
+        <div className="text-sm font-medium text-slate-900">{label}</div>
+        <div className="mt-1 text-xs text-slate-500">{formatDateTime(value)}</div>
+        {detail && <div className="mt-1 text-xs text-slate-500">{detail}</div>}
+      </div>
     </div>
   );
 }
@@ -719,6 +939,28 @@ function renderListMeta(invoice: InvoiceListItem, isPurchase: boolean) {
 
 function canEditInvoice(invoice: InvoiceListItem) {
   return ['draft', 'rejected'].includes(invoice.status) && !invoice.journal_entry_id;
+}
+
+function dateDiffLabel(fromDate: string, toDate: string) {
+  const from = new Date(fromDate);
+  const to = new Date(toDate);
+  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return '-';
+  const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return 'Same day';
+  if (diffDays === 1) return '1 day';
+  return `${diffDays} days`;
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }
 
 function StatePill({

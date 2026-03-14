@@ -22,6 +22,7 @@ export type InvoiceListItem = {
   notes?: string | null;
   payment_reference?: string | null;
   journal_entry_id?: string | null;
+  created_by_user_id?: string | null;
   created_at: string;
   updated_at: string;
   approval_requested_at?: string | null;
