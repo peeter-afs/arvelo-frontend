@@ -276,6 +276,17 @@ export const billingApi = {
     return response.data.data;
   },
 
+  async sendInvoiceReminder(id: string, payload?: { force?: boolean; reference_date?: string }) {
+    const response = await apiClient.post<ApiResponse<{
+      sent: boolean;
+      recipient?: string | null;
+      skipped_reason?: string;
+      reminder_index?: number;
+      invoice?: BillingInvoice;
+    }>>(`/api/billing/invoices/${id}/send-reminder`, payload || {});
+    return response.data.data;
+  },
+
   async previewReminder(payload?: { invoice_id?: string; reminder_index?: number; settings_override?: Record<string, any> }) {
     const response = await apiClient.post<ApiResponse<BillingMessagePreview>>('/api/billing/jobs/preview-reminder', payload || {});
     return response.data.data;

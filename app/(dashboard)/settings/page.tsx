@@ -1055,14 +1055,28 @@ export default function SettingsPage() {
                                 <button
                                   type="button"
                                   onClick={() => void runBillingAction(`send-invoice-reminder-${invoice.id}`, async () => {
-                                    const result = await billingApi.sendReminders({ force: true });
+                                    const result = await billingApi.sendInvoiceReminder(invoice.id, { force: true });
                                     await reloadBilling();
-                                    setSettingsSuccess(result.sent_count > 0 ? `Sent ${result.sent_count} reminder(s).` : 'No reminders were sent.');
+                                    setSettingsSuccess(
+                                      result.sent
+                                        ? `Reminder sent for invoice #${invoice.invoice_no}.`
+                                        : result.skipped_reason === 'no_recipient'
+                                          ? 'Reminder skipped because no billing recipient email is configured.'
+                                          : result.skipped_reason === 'disabled'
+                                            ? 'Reminder skipped because reminders are disabled.'
+                                            : result.skipped_reason === 'not_overdue_enough'
+                                              ? 'Reminder skipped because the invoice is not overdue long enough yet.'
+                                              : result.skipped_reason === 'frequency_not_reached'
+                                                ? 'Reminder skipped because the reminder frequency is not reached yet.'
+                                                : result.skipped_reason === 'weekday_mismatch'
+                                                  ? 'Reminder skipped because today does not match the configured reminder weekday.'
+                                                  : 'Reminder was not sent.'
+                                    );
                                   })}
                                   disabled={billingAction !== null}
                                   className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                                 >
-                                  {billingAction === `send-invoice-reminder-${invoice.id}` ? 'Sending…' : 'Send Reminders'}
+                                  {billingAction === `send-invoice-reminder-${invoice.id}` ? 'Sending…' : 'Send reminder'}
                                 </button>
                               </div>
                             </div>
