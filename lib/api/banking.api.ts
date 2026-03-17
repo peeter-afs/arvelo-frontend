@@ -120,7 +120,53 @@ export type PaymentBatchLine = {
   payment_reference?: string | null;
 };
 
+export type BankAccountRecord = {
+  id: string;
+  account_id?: string | null;
+  name: string;
+  bank_name?: string | null;
+  iban?: string | null;
+  bic?: string | null;
+  currency: string;
+  is_active: boolean;
+  ledger_account_code?: string | null;
+  ledger_account_name?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export const bankingApi = {
+  async listBankAccounts() {
+    const response = await apiClient.get<ApiResponse<BankAccountRecord[]>>('/api/banking/bank-accounts');
+    return response.data.data;
+  },
+
+  async createBankAccount(payload: {
+    name: string;
+    bank_name?: string;
+    iban?: string;
+    bic?: string;
+    currency?: string;
+    account_id?: string | null;
+    is_active?: boolean;
+  }) {
+    const response = await apiClient.post<ApiResponse<BankAccountRecord>>('/api/banking/bank-accounts', payload);
+    return response.data.data;
+  },
+
+  async updateBankAccount(id: string, payload: {
+    name?: string;
+    bank_name?: string | null;
+    iban?: string | null;
+    bic?: string | null;
+    currency?: string;
+    account_id?: string | null;
+    is_active?: boolean;
+  }) {
+    const response = await apiClient.put<ApiResponse<BankAccountRecord>>(`/api/banking/bank-accounts/${id}`, payload);
+    return response.data.data;
+  },
+
   async createImportJob(payload: {
     file_name: string;
     file_size: number;

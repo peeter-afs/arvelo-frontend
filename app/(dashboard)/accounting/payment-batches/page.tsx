@@ -13,7 +13,7 @@ import {
   Wallet,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { bankingApi, type PaymentBatchLine, type PaymentBatchListItem } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type PaymentBatchLine, type PaymentBatchListItem } from '@/lib/api/banking.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 
 type DraftLine = {
@@ -40,6 +40,7 @@ export default function PaymentBatchesPage() {
     summary: Record<string, any>;
   } | null>(null);
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
   const [batchName, setBatchName] = useState('');
   const [executionDate, setExecutionDate] = useState(today);
@@ -55,9 +56,10 @@ export default function PaymentBatchesPage() {
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        const [invoiceItems, batchResult] = await Promise.all([
+        const [invoiceItems, batchResult, bankAccountItems] = await Promise.all([
           invoicesApi.listInvoices({ type: 'purchase_invoice', limit: 100 }),
           bankingApi.listPaymentBatches({ limit: 30 }),
+          bankingApi.listBankAccounts(),
         ]);
 
         const payableInvoices = invoiceItems.filter((invoice) =>
@@ -66,6 +68,8 @@ export default function PaymentBatchesPage() {
 
         setInvoices(payableInvoices);
         setBatches(batchResult.items);
+        setBankAccounts(bankAccountItems.filter((item) => item.is_active));
+        setBankAccountId((current) => current || bankAccountItems.find((item) => item.is_active)?.id || '');
         setSelectedBatchId((current) => current || batchResult.items[0]?.id || null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -259,7 +263,21 @@ export default function PaymentBatchesPage() {
             </div>
             <div className="space-y-5 p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field label="Bank account id" value={bankAccountId} onChange={setBankAccountId} placeholder="UUID from banking.bank_accounts" />
+                <label className="space-y-2">
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bank account</span>
+                  <select
+                    value={bankAccountId}
+                    onChange={(event) => setBankAccountId(event.target.value)}
+                    className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                  >
+                    <option value="">Select bank account</option>
+                    {bankAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name} {account.iban ? `· ${account.iban}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <Field label="Batch name" value={batchName} onChange={setBatchName} placeholder="Optional batch name" />
                 <Field label="Execution date" type="date" value={executionDate} onChange={setExecutionDate} />
                 <Field label="Currency" value={currency} onChange={(value) => setCurrency(value.toUpperCase())} />

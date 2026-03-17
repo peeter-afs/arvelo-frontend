@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import {
   AlertCircle,
   CheckCircle2,
@@ -11,7 +11,7 @@ import {
   TableProperties,
   Upload,
 } from 'lucide-react';
-import { bankingApi, type BankImportJob, type BankImportPreviewRow } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 
 type ImportFormat = 'csv' | 'camt53';
@@ -41,6 +41,7 @@ function detectStatementIban(fileContent: string): string | null {
 
 export default function BankImportPage() {
   const [file, setFile] = useState<File | null>(null);
+  const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
   const [job, setJob] = useState<BankImportJob | null>(null);
   const [previewRows, setPreviewRows] = useState<BankImportPreviewRow[]>([]);
@@ -55,6 +56,21 @@ export default function BankImportPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const items = await bankingApi.listBankAccounts();
+        const activeItems = items.filter((item) => item.is_active);
+        setBankAccounts(activeItems);
+        setBankAccountId((current) => current || activeItems[0]?.id || '');
+      } catch {
+        // Keep the screen usable even if bank-account loading fails.
+      }
+    };
+
+    void load();
+  }, []);
 
   const counts = useMemo(() => {
     return {
@@ -74,7 +90,7 @@ export default function BankImportPage() {
 
     if (sourceType === 'csv' && !bankAccountId.trim()) {
       setFile(nextFile);
-      setErrorMessage('Bank account id is still required before the import can start.');
+      setErrorMessage('Bank account selection is still required before CSV import can start.');
       setSuccessMessage(null);
       setPendingMessage(`File ${nextFile.name} is ready. Add the bank account id and upload again to start parsing.`);
       return;
@@ -239,13 +255,19 @@ export default function BankImportPage() {
 
             <div className="space-y-4">
               <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bank account id</span>
-                <input
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bank account</span>
+                <select
                   value={bankAccountId}
                   onChange={(event) => handleBankAccountIdChange(event.target.value)}
-                  placeholder={detectedFormat === 'csv' ? 'UUID from banking.bank_accounts' : 'Optional fallback for CAMT.053'}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3"
-                />
+                >
+                  <option value="">{detectedFormat === 'csv' ? 'Select bank account' : 'Optional fallback for CAMT.053'}</option>
+                  {bankAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.name} {account.iban ? `· ${account.iban}` : ''}
+                    </option>
+                  ))}
+                </select>
               </label>
 
               {detectedFormat === 'camt53' && (

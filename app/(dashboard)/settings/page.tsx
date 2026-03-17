@@ -4,6 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
+import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
+import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 
@@ -26,6 +28,19 @@ export default function SettingsPage() {
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registrySaving, setRegistrySaving] = useState(false);
   const [registryTesting, setRegistryTesting] = useState(false);
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [companyAction, setCompanyAction] = useState<string | null>(null);
+  const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
+  const [bankAccountForm, setBankAccountForm] = useState({
+    name: '',
+    bank_name: '',
+    iban: '',
+    bic: '',
+    currency: tenant?.base_currency || 'EUR',
+    account_id: '',
+    is_active: true,
+  });
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingAction, setBillingAction] = useState<string | null>(null);
@@ -87,6 +102,36 @@ export default function SettingsPage() {
     { id: 'localization', label: 'Localization', icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: 'Business Registry', icon: Settings, category: 'organization' },
   ];
+
+  useEffect(() => {
+    if (activeTab !== 'company') {
+      return;
+    }
+
+    const load = async () => {
+      setCompanyLoading(true);
+      setSettingsError(null);
+      try {
+        const [accounts, bankAccountItems] = await Promise.all([
+          accountingApi.getAccounts(),
+          bankingApi.listBankAccounts(),
+        ]);
+        setLedgerAccounts(accounts);
+        setBankAccounts(bankAccountItems);
+        setBankAccountForm((current) => ({
+          ...current,
+          currency: current.currency || tenant?.base_currency || 'EUR',
+          account_id: current.account_id || accounts.find((item) => item.is_active)?.id || '',
+        }));
+      } catch (error) {
+        setSettingsError(getErrorMessage(error));
+      } finally {
+        setCompanyLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeTab, tenant?.base_currency]);
 
   useEffect(() => {
     if (activeTab !== 'billing' || !canManageBilling) {
@@ -342,6 +387,45 @@ export default function SettingsPage() {
     }
   };
 
+  const reloadCompanyData = async () => {
+    const [accounts, bankAccountItems] = await Promise.all([
+      accountingApi.getAccounts(),
+      bankingApi.listBankAccounts(),
+    ]);
+    setLedgerAccounts(accounts);
+    setBankAccounts(bankAccountItems);
+  };
+
+  const saveBankAccount = async () => {
+    setCompanyAction('save-bank-account');
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      await bankingApi.createBankAccount({
+        name: bankAccountForm.name,
+        bank_name: bankAccountForm.bank_name || undefined,
+        iban: bankAccountForm.iban || undefined,
+        bic: bankAccountForm.bic || undefined,
+        currency: bankAccountForm.currency || undefined,
+        account_id: bankAccountForm.account_id || null,
+        is_active: bankAccountForm.is_active,
+      });
+      await reloadCompanyData();
+      setBankAccountForm((current) => ({
+        ...current,
+        name: '',
+        bank_name: '',
+        iban: '',
+        bic: '',
+      }));
+      setSettingsSuccess('Bank account saved.');
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setCompanyAction(null);
+    }
+  };
+
   return (
     <div>
       {/* Header */}
@@ -469,6 +553,88 @@ export default function SettingsPage() {
                     Save Changes
                   </button>
                 </form>
+
+                <div className="mt-8 rounded-xl border border-slate-200 p-5">
+                  <h3 className="text-sm font-semibold text-slate-900">Bank accounts</h3>
+                  <p className="mt-1 text-sm text-slate-500">
+                    These accounts are used by bank import, payment batches, and PAIN.001 export.
+                  </p>
+
+                  {companyLoading ? (
+                    <div className="mt-4 text-sm text-slate-500">Loading bank accounts…</div>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      {bankAccounts.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+                          No bank accounts in settings yet.
+                        </div>
+                      ) : (
+                        bankAccounts.map((account) => (
+                          <div key={account.id} className="rounded-lg border border-slate-200 p-4">
+                            <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                              <div>
+                                <div className="text-sm font-medium text-slate-900">{account.name}</div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  {account.iban || 'No IBAN'} · {account.bank_name || 'No bank name'} · {account.currency}
+                                </div>
+                                <div className="mt-1 text-xs text-slate-500">
+                                  Ledger: {account.ledger_account_code || '-'} {account.ledger_account_name || 'No linked account'}
+                                </div>
+                              </div>
+                              <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                                {account.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <SettingsField label="Display name">
+                      <input value={bankAccountForm.name} onChange={(event) => setBankAccountForm((current) => ({ ...current, name: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
+                    </SettingsField>
+                    <SettingsField label="Bank name">
+                      <input value={bankAccountForm.bank_name} onChange={(event) => setBankAccountForm((current) => ({ ...current, bank_name: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
+                    </SettingsField>
+                    <SettingsField label="IBAN">
+                      <input value={bankAccountForm.iban} onChange={(event) => setBankAccountForm((current) => ({ ...current, iban: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
+                    </SettingsField>
+                    <SettingsField label="BIC">
+                      <input value={bankAccountForm.bic} onChange={(event) => setBankAccountForm((current) => ({ ...current, bic: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
+                    </SettingsField>
+                    <SettingsField label="Currency">
+                      <input value={bankAccountForm.currency} onChange={(event) => setBankAccountForm((current) => ({ ...current, currency: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
+                    </SettingsField>
+                    <SettingsField label="Ledger account">
+                      <select value={bankAccountForm.account_id} onChange={(event) => setBankAccountForm((current) => ({ ...current, account_id: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4">
+                        <option value="">Select ledger account</option>
+                        {ledgerAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.code} · {account.name}
+                          </option>
+                        ))}
+                      </select>
+                    </SettingsField>
+                  </div>
+                  <label className="mt-4 flex items-center gap-2 text-sm text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={bankAccountForm.is_active}
+                      onChange={(event) => setBankAccountForm((current) => ({ ...current, is_active: event.target.checked }))}
+                    />
+                    <span>Active bank account</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => void saveBankAccount()}
+                    disabled={!bankAccountForm.name || companyAction !== null}
+                    className="mt-4 h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                  >
+                    {companyAction === 'save-bank-account' ? 'Saving…' : 'Add Bank Account'}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -1555,6 +1721,15 @@ export default function SettingsPage() {
 }
 
 function BillingField({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <div className="text-sm font-medium text-slate-700 mb-1.5">{label}</div>
+      {children}
+    </label>
+  );
+}
+
+function SettingsField({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
       <div className="text-sm font-medium text-slate-700 mb-1.5">{label}</div>
