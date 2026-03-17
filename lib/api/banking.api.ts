@@ -60,6 +60,12 @@ export type BankReviewQueueItem = {
   bank_account_id: string;
   bank_account_name?: string | null;
   bank_account_iban?: string | null;
+  import_job_id?: string | null;
+  import_row_id?: string | null;
+  import_file_name?: string | null;
+  import_row_no?: number | null;
+  import_warning_flags?: string[];
+  import_parsed_payload?: Record<string, any> | null;
   tx_date: string;
   value_date?: string | null;
   amount: number;

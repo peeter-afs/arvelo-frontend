@@ -318,6 +318,10 @@ export default function BankReviewPage() {
                         <div className="mt-1 truncate text-xs text-slate-500">
                           {item.reference || item.description || 'No reference'}
                         </div>
+                        <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                          {typeof item.import_row_no === 'number' && <span>Row {item.import_row_no}</span>}
+                          {item.import_file_name && <span>{item.import_file_name}</span>}
+                        </div>
                       </div>
                       <span className="font-mono text-sm text-slate-900">
                         {item.amount.toFixed(2)}
@@ -386,7 +390,45 @@ export default function BankReviewPage() {
                         : '-'
                     }
                   />
+                  <InfoBox
+                    label="Imported row"
+                    value={typeof selectedItem.import_row_no === 'number' ? `Row ${selectedItem.import_row_no}` : '-'}
+                  />
+                  <InfoBox
+                    label="Import source"
+                    value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'}
+                  />
                 </div>
+
+                {(selectedItem.import_warning_flags?.length || selectedItem.import_parsed_payload) && (
+                  <div className="grid gap-4 border-t border-slate-200 px-5 py-5 lg:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Import warnings</div>
+                      {selectedItem.import_warning_flags && selectedItem.import_warning_flags.length > 0 ? (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {selectedItem.import_warning_flags.map((flag) => (
+                            <span key={flag} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">
+                              {formatLabel(flag)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-3 text-sm text-slate-500">No import warning flags.</div>
+                      )}
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Imported row payload</div>
+                      {selectedItem.import_parsed_payload ? (
+                        <pre className="mt-3 max-h-56 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                          {JSON.stringify(selectedItem.import_parsed_payload, null, 2)}
+                        </pre>
+                      ) : (
+                        <div className="mt-3 text-sm text-slate-500">No parsed import payload available.</div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">

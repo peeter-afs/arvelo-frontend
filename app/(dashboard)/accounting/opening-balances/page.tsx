@@ -20,6 +20,8 @@ type GeneralRow = {
 type SubledgerRow = {
   id: string;
   partner_id: string;
+  partner_name: string;
+  reg_code: string;
   invoice_number: string;
   reference: string;
   description: string;
@@ -42,6 +44,8 @@ const createGeneralRow = (): GeneralRow => ({
 const createSubledgerRow = (): SubledgerRow => ({
   id: crypto.randomUUID(),
   partner_id: '',
+  partner_name: '',
+  reg_code: '',
   invoice_number: '',
   reference: '',
   description: '',
@@ -188,6 +192,8 @@ export default function OpeningBalancesPage() {
         result.suggested_payload.lines.map((line) => ({
           id: crypto.randomUUID(),
           partner_id: String(line.partner_id || ''),
+          partner_name: String(line.partner_name || ''),
+          reg_code: String(line.reg_code || ''),
           invoice_number: String(line.invoice_number || ''),
           reference: String(line.reference || ''),
           description: String(line.description || ''),
@@ -201,6 +207,8 @@ export default function OpeningBalancesPage() {
         result.suggested_payload.lines.map((line) => ({
           id: crypto.randomUUID(),
           partner_id: String(line.partner_id || ''),
+          partner_name: String(line.partner_name || ''),
+          reg_code: String(line.reg_code || ''),
           invoice_number: String(line.invoice_number || ''),
           reference: String(line.reference || ''),
           description: String(line.description || ''),
@@ -727,11 +735,29 @@ function SubledgerEditor({
             <div className="md:col-span-3">
               <label className="mb-1 block text-xs font-medium text-slate-500">Partner</label>
               <select value={row.partner_id} onChange={(e) => updateRow(row.id, 'partner_id', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3">
-                <option value="">Select partner</option>
+                <option value="">Match existing or create on commit</option>
                 {partners.map((partner) => (
                   <option key={partner.id} value={partner.id}>{partner.name}</option>
                 ))}
               </select>
+            </div>
+            <div className="md:col-span-3">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Partner name</label>
+              <input
+                value={row.partner_name}
+                onChange={(e) => updateRow(row.id, 'partner_name', e.target.value)}
+                placeholder="Needed if partner does not exist yet"
+                className="h-10 w-full rounded-lg border border-slate-200 px-3"
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="mb-1 block text-xs font-medium text-slate-500">Registry code</label>
+              <input
+                value={row.reg_code}
+                onChange={(e) => updateRow(row.id, 'reg_code', e.target.value)}
+                placeholder="Optional"
+                className="h-10 w-full rounded-lg border border-slate-200 px-3"
+              />
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-500">Invoice no</label>
@@ -741,7 +767,7 @@ function SubledgerEditor({
               <label className="mb-1 block text-xs font-medium text-slate-500">Reference</label>
               <input value={row.reference} onChange={(e) => updateRow(row.id, 'reference', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
-            <div className="md:col-span-3">
+            <div className="md:col-span-4">
               <label className="mb-1 block text-xs font-medium text-slate-500">Description</label>
               <input value={row.description} onChange={(e) => updateRow(row.id, 'description', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
@@ -932,7 +958,9 @@ function buildPayload(
   }
 
   const rows = (mode === 'receivables' ? state.receivableRows : state.payableRows).map((row) => ({
-    partner_id: row.partner_id,
+    partner_id: row.partner_id || undefined,
+    partner_name: row.partner_name || undefined,
+    reg_code: row.reg_code || undefined,
     invoice_number: row.invoice_number || undefined,
     reference: row.reference || undefined,
     description: row.description || undefined,
