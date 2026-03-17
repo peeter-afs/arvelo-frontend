@@ -94,6 +94,13 @@ export default function BankReviewPage() {
           }))
         );
         setReviewNote(selectedItem.review_note || '');
+        setManualAccountId(selectedItem.suggested_manual_account_id || '');
+        setManualDescription(
+          selectedItem.description
+          || selectedItem.reference
+          || selectedItem.counterparty_name
+          || ''
+        );
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -320,6 +327,12 @@ export default function BankReviewPage() {
                       <span>{item.tx_date}</span>
                       <span>·</span>
                       <span>{item.currency}</span>
+                      {item.bank_account_name && (
+                        <>
+                          <span>·</span>
+                          <span>{item.bank_account_name}</span>
+                        </>
+                      )}
                       {item.auto_match_ready && (
                         <>
                           <span>·</span>
@@ -360,10 +373,19 @@ export default function BankReviewPage() {
                 </div>
 
                 <div className="grid gap-4 p-5 lg:grid-cols-2">
+                  <InfoBox label="Bank account" value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
                   <InfoBox label="Counterparty account" value={selectedItem.counterparty_account || '-'} />
                   <InfoBox label="Auto-match" value={selectedItem.auto_match_ready ? 'Ready' : 'Needs review'} />
                   <InfoBox label="Description" value={selectedItem.description || '-'} />
                   <InfoBox label="Review note" value={selectedItem.review_note || '-'} />
+                  <InfoBox
+                    label="Manual-post default"
+                    value={
+                      selectedItem.suggested_manual_account_name
+                        ? `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}`
+                        : '-'
+                    }
+                  />
                 </div>
               </div>
 
@@ -471,6 +493,11 @@ export default function BankReviewPage() {
                     description="No invoice match. Post directly to a counter-account."
                   >
                     <div className="grid gap-3">
+                      {selectedItem.suggested_manual_account_name && (
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                          Suggested default: {selectedItem.suggested_manual_account_code || '-'} · {selectedItem.suggested_manual_account_name}
+                        </div>
+                      )}
                       <select
                         value={manualAccountId}
                         onChange={(event) => setManualAccountId(event.target.value)}

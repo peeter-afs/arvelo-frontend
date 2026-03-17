@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Loader2, Plus, Receipt, Scale, Trash2, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Loader2, Plus, Receipt, Scale, Trash2, Upload, Wallet } from 'lucide-react';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
 
 type Mode = 'general' | 'receivables' | 'payables';
 
@@ -78,6 +79,9 @@ export default function OpeningBalancesPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [previewResult, setPreviewResult] = useState<any | null>(null);
   const [commitResult, setCommitResult] = useState<any | null>(null);
+  const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [isImportLoading, setIsImportLoading] = useState(false);
   const previewSnapshotRef = useRef<string | null>(null);
 
   const [sharedFields, setSharedFields] = useState({
@@ -156,7 +160,77 @@ export default function OpeningBalancesPage() {
   const handleModeChange = (nextMode: Mode) => {
     setMode(nextMode);
     invalidatePreview();
+    setImportResult(null);
     setErrorMessage(null);
+  };
+
+  const applyImportedRows = (result: OpeningBalanceImportResult) => {
+    setSharedFields((current) => ({
+      ...current,
+      opening_date: result.suggested_payload.opening_date || current.opening_date,
+      currency: result.suggested_payload.currency || current.currency,
+      source_document_id: result.document_id
+    }));
+
+    if (result.mode === 'general') {
+      setGeneralRows(
+        result.suggested_payload.lines.map((line) => ({
+          id: crypto.randomUUID(),
+          account_id: String(line.account_id || ''),
+          partner_id: String(line.partner_id || ''),
+          description: String(line.description || ''),
+          side: line.side === 'credit' ? 'credit' : 'debit',
+          amount: String(line.amount || '')
+        }))
+      );
+    } else if (result.mode === 'receivables') {
+      setReceivableRows(
+        result.suggested_payload.lines.map((line) => ({
+          id: crypto.randomUUID(),
+          partner_id: String(line.partner_id || ''),
+          invoice_number: String(line.invoice_number || ''),
+          reference: String(line.reference || ''),
+          description: String(line.description || ''),
+          invoice_date: String(line.invoice_date || sharedFields.opening_date),
+          due_date: String(line.due_date || sharedFields.opening_date),
+          amount: String(line.amount || '')
+        }))
+      );
+    } else {
+      setPayableRows(
+        result.suggested_payload.lines.map((line) => ({
+          id: crypto.randomUUID(),
+          partner_id: String(line.partner_id || ''),
+          invoice_number: String(line.invoice_number || ''),
+          reference: String(line.reference || ''),
+          description: String(line.description || ''),
+          invoice_date: String(line.invoice_date || sharedFields.opening_date),
+          due_date: String(line.due_date || sharedFields.opening_date),
+          amount: String(line.amount || '')
+        }))
+      );
+    }
+
+    invalidatePreview();
+  };
+
+  const handleImport = async () => {
+    if (!importFile) return;
+
+    setIsImportLoading(true);
+    setErrorMessage(null);
+    try {
+      const result = await importApi.parseOpeningBalancePdf(importFile, {
+        mode,
+        opening_date: sharedFields.opening_date
+      });
+      setImportResult(result);
+      applyImportedRows(result);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsImportLoading(false);
+    }
   };
 
   const handlePreview = async () => {
@@ -272,6 +346,46 @@ export default function OpeningBalancesPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,1fr)]">
         <section className="space-y-6">
+          <div className="card overflow-hidden">
+            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+              <h2 className="text-base font-semibold text-slate-900">AI import from balance PDF</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Upload a balance sheet, trial balance, receivables list, or payables list PDF. The backend parses it into the current {mode} editor.
+              </p>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(event) => setImportFile(event.target.files?.[0] || null)}
+                  className="block w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={handleImport}
+                  disabled={!importFile || isImportLoading}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                >
+                  {isImportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <span>{isImportLoading ? 'Parsing…' : 'Parse PDF'}</span>
+                </button>
+              </div>
+              {importResult && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                  <div className="font-medium text-slate-900">{importResult.file_name}</div>
+                  <div className="mt-1 text-xs text-slate-500">
+                    Model {importResult.model} · document {importResult.document_id}
+                  </div>
+                  {importResult.warnings && importResult.warnings.length > 0 && (
+                    <div className="mt-3 text-xs text-amber-700">
+                      Warnings: {importResult.warnings.join(', ')}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
               <div className="flex items-center gap-3">

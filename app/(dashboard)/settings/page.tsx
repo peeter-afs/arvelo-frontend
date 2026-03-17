@@ -32,6 +32,7 @@ export default function SettingsPage() {
   const [companyAction, setCompanyAction] = useState<string | null>(null);
   const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
+  const [editingBankAccountId, setEditingBankAccountId] = useState<string | null>(null);
   const [bankAccountForm, setBankAccountForm] = useState({
     name: '',
     bank_name: '',
@@ -401,16 +402,29 @@ export default function SettingsPage() {
     setSettingsError(null);
     setSettingsSuccess(null);
     try {
-      await bankingApi.createBankAccount({
-        name: bankAccountForm.name,
-        bank_name: bankAccountForm.bank_name || undefined,
-        iban: bankAccountForm.iban || undefined,
-        bic: bankAccountForm.bic || undefined,
-        currency: bankAccountForm.currency || undefined,
-        account_id: bankAccountForm.account_id || null,
-        is_active: bankAccountForm.is_active,
-      });
+      if (editingBankAccountId) {
+        await bankingApi.updateBankAccount(editingBankAccountId, {
+          name: bankAccountForm.name,
+          bank_name: bankAccountForm.bank_name || undefined,
+          iban: bankAccountForm.iban || undefined,
+          bic: bankAccountForm.bic || undefined,
+          currency: bankAccountForm.currency || undefined,
+          account_id: bankAccountForm.account_id || null,
+          is_active: bankAccountForm.is_active,
+        });
+      } else {
+        await bankingApi.createBankAccount({
+          name: bankAccountForm.name,
+          bank_name: bankAccountForm.bank_name || undefined,
+          iban: bankAccountForm.iban || undefined,
+          bic: bankAccountForm.bic || undefined,
+          currency: bankAccountForm.currency || undefined,
+          account_id: bankAccountForm.account_id || null,
+          is_active: bankAccountForm.is_active,
+        });
+      }
       await reloadCompanyData();
+      setEditingBankAccountId(null);
       setBankAccountForm((current) => ({
         ...current,
         name: '',
@@ -418,7 +432,35 @@ export default function SettingsPage() {
         iban: '',
         bic: '',
       }));
-      setSettingsSuccess('Bank account saved.');
+      setSettingsSuccess(editingBankAccountId ? 'Bank account updated.' : 'Bank account saved.');
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setCompanyAction(null);
+    }
+  };
+
+  const editBankAccount = (account: BankAccountRecord) => {
+    setEditingBankAccountId(account.id);
+    setBankAccountForm({
+      name: account.name || '',
+      bank_name: account.bank_name || '',
+      iban: account.iban || '',
+      bic: account.bic || '',
+      currency: account.currency || 'EUR',
+      account_id: account.account_id || '',
+      is_active: account.is_active,
+    });
+  };
+
+  const toggleBankAccountActive = async (account: BankAccountRecord) => {
+    setCompanyAction(`toggle-bank-account-${account.id}`);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      await bankingApi.updateBankAccount(account.id, { is_active: !account.is_active });
+      await reloadCompanyData();
+      setSettingsSuccess(`Bank account ${!account.is_active ? 'activated' : 'deactivated'}.`);
     } catch (error) {
       setSettingsError(getErrorMessage(error));
     } finally {
@@ -585,6 +627,25 @@ export default function SettingsPage() {
                                 {account.is_active ? 'Active' : 'Inactive'}
                               </span>
                             </div>
+                            <div className="mt-4 flex flex-wrap gap-3">
+                              <button
+                                type="button"
+                                onClick={() => editBankAccount(account)}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void toggleBankAccountActive(account)}
+                                disabled={companyAction !== null}
+                                className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                              >
+                                {companyAction === `toggle-bank-account-${account.id}`
+                                  ? 'Saving…'
+                                  : account.is_active ? 'Deactivate' : 'Activate'}
+                              </button>
+                            </div>
                           </div>
                         ))
                       )}
@@ -632,8 +693,26 @@ export default function SettingsPage() {
                     disabled={!bankAccountForm.name || companyAction !== null}
                     className="mt-4 h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                   >
-                    {companyAction === 'save-bank-account' ? 'Saving…' : 'Add Bank Account'}
+                    {companyAction === 'save-bank-account' ? 'Saving…' : editingBankAccountId ? 'Save Bank Account' : 'Add Bank Account'}
                   </button>
+                  {editingBankAccountId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingBankAccountId(null);
+                        setBankAccountForm((current) => ({
+                          ...current,
+                          name: '',
+                          bank_name: '',
+                          iban: '',
+                          bic: '',
+                        }));
+                      }}
+                      className="mt-4 ml-3 h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium transition-colors"
+                    >
+                      Cancel edit
+                    </button>
+                  )}
                 </div>
               </div>
             )}

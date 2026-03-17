@@ -57,6 +57,9 @@ export type BankMatchCandidate = {
 
 export type BankReviewQueueItem = {
   transaction_id: string;
+  bank_account_id: string;
+  bank_account_name?: string | null;
+  bank_account_iban?: string | null;
   tx_date: string;
   value_date?: string | null;
   amount: number;
@@ -70,6 +73,9 @@ export type BankReviewQueueItem = {
   review_note?: string | null;
   reviewed_by?: string | null;
   reviewed_at?: string | null;
+  suggested_manual_account_id?: string | null;
+  suggested_manual_account_code?: string | null;
+  suggested_manual_account_name?: string | null;
   is_reconciled: boolean;
   auto_match_ready: boolean;
   top_candidates: BankMatchCandidate[];

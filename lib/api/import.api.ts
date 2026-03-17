@@ -40,7 +40,40 @@ export type PurchaseInvoiceImportDetail = {
   }>;
 };
 
+export type OpeningBalanceImportResult = {
+  mode: 'general' | 'receivables' | 'payables';
+  document_id: string;
+  file_name: string;
+  opening_date: string;
+  model: string;
+  request_id?: string;
+  extracted_text_preview?: string;
+  suggested_payload: {
+    opening_date: string;
+    currency: string;
+    source_document_id: string;
+    lines: Array<Record<string, any>>;
+    offset_account_id?: string | null;
+  };
+  import_summary?: Record<string, any>;
+  warnings?: string[];
+};
+
 export const importApi = {
+  async parseOpeningBalancePdf(file: File, payload: { mode: 'general' | 'receivables' | 'payables'; opening_date: string }) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('mode', payload.mode);
+    formData.append('opening_date', payload.opening_date);
+
+    const response = await apiClient.post<ApiResponse<OpeningBalanceImportResult>>('/api/import/opening-balances/parse', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data.data;
+  },
+
   async listPurchaseInvoiceImports(params?: { status?: string; limit?: number; offset?: number }) {
     const response = await apiClient.get<ApiResponse<{
       items: PurchaseInvoiceImportListItem[];
