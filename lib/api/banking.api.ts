@@ -126,7 +126,7 @@ export const bankingApi = {
     file_size: number;
     file_content: string;
     source_type: 'csv' | 'camt53';
-    bank_account_id: string;
+    bank_account_id?: string;
   }) {
     const response = await apiClient.post<ApiResponse<{ job: BankImportJob }>>('/api/banking/import-jobs', payload);
     return response.data.data;

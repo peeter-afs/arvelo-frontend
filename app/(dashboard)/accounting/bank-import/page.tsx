@@ -32,6 +32,13 @@ function detectImportFormat(file: File, fileContent: string): ImportFormat {
   return 'csv';
 }
 
+function detectStatementIban(fileContent: string): string | null {
+  const match = fileContent.match(/<(?:\w+:)?IBAN\b[^>]*>\s*([A-Z]{2}[0-9A-Z ]{10,34})\s*<\/(?:\w+:)?IBAN>/i);
+  if (!match) return null;
+  const normalized = match[1].replace(/\s+/g, '').toUpperCase();
+  return normalized || null;
+}
+
 export default function BankImportPage() {
   const [file, setFile] = useState<File | null>(null);
   const [bankAccountId, setBankAccountId] = useState('');
@@ -42,6 +49,8 @@ export default function BankImportPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<ImportFormat | null>(null);
+  const [detectedStatementIban, setDetectedStatementIban] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -56,7 +65,14 @@ export default function BankImportPage() {
   }, [previewRows]);
 
   const startImport = async (nextFile: File) => {
-    if (!bankAccountId.trim()) {
+    const fileContent = await nextFile.text();
+    const sourceType = detectImportFormat(nextFile, fileContent);
+    const statementIban = sourceType === 'camt53' ? detectStatementIban(fileContent) : null;
+
+    setDetectedFormat(sourceType);
+    setDetectedStatementIban(statementIban);
+
+    if (sourceType === 'csv' && !bankAccountId.trim()) {
       setFile(nextFile);
       setErrorMessage('Bank account id is still required before the import can start.');
       setSuccessMessage(null);
@@ -73,15 +89,12 @@ export default function BankImportPage() {
 
     try {
       setFile(nextFile);
-
-      const fileContent = await nextFile.text();
-      const sourceType = detectImportFormat(nextFile, fileContent);
       const created = await bankingApi.createImportJob({
         file_name: nextFile.name,
         file_size: nextFile.size,
         file_content: fileContent,
         source_type: sourceType,
-        bank_account_id: bankAccountId.trim(),
+        bank_account_id: bankAccountId.trim() || undefined,
       });
       const parsed = await bankingApi.parseImportJob(created.job.id);
 
@@ -230,10 +243,23 @@ export default function BankImportPage() {
                 <input
                   value={bankAccountId}
                   onChange={(event) => handleBankAccountIdChange(event.target.value)}
-                  placeholder="UUID from banking.bank_accounts"
+                  placeholder={detectedFormat === 'csv' ? 'UUID from banking.bank_accounts' : 'Optional fallback for CAMT.053'}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3"
                 />
               </label>
+
+              {detectedFormat === 'camt53' && (
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-6 text-slate-600">
+                  <div>
+                    <span className="font-semibold text-slate-900">Detected statement IBAN:</span>{' '}
+                    {detectedStatementIban || 'Not detected yet'}
+                  </div>
+                  <div>
+                    If this IBAN exists in bank account settings, the import continues automatically. If not, add it in
+                    settings and retry.
+                  </div>
+                </div>
+              )}
 
               <label
                 onDrop={handleDrop}
@@ -273,7 +299,7 @@ export default function BankImportPage() {
           <div className="card p-5">
             <h2 className="text-sm font-semibold text-slate-900">Workflow</h2>
             <ol className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>1. Drop or select the bank file after choosing the bank account id.</li>
+              <li>1. Drop or select the bank file. CSV still needs a bank account id, CAMT.053 tries to resolve it from the file IBAN.</li>
               <li>2. The frontend detects CSV or CAMT.053 and starts create plus parse automatically.</li>
               <li>3. Review warnings and commit only rows already approved by backend rules.</li>
             </ol>
@@ -289,6 +315,9 @@ export default function BankImportPage() {
                 <div><span className="font-medium text-slate-900">File:</span> {job.file_name}</div>
                 <div><span className="font-medium text-slate-900">Status:</span> {job.status}</div>
                 <div><span className="font-medium text-slate-900">Format:</span> {job.source_type || 'auto-detected'}</div>
+                {summary?.detected_statement_iban && (
+                  <div><span className="font-medium text-slate-900">Statement IBAN:</span> {String(summary.detected_statement_iban)}</div>
+                )}
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
