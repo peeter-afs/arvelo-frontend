@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import type { Tenant } from '@/lib/types/auth.types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
@@ -114,7 +115,7 @@ export default function CreateCompanyPage() {
       const switched = await authApi.switchTenant(tenantId);
       const memberships = availableTenants.find((item) => item.tenant.id === tenantId);
       setTokens(switched.access_token, switched.refresh_token);
-      setTenant(memberships?.tenant as any, memberships?.role || null);
+      setTenant((memberships?.tenant ?? null) as Tenant | null, memberships?.role || null);
       setSuccessMessage(`Switched to ${tenantName}. Redirecting...`);
       setTimeout(() => {
         router.push('/');

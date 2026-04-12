@@ -55,13 +55,13 @@ export default function InvoicePreviewPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Invoice Preview</h1>
-          <p className="mt-1 text-sm text-slate-500">Preview the generated PDF before downloading or sending it.</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Invoice Preview</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">Preview the generated PDF before downloading or sending it.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/invoices/sales"
-            className="inline-flex h-10 items-center rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
+            className="inline-flex h-10 items-center rounded-lg border border-[var(--border)] px-4 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]"
           >
             Back to invoices
           </Link>
@@ -86,16 +86,32 @@ export default function InvoicePreviewPage() {
       )}
 
       {isLoading ? (
-        <div className="card flex min-h-[70vh] items-center justify-center p-8 text-sm text-slate-500">
+        <div className="card flex min-h-[70vh] items-center justify-center p-8 text-sm text-[var(--text-secondary)]">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Loading invoice PDF...
         </div>
       ) : pdfUrl ? (
-        <div className="card overflow-hidden">
-          <iframe src={pdfUrl} title="Invoice PDF preview" className="h-[80vh] w-full bg-white" />
-        </div>
+        <>
+          {/* PDF preview - hidden on very small screens where iframes don't work well */}
+          <div className="card overflow-hidden hidden sm:block">
+            <iframe src={pdfUrl} title="Invoice PDF preview" className="h-[calc(100vh-200px)] min-h-[500px] w-full bg-white" />
+          </div>
+          {/* Mobile fallback - download prompt */}
+          <div className="card p-8 text-center sm:hidden">
+            <p className="text-sm text-[var(--text-secondary)] mb-4">
+              PDF preview is best viewed on a larger screen.
+            </p>
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-lg"
+            >
+              <Download className="h-4 w-4" />
+              Download PDF
+            </button>
+          </div>
+        </>
       ) : (
-        <div className="card p-8 text-sm text-slate-500">No preview available.</div>
+        <div className="card p-8 text-sm text-[var(--text-secondary)]">No preview available.</div>
       )}
     </div>
   );

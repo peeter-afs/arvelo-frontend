@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { Globe } from 'lucide-react';
@@ -12,13 +12,38 @@ export default function LanguageSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
   const currentLocale = useLocale() as Locale;
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+        buttonRef.current?.focus();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
 
   const handleLocaleChange = (newLocale: Locale) => {
     startTransition(() => {
-      // Save preference to localStorage
       localStorage.setItem('preferred-locale', newLocale);
 
-      // Replace the locale in the pathname
       const segments = pathname.split('/');
       const localeIndex = locales.includes(segments[1] as Locale) ? 1 : 0;
 
@@ -35,44 +60,45 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+        className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--surface-elevated)] rounded-md transition-colors"
         disabled={isPending}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-label={`Language: ${localeNames[currentLocale]}`}
       >
         <Globe className="h-4 w-4" />
         <span>{localeNames[currentLocale]}</span>
       </button>
 
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setIsOpen(false)}
-          />
-
-          {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
-            <div className="py-1">
-              {locales.map((locale) => (
-                <button
-                  key={locale}
-                  onClick={() => handleLocaleChange(locale)}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors ${
-                    locale === currentLocale
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700'
-                  }`}
-                  disabled={isPending}
-                >
-                  {localeNames[locale]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </>
+        <div
+          className="absolute right-0 mt-2 w-48 bg-[var(--surface)] rounded-lg shadow-lg z-20 border border-[var(--border)] py-1"
+          role="listbox"
+          aria-label="Select language"
+          aria-activedescendant={`locale-${currentLocale}`}
+        >
+          {locales.map((locale) => (
+            <button
+              key={locale}
+              id={`locale-${locale}`}
+              onClick={() => handleLocaleChange(locale)}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-[var(--surface-elevated)] transition-colors ${
+                locale === currentLocale
+                  ? 'bg-blue-50 text-[var(--primary)] font-medium'
+                  : 'text-[var(--text-primary)]'
+              }`}
+              role="option"
+              aria-selected={locale === currentLocale}
+              disabled={isPending}
+            >
+              {localeNames[locale]}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

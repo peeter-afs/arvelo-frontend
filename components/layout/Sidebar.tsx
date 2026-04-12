@@ -183,7 +183,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-2 py-4 space-y-1">
+      <nav className="flex-1 px-2 py-4 space-y-1" aria-label="Main navigation">
         {navigation.map((item) => {
           // Expandable section with children
           if ('children' in item && item.children) {
@@ -236,6 +236,8 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 <button
                   onClick={() => toggleSection(item.id || '')}
                   className="flex items-center w-full px-3 py-2 text-sm text-slate-400 hover:bg-slate-800/50 hover:text-slate-200 rounded-lg transition-all duration-200"
+                  aria-expanded={isExpanded}
+                  aria-controls={`nav-section-${item.id}`}
                 >
                   <Icon className="h-[18px] w-[18px] mr-3" strokeWidth={1.5} />
                   <span className="flex-1 text-left font-medium">{item.name}</span>
@@ -248,7 +250,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
 
                 {/* Sub-items */}
                 {isExpanded && !effectiveCollapsed && (
-                  <div className="ml-9 mt-1 space-y-0.5 border-l border-slate-700/50 pl-3">
+                  <div id={`nav-section-${item.id}`} className="ml-9 mt-1 space-y-0.5 border-l border-slate-700/50 pl-3" role="group" aria-label={item.name}>
                     {item.children.map((child) => {
                       const isActive = pathname === child.href;
                       return (
