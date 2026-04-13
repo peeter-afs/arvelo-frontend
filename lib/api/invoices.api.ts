@@ -22,6 +22,7 @@ export type InvoiceListItem = {
   notes?: string | null;
   payment_reference?: string | null;
   journal_entry_id?: string | null;
+  credit_note_for_invoice_id?: string | null;
   created_by_user_id?: string | null;
   created_at: string;
   updated_at: string;
@@ -53,6 +54,7 @@ export type InvoiceDraftPayload = {
   currency?: string;
   notes?: string;
   payment_reference?: string;
+  credit_note_for_invoice_id?: string;
   lines: InvoiceLineInput[];
 };
 

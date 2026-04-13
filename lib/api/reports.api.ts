@@ -79,6 +79,71 @@ export type GeneralLedgerData = {
   endDate: string;
 };
 
+export type VATRateBreakdown = {
+  tax_rate: number;
+  taxable_amount: number;
+  vat_amount: number;
+};
+
+export type VATInvoiceSummary = {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  partner_name?: string;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  tax_rate_breakdown: VATRateBreakdown[];
+};
+
+export type VATReportData = {
+  line1_taxable_22: number;
+  line2_taxable_9: number;
+  line3_taxable_0: number;
+  line4_output_vat: number;
+  line5_input_vat: number;
+  line6_net_vat: number;
+  sales_invoices: VATInvoiceSummary[];
+  purchase_invoices: VATInvoiceSummary[];
+  startDate: string;
+  endDate: string;
+};
+
+export type AgingInvoiceDetail = {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  open_amount: number;
+  days_overdue: number;
+};
+
+export type AgingPartnerLine = {
+  partner_id: string;
+  partner_name: string;
+  current: number;
+  days_1_30: number;
+  days_31_60: number;
+  days_61_90: number;
+  over_90: number;
+  total: number;
+  invoices: AgingInvoiceDetail[];
+};
+
+export type AgingReportData = {
+  direction: 'receivable' | 'payable';
+  as_of_date: string;
+  summary: {
+    current: number;
+    days_1_30: number;
+    days_31_60: number;
+    days_61_90: number;
+    over_90: number;
+    total: number;
+  };
+  partners: AgingPartnerLine[];
+};
+
 export const reportsApi = {
   async getBalanceSheet(asOfDate?: string) {
     const params = asOfDate ? { as_of_date: asOfDate } : undefined;
@@ -102,6 +167,20 @@ export const reportsApi = {
   async getGeneralLedger(accountId: string, startDate: string, endDate: string) {
     const response = await apiClient.get<ApiResponse<GeneralLedgerData>>('/api/reports/general-ledger', {
       params: { account_id: accountId, start_date: startDate, end_date: endDate },
+    });
+    return response.data.data;
+  },
+
+  async getVATReport(startDate: string, endDate: string) {
+    const response = await apiClient.get<ApiResponse<VATReportData>>('/api/reports/vat', {
+      params: { start_date: startDate, end_date: endDate },
+    });
+    return response.data.data;
+  },
+
+  async getAgingReport(direction: 'receivable' | 'payable', asOfDate?: string) {
+    const response = await apiClient.get<ApiResponse<AgingReportData>>('/api/reports/aging', {
+      params: { direction, as_of_date: asOfDate },
     });
     return response.data.data;
   },

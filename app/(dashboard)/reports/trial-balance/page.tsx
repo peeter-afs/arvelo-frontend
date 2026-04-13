@@ -5,6 +5,7 @@ import { Scale, Download, Filter, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type TrialBalanceData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { downloadCsv } from '@/lib/utils/csvExport';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -134,6 +135,24 @@ export default function TrialBalancePage() {
             <span>{tCommon('filter')}</span>
           </button>
           <button
+            onClick={() => {
+              const rows = accounts.map((a) => ({
+                account_code: a.account_code,
+                account_name: a.account_name,
+                account_type: a.account_type,
+                debit: a.debit,
+                credit: a.credit,
+                balance: a.debit - a.credit,
+              }));
+              downloadCsv(rows, `trial-balance-${asOfDate}.csv`, [
+                { key: 'account_code', label: 'Account Code' },
+                { key: 'account_name', label: 'Account Name' },
+                { key: 'account_type', label: 'Account Type' },
+                { key: 'debit', label: 'Debit' },
+                { key: 'credit', label: 'Credit' },
+                { key: 'balance', label: 'Balance' },
+              ]);
+            }}
             className="px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
             style={{ backgroundColor: 'var(--primary)' }}
           >

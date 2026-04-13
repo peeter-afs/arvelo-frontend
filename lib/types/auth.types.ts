@@ -32,6 +32,8 @@ export interface Session {
   role?: UserRole;
   access_token: string;
   refresh_token: string;
+  requires_2fa?: boolean;
+  two_factor_token?: string;
 }
 
 export interface LoginCredentials {

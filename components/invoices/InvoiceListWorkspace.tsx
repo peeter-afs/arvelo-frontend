@@ -130,11 +130,16 @@ export default function InvoiceListWorkspace({
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        const [invoiceItems, partnerItems] = await Promise.all([
+        const creditNoteType = invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note';
+        const [invoiceItems, creditNoteItems, partnerItems] = await Promise.all([
           invoicesApi.listInvoices({ type: invoiceType, limit: 200 }),
+          invoicesApi.listInvoices({ type: creditNoteType, limit: 200 }),
           accountingApi.listPartners(),
         ]);
-        setInvoices(invoiceItems);
+        const allItems = [...invoiceItems, ...creditNoteItems].sort(
+          (a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime()
+        );
+        setInvoices(allItems);
         setPartners(partnerItems);
         setSelectedInvoiceId((current) => current || invoiceItems[0]?.id || null);
       } catch (error) {
@@ -195,8 +200,15 @@ export default function InvoiceListWorkspace({
   }, [selectedInvoiceId]);
 
   const refreshInvoices = async (preferredId?: string | null) => {
-    const invoiceItems = await invoicesApi.listInvoices({ type: invoiceType, limit: 200 });
-    setInvoices(invoiceItems);
+    const creditNoteType = invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note';
+    const [invoiceItems, creditNoteItems] = await Promise.all([
+      invoicesApi.listInvoices({ type: invoiceType, limit: 200 }),
+      invoicesApi.listInvoices({ type: creditNoteType, limit: 200 }),
+    ]);
+    const allItems = [...invoiceItems, ...creditNoteItems].sort(
+      (a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime()
+    );
+    setInvoices(allItems);
     const nextSelected = preferredId && invoiceItems.some((invoice) => invoice.id === preferredId)
       ? preferredId
       : invoiceItems[0]?.id || null;
@@ -384,6 +396,12 @@ export default function InvoiceListWorkspace({
           >
             New invoice
           </Link>
+          <Link
+            href={`/invoices/new?type=${invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note'}`}
+            className="inline-flex h-10 items-center rounded-lg border border-orange-200 bg-orange-50 px-4 text-sm font-medium text-orange-700 hover:bg-orange-100"
+          >
+            New credit note
+          </Link>
           <button
             onClick={() => void refreshInvoices(selectedInvoiceId)}
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
@@ -466,7 +484,12 @@ export default function InvoiceListWorkspace({
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-900">{invoice.invoice_number || invoice.id.slice(0, 8)}</div>
+                        <div className="truncate text-sm font-medium text-slate-900">
+                          {(invoice.type === 'sales_credit_note' || invoice.type === 'purchase_credit_note') && (
+                            <span className="mr-1.5 inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-orange-700">CN</span>
+                          )}
+                          {invoice.invoice_number || invoice.id.slice(0, 8)}
+                        </div>
                         <div className="mt-1 truncate text-xs text-slate-500">
                           {partners.find((partner) => partner.id === invoice.partner_id)?.name || 'Unknown partner'}
                         </div>

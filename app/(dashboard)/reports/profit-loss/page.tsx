@@ -5,6 +5,7 @@ import { TrendingUp, Download, Filter, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type ProfitLossData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { downloadCsv } from '@/lib/utils/csvExport';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -156,6 +157,25 @@ export default function ProfitLossPage() {
               <span>{tc('filter')}</span>
             </button>
             <button
+              onClick={() => {
+                const rows = [
+                  ...revenue.map((item) => ({
+                    account_code: item.account_code,
+                    account_name: item.account_name,
+                    amount: item.amount,
+                  })),
+                  ...expenses.map((item) => ({
+                    account_code: item.account_code,
+                    account_name: item.account_name,
+                    amount: item.amount,
+                  })),
+                ];
+                downloadCsv(rows, `profit-loss-${startDate}-to-${endDate}.csv`, [
+                  { key: 'account_code', label: 'Account Code' },
+                  { key: 'account_name', label: 'Account Name' },
+                  { key: 'amount', label: 'Amount' },
+                ]);
+              }}
               className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
               style={{ backgroundColor: 'var(--primary)' }}
             >

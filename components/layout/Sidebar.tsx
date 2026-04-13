@@ -55,6 +55,8 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tAccounting('bankReview'), href: '/accounting/bank-review' },
         { name: tAccounting('payments'), href: '/accounting/payments' },
         { name: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
+        { name: tAccounting('fiscalYears'), href: '/accounting/fiscal-years' },
+        { name: tAccounting('exchangeRates'), href: '/accounting/exchange-rates' },
       ]
     },
     {
@@ -67,6 +69,8 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tInvoices('purchaseList'), href: '/invoices/purchase' },
         { name: tInvoices('purchaseApprovals'), href: '/invoices/purchase-approvals' },
         { name: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
+        { name: tInvoices('recurring'), href: '/invoices/recurring' },
+        { name: tInvoices('reminders'), href: '/invoices/reminders' },
       ]
     },
     {
@@ -78,10 +82,21 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tReports('profitLoss'), href: '/reports/profit-loss' },
         { name: tReports('trialBalance'), href: '/reports/trial-balance' },
         { name: tReports('generalLedger'), href: '/reports/general-ledger' },
+        { name: tReports('vatReport'), href: '/reports/vat' },
+        { name: tReports('agingReport'), href: '/reports/aging' },
       ]
     },
     { name: t('fixedAssets'), href: '/assets', icon: PiggyBank },
-    { name: t('settings'), href: '/settings', icon: Settings },
+    {
+      id: 'settings',
+      name: t('settings'),
+      icon: Settings,
+      children: [
+        { name: t('settings'), href: '/settings' },
+        { name: t('security'), href: '/settings/security' },
+        { name: t('auditLog'), href: '/settings/audit-log' },
+      ]
+    },
   ];
 
   const handleLogout = async () => {

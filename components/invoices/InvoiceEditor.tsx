@@ -17,10 +17,13 @@ type DraftLine = {
   tax_rate: string;
 };
 
+type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
+
 type InvoiceEditorProps = {
   mode: 'create' | 'edit';
   invoiceId?: string;
-  defaultType?: 'sales_invoice' | 'purchase_invoice';
+  defaultType?: InvoiceType;
+  creditNoteForInvoiceId?: string;
 };
 
 const emptyLine = (): DraftLine => ({
@@ -32,11 +35,12 @@ const emptyLine = (): DraftLine => ({
   tax_rate: '22',
 });
 
-export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice' }: InvoiceEditorProps) {
+export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId }: InvoiceEditorProps) {
   const router = useRouter();
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
-  const [type, setType] = useState<'sales_invoice' | 'purchase_invoice'>(defaultType);
+  const [type, setType] = useState<InvoiceType>(defaultType);
+  const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
   const [partnerId, setPartnerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
@@ -75,7 +79,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       setErrorMessage(null);
       try {
         const result = await invoicesApi.getInvoice(invoiceId);
-        setType(result.invoice.type as 'sales_invoice' | 'purchase_invoice');
+        setType(result.invoice.type as InvoiceType);
         setPartnerId(result.invoice.partner_id || '');
         setInvoiceNumber(result.invoice.invoice_number || '');
         setInvoiceDate(String(result.invoice.invoice_date).slice(0, 10));
@@ -139,6 +143,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     currency,
     payment_reference: paymentReference || undefined,
     notes: notes || undefined,
+    credit_note_for_invoice_id: creditNoteForInvoiceId || undefined,
     lines: lines.map((line) => ({
       description: line.description,
       account_id: line.account_id || undefined,
@@ -159,7 +164,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
         ? await invoicesApi.createInvoice(payload)
         : await invoicesApi.updateInvoice(invoiceId!, payload);
       setSuccessMessage(mode === 'create' ? 'Invoice draft created.' : 'Invoice draft updated.');
-      router.push(result.invoice.type === 'purchase_invoice' ? '/invoices/purchase' : '/invoices/sales');
+      const isSalesType = result.invoice.type === 'sales_invoice' || result.invoice.type === 'sales_credit_note';
+      router.push(isSalesType ? '/invoices/sales' : '/invoices/purchase');
       router.refresh();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -172,15 +178,19 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{mode === 'create' ? 'New Invoice Draft' : 'Edit Invoice Draft'}</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {mode === 'create'
+              ? (isCreditNote ? 'New Credit Note' : 'New Invoice Draft')
+              : (isCreditNote ? 'Edit Credit Note' : 'Edit Invoice Draft')}
+          </h1>
           <p className="mt-1 text-sm text-slate-500">
             {mode === 'create'
-              ? 'Create a new sales or purchase invoice draft with live line totals.'
+              ? (isCreditNote ? 'Create a credit note to reverse or correct an invoice.' : 'Create a new sales or purchase invoice draft with live line totals.')
               : 'Edit a draft or rejected invoice before posting or approval.'}
           </p>
         </div>
         <Link
-          href={type === 'purchase_invoice' ? '/invoices/purchase' : '/invoices/sales'}
+          href={type === 'purchase_invoice' || type === 'purchase_credit_note' ? '/invoices/purchase' : '/invoices/sales'}
           className="inline-flex h-10 items-center rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
         >
           Back to list
@@ -214,12 +224,14 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
               <Field label="Invoice type">
                 <select
                   value={type}
-                  onChange={(event) => setType(event.target.value as 'sales_invoice' | 'purchase_invoice')}
+                  onChange={(event) => setType(event.target.value as InvoiceType)}
                   disabled={mode === 'edit'}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3 disabled:bg-slate-50"
                 >
                   <option value="sales_invoice">Sales invoice</option>
                   <option value="purchase_invoice">Purchase invoice</option>
+                  <option value="sales_credit_note">Sales credit note</option>
+                  <option value="purchase_credit_note">Purchase credit note</option>
                 </select>
               </Field>
               <Field label="Partner">

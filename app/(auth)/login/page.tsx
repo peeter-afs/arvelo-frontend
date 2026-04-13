@@ -21,6 +21,21 @@ function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showVerificationError, setShowVerificationError] = useState(false);
+  const [requires2fa, setRequires2fa] = useState(false);
+  const [twoFactorToken, setTwoFactorToken] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+
+  const completeLogin = async (session: Awaited<ReturnType<typeof authApi.login>>) => {
+    setSession(
+      session.user,
+      session.tenant || null,
+      session.role || null,
+      session.access_token,
+      session.refresh_token
+    );
+    await new Promise(resolve => setTimeout(resolve, 100));
+    router.push(returnUrl);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,27 +46,37 @@ function LoginForm() {
     try {
       const session = await authApi.login({ email, password });
 
-      setSession(
-        session.user,
-        session.tenant || null,
-        session.role || null,
-        session.access_token,
-        session.refresh_token
-      );
+      if (session.requires_2fa && session.two_factor_token) {
+        setRequires2fa(true);
+        setTwoFactorToken(session.two_factor_token);
+        setIsLoading(false);
+        return;
+      }
 
-      // Wait for zustand persist to save to localStorage
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Redirect to return URL or dashboard
-      router.push(returnUrl);
+      await completeLogin(session);
     } catch (err) {
       const errorMsg = getErrorMessage(err);
       setError(errorMsg);
 
-      // Check if error is about email verification
       if (errorMsg.toLowerCase().includes('verify your email')) {
         setShowVerificationError(true);
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerify2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const session = await authApi.verify2fa(twoFactorToken, totpCode);
+      await completeLogin(session);
+    } catch (err) {
+      setError(getErrorMessage(err));
+      setTotpCode('');
     } finally {
       setIsLoading(false);
     }
@@ -62,10 +87,10 @@ function LoginForm() {
       {/* Heading */}
       <div className="mb-8">
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">
-          Welcome back
+          {requires2fa ? 'Two-factor authentication' : 'Welcome back'}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Sign in to continue
+          {requires2fa ? 'Verify your identity to continue' : 'Sign in to continue'}
         </p>
       </div>
 
@@ -104,71 +129,134 @@ function LoginForm() {
         </div>
       )}
 
-      {/* Login Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-slate-700 mb-1.5"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder="you@example.com"
-            disabled={isLoading}
-            style={{ fontSize: '16px' }} // Prevent iOS zoom
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
-            >
-              Password
-            </label>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
-            >
-              Forgot password?
-            </Link>
+      {/* 2FA Verification Form */}
+      {requires2fa ? (
+        <form onSubmit={handleVerify2fa} className="space-y-5">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+            <p className="text-sm text-slate-600">
+              Enter the 6-digit code from your authenticator app
+            </p>
           </div>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            placeholder="Enter your password"
-            disabled={isLoading}
-            style={{ fontSize: '16px' }} // Prevent iOS zoom
-          />
-        </div>
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-lg hover:shadow-[var(--primary)]/25 flex items-center justify-center gap-2"
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Signing in...</span>
-            </>
-          ) : (
-            'Sign in'
-          )}
-        </button>
-      </form>
+          <div>
+            <label
+              htmlFor="totpCode"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
+              Authentication code
+            </label>
+            <input
+              id="totpCode"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              value={totpCode}
+              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+              required
+              className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-center text-lg tracking-widest"
+              placeholder="000000"
+              disabled={isLoading}
+              autoFocus
+              style={{ fontSize: '20px' }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || totpCode.length !== 6}
+            className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-lg hover:shadow-[var(--primary)]/25 flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Verifying...</span>
+              </>
+            ) : (
+              'Verify'
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setRequires2fa(false);
+              setTwoFactorToken('');
+              setTotpCode('');
+              setError('');
+            }}
+            className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            Back to login
+          </button>
+        </form>
+      ) : (
+        /* Login Form */
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-slate-700 mb-1.5"
+            >
+              Email address
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="you@example.com"
+              disabled={isLoading}
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-slate-700"
+              >
+                Password
+              </label>
+              <Link
+                href="/forgot-password"
+                className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              placeholder="Enter your password"
+              disabled={isLoading}
+              style={{ fontSize: '16px' }} // Prevent iOS zoom
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-lg hover:shadow-[var(--primary)]/25 flex items-center justify-center gap-2"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Signing in...</span>
+              </>
+            ) : (
+              'Sign in'
+            )}
+          </button>
+        </form>
+      )}
 
       {/* Divider */}
       <div className="relative my-8">

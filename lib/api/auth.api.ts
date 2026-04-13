@@ -33,6 +33,17 @@ export const authApi = {
   },
 
   /**
+   * Verify 2FA code during login
+   */
+  async verify2fa(twoFactorToken: string, code: string): Promise<Session> {
+    const response = await apiClient.post<ApiResponse<Session>>(
+      '/api/auth/2fa/verify',
+      { two_factor_token: twoFactorToken, code }
+    );
+    return response.data.data!;
+  },
+
+  /**
    * Logout user
    */
   async logout(): Promise<void> {

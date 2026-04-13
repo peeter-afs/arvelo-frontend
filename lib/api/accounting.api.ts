@@ -95,6 +95,28 @@ export type OpeningBalanceBatchListItem = {
   created_at: string;
 };
 
+export type PeriodItem = {
+  id: string;
+  tenant_id: string;
+  fiscal_year_id: string;
+  period_no: number;
+  date_start: string;
+  date_end: string;
+  is_closed: boolean;
+  closed_at?: string | null;
+};
+
+export type FiscalYearWithPeriods = {
+  id: string;
+  tenant_id: string;
+  date_start: string;
+  date_end: string;
+  is_closed: boolean;
+  created_at: string;
+  updated_at: string;
+  periods: PeriodItem[];
+};
+
 export const accountingApi = {
   async getAccounts() {
     const response = await apiClient.get<ApiResponse<AccountOption[]>>('/api/accounting/accounts?is_active=true');
@@ -215,6 +237,37 @@ export const accountingApi = {
 
   async commitOpeningPayables(payload: Record<string, any>) {
     const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/payables/commit', payload);
+    return response.data.data;
+  },
+
+  // Fiscal Year & Period Management
+  async listFiscalYears() {
+    const response = await apiClient.get<ApiResponse<FiscalYearWithPeriods[]>>('/api/accounting/fiscal-years');
+    return response.data.data;
+  },
+
+  async createFiscalYear(payload: { date_start: string; date_end: string }) {
+    const response = await apiClient.post<ApiResponse<FiscalYearWithPeriods>>('/api/accounting/fiscal-years', payload);
+    return response.data.data;
+  },
+
+  async closeFiscalYear(id: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/fiscal-years/${id}/close`);
+    return response.data.data;
+  },
+
+  async reopenFiscalYear(id: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/fiscal-years/${id}/reopen`);
+    return response.data.data;
+  },
+
+  async closePeriod(id: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/periods/${id}/close`);
+    return response.data.data;
+  },
+
+  async reopenPeriod(id: string) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/periods/${id}/reopen`);
     return response.data.data;
   },
 };
