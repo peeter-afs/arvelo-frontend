@@ -59,6 +59,27 @@ export type OpeningBalanceImportResult = {
   warnings?: string[];
 };
 
+export type AccountImportRow = {
+  code: string;
+  name: string;
+  type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+  parent_code?: string | null;
+  status: 'new' | 'existing' | 'conflict' | 'invalid';
+  existing_account_id?: string | null;
+  warnings: string[];
+};
+
+export type AccountImportParseResult = {
+  parsed_accounts: AccountImportRow[];
+  warnings: string[];
+};
+
+export type AccountImportCommitResult = {
+  created: number;
+  skipped: number;
+  errors: string[];
+};
+
 export const importApi = {
   async parseOpeningBalancePdf(file: File, payload: { mode: 'general' | 'receivables' | 'payables'; opening_date: string }) {
     const formData = new FormData();
@@ -132,6 +153,25 @@ export const importApi = {
     }
   ) {
     const response = await apiClient.post<ApiResponse<any>>(`/api/import/purchase-invoices/${id}/create-draft`, payload);
+    return response.data.data;
+  },
+
+  async parseAccountImport(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<AccountImportParseResult>>(
+      '/api/import/accounts/parse',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' }, timeout: 120000 }
+    );
+    return response.data.data;
+  },
+
+  async commitAccountImport(accounts: Array<{ code: string; name: string; type: string }>) {
+    const response = await apiClient.post<ApiResponse<AccountImportCommitResult>>(
+      '/api/import/accounts/commit',
+      { accounts }
+    );
     return response.data.data;
   },
 };

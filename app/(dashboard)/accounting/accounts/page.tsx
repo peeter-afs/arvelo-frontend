@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Search, Filter, Download, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ChartOfAccountsPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -66,6 +67,15 @@ export default function ChartOfAccountsPage() {
             <Download className="h-4 w-4" />
             <span>Export</span>
           </button>
+
+          {/* Import Button */}
+          <Link
+            href="/accounting/accounts/import"
+            className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors"
+          >
+            <Upload className="h-4 w-4" />
+            <span>Import</span>
+          </Link>
 
           {/* Create Button */}
           <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
