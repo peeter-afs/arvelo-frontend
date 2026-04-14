@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
@@ -24,6 +24,13 @@ export const metadata: Metadata = {
   description: "Modern bookkeeping software for Estonian businesses",
 };
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#0F172A',
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -34,10 +41,6 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} className={`${inter.variable} ${plusJakartaSans.variable}`}>
-      <head>
-        <meta name="theme-color" content="#0F172A" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-      </head>
       <body className={inter.className}>
         <NextIntlClientProvider messages={messages}>
           {children}

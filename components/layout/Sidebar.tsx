@@ -138,8 +138,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className={effectiveCollapsed ? 'hidden' : ''}>
           <h1
-            className="text-xl font-bold text-white"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            className="text-xl font-bold text-white [font-family:var(--font-display)]"
           >
             Arvelo
           </h1>

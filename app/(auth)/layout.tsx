@@ -38,8 +38,7 @@ export default function AuthLayout({
           {/* Top */}
           <div>
             <h1
-              className="text-3xl lg:text-4xl font-bold text-white mb-4"
-              style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+              className="text-3xl lg:text-4xl font-bold text-white mb-4 [font-family:var(--font-display)]"
             >
               Arvelo
             </h1>
@@ -77,8 +76,7 @@ export default function AuthLayout({
         {/* Mobile Logo (visible only on mobile) */}
         <div className="md:hidden absolute top-8 left-0 right-0 text-center">
           <h1
-            className="text-xl font-bold text-slate-900 mb-1"
-            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+            className="text-xl font-bold text-slate-900 mb-1 [font-family:var(--font-display)]"
           >
             Arvelo
           </h1>

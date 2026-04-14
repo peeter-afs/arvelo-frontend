@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import Sidebar from './Sidebar';
 
@@ -85,7 +85,7 @@ export default function MobileNav() {
           <Menu className="h-5 w-5 text-[var(--text-primary)]" />
         </button>
 
-        <h1 className="text-lg font-bold text-[var(--text-primary)]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+        <h1 className="text-lg font-bold text-[var(--text-primary)] [font-family:var(--font-display)]">
           Arvelo
         </h1>
 
