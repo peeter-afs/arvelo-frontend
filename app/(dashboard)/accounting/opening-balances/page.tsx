@@ -662,6 +662,42 @@ function GeneralEditor({
   onAddRow: () => void;
   onChange: (rows: GeneralRow[]) => void;
 }) {
+  const balanceSheetSummary = useMemo(() => {
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+    let totalEquity = 0;
+    let hasResolvedAccounts = false;
+
+    for (const row of rows) {
+      const amount = Number(row.amount || 0);
+      if (amount === 0) continue;
+
+      const account = accounts.find(a => a.id === row.account_id);
+      if (!account) {
+        // Unmatched rows — treat as equity if credit side
+        const signedAmount = row.side === 'debit' ? amount : -amount;
+        totalEquity += -signedAmount;
+        continue;
+      }
+
+      hasResolvedAccounts = true;
+      const code = account.code;
+      const signedAmount = row.side === 'debit' ? amount : -amount;
+
+      if (code.startsWith('1')) {
+        totalAssets += signedAmount;
+      } else if (code.startsWith('2') && !code.startsWith('29')) {
+        totalLiabilities += -signedAmount;
+      } else {
+        totalEquity += -signedAmount;
+      }
+    }
+
+    const isBalanced = Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
+
+    return { totalAssets, totalLiabilities, totalEquity, isBalanced, hasResolvedAccounts };
+  }, [rows, accounts]);
+
   const updateRow = (id: string, key: keyof GeneralRow, value: string) => {
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   };
@@ -727,11 +763,30 @@ function GeneralEditor({
         ))}
       </div>
 
-      <div className="grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-3">
-        <Metric label="Debit total" value={totals.debit} />
-        <Metric label="Credit total" value={totals.credit} />
-        <Metric label="Difference" value={totals.difference} emphasize={Math.abs(totals.difference) <= 0.009 ? 'success' : 'danger'} />
+      <div className="space-y-2">
+        <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 px-1">Journal entry totals</div>
+        <div className="grid gap-3 rounded-xl bg-slate-50 p-4 sm:grid-cols-3">
+          <Metric label="Debit total" value={totals.debit} />
+          <Metric label="Credit total" value={totals.credit} />
+          <Metric label="Difference" value={totals.difference} emphasize={Math.abs(totals.difference) <= 0.009 ? 'success' : 'danger'} />
+        </div>
       </div>
+
+      {balanceSheetSummary.hasResolvedAccounts && balanceSheetSummary.totalAssets !== 0 && (
+        <div className="space-y-2">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 px-1">Balance sheet summary</div>
+          <div className="grid gap-3 rounded-xl bg-blue-50/60 p-4 sm:grid-cols-4">
+            <Metric label="Total assets" value={balanceSheetSummary.totalAssets} />
+            <Metric label="Total liabilities" value={balanceSheetSummary.totalLiabilities} />
+            <Metric label="Total equity" value={balanceSheetSummary.totalEquity} />
+            <Metric
+              label="Balance check"
+              value={Math.abs(balanceSheetSummary.totalAssets - (balanceSheetSummary.totalLiabilities + balanceSheetSummary.totalEquity))}
+              emphasize={balanceSheetSummary.isBalanced ? 'success' : 'danger'}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
