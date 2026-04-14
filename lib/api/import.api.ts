@@ -45,6 +45,7 @@ export type OpeningBalanceImportResult = {
   document_id: string;
   file_name: string;
   opening_date: string;
+  detected_opening_date?: string | null;
   model: string;
   request_id?: string;
   extracted_text_preview?: string;

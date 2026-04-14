@@ -88,6 +88,8 @@ export default function OpeningBalancesPage() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImportLoading, setIsImportLoading] = useState(false);
   const [isImported, setIsImported] = useState(false);
+  const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
+  const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const previewSnapshotRef = useRef<string | null>(null);
 
   const [sharedFields, setSharedFields] = useState({
@@ -128,6 +130,8 @@ export default function OpeningBalancesPage() {
     payablesOffsetAccountId
   })) && !!previewResult;
 
+  const isDateLocked = mode !== 'general' && !!glOpeningDate;
+
   useEffect(() => {
     const load = async () => {
       setIsBootLoading(true);
@@ -137,13 +141,17 @@ export default function OpeningBalancesPage() {
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus()
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, committed_batches: [] as any[] }))
         ]);
 
         setAccounts(accountItems);
         setPartners(partnerItems);
         setBatches(batchResult.items);
         setIsImported(importStatus.is_imported);
+        const glBatch = importStatus.committed_batches.find((b: any) => b.batch_type === 'general');
+        if (glBatch?.opening_date) {
+          setGlOpeningDate(glBatch.opening_date);
+        }
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -170,9 +178,14 @@ export default function OpeningBalancesPage() {
     invalidatePreview();
     setImportResult(null);
     setErrorMessage(null);
+    // Lock date to GL opening date when switching to subledger modes
+    if (nextMode !== 'general' && glOpeningDate) {
+      setSharedFields((current) => ({ ...current, opening_date: glOpeningDate }));
+    }
   };
 
   const applyImportedRows = (result: OpeningBalanceImportResult) => {
+    setDetectedDate(result.detected_opening_date || null);
     setSharedFields((current) => ({
       ...current,
       opening_date: result.suggested_payload.opening_date || current.opening_date,
@@ -434,18 +447,26 @@ export default function OpeningBalancesPage() {
 
             <div className="space-y-6 p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Opening date</span>
                   <input
                     type="date"
                     value={sharedFields.opening_date}
+                    readOnly={isDateLocked}
                     onChange={(event) => {
+                      if (isDateLocked) return;
                       setSharedFields((current) => ({ ...current, opening_date: event.target.value }));
                       invalidatePreview();
                     }}
-                    className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                    className={`h-11 w-full rounded-lg border border-slate-200 px-3 ${isDateLocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`}
                   />
-                </label>
+                  {isDateLocked && glOpeningDate && (
+                    <p className="text-xs text-slate-500">Locked to GL opening balance date</p>
+                  )}
+                  {!isDateLocked && detectedDate && (
+                    <p className="text-xs text-emerald-600">Date detected from PDF: {detectedDate}</p>
+                  )}
+                </div>
 
                 <label className="space-y-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Currency</span>
