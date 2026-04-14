@@ -5,10 +5,12 @@ import { FileText, Calendar, Download } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type AgingReportData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { downloadCsv } from '@/lib/utils/csvExport';
+import { getIsoToday } from '@/lib/utils/date';
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -33,13 +35,17 @@ export default function AgingReportPage() {
   const tc = useTranslations('common');
 
   const [direction, setDirection] = useState<'receivable' | 'payable'>('receivable');
-  const [asOfDate, setAsOfDate] = useState(new Date().toISOString().slice(0, 10));
+  const [asOfDate, setAsOfDate] = useClientDateInput(getIsoToday);
   const [data, setData] = useState<AgingReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedPartners, setExpandedPartners] = useState<Set<string>>(new Set());
 
   const fetchData = useCallback(async () => {
+    if (!asOfDate) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -52,7 +58,13 @@ export default function AgingReportPage() {
     }
   }, [direction, asOfDate]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (!asOfDate) {
+      return;
+    }
+
+    fetchData();
+  }, [asOfDate, fetchData]);
 
   const togglePartner = (id: string) => {
     setExpandedPartners((prev) => {
@@ -62,7 +74,7 @@ export default function AgingReportPage() {
     });
   };
 
-  if (loading) return <PageSkeleton hasStats tableRows={6} tableColumns={6} />;
+  if (loading || !asOfDate) return <PageSkeleton hasStats tableRows={6} tableColumns={6} />;
 
   if (error) {
     return (

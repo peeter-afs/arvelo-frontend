@@ -5,14 +5,11 @@ import { useTranslations } from 'next-intl';
 import { Download, Filter, Calendar, BarChart3 } from 'lucide-react';
 import { reportsApi, type BalanceSheetData, type BalanceSheetLine } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
+import { getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
-
-function getTodayString(): string {
-  const d = new Date();
-  return d.toISOString().slice(0, 10);
-}
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('et-EE', {
@@ -94,12 +91,16 @@ export default function BalanceSheetPage() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
 
-  const [asOfDate, setAsOfDate] = useState(getTodayString);
+  const [asOfDate, setAsOfDate] = useClientDateInput(getIsoToday);
   const [data, setData] = useState<BalanceSheetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!asOfDate) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -113,14 +114,22 @@ export default function BalanceSheetPage() {
   }, [asOfDate]);
 
   useEffect(() => {
+    if (!asOfDate) {
+      return;
+    }
+
     fetchData();
-  }, [fetchData]);
+  }, [asOfDate, fetchData]);
 
   const isEmpty =
     data &&
     data.assets.length === 0 &&
     data.liabilities.length === 0 &&
     data.equity.length === 0;
+
+  if (!asOfDate) {
+    return <PageSkeleton hasStats tableRows={8} tableColumns={3} />;
+  }
 
   return (
     <div>

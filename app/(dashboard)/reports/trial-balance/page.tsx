@@ -5,27 +5,28 @@ import { Scale, Download, Filter, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type TrialBalanceData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { downloadCsv } from '@/lib/utils/csvExport';
+import { getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
-
-function getToday(): string {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
-}
 
 export default function TrialBalancePage() {
   const t = useTranslations('reports');
   const tAccounting = useTranslations('accounting');
   const tCommon = useTranslations('common');
 
-  const [asOfDate, setAsOfDate] = useState(getToday);
+  const [asOfDate, setAsOfDate] = useClientDateInput(getIsoToday);
   const [data, setData] = useState<TrialBalanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!asOfDate) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -39,10 +40,14 @@ export default function TrialBalancePage() {
   }, [asOfDate]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!asOfDate) {
+      return;
+    }
 
-  if (loading) {
+    fetchData();
+  }, [asOfDate, fetchData]);
+
+  if (loading || !asOfDate) {
     return <PageSkeleton hasStats tableRows={10} tableColumns={4} />;
   }
 

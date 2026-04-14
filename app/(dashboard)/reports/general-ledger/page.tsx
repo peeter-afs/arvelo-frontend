@@ -6,19 +6,12 @@ import { BookOpen, Calendar } from 'lucide-react';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { reportsApi, type GeneralLedgerData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
+import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { FormField, FormInput, FormSelect } from '@/components/ui/FormField';
-
-function getDefaultStartDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-01-01`;
-}
-
-function getDefaultEndDate(): string {
-  return new Date().toISOString().split('T')[0];
-}
 
 function formatCurrency(value: number): string {
   return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -34,8 +27,8 @@ export default function GeneralLedgerPage() {
   const [accountsError, setAccountsError] = useState<string | null>(null);
 
   const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [startDate, setStartDate] = useState(getDefaultStartDate);
-  const [endDate, setEndDate] = useState(getDefaultEndDate);
+  const [startDate, setStartDate] = useClientDateInput(getIsoCurrentYearStart);
+  const [endDate, setEndDate] = useClientDateInput(getIsoToday);
 
   const [ledgerData, setLedgerData] = useState<GeneralLedgerData | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);
@@ -62,7 +55,7 @@ export default function GeneralLedgerPage() {
 
   // Fetch ledger data when account or dates change
   const fetchLedger = useCallback(async () => {
-    if (!selectedAccountId) {
+    if (!selectedAccountId || !startDate || !endDate) {
       setLedgerData(null);
       return;
     }
@@ -84,6 +77,10 @@ export default function GeneralLedgerPage() {
   }, [fetchLedger]);
 
   if (accountsLoading) {
+    return <PageSkeleton hasStats tableRows={8} tableColumns={6} />;
+  }
+
+  if (!startDate || !endDate) {
     return <PageSkeleton hasStats tableRows={8} tableColumns={6} />;
   }
 

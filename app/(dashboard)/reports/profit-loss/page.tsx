@@ -5,19 +5,12 @@ import { TrendingUp, Download, Filter, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type ProfitLossData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { downloadCsv } from '@/lib/utils/csvExport';
+import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
-
-function getDefaultStartDate(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-01-01`;
-}
-
-function getDefaultEndDate(): string {
-  return new Date().toISOString().split('T')[0];
-}
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', {
@@ -30,13 +23,17 @@ export default function ProfitLossPage() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
 
-  const [startDate, setStartDate] = useState(getDefaultStartDate);
-  const [endDate, setEndDate] = useState(getDefaultEndDate);
+  const [startDate, setStartDate] = useClientDateInput(getIsoCurrentYearStart);
+  const [endDate, setEndDate] = useClientDateInput(getIsoToday);
   const [data, setData] = useState<ProfitLossData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!startDate || !endDate) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -50,10 +47,14 @@ export default function ProfitLossPage() {
   }, [startDate, endDate]);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (!startDate || !endDate) {
+      return;
+    }
 
-  if (loading) {
+    fetchData();
+  }, [endDate, fetchData, startDate]);
+
+  if (loading || !startDate || !endDate) {
     return <PageSkeleton hasStats tableRows={8} tableColumns={2} />;
   }
 

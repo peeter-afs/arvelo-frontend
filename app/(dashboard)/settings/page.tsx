@@ -11,6 +11,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
@@ -80,9 +81,9 @@ export default function SettingsPage() {
     reminder_template_third: 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
     annual_balance_template: 'Hello {{bill_to_name}},\n\nWe hereby confirm that as of {{as_of_date}}, {{balance_statement}}.\nIf this is not correct, please contact us.',
     preview_reminder_index: '1',
-    annual_balance_reference_date: new Date().toISOString().slice(0, 10),
-    annual_balance_report_start_date: new Date(new Date().getUTCFullYear(), 0, 1).toISOString().slice(0, 10),
-    annual_balance_report_end_date: new Date().toISOString().slice(0, 10),
+    annual_balance_reference_date: '',
+    annual_balance_report_start_date: '',
+    annual_balance_report_end_date: '',
     plan_id: '',
     status: 'active',
     billing_day: '1',
@@ -91,14 +92,26 @@ export default function SettingsPage() {
     discount_percent: '0',
     vat_rate: '22',
     currency: 'EUR',
-    current_period_start: new Date().toISOString().slice(0, 10),
-    current_period_end: new Date().toISOString().slice(0, 10),
-    next_invoice_date: new Date().toISOString().slice(0, 10),
+    current_period_start: '',
+    current_period_end: '',
+    next_invoice_date: '',
     cancel_at_period_end: false,
   });
   const canManageRegistry = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
+
+  useEffect(() => {
+    setBillingForm((current) => ({
+      ...current,
+      annual_balance_reference_date: current.annual_balance_reference_date || getIsoToday(),
+      annual_balance_report_start_date: current.annual_balance_report_start_date || getIsoCurrentYearStart(),
+      annual_balance_report_end_date: current.annual_balance_report_end_date || getIsoToday(),
+      current_period_start: current.current_period_start || getIsoToday(),
+      current_period_end: current.current_period_end || getIsoToday(),
+      next_invoice_date: current.next_invoice_date || getIsoToday(),
+    }));
+  }, []);
 
   // Data Management tab state
   const [dataManagementLoading, setDataManagementLoading] = useState(false);

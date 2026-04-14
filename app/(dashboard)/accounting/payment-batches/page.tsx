@@ -13,8 +13,10 @@ import {
   Wallet,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { bankingApi, type BankAccountRecord, type PaymentBatchLine, type PaymentBatchListItem } from '@/lib/api/banking.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
+import { getIsoToday } from '@/lib/utils/date';
 
 type DraftLine = {
   invoice_id: string;
@@ -26,8 +28,6 @@ type DraftLine = {
   description: string;
   warning_flags?: string[];
 };
-
-const today = new Date().toISOString().slice(0, 10);
 
 export default function PaymentBatchesPage() {
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
@@ -43,7 +43,7 @@ export default function PaymentBatchesPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
   const [batchName, setBatchName] = useState('');
-  const [executionDate, setExecutionDate] = useState(today);
+  const [executionDate, setExecutionDate] = useClientDateInput(getIsoToday);
   const [currency, setCurrency] = useState('EUR');
   const [voidReason, setVoidReason] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

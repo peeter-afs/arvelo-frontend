@@ -6,7 +6,9 @@ import { useRouter } from 'next/navigation';
 import { AlertCircle, CheckCircle2, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { invoicesApi, type InvoiceDraftPayload } from '@/lib/api/invoices.api';
+import { getIsoToday } from '@/lib/utils/date';
 
 type DraftLine = {
   description: string;
@@ -43,7 +45,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
   const [partnerId, setPartnerId] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().slice(0, 10));
+  const [invoiceDate, setInvoiceDate] = useClientDateInput(getIsoToday);
   const [dueDate, setDueDate] = useState('');
   const [currency, setCurrency] = useState('EUR');
   const [paymentReference, setPaymentReference] = useState('');

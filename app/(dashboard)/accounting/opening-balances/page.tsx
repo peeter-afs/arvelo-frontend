@@ -5,7 +5,9 @@ import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Lock, Loader2, Plus, Re
 import Link from 'next/link';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
+import { getIsoToday } from '@/lib/utils/date';
 
 type Mode = 'general' | 'receivables' | 'payables';
 
@@ -31,8 +33,6 @@ type SubledgerRow = {
   amount: string;
 };
 
-const today = new Date().toISOString().slice(0, 10);
-
 const createGeneralRow = (): GeneralRow => ({
   id: crypto.randomUUID(),
   account_id: '',
@@ -42,7 +42,7 @@ const createGeneralRow = (): GeneralRow => ({
   amount: ''
 });
 
-const createSubledgerRow = (): SubledgerRow => ({
+const createSubledgerRow = (date = ''): SubledgerRow => ({
   id: crypto.randomUUID(),
   partner_id: '',
   partner_name: '',
@@ -50,8 +50,8 @@ const createSubledgerRow = (): SubledgerRow => ({
   invoice_number: '',
   reference: '',
   description: '',
-  invoice_date: today,
-  due_date: today,
+  invoice_date: date,
+  due_date: date,
   amount: ''
 });
 
@@ -91,9 +91,10 @@ export default function OpeningBalancesPage() {
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const previewSnapshotRef = useRef<string | null>(null);
+  const [today] = useClientDateInput(getIsoToday);
 
   const [sharedFields, setSharedFields] = useState({
-    opening_date: today,
+    opening_date: '',
     currency: 'EUR',
     notes: '',
     source_document_id: ''
@@ -131,6 +132,26 @@ export default function OpeningBalancesPage() {
   })) && !!previewResult;
 
   const isDateLocked = mode !== 'general' && !!glOpeningDate;
+
+  useEffect(() => {
+    if (!today) {
+      return;
+    }
+
+    setSharedFields((current) => (
+      current.opening_date ? current : { ...current, opening_date: today }
+    ));
+    setReceivableRows((current) => current.map((row) => ({
+      ...row,
+      invoice_date: row.invoice_date || today,
+      due_date: row.due_date || today,
+    })));
+    setPayableRows((current) => current.map((row) => ({
+      ...row,
+      invoice_date: row.invoice_date || today,
+      due_date: row.due_date || today,
+    })));
+  }, [today]);
 
   useEffect(() => {
     const load = async () => {

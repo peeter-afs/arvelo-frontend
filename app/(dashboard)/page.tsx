@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { reportsApi } from '@/lib/api/reports.api';
 import { invoicesApi } from '@/lib/api/invoices.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { getCurrentDateLabelEtEe, getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton, StatCardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -35,24 +36,30 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dashboardDates, setDashboardDates] = useState<{
+    formattedDate: string;
+    startOfYear: string;
+    todayStr: string;
+  } | null>(null);
 
-  const today = new Date();
-  const startOfYear = `${today.getFullYear()}-01-01`;
-  const todayStr = today.toISOString().slice(0, 10);
-
-  const formattedDate = new Intl.DateTimeFormat('et-EE', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  }).format(today);
+  useEffect(() => {
+    setDashboardDates({
+      formattedDate: getCurrentDateLabelEtEe(),
+      startOfYear: getIsoCurrentYearStart(),
+      todayStr: getIsoToday(),
+    });
+  }, []);
 
   const fetchDashboard = useCallback(async () => {
+    if (!dashboardDates) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
       const [plData, invoiceData] = await Promise.allSettled([
-        reportsApi.getProfitLoss(startOfYear, todayStr),
+        reportsApi.getProfitLoss(dashboardDates.startOfYear, dashboardDates.todayStr),
         invoicesApi.listInvoices({ status: 'confirmed' }),
       ]);
 
@@ -70,16 +77,20 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [startOfYear, todayStr]);
+  }, [dashboardDates]);
 
   useEffect(() => {
+    if (!dashboardDates) {
+      return;
+    }
+
     fetchDashboard();
-  }, [fetchDashboard]);
+  }, [dashboardDates, fetchDashboard]);
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR' }).format(amount);
 
-  if (loading) {
+  if (loading || !dashboardDates) {
     return <PageSkeleton hasStats />;
   }
 
@@ -124,7 +135,7 @@ export default function DashboardPage() {
               {t('welcomeBack')}, {user?.name || user?.email?.split('@')[0]}
             </h1>
             <p className="text-sm text-[var(--text-secondary)] mt-1">
-              {t('happeningToday')} &mdash; {formattedDate}
+              {t('happeningToday')} &mdash; {dashboardDates.formattedDate}
             </p>
           </div>
           <div className="hidden lg:flex gap-3">

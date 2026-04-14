@@ -5,26 +5,12 @@ import { FileText, Download, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type VATReportData, type VATInvoiceSummary } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { downloadCsv } from '@/lib/utils/csvExport';
-
-function getDefaultStartDate(): string {
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  // Default to current month
-  return `${year}-${String(month + 1).padStart(2, '0')}-01`;
-}
-
-function getDefaultEndDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
-}
+import { getIsoCurrentMonthEnd, getIsoCurrentMonthStart } from '@/lib/utils/date';
 
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('en-US', {
@@ -98,13 +84,17 @@ export default function VATReportPage() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
 
-  const [startDate, setStartDate] = useState(getDefaultStartDate);
-  const [endDate, setEndDate] = useState(getDefaultEndDate);
+  const [startDate, setStartDate] = useClientDateInput(getIsoCurrentMonthStart);
+  const [endDate, setEndDate] = useClientDateInput(getIsoCurrentMonthEnd);
   const [data, setData] = useState<VATReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!startDate || !endDate) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -118,8 +108,12 @@ export default function VATReportPage() {
   }, [startDate, endDate]);
 
   useEffect(() => {
+    if (!startDate || !endDate) {
+      return;
+    }
+
     fetchData();
-  }, [fetchData]);
+  }, [endDate, fetchData, startDate]);
 
   const handleExportKmd = () => {
     if (!data) return;
@@ -128,7 +122,7 @@ export default function VATReportPage() {
     downloadXml(xml, `KMD_${period}.xml`);
   };
 
-  if (loading) {
+  if (loading || !startDate || !endDate) {
     return <PageSkeleton hasStats tableRows={6} tableColumns={3} />;
   }
 
