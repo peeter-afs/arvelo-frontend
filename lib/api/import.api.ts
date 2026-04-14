@@ -69,7 +69,8 @@ export const importApi = {
     const response = await apiClient.post<ApiResponse<OpeningBalanceImportResult>>('/api/import/opening-balances/parse', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      timeout: 120000
     });
     return response.data.data;
   },
@@ -99,7 +100,8 @@ export const importApi = {
     const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail>>('/api/import/purchase-invoices/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
-      }
+      },
+      timeout: 120000
     });
     return response.data.data;
   },
