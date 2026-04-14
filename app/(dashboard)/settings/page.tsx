@@ -1,17 +1,22 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
+import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 
 export default function SettingsPage() {
   const { user, tenant, role } = useAuthStore();
-  const [activeTab, setActiveTab] = useState('company');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'company';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [registrySettings, setRegistrySettings] = useState<BusinessRegistrySettings | null>(null);
@@ -93,6 +98,15 @@ export default function SettingsPage() {
   });
   const canManageRegistry = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
+  const canManageData = role === 'owner' || role === 'admin';
+
+  // Data Management tab state
+  const [dataManagementLoading, setDataManagementLoading] = useState(false);
+  const [importStatus, setImportStatus] = useState<{ is_imported: boolean; committed_batches: any[] } | null>(null);
+  const [resetBackups, setResetBackups] = useState<any[]>([]);
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [restoreDialogOpen, setRestoreDialogOpen] = useState<string | null>(null);
+  const [dataManagementAction, setDataManagementAction] = useState<string | null>(null);
 
   const tabs = [
     { id: 'company', label: 'Company', icon: Building, category: 'organization' },
@@ -102,6 +116,7 @@ export default function SettingsPage() {
     { id: 'security', label: 'Security', icon: Shield, category: 'account' },
     { id: 'localization', label: 'Localization', icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: 'Business Registry', icon: Settings, category: 'organization' },
+    { id: 'data-management', label: 'Data Management', icon: Database, category: 'organization' },
   ];
 
   useEffect(() => {
@@ -226,6 +241,73 @@ export default function SettingsPage() {
 
     void load();
   }, [activeTab, canManageRegistry]);
+
+  useEffect(() => {
+    if (activeTab !== 'data-management' || !canManageData) {
+      return;
+    }
+
+    const load = async () => {
+      setDataManagementLoading(true);
+      setSettingsError(null);
+      try {
+        const [status, backups] = await Promise.all([
+          accountingApi.getOpeningBalanceImportStatus(),
+          accountingApi.listResetBackups().catch(() => []),
+        ]);
+        setImportStatus(status);
+        setResetBackups(backups);
+      } catch (error) {
+        setSettingsError(getErrorMessage(error));
+      } finally {
+        setDataManagementLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeTab, canManageData]);
+
+  const handleResetOpeningBalances = async () => {
+    setDataManagementAction('resetting');
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.resetOpeningBalances('Reset all');
+      setSettingsSuccess(`Opening balances reset successfully. ${result.reversed_count} batch(es) reversed. Backup saved.`);
+      const [status, backups] = await Promise.all([
+        accountingApi.getOpeningBalanceImportStatus(),
+        accountingApi.listResetBackups().catch(() => []),
+      ]);
+      setImportStatus(status);
+      setResetBackups(backups);
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setDataManagementAction(null);
+    }
+  };
+
+  const handleRestoreBackup = async (backupId: string) => {
+    setDataManagementAction('restoring');
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.restoreOpeningBalances(backupId);
+      setSettingsSuccess(`Opening balances restored successfully. ${result.restored_batch_count} batch(es) re-committed.`);
+      const [status, backups] = await Promise.all([
+        accountingApi.getOpeningBalanceImportStatus(),
+        accountingApi.listResetBackups().catch(() => []),
+      ]);
+      setImportStatus(status);
+      setResetBackups(backups);
+      setRestoreDialogOpen(null);
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+      setRestoreDialogOpen(null);
+    } finally {
+      setDataManagementAction(null);
+    }
+  };
 
   const saveRegistrySettings = async () => {
     setRegistrySaving(true);
@@ -1789,6 +1871,110 @@ export default function SettingsPage() {
                       </button>
                     </div>
                   </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'data-management' && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-semibold text-slate-900">Data Management</h2>
+
+                <div className="rounded-xl border border-slate-200 p-6">
+                  <h3 className="text-base font-semibold text-slate-900">Opening Balances</h3>
+                  {dataManagementLoading ? (
+                    <p className="mt-2 text-sm text-slate-500">Loading...</p>
+                  ) : (
+                    <>
+                      <p className="mt-2 text-sm text-slate-500">
+                        {importStatus?.is_imported
+                          ? `Opening balances have been imported (${importStatus.committed_batches.length} batch${importStatus.committed_batches.length !== 1 ? 'es' : ''}). You can reset to clear all opening balance entries and re-import.`
+                          : 'No opening balances have been imported yet.'}
+                      </p>
+
+                      {importStatus?.is_imported && importStatus.committed_batches.length > 0 && (
+                        <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
+                          <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Committed batches</div>
+                          {importStatus.committed_batches.map((b: any) => (
+                            <div key={b.id} className="flex items-center gap-3 text-sm text-slate-700 py-1">
+                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 capitalize">{b.batch_type}</span>
+                              <span>{b.opening_date}</span>
+                              <span className="text-slate-400">|</span>
+                              <span className="text-xs text-slate-400">{new Date(b.committed_at).toLocaleDateString()}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {importStatus?.is_imported && canManageData && (
+                        <button
+                          onClick={() => setResetDialogOpen(true)}
+                          disabled={!!dataManagementAction}
+                          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--danger)] px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                          Reset Opening Balances
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {resetBackups.length > 0 && (
+                  <div className="rounded-xl border border-slate-200 p-6">
+                    <h3 className="text-base font-semibold text-slate-900">Reset History</h3>
+                    <p className="mt-1 text-sm text-slate-500">Previous opening balance resets with backups that can be restored.</p>
+                    <div className="mt-4 space-y-3">
+                      {resetBackups.map((backup: any) => (
+                        <div key={backup.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-4">
+                          <div>
+                            <div className="text-sm font-medium text-slate-800">
+                              Reset on {new Date(backup.reset_at).toLocaleDateString()} at {new Date(backup.reset_at).toLocaleTimeString()}
+                            </div>
+                            <div className="mt-0.5 text-xs text-slate-500">
+                              {(backup.batch_snapshots || []).length} batch{(backup.batch_snapshots || []).length !== 1 ? 'es' : ''} backed up
+                              {backup.restored_at && (
+                                <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                                  Restored on {new Date(backup.restored_at).toLocaleDateString()}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          {!backup.restored_at && !importStatus?.is_imported && canManageData && (
+                            <button
+                              onClick={() => setRestoreDialogOpen(backup.id)}
+                              disabled={!!dataManagementAction}
+                              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-white transition-colors disabled:opacity-50"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              Restore
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <ConfirmResetDialog
+                  open={resetDialogOpen}
+                  onOpenChange={setResetDialogOpen}
+                  title="Reset Opening Balances"
+                  description="This will reverse all opening balance journal entries and void any created invoices. A backup will be saved automatically so you can restore later if needed."
+                  requiredText="Reset all"
+                  confirmLabel="Reset Opening Balances"
+                  onConfirm={handleResetOpeningBalances}
+                />
+
+                {restoreDialogOpen && (
+                  <ConfirmDialog
+                    open={!!restoreDialogOpen}
+                    onOpenChange={(open) => { if (!open) setRestoreDialogOpen(null); }}
+                    title="Restore Opening Balances"
+                    description="This will re-commit the opening balances from this backup. Are you sure?"
+                    confirmLabel="Restore"
+                    variant="warning"
+                    onConfirm={() => handleRestoreBackup(restoreDialogOpen)}
+                  />
                 )}
               </div>
             )}

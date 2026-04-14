@@ -240,6 +240,35 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  // Opening balance import lock / reset
+  async getOpeningBalanceImportStatus() {
+    const response = await apiClient.get<ApiResponse<{
+      is_imported: boolean;
+      committed_batches: Array<{ id: string; batch_type: string; opening_date: string; committed_at: string }>;
+    }>>('/api/accounting/opening-balances/import-status');
+    return response.data.data;
+  },
+
+  async resetOpeningBalances(confirmText: string) {
+    const response = await apiClient.post<ApiResponse<{ backup_id: string; reversed_count: number }>>(
+      '/api/accounting/opening-balances/reset',
+      { confirm_text: confirmText }
+    );
+    return response.data.data;
+  },
+
+  async listResetBackups() {
+    const response = await apiClient.get<ApiResponse<any[]>>('/api/accounting/opening-balances/reset-backups');
+    return response.data.data;
+  },
+
+  async restoreOpeningBalances(backupId: string) {
+    const response = await apiClient.post<ApiResponse<{ restored_batch_count: number }>>(
+      `/api/accounting/opening-balances/reset-backups/${backupId}/restore`
+    );
+    return response.data.data;
+  },
+
   // Fiscal Year & Period Management
   async listFiscalYears() {
     const response = await apiClient.get<ApiResponse<FiscalYearWithPeriods[]>>('/api/accounting/fiscal-years');

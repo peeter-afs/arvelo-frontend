@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Loader2, Plus, Receipt, Scale, Trash2, Upload, Wallet } from 'lucide-react';
+import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Lock, Loader2, Plus, Receipt, Scale, Trash2, Upload, Wallet } from 'lucide-react';
+import Link from 'next/link';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
@@ -86,6 +87,7 @@ export default function OpeningBalancesPage() {
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImportLoading, setIsImportLoading] = useState(false);
+  const [isImported, setIsImported] = useState(false);
   const previewSnapshotRef = useRef<string | null>(null);
 
   const [sharedFields, setSharedFields] = useState({
@@ -131,15 +133,17 @@ export default function OpeningBalancesPage() {
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        const [accountItems, partnerItems, batchResult] = await Promise.all([
+        const [accountItems, partnerItems, batchResult, importStatus] = await Promise.all([
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
-          accountingApi.listOpeningBalances()
+          accountingApi.listOpeningBalances(),
+          accountingApi.getOpeningBalanceImportStatus()
         ]);
 
         setAccounts(accountItems);
         setPartners(partnerItems);
         setBatches(batchResult.items);
+        setIsImported(importStatus.is_imported);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -294,6 +298,7 @@ export default function OpeningBalancesPage() {
             : await accountingApi.commitOpeningPayables(payload);
 
       setCommitResult(result);
+      setIsImported(true);
       await refreshBatches();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -317,6 +322,25 @@ export default function OpeningBalancesPage() {
           receivables and payables also create operational open items for later workflows.
         </p>
       </div>
+
+      {isImported && (
+        <div className="card border-emerald-200 bg-emerald-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 flex-shrink-0">
+              <Lock className="h-6 w-6 text-emerald-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-emerald-900">Opening balances already imported</h3>
+              <p className="mt-1 text-sm text-emerald-700">
+                Opening balances have been committed. To re-import, reset from{' '}
+                <Link href="/settings?tab=data-management" className="font-medium underline hover:text-emerald-900">
+                  Settings &gt; Data Management
+                </Link>.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 lg:grid-cols-3">
         {topCards.map((card) => {
@@ -528,7 +552,7 @@ export default function OpeningBalancesPage() {
                 <div className="flex flex-wrap gap-3">
                   <button
                     onClick={handlePreview}
-                    disabled={isPreviewLoading || isCommitLoading || isBootLoading}
+                    disabled={isPreviewLoading || isCommitLoading || isBootLoading || isImported}
                     className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isPreviewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers3 className="h-4 w-4" />}
@@ -536,7 +560,7 @@ export default function OpeningBalancesPage() {
                   </button>
                   <button
                     onClick={handleCommit}
-                    disabled={!canCommit || isCommitLoading || isPreviewLoading}
+                    disabled={!canCommit || isCommitLoading || isPreviewLoading || isImported}
                     className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCommitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
