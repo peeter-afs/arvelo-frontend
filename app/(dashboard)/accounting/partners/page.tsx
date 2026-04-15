@@ -17,7 +17,6 @@ import {
   businessRegistryApi,
   type BusinessRegistryCompany,
   type PartnerRegistrySyncLogItem,
-  type BusinessRegistrySearchItem,
 } from '@/lib/api/businessRegistry.api';
 import {
   accountingApi,
@@ -26,6 +25,7 @@ import {
   type PartnerWithBalance,
   type SupplierBankAccount,
 } from '@/lib/api/accounting.api';
+import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 
 type PartnerFormState = {
   type: 'customer' | 'supplier' | 'both';
@@ -107,9 +107,8 @@ export default function BusinessPartnersPage() {
   }>>([]);
   const [form, setForm] = useState<PartnerFormState>(emptyPartnerForm());
   const [isCreatingNew, setIsCreatingNew] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [newBankAccount, setNewBankAccount] = useState<BankAccountDraft>(emptyBankAccountDraft());
-  const [registryQuery, setRegistryQuery] = useState('');
-  const [registrySearchResults, setRegistrySearchResults] = useState<BusinessRegistrySearchItem[]>([]);
   const [selectedRegistryCompany, setSelectedRegistryCompany] = useState<BusinessRegistryCompany | null>(null);
   const [registrySyncLog, setRegistrySyncLog] = useState<PartnerRegistrySyncLogItem[]>([]);
   const [includeTaxArrearsOnRefresh, setIncludeTaxArrearsOnRefresh] = useState(false);
@@ -155,8 +154,6 @@ export default function BusinessPartnersPage() {
       setForm(emptyPartnerForm());
       setDuplicateWarnings([]);
       setNewBankAccount(emptyBankAccountDraft());
-      setRegistryQuery('');
-      setRegistrySearchResults([]);
       setSelectedRegistryCompany(null);
       setRegistrySyncLog([]);
       setLatestTaxArrears(null);
@@ -225,16 +222,13 @@ export default function BusinessPartnersPage() {
   };
 
   const handleSavePartner = async () => {
+    if (!selectedPartnerId) return;
     await runAction('save-partner', async () => {
       const payload = buildPartnerPayload(form);
-      const savedPartner = isCreatingNew
-        ? await accountingApi.createPartner(payload)
-        : await accountingApi.updatePartner(selectedPartnerId as string, payload);
-
-      setIsCreatingNew(false);
+      const savedPartner = await accountingApi.updatePartner(selectedPartnerId, payload);
       setSelectedPartnerId(savedPartner.id);
       await refreshPartners(savedPartner.id);
-      setSuccessMessage(isCreatingNew ? 'Partner created.' : 'Partner updated.');
+      setSuccessMessage('Partner updated.');
     });
   };
 
@@ -248,38 +242,6 @@ export default function BusinessPartnersPage() {
       });
       setDuplicateWarnings(duplicates);
       setSuccessMessage(duplicates.length > 0 ? 'Potential duplicates found.' : 'No partner duplicates found.');
-    });
-  };
-
-  const handleRegistrySearch = async () => {
-    await runAction('registry-search', async () => {
-      const result = await businessRegistryApi.searchCompanies(registryQuery);
-      setRegistrySearchResults(result.items);
-      setSuccessMessage(result.items.length > 0 ? 'Business Registry results loaded.' : 'No Business Registry matches found.');
-    });
-  };
-
-  const handleRegistryAutofill = async (item: BusinessRegistrySearchItem) => {
-    if (!item.registryCode) {
-      setErrorMessage('Selected Business Registry result has no registry code.');
-      return;
-    }
-
-    await runAction(`registry-company-${item.registryCode}`, async () => {
-      const result = await businessRegistryApi.getCompany(item.registryCode as string);
-      const company = result.company;
-      setSelectedRegistryCompany(company);
-      setForm((current) => ({
-        ...current,
-        name: company.name || current.name,
-        reg_code: company.registryCode || current.reg_code,
-        vat_number: company.vatNumber || current.vat_number,
-        address: company.legalAddress || current.address,
-        postal_code: company.postalCode || current.postal_code,
-        city: company.city || current.city,
-        country_code: company.countryCode || current.country_code,
-      }));
-      setSuccessMessage(`Autofilled partner data from Business Registry for ${company.registryCode || company.name || 'selected company'}.`);
     });
   };
 
@@ -348,7 +310,7 @@ export default function BusinessPartnersPage() {
     });
   };
 
-  const canManageBankAccounts = isCreatingNew ? form.type !== 'customer' : !!selectedPartnerId;
+  const canManageBankAccounts = !!selectedPartnerId;
 
   return (
     <div className="space-y-6">
@@ -369,8 +331,7 @@ export default function BusinessPartnersPage() {
           </button>
           <button
             onClick={() => {
-              setIsCreatingNew(true);
-              setSelectedPartnerId(null);
+              setAddModalOpen(true);
               setSuccessMessage(null);
               setErrorMessage(null);
             }}
@@ -464,90 +425,96 @@ export default function BusinessPartnersPage() {
         </aside>
 
         <section className="space-y-4">
+          {!selectedPartnerId && !isCreatingNew ? (
+            <div className="card p-8 text-sm text-slate-500">Select a partner to view details.</div>
+          ) : (
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">
-                {isCreatingNew ? 'New partner' : selectedPartner?.name || 'Partner detail'}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Core partner details, supplier/customer role state, and duplicate checks.
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">
+                    {selectedPartner?.name || 'Partner detail'}
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Core partner details, supplier/customer role state, and duplicate checks.
+                  </p>
+                </div>
+                {selectedPartner?.reg_code && (
+                  <button
+                    onClick={handleRegistryRefresh}
+                    disabled={!!actionLoading}
+                    title="Refresh from Business Registry"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  </button>
+                )}
+              </div>
             </div>
 
             {isDetailLoading ? (
               <div className="p-6 text-sm text-slate-500">Loading partner detail…</div>
             ) : (
-              <div className="space-y-5 p-5">
-                <div className="rounded-xl border border-slate-200 p-4">
-                  <div className="mb-3 text-sm font-semibold text-slate-900">Business Registry lookup</div>
-                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                    <input
-                      value={registryQuery}
-                      onChange={(event) => setRegistryQuery(event.target.value)}
-                      placeholder="Company name or registry code"
-                      className="h-11 rounded-lg border border-slate-200 px-3"
-                    />
-                    <button
-                      onClick={handleRegistrySearch}
-                      disabled={registryQuery.trim().length < 2 || !!actionLoading}
-                      className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {actionLoading === 'registry-search' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                      <span>Search registry</span>
-                    </button>
+              <div className="space-y-4 p-4">
+                {/* Identity */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Identity</div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Type" value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
+                      { label: 'Customer', value: 'customer' },
+                      { label: 'Supplier', value: 'supplier' },
+                      { label: 'Both', value: 'both' },
+                    ]} />
+                    <Field label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
+                    <Field label="Code" value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
                   </div>
-
-                  {selectedRegistryCompany && (
-                    <div className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">
-                      Autofill source: {selectedRegistryCompany.name || '-'} · {selectedRegistryCompany.registryCode || '-'} · {selectedRegistryCompany.sourceTimestamp}
-                    </div>
-                  )}
-
-                  {registrySearchResults.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {registrySearchResults.map((item) => (
-                        <div key={`${item.registryCode}-${item.name}`} className="flex flex-col gap-3 rounded-lg border border-slate-200 p-3 md:flex-row md:items-center md:justify-between">
-                          <div>
-                            <div className="text-sm font-medium text-slate-900">{item.name || 'Unnamed company'}</div>
-                            <div className="mt-1 text-xs text-slate-500">
-                              {item.registryCode || 'No registry code'} · {item.vatNumber || 'No VAT'} · {item.registryStatus || 'No status'}
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleRegistryAutofill(item)}
-                            disabled={!item.registryCode || !!actionLoading}
-                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                          >
-                            {actionLoading === `registry-company-${item.registryCode}` ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                            <span>Use this company</span>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <Field label="Type" value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
-                    { label: 'Customer', value: 'customer' },
-                    { label: 'Supplier', value: 'supplier' },
-                    { label: 'Both', value: 'both' },
-                  ]} />
-                  <Field label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
-                  <Field label="Code" value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
-                  <Field label="Registry code" value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
-                  <Field label="VAT number" value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
-                  <Field label="Email" value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
-                  <Field label="Phone" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
-                  <Field label="Website" value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
-                  <Field label="Country code" value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
-                  <Field label="City" value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
-                  <Field label="Postal code" value={form.postal_code} onChange={(value) => setForm((current) => ({ ...current, postal_code: value }))} />
-                  <Field label="Payment terms days" value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
+                {/* Registration */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Registration</div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Registry code" value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
+                    <Field label="VAT number" value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
+                  </div>
                 </div>
 
-                <Field label="Address" value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
-                <Field label="Notes" value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
+                {/* Contact */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Contact</div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Email" value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
+                    <Field label="Phone" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
+                    <Field label="Website" value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
+                  </div>
+                </div>
+
+                {/* Location */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Location</div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Country code" value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
+                    <Field label="City" value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
+                    <Field label="Postal code" value={form.postal_code} onChange={(value) => setForm((current) => ({ ...current, postal_code: value }))} />
+                  </div>
+                  <div className="mt-3">
+                    <Field label="Address" value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
+                  </div>
+                </div>
+
+                {/* Billing */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Billing</div>
+                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    <Field label="Payment terms days" value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
+                  </div>
+                </div>
+
+                {/* Other */}
+                <div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Other</div>
+                  <Field label="Notes" value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
+                </div>
 
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -564,7 +531,7 @@ export default function BusinessPartnersPage() {
                     className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'save-partner' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    <span>{isCreatingNew ? 'Create partner' : 'Save changes'}</span>
+                    <span>Save changes</span>
                   </button>
                 </div>
 
@@ -587,8 +554,8 @@ export default function BusinessPartnersPage() {
                   </div>
                 )}
 
-                {!isCreatingNew && selectedPartnerId && (
-                  <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+                {selectedPartnerId && (
+                  <div className="grid gap-3 xl:grid-cols-[0.95fr_1.05fr]">
                     <div className="rounded-xl border border-slate-200 p-4">
                       <div className="mb-3 text-sm font-semibold text-slate-900">Partner roles</div>
                       <div className="flex flex-wrap gap-2">
@@ -659,6 +626,7 @@ export default function BusinessPartnersPage() {
               </div>
             )}
           </div>
+          )}
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
@@ -693,7 +661,7 @@ export default function BusinessPartnersPage() {
                     )}
                   </div>
 
-                  {!isCreatingNew && selectedPartnerId && (
+                  {selectedPartnerId && (
                     <div className="rounded-xl border border-slate-200 p-4">
                       <div className="mb-4 text-sm font-semibold text-slate-900">Add supplier bank account</div>
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -737,7 +705,7 @@ export default function BusinessPartnersPage() {
             </div>
           </div>
 
-          {!isCreatingNew && selectedPartnerId && (
+          {selectedPartnerId && (
             <div className="card overflow-hidden">
               <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                 <h2 className="text-base font-semibold text-slate-900">Registry sync log</h2>
@@ -777,6 +745,18 @@ export default function BusinessPartnersPage() {
           )}
         </section>
       </div>
+
+      <AddPartnerModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onCreated={(partner) => {
+          setAddModalOpen(false);
+          setIsCreatingNew(false);
+          setSelectedPartnerId(partner.id);
+          void refreshPartners(partner.id);
+          setSuccessMessage('Partner created.');
+        }}
+      />
     </div>
   );
 }
