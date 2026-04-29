@@ -14,7 +14,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { FormField, FormInput, FormSelect } from '@/components/ui/FormField';
 
 function formatCurrency(value: number): string {
-  return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function GeneralLedgerPage() {
@@ -102,7 +102,7 @@ export default function GeneralLedgerPage() {
           {t('generalLedger')}
         </h1>
         <p className="text-[var(--text-secondary)] mt-1 text-sm sm:text-base">
-          View detailed transaction history for an account
+          {t('generalLedgerSingleAccountDescription')}
         </p>
       </div>
 
@@ -114,7 +114,7 @@ export default function GeneralLedgerPage() {
               value={selectedAccountId}
               onChange={(e) => setSelectedAccountId(e.target.value)}
             >
-              <option value="">-- Select account --</option>
+              <option value="">{t('selectAccountOption')}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.code} - {acc.name}
@@ -123,7 +123,7 @@ export default function GeneralLedgerPage() {
             </FormSelect>
           </FormField>
 
-          <FormField label={tCommon('date') + ' (from)'}>
+          <FormField label={t('dateFrom')}>
             <FormInput
               type="date"
               value={startDate}
@@ -131,7 +131,7 @@ export default function GeneralLedgerPage() {
             />
           </FormField>
 
-          <FormField label={tCommon('date') + ' (to)'}>
+          <FormField label={t('dateTo')}>
             <FormInput
               type="date"
               value={endDate}
@@ -145,8 +145,8 @@ export default function GeneralLedgerPage() {
       {!selectedAccountId && (
         <EmptyState
           icon={BookOpen}
-          title="Select an account"
-          message="Choose an account from the dropdown above to view its general ledger."
+          title={t('selectAccountTitle')}
+          message={t('selectAccountMessage')}
         />
       )}
 
@@ -166,7 +166,7 @@ export default function GeneralLedgerPage() {
         <EmptyState
           icon={BookOpen}
           title={tCommon('noData')}
-          message="No transactions found for this account in the selected period."
+          message={t('noTransactionsForAccount')}
         />
       )}
 
@@ -184,7 +184,7 @@ export default function GeneralLedgerPage() {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  Opening Balance
+                  {tCommon('openingBalance')}
                 </p>
                 <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
                   {formatCurrency(ledgerData.openingBalance)}
@@ -208,7 +208,7 @@ export default function GeneralLedgerPage() {
               </div>
               <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  Closing Balance
+                  {tCommon('closingBalance')}
                 </p>
                 <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
                   {formatCurrency(ledgerData.closingBalance)}
@@ -227,13 +227,13 @@ export default function GeneralLedgerPage() {
                       {tCommon('date')}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden sm:table-cell">
-                      Reference
+                      {tCommon('reference')}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      Description
+                      {tCommon('description')}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">
-                      Partner
+                      {tCommon('partner')}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                       {tAccounting('debit')}
@@ -248,10 +248,10 @@ export default function GeneralLedgerPage() {
                 </thead>
                 <tbody className="divide-y divide-[var(--border)]">
                   {/* Opening balance row */}
-                  <tr className="bg-[var(--surface-elevated)]">
-                    <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
-                      Opening Balance
-                    </td>
+                    <tr className="bg-[var(--surface-elevated)]">
+                      <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
+                      {tCommon('openingBalance')}
+                      </td>
                     <td className="px-4 sm:px-6 py-3 hidden sm:table-cell" />
                     <td className="px-4 sm:px-6 py-3 hidden md:table-cell" />
                     <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
@@ -289,7 +289,7 @@ export default function GeneralLedgerPage() {
                   {/* Closing balance row */}
                   <tr className="bg-[var(--surface-elevated)] border-t-2 border-[var(--border)]">
                     <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
-                      Closing Balance
+                      {tCommon('closingBalance')}
                     </td>
                     <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
                       {formatCurrency(ledgerData.totalDebit)}

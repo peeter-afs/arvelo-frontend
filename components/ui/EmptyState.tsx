@@ -1,6 +1,7 @@
 'use client';
 
 import { Inbox, type LucideIcon } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 type EmptyStateProps = {
   icon?: LucideIcon;
@@ -12,18 +13,19 @@ type EmptyStateProps = {
 
 export function EmptyState({
   icon: Icon = Inbox,
-  title = 'No data yet',
-  message = 'There are no items to display.',
+  title,
+  message,
   actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const t = useTranslations('common');
   return (
     <div className="card p-12 text-center">
       <div className="mx-auto w-14 h-14 rounded-full bg-[var(--surface-elevated)] flex items-center justify-center mb-4">
         <Icon className="h-7 w-7 text-[var(--text-muted)]" />
       </div>
-      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
-      <p className="text-sm text-[var(--text-secondary)] mb-5 max-w-sm mx-auto">{message}</p>
+      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{title || t('emptyStateTitle')}</h3>
+      <p className="text-sm text-[var(--text-secondary)] mb-5 max-w-sm mx-auto">{message || t('emptyStateMessage')}</p>
       {actionLabel && onAction && (
         <button
           onClick={onAction}

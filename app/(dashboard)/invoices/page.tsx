@@ -1,47 +1,48 @@
 'use client';
 
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { ArrowRight, ClipboardCheck, FileCheck2, FileText, Upload } from 'lucide-react';
 
-const sections = [
-  {
-    title: 'Sales invoices',
-    description: 'Review customer invoices, payment status, open balances, and line details from the live backend.',
-    href: '/invoices/sales',
-    icon: FileText,
-    accent: 'from-sky-500/15 to-cyan-500/10',
-  },
-  {
-    title: 'Purchase invoices',
-    description: 'Process supplier invoice approvals, rejection reasons, and posting into payable state.',
-    href: '/invoices/purchase',
-    icon: FileCheck2,
-    accent: 'from-emerald-500/15 to-lime-500/10',
-  },
-  {
-    title: 'Purchase approvals',
-    description: 'Work the dedicated approver queue for pending, approved, rejected, and payable supplier invoices.',
-    href: '/invoices/purchase-approvals',
-    icon: ClipboardCheck,
-    accent: 'from-rose-500/15 to-fuchsia-500/10',
-  },
-  {
-    title: 'Purchase imports',
-    description: 'Upload supplier PDFs, review parsed fields, resolve suppliers, and create draft purchase invoices.',
-    href: '/invoices/purchase-imports',
-    icon: Upload,
-    accent: 'from-amber-500/15 to-orange-500/10',
-  },
-];
-
 export default function InvoicesHubPage() {
+  const t = useTranslations('invoices');
+  const sections = [
+    {
+      title: t('salesList'),
+      description: t('salesDescription'),
+      href: '/invoices/sales',
+      icon: FileText,
+      accent: 'from-sky-500/15 to-cyan-500/10',
+    },
+    {
+      title: t('purchaseList'),
+      description: t('purchaseDescription'),
+      href: '/invoices/purchase',
+      icon: FileCheck2,
+      accent: 'from-emerald-500/15 to-lime-500/10',
+    },
+    {
+      title: t('purchaseApprovals'),
+      description: t('purchaseApprovalsDescription'),
+      href: '/invoices/purchase-approvals',
+      icon: ClipboardCheck,
+      accent: 'from-rose-500/15 to-fuchsia-500/10',
+    },
+    {
+      title: t('purchaseImports'),
+      description: t('purchaseImportsDescription'),
+      href: '/invoices/purchase-imports',
+      icon: Upload,
+      accent: 'from-amber-500/15 to-orange-500/10',
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Invoices</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('title')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Choose the invoice workflow you want to work in. Sales and purchase invoices are split into dedicated lists
-          so operational and approval views stay clear.
+          {t('hubDescription')}
         </p>
       </div>
 

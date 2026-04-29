@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
 
 type ConfirmResetDialogProps = {
@@ -20,9 +21,10 @@ export function ConfirmResetDialog({
   title,
   description,
   requiredText,
-  confirmLabel = 'Reset',
+  confirmLabel,
   onConfirm,
 }: ConfirmResetDialogProps) {
+  const t = useTranslations('common');
   const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
   const isValid = inputValue === requiredText;
@@ -62,7 +64,7 @@ export function ConfirmResetDialog({
               </AlertDialog.Description>
               <div className="mt-4">
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
-                  Type <span className="font-mono font-bold text-[var(--danger)]">{requiredText}</span> to confirm:
+                  {t('typeToConfirm')} <span className="font-mono font-bold text-[var(--danger)]">{requiredText}</span>:
                 </label>
                 <input
                   type="text"
@@ -78,7 +80,7 @@ export function ConfirmResetDialog({
           <div className="mt-6 flex justify-end gap-3">
             <AlertDialog.Cancel asChild>
               <button className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--surface-elevated)] transition-colors">
-                Cancel
+                {t('cancel')}
               </button>
             </AlertDialog.Cancel>
             <button
@@ -86,7 +88,7 @@ export function ConfirmResetDialog({
               disabled={!isValid || loading}
               className="px-4 py-2 text-sm font-medium text-white rounded-lg bg-[var(--danger)] hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Processing...' : confirmLabel}
+              {loading ? t('processing') : (confirmLabel || t('reset'))}
             </button>
           </div>
         </AlertDialog.Content>

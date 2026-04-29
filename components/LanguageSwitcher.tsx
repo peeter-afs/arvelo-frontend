@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useRef, useEffect, useTransition } from 'react';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useRouter, usePathname } from 'next/navigation';
 import { Globe } from 'lucide-react';
-import { locales, localeNames, type Locale } from '@/i18n/config';
+import { localeCookieName, locales, localeNames, type Locale } from '@/i18n/config';
 
 export default function LanguageSwitcher() {
+  const t = useTranslations('common');
   const [isPending, startTransition] = useTransition();
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
@@ -42,19 +43,10 @@ export default function LanguageSwitcher() {
 
   const handleLocaleChange = (newLocale: Locale) => {
     startTransition(() => {
-      localStorage.setItem('preferred-locale', newLocale);
-
-      const segments = pathname.split('/');
-      const localeIndex = locales.includes(segments[1] as Locale) ? 1 : 0;
-
-      if (localeIndex === 1) {
-        segments[1] = newLocale;
-      } else {
-        segments.splice(1, 0, newLocale);
-      }
-
-      const newPath = segments.join('/') || '/';
-      router.push(newPath);
+      localStorage.setItem(localeCookieName, newLocale);
+      document.cookie = `${localeCookieName}=${newLocale}; path=/; max-age=31536000; samesite=lax`;
+      router.replace(pathname || '/');
+      router.refresh();
       setIsOpen(false);
     });
   };
@@ -68,7 +60,7 @@ export default function LanguageSwitcher() {
         disabled={isPending}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
-        aria-label={`Language: ${localeNames[currentLocale]}`}
+        aria-label={t('languageSwitcher.currentLanguage', { language: localeNames[currentLocale] })}
       >
         <Globe className="h-4 w-4" />
         <span>{localeNames[currentLocale]}</span>
@@ -78,7 +70,7 @@ export default function LanguageSwitcher() {
         <div
           className="absolute right-0 mt-2 w-48 bg-[var(--surface)] rounded-lg shadow-lg z-20 border border-[var(--border)] py-1"
           role="listbox"
-          aria-label="Select language"
+          aria-label={t('languageSwitcher.selectLanguage')}
           aria-activedescendant={`locale-${currentLocale}`}
         >
           {locales.map((locale) => (

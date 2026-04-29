@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Search, Filter, Download, Upload, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ChartOfAccountsPage() {
+  const t = useTranslations('accounting');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mock data for chart of accounts
@@ -34,20 +36,17 @@ export default function ChartOfAccountsPage() {
 
   return (
     <div>
-      {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Chart of Accounts</h1>
-        <p className="text-sm text-slate-500 mt-1">Manage your account structure and general ledger accounts</p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('chartOfAccounts')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('chartOfAccountsDescription')}</p>
       </div>
 
-      {/* Actions Bar - Desktop */}
       <div className="hidden md:flex mb-6 justify-between items-center gap-3">
-        {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search accounts..."
+            placeholder={t('searchAccounts')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ fontSize: '16px' }}
@@ -56,43 +55,37 @@ export default function ChartOfAccountsPage() {
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
-          {/* Filter */}
           <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
             <Filter className="h-4 w-4" />
-            <span>Filter</span>
+            <span>{t('filter')}</span>
           </button>
 
-          {/* Export */}
           <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
             <Download className="h-4 w-4" />
-            <span>Export</span>
+            <span>{t('export')}</span>
           </button>
 
-          {/* Import Button */}
           <Link
             href="/accounting/accounts/import"
             className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors"
           >
             <Upload className="h-4 w-4" />
-            <span>Import</span>
+            <span>{t('import')}</span>
           </Link>
 
-          {/* Create Button */}
           <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
             <Plus className="h-4 w-4" />
-            <span>New Account</span>
+            <span>{t('newAccount')}</span>
           </button>
         </div>
       </div>
 
-      {/* Actions Bar - Mobile */}
       <div className="md:hidden mb-4 space-y-3">
-        {/* Search - Full width */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search accounts..."
+            placeholder={t('searchAccounts')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ fontSize: '16px' }}
@@ -104,11 +97,11 @@ export default function ChartOfAccountsPage() {
         <div className="flex items-center gap-2">
           <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
             <Filter className="h-4 w-4" />
-            <span>Filter</span>
+            <span>{t('filter')}</span>
           </button>
           <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
             <Download className="h-4 w-4" />
-            <span>Export</span>
+            <span>{t('export')}</span>
           </button>
           <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
             <MoreHorizontal className="h-4 w-4" />
@@ -116,36 +109,34 @@ export default function ChartOfAccountsPage() {
         </div>
       </div>
 
-      {/* Floating Action Button - Mobile */}
       <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
         <Plus className="h-6 w-6" />
       </button>
 
-      {/* Desktop Table */}
       <div className="hidden md:block card overflow-hidden">
         <table className="min-w-full">
           <thead className="bg-slate-50/80">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Code
+                {t('code')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Account Name
+                {t('accountName')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Type
+                {t('type')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Category
+                {t('category')}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
-                Balance
+                {t('balance')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Status
+                {t('status')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Actions
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -191,7 +182,6 @@ export default function ChartOfAccountsPage() {
         </table>
       </div>
 
-      {/* Mobile Card List */}
       <div className="md:hidden space-y-2">
         {accounts.map((account) => (
           <div key={account.id} className="card p-4 active:bg-slate-50 transition-colors cursor-pointer">
@@ -238,27 +228,25 @@ export default function ChartOfAccountsPage() {
         ))}
       </div>
 
-      {/* Pagination - Desktop */}
       <div className="hidden md:flex mt-6 justify-between items-center">
         <p className="text-sm text-slate-600">
-          Showing 1-10 of 10
+          {t('showingEntries', { from: 1, to: 10, total: 10 })}
         </p>
         <div className="flex gap-2">
           <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            Previous
+            {t('previous')}
           </button>
           <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
 
-      {/* Pagination - Mobile */}
       <div className="md:hidden mt-4 flex items-center justify-center gap-4">
         <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
           <span className="text-sm">&lt;</span>
         </button>
-        <p className="text-sm text-slate-600">Page 1 of 1</p>
+        <p className="text-sm text-slate-600">{t('pageOf', { current: 1, total: 1 })}</p>
         <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
           <span className="text-sm">&gt;</span>
         </button>

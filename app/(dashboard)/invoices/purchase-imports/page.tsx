@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -34,6 +35,7 @@ const emptyLine = (): EditableLine => ({
 });
 
 export default function PurchaseInvoiceImportsPage() {
+  const t = useTranslations('invoices');
   const [imports, setImports] = useState<PurchaseInvoiceImportListItem[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -135,7 +137,7 @@ export default function PurchaseInvoiceImportsPage() {
       await refreshList(result.import.id);
       await refreshDetail(result.import.id);
       setSelectedFile(null);
-      setSuccessMessage(`Imported ${result.import.file_name || selectedFile.name} for review.`);
+      setSuccessMessage(t('importedForReview', { file: result.import.file_name || selectedFile.name }));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -165,7 +167,7 @@ export default function PurchaseInvoiceImportsPage() {
       const result = await importApi.updatePurchaseInvoicePreview(detail.import.id, nextPreview);
       setDetail((current) => current ? { ...current, import: result.import } : current);
       setPreviewDraft(result.import.preview_data || nextPreview);
-      setSuccessMessage('Preview saved.');
+      setSuccessMessage(t('previewSaved'));
       await refreshList(detail.import.id);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -184,7 +186,7 @@ export default function PurchaseInvoiceImportsPage() {
       const result = await importApi.resolveSupplier(detail.import.id, { candidate_id: candidateId });
       setDetail(result);
       setManualPartnerId(String(result.import.supplier_resolution?.selected_partner_id || ''));
-      setSuccessMessage('Supplier resolved from candidate.');
+      setSuccessMessage(t('supplierResolvedFromCandidate'));
       await refreshList(detail.import.id);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -202,7 +204,7 @@ export default function PurchaseInvoiceImportsPage() {
     try {
       const result = await importApi.resolveSupplier(detail.import.id, { selected_partner_id: manualPartnerId });
       setDetail(result);
-      setSuccessMessage('Supplier resolved manually.');
+      setSuccessMessage(t('supplierResolvedManually'));
       await refreshList(detail.import.id);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -233,7 +235,7 @@ export default function PurchaseInvoiceImportsPage() {
         })),
       });
       setDraftResult(result);
-      setSuccessMessage('Draft purchase invoice created.');
+      setSuccessMessage(t('draftPurchaseInvoiceCreated'));
       await refreshList(detail.import.id);
       await refreshDetail(detail.import.id);
     } catch (error) {
@@ -250,10 +252,9 @@ export default function PurchaseInvoiceImportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Purchase Invoice Imports</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('purchaseImports')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Upload supplier PDFs, review AI-extracted fields, resolve the supplier, and create a draft purchase invoice.
-          This workflow never posts or approves invoices directly.
+          {t('purchaseImportsDescription')} {t('purchaseImportsNoPosting')}
         </p>
       </div>
 
@@ -265,13 +266,13 @@ export default function PurchaseInvoiceImportsPage() {
                 <FileUp className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-slate-900">Upload PDF</div>
-                <div className="text-xs text-slate-500">15 MB max, one invoice per PDF</div>
+                <div className="text-sm font-semibold text-slate-900">{t('uploadPdf')}</div>
+                <div className="text-xs text-slate-500">{t('uploadPdfHint')}</div>
               </div>
             </div>
 
             <label className="block rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
-              <span className="mb-2 block font-medium text-slate-700">Choose file</span>
+              <span className="mb-2 block font-medium text-slate-700">{t('chooseFile')}</span>
               <input
                 type="file"
                 accept="application/pdf"
@@ -286,15 +287,15 @@ export default function PurchaseInvoiceImportsPage() {
               className="mt-4 inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              <span>{isUploading ? 'Uploading…' : 'Upload and parse'}</span>
+              <span>{isUploading ? t('uploading') : t('uploadAndParse')}</span>
             </button>
           </div>
 
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 py-3">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Import queue</h2>
-                <p className="text-xs text-slate-500">Recent purchase invoice imports</p>
+                <h2 className="text-sm font-semibold text-slate-900">{t('importQueue')}</h2>
+                <p className="text-xs text-slate-500">{t('recentPurchaseInvoiceImports')}</p>
               </div>
               <button
                 onClick={() => {
@@ -309,9 +310,9 @@ export default function PurchaseInvoiceImportsPage() {
 
             <div className="divide-y divide-slate-100">
               {isListLoading ? (
-                <div className="p-4 text-sm text-slate-500">Loading imports…</div>
+                <div className="p-4 text-sm text-slate-500">{t('loadingImports')}</div>
               ) : imports.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No purchase invoice imports yet.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noPurchaseInvoiceImportsYet')}</div>
               ) : (
                 imports.map((item) => {
                   const isActive = selectedId === item.id;
@@ -323,7 +324,7 @@ export default function PurchaseInvoiceImportsPage() {
                     >
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-slate-900">{item.file_name || 'Imported PDF'}</div>
+                          <div className="truncate text-sm font-medium text-slate-900">{item.file_name || t('importedPdf')}</div>
                           <div className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)}</div>
                         </div>
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${statusBadge(item.status)}`}>
@@ -332,7 +333,7 @@ export default function PurchaseInvoiceImportsPage() {
                       </div>
                       <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
                         <span>{item.source_type}</span>
-                        {typeof item.confidence_score === 'number' && <span>· {item.confidence_score}% confidence</span>}
+                        {typeof item.confidence_score === 'number' && <span>· {t('confidencePercent', { value: item.confidence_score })}</span>}
                       </div>
                     </button>
                   );
@@ -362,18 +363,18 @@ export default function PurchaseInvoiceImportsPage() {
           )}
 
           {isDetailLoading ? (
-            <div className="card p-8 text-sm text-slate-500">Loading import detail…</div>
+            <div className="card p-8 text-sm text-slate-500">{t('loadingImportDetail')}</div>
           ) : !detail || !previewDraft ? (
-            <div className="card p-8 text-sm text-slate-500">Select an import to review the parsed invoice.</div>
+            <div className="card p-8 text-sm text-slate-500">{t('selectImportToReview')}</div>
           ) : (
             <>
               <div className="card overflow-hidden">
                 <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="text-base font-semibold text-slate-900">{detail.import.file_name || 'Purchase invoice import'}</h2>
+                      <h2 className="text-base font-semibold text-slate-900">{detail.import.file_name || t('purchaseInvoiceImport')}</h2>
                       <p className="mt-1 text-sm text-slate-500">
-                        Status {formatLabel(detail.import.status)}. Review header fields, lines, supplier match, and duplicate warnings.
+                        {t('status')} {formatLabel(detail.import.status)}. {t('reviewHeaderLinesSupplierDuplicate')}
                       </p>
                     </div>
                     <div className="text-right text-xs text-slate-500">
@@ -385,51 +386,51 @@ export default function PurchaseInvoiceImportsPage() {
 
                 <div className="space-y-6 p-5">
                   <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
-                    <Field label="Supplier name" value={String(previewDraft.supplier_name || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), supplier_name: value }))} />
-                    <Field label="Registry code" value={String(previewDraft.registry_code || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), registry_code: value }))} />
-                    <Field label="VAT number" value={String(previewDraft.vat_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), vat_number: value }))} />
-                    <Field label="IBAN" value={String(previewDraft.iban || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), iban: value }))} />
-                    <Field label="Invoice number" value={String(previewDraft.invoice_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), invoice_number: value }))} />
-                    <Field label="Invoice date" type="date" value={String(previewDraft.invoice_date || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), invoice_date: value }))} />
-                    <Field label="Due date" type="date" value={String(previewDraft.due_date || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), due_date: value }))} />
-                    <Field label="Currency" value={String(previewDraft.currency || 'EUR')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), currency: value.toUpperCase() }))} />
-                    <Field label="Subtotal" value={stringNumber(previewDraft.subtotal)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), subtotal: Number(value || 0) }))} />
-                    <Field label="VAT total" value={stringNumber(previewDraft.vat_total)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), vat_total: Number(value || 0) }))} />
-                    <Field label="Total" value={stringNumber(previewDraft.total)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), total: Number(value || 0) }))} />
-                    <Field label="Reference" value={String(previewDraft.reference || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), reference: value }))} />
+                    <Field label={t('supplierName')} value={String(previewDraft.supplier_name || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), supplier_name: value }))} />
+                    <Field label={t('registryCode')} value={String(previewDraft.registry_code || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), registry_code: value }))} />
+                    <Field label={t('vatNumber')} value={String(previewDraft.vat_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), vat_number: value }))} />
+                    <Field label={t('iban')} value={String(previewDraft.iban || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), iban: value }))} />
+                    <Field label={t('invoiceNumber')} value={String(previewDraft.invoice_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), invoice_number: value }))} />
+                    <Field label={t('invoiceDate')} type="date" value={String(previewDraft.invoice_date || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), invoice_date: value }))} />
+                    <Field label={t('dueDate')} type="date" value={String(previewDraft.due_date || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), due_date: value }))} />
+                    <Field label={t('currency')} value={String(previewDraft.currency || 'EUR')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), currency: value.toUpperCase() }))} />
+                    <Field label={t('subtotal')} value={stringNumber(previewDraft.subtotal)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), subtotal: Number(value || 0) }))} />
+                    <Field label={t('taxTotal')} value={stringNumber(previewDraft.vat_total)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), vat_total: Number(value || 0) }))} />
+                    <Field label={t('total')} value={stringNumber(previewDraft.total)} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), total: Number(value || 0) }))} />
+                    <Field label={t('reference')} value={String(previewDraft.reference || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), reference: value }))} />
                   </div>
 
                   <div className="grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
                     <div className="rounded-xl border border-slate-200">
                       <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900">Preview lines</h3>
-                          <p className="text-xs text-slate-500">Critical totals are validated again when draft creation runs.</p>
+                          <h3 className="text-sm font-semibold text-slate-900">{t('previewLines')}</h3>
+                          <p className="text-xs text-slate-500">{t('criticalTotalsValidated')}</p>
                         </div>
                         <button
                           onClick={() => setLineDrafts((current) => [...current, emptyLine()])}
                           className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50"
                         >
-                          Add line
+                          {t('addLine')}
                         </button>
                       </div>
                       <div className="space-y-3 p-4">
                         {lineDrafts.map((line, index) => (
                           <div key={index} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
                             <div className="lg:col-span-4">
-                              <SmallField label="Description" value={line.description} onChange={(value) => updateLine(setLineDrafts, index, 'description', value)} />
+                              <SmallField label={t('description')} value={line.description} onChange={(value) => updateLine(setLineDrafts, index, 'description', value)} />
                             </div>
                             <div className="lg:col-span-2">
-                              <SmallField label="Qty" value={line.quantity} onChange={(value) => updateLine(setLineDrafts, index, 'quantity', value)} />
+                              <SmallField label={t('qty')} value={line.quantity} onChange={(value) => updateLine(setLineDrafts, index, 'quantity', value)} />
                             </div>
                             <div className="lg:col-span-2">
-                              <SmallField label="Unit price" value={line.unit_price} onChange={(value) => updateLine(setLineDrafts, index, 'unit_price', value)} />
+                              <SmallField label={t('unitPrice')} value={line.unit_price} onChange={(value) => updateLine(setLineDrafts, index, 'unit_price', value)} />
                             </div>
                             <div className="lg:col-span-2">
-                              <SmallField label="VAT %" value={line.tax_rate} onChange={(value) => updateLine(setLineDrafts, index, 'tax_rate', value)} />
+                              <SmallField label={t('vatRate')} value={line.tax_rate} onChange={(value) => updateLine(setLineDrafts, index, 'tax_rate', value)} />
                             </div>
                             <div className="lg:col-span-2">
-                              <SmallField label="Line total" value={line.line_total} onChange={(value) => updateLine(setLineDrafts, index, 'line_total', value)} />
+                              <SmallField label={t('lineTotal')} value={line.line_total} onChange={(value) => updateLine(setLineDrafts, index, 'line_total', value)} />
                             </div>
                           </div>
                         ))}
@@ -439,22 +440,22 @@ export default function PurchaseInvoiceImportsPage() {
                     <div className="space-y-4">
                       <InfoCard
                         icon={Sparkles}
-                        title="Parsing confidence"
-                        body={typeof detail.import.confidence_score === 'number' ? `${detail.import.confidence_score}% confidence score from backend parsing.` : 'No confidence score available.'}
+                        title={t('parsingConfidence')}
+                        body={typeof detail.import.confidence_score === 'number' ? t('confidenceScoreFromBackend', { value: detail.import.confidence_score }) : t('noConfidenceScore')}
                       />
                       <InfoCard
                         icon={AlertCircle}
-                        title="Warnings"
-                        body={selectedWarnings.length > 0 ? selectedWarnings.map(formatLabel).join(', ') : 'No advisory warnings on this import.'}
+                        title={t('warnings')}
+                        body={selectedWarnings.length > 0 ? selectedWarnings.map(formatLabel).join(', ') : t('noAdvisoryWarnings')}
                         tone={selectedWarnings.length > 0 ? 'warning' : 'neutral'}
                       />
                       <InfoCard
                         icon={FileText}
-                        title="Duplicate check"
+                        title={t('duplicateCheck')}
                         body={
                           duplicateWarning
-                            ? `Likely duplicate detected. Review before draft creation. Score ${detail.import.duplicate_check?.max_score || 'n/a'}.`
-                            : 'No strong duplicate warning from backend.'
+                            ? t('likelyDuplicateDetected', { score: String(detail.import.duplicate_check?.max_score || 'n/a') })
+                            : t('noDuplicateWarning')
                         }
                         tone={duplicateWarning ? 'danger' : 'neutral'}
                       />
@@ -468,7 +469,7 @@ export default function PurchaseInvoiceImportsPage() {
                       className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isSavingPreview ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      <span>Save review edits</span>
+                      <span>{t('saveReviewEdits')}</span>
                     </button>
                   </div>
                 </div>
@@ -477,13 +478,13 @@ export default function PurchaseInvoiceImportsPage() {
               <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className="card overflow-hidden">
                   <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                    <h2 className="text-base font-semibold text-slate-900">Supplier resolution</h2>
-                    <p className="mt-1 text-sm text-slate-500">Accept a backend candidate or bind the import to an existing supplier manually.</p>
+                    <h2 className="text-base font-semibold text-slate-900">{t('supplierResolution')}</h2>
+                    <p className="mt-1 text-sm text-slate-500">{t('supplierResolutionDescription')}</p>
                   </div>
                   <div className="space-y-4 p-5">
                     {detail.supplier_match_candidates.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                        No supplier candidates returned. Choose an existing partner manually.
+                        {t('noSupplierCandidates')}
                       </div>
                     ) : (
                       detail.supplier_match_candidates.map((candidate) => (
@@ -491,10 +492,10 @@ export default function PurchaseInvoiceImportsPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="text-sm font-semibold text-slate-900">
-                                {candidate.candidate_payload?.matched_partner_name || candidate.candidate_payload?.name || 'Supplier candidate'}
+                                {candidate.candidate_payload?.matched_partner_name || candidate.candidate_payload?.name || t('supplierCandidate')}
                               </div>
                               <div className="mt-1 text-xs text-slate-500">
-                                Score {candidate.match_score} · {normalizeStringArray(candidate.match_reasons).map(formatLabel).join(', ') || 'No match reasons'}
+                                {t('scoreValue', { score: String(candidate.match_score) })} · {normalizeStringArray(candidate.match_reasons).map(formatLabel).join(', ') || t('noMatchReasons')}
                               </div>
                             </div>
                             <button
@@ -503,7 +504,7 @@ export default function PurchaseInvoiceImportsPage() {
                               className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <UserCheck className="h-4 w-4" />
-                              <span>{candidate.is_selected ? 'Selected' : 'Accept'}</span>
+                              <span>{candidate.is_selected ? t('selected') : t('accept')}</span>
                             </button>
                           </div>
                         </div>
@@ -511,14 +512,14 @@ export default function PurchaseInvoiceImportsPage() {
                     )}
 
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 text-sm font-semibold text-slate-900">Manual supplier selection</div>
+                      <div className="mb-3 text-sm font-semibold text-slate-900">{t('manualSupplierSelection')}</div>
                       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
                         <select
                           value={manualPartnerId}
                           onChange={(event) => setManualPartnerId(event.target.value)}
                           className="h-11 rounded-lg border border-slate-200 px-3"
                         >
-                          <option value="">Select supplier partner</option>
+                          <option value="">{t('selectSupplierPartner')}</option>
                           {partners.map((partner) => (
                             <option key={partner.id} value={partner.id}>
                               {partner.name}
@@ -531,12 +532,12 @@ export default function PurchaseInvoiceImportsPage() {
                           className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {isResolvingSupplier ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                          <span>Resolve supplier</span>
+                          <span>{t('resolveSupplier')}</span>
                         </button>
                       </div>
                       {selectedPartnerName && (
                         <div className="mt-3 text-sm text-slate-600">
-                          Current resolved supplier: <span className="font-medium text-slate-900">{selectedPartnerName}</span>
+                          {t('currentResolvedSupplier')} <span className="font-medium text-slate-900">{selectedPartnerName}</span>
                         </div>
                       )}
                     </div>
@@ -545,8 +546,8 @@ export default function PurchaseInvoiceImportsPage() {
 
                 <div className="card overflow-hidden">
                   <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                    <h2 className="text-base font-semibold text-slate-900">Create draft invoice</h2>
-                    <p className="mt-1 text-sm text-slate-500">Draft creation is blocked until supplier resolution and required preview data are in place.</p>
+                    <h2 className="text-base font-semibold text-slate-900">{t('createDraftInvoice')}</h2>
+                    <p className="mt-1 text-sm text-slate-500">{t('draftCreationBlocked')}</p>
                   </div>
                   <div className="space-y-4 p-5">
                     {duplicateWarning && (
@@ -557,7 +558,7 @@ export default function PurchaseInvoiceImportsPage() {
                           onChange={(event) => setConfirmDuplicateWarning(event.target.checked)}
                           className="mt-0.5"
                         />
-                        <span>Confirm that the duplicate warning has been reviewed and draft creation should continue.</span>
+                        <span>{t('confirmDuplicateWarning')}</span>
                       </label>
                     )}
 
@@ -567,14 +568,14 @@ export default function PurchaseInvoiceImportsPage() {
                       className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreatingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      <span>Create draft purchase invoice</span>
+                      <span>{t('createDraftPurchaseInvoice')}</span>
                     </button>
 
                     {draftResult?.draft_invoice?.invoice && (
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
-                        <div className="font-semibold text-emerald-900">Draft created</div>
+                        <div className="font-semibold text-emerald-900">{t('draftCreated')}</div>
                         <div className="mt-2">
-                          Invoice ID {draftResult.draft_invoice.invoice.id.slice(0, 8)} linked to import {detail.import.id.slice(0, 8)}.
+                          {t('draftCreatedLinked', { invoiceId: draftResult.draft_invoice.invoice.id.slice(0, 8), importId: detail.import.id.slice(0, 8) })}
                         </div>
                       </div>
                     )}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
+import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
 
 type ConfirmDialogProps = {
@@ -20,11 +21,12 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel,
+  cancelLabel,
   variant = 'danger',
   onConfirm,
 }: ConfirmDialogProps) {
+  const t = useTranslations('common');
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
@@ -65,7 +67,7 @@ export function ConfirmDialog({
           <div className="mt-6 flex justify-end gap-3">
             <AlertDialog.Cancel asChild>
               <button className="px-4 py-2 text-sm font-medium text-[var(--text-secondary)] border border-[var(--border)] rounded-lg hover:bg-[var(--surface-elevated)] transition-colors">
-                {cancelLabel}
+                {cancelLabel || t('cancel')}
               </button>
             </AlertDialog.Cancel>
             <AlertDialog.Action asChild>
@@ -74,7 +76,7 @@ export function ConfirmDialog({
                 disabled={loading}
                 className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50 ${confirmColor}`}
               >
-                {loading ? 'Processing...' : confirmLabel}
+                {loading ? t('processing') : (confirmLabel || t('confirm'))}
               </button>
             </AlertDialog.Action>
           </div>

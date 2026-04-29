@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 type ErrorStateProps = {
   title?: string;
@@ -9,24 +10,25 @@ type ErrorStateProps = {
 };
 
 export function ErrorState({
-  title = 'Something went wrong',
-  message = 'An unexpected error occurred. Please try again.',
+  title,
+  message,
   onRetry
 }: ErrorStateProps) {
+  const t = useTranslations('common');
   return (
     <div className="card p-8 text-center">
       <div className="mx-auto w-12 h-12 rounded-full bg-red-50 flex items-center justify-center mb-4">
         <AlertCircle className="h-6 w-6 text-[var(--danger)]" />
       </div>
-      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{title}</h3>
-      <p className="text-sm text-[var(--text-secondary)] mb-4 max-w-md mx-auto">{message}</p>
+      <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{title || t('errorStateTitle')}</h3>
+      <p className="text-sm text-[var(--text-secondary)] mb-4 max-w-md mx-auto">{message || t('errorStateMessage')}</p>
       {onRetry && (
         <button
           onClick={onRetry}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[var(--primary)] border border-[var(--primary)] rounded-lg hover:bg-blue-50 transition-colors"
         >
           <RefreshCw className="h-4 w-4" />
-          Try again
+          {t('tryAgain')}
         </button>
       )}
     </div>

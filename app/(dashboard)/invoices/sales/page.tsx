@@ -1,14 +1,16 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import InvoiceListWorkspace from '@/components/invoices/InvoiceListWorkspace';
 
 export default function SalesInvoicesPage() {
+  const t = useTranslations('invoices');
   return (
     <InvoiceListWorkspace
       invoiceType="sales_invoice"
-      title="Sales Invoices"
-      description="Track customer invoices, open balances, payment progress, and invoice line detail from the live backend."
-      searchPlaceholder="Search sales invoices"
+      title={t('salesList')}
+      description={t('salesDescription')}
+      searchPlaceholder={t('searchSalesInvoices')}
     />
   );
 }

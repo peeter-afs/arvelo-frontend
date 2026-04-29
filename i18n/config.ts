@@ -2,6 +2,7 @@ export const locales = ['et', 'en', 'fi', 'sv'] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'et';
+export const localeCookieName = 'preferred-locale';
 
 export const localeNames: Record<Locale, string> = {
   et: 'Eesti',

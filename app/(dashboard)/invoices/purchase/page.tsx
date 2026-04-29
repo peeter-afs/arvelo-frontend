@@ -1,14 +1,16 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import InvoiceListWorkspace from '@/components/invoices/InvoiceListWorkspace';
 
 export default function PurchaseInvoicesPage() {
+  const t = useTranslations('invoices');
   return (
     <InvoiceListWorkspace
       invoiceType="purchase_invoice"
-      title="Purchase Invoices"
-      description="Review supplier invoices, move them through approval states, and post approved invoices into payable state."
-      searchPlaceholder="Search purchase invoices"
+      title={t('purchaseList')}
+      description={t('purchaseDescription')}
+      searchPlaceholder={t('searchPurchaseInvoices')}
     />
   );
 }

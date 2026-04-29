@@ -3,12 +3,14 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 
 function LoginForm() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/';
@@ -87,10 +89,10 @@ function LoginForm() {
       {/* Heading */}
       <div className="mb-8">
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">
-          {requires2fa ? 'Two-factor authentication' : 'Welcome back'}
+          {requires2fa ? t('twoFactor.title') : t('loginTitle')}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          {requires2fa ? 'Verify your identity to continue' : 'Sign in to continue'}
+          {requires2fa ? t('twoFactor.subtitle') : t('loginSubtitle')}
         </p>
       </div>
 
@@ -100,10 +102,10 @@ function LoginForm() {
           <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-medium text-emerald-900">
-              Email verified successfully
+              {t('verify.successTitle')}
             </p>
             <p className="text-sm text-emerald-700 mt-0.5">
-              You can now log in to your account.
+              {t('verify.successDescription')}
             </p>
           </div>
         </div>
@@ -122,7 +124,7 @@ function LoginForm() {
                 href="/resend-verification"
                 className="text-sm font-medium text-red-700 underline hover:no-underline mt-2 inline-block"
               >
-                Resend verification email
+                {t('resendVerification.cta')}
               </Link>
             )}
           </div>
@@ -134,7 +136,7 @@ function LoginForm() {
         <form onSubmit={handleVerify2fa} className="space-y-5">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
             <p className="text-sm text-slate-600">
-              Enter the 6-digit code from your authenticator app
+              {t('twoFactor.prompt')}
             </p>
           </div>
 
@@ -143,7 +145,7 @@ function LoginForm() {
               htmlFor="totpCode"
               className="block text-sm font-medium text-slate-700 mb-1.5"
             >
-              Authentication code
+              {t('twoFactor.codeLabel')}
             </label>
             <input
               id="totpCode"
@@ -170,10 +172,10 @@ function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Verifying...</span>
+                <span>{t('twoFactor.verifying')}</span>
               </>
             ) : (
-              'Verify'
+              t('twoFactor.verify')
             )}
           </button>
 
@@ -187,7 +189,7 @@ function LoginForm() {
             }}
             className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
-            Back to login
+            {t('backToLogin')}
           </button>
         </form>
       ) : (
@@ -198,7 +200,7 @@ function LoginForm() {
               htmlFor="email"
               className="block text-sm font-medium text-slate-700 mb-1.5"
             >
-              Email address
+              {t('emailAddress')}
             </label>
             <input
               id="email"
@@ -219,13 +221,13 @@ function LoginForm() {
                 htmlFor="password"
                 className="block text-sm font-medium text-slate-700"
               >
-                Password
+                {t('password')}
               </label>
               <Link
                 href="/forgot-password"
                 className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
               >
-                Forgot password?
+                {t('forgotPassword')}
               </Link>
             </div>
             <input
@@ -235,7 +237,7 @@ function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Enter your password"
+              placeholder={t('enterPasswordPlaceholder')}
               disabled={isLoading}
               style={{ fontSize: '16px' }} // Prevent iOS zoom
             />
@@ -249,10 +251,10 @@ function LoginForm() {
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Signing in...</span>
+                <span>{t('signingIn')}</span>
               </>
             ) : (
-              'Sign in'
+              t('signIn')
             )}
           </button>
         </form>
@@ -264,20 +266,20 @@ function LoginForm() {
           <div className="w-full border-t border-slate-200"></div>
         </div>
         <div className="relative flex justify-center text-xs">
-          <span className="px-2 bg-[var(--surface-elevated)] text-slate-400">
-            or
+            <span className="px-2 bg-[var(--surface-elevated)] text-slate-400">
+            {t('or')}
           </span>
         </div>
       </div>
 
       {/* Sign Up Link */}
       <p className="text-center text-sm text-slate-600 pb-8">
-        Don't have an account?{' '}
+        {t('noAccount')}{' '}
         <Link
           href="/register"
           className="font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
         >
-          Sign up
+          {t('signUp')}
         </Link>
       </p>
     </div>

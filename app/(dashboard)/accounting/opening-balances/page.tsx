@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, ArrowRight, CheckCircle2, Layers3, Lock, Loader2, Plus, Receipt, Scale, Trash2, Upload, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
@@ -74,6 +75,7 @@ const modeMeta: Record<Mode, { title: string; description: string; icon: typeof 
 };
 
 export default function OpeningBalancesPage() {
+  const t = useTranslations('accounting');
   const [mode, setMode] = useState<Mode>('general');
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
@@ -342,18 +344,17 @@ export default function OpeningBalancesPage() {
   };
 
   const topCards = [
-    { mode: 'general' as const, icon: Scale, title: 'General GL', description: 'Balanced opening journal lines across accounts.' },
-    { mode: 'receivables' as const, icon: Receipt, title: 'Receivables', description: 'Creates open sales items for later customer settlement.' },
-    { mode: 'payables' as const, icon: Wallet, title: 'Payables', description: 'Creates open purchase items for later supplier payment.' }
+    { mode: 'general' as const, icon: Scale, title: t('openingBalancesGeneralCardTitle'), description: t('openingBalancesGeneralCardDescription') },
+    { mode: 'receivables' as const, icon: Receipt, title: t('openingBalancesReceivablesCardTitle'), description: t('openingBalancesReceivablesCardDescription') },
+    { mode: 'payables' as const, icon: Wallet, title: t('openingBalancesPayablesCardTitle'), description: t('openingBalancesPayablesCardDescription') }
   ];
 
   return (
     <div className="space-y-6">
       <div className="mb-2">
-        <h1 className="text-2xl font-semibold text-slate-900">Opening Balances</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('openingBalances')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Onboard opening balances with a mandatory preview step. General mode creates a balanced GL entry, while
-          receivables and payables also create operational open items for later workflows.
+          {t('openingBalancesDescription')}
         </p>
       </div>
 
@@ -364,11 +365,11 @@ export default function OpeningBalancesPage() {
               <Lock className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-emerald-900">Opening balances already imported</h3>
+              <h3 className="text-base font-semibold text-emerald-900">{t('openingBalancesAlreadyImported')}</h3>
               <p className="mt-1 text-sm text-emerald-700">
-                Opening balances have been committed. To re-import, reset from{' '}
+                {t('openingBalancesAlreadyImportedDescription')}{' '}
                 <Link href="/settings?tab=data-management" className="font-medium underline hover:text-emerald-900">
-                  Settings &gt; Data Management
+                  {t('settingsDataManagement')}
                 </Link>.
               </p>
             </div>
@@ -416,7 +417,7 @@ export default function OpeningBalancesPage() {
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
               <h2 className="text-base font-semibold text-slate-900">AI import from balance PDF</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Upload a balance sheet, trial balance, receivables list, or payables list PDF. The backend parses it into the current {mode} editor.
+                {t('openingBalancesImportDescription', { mode })}
               </p>
             </div>
             <div className="space-y-4 p-5">
@@ -433,7 +434,7 @@ export default function OpeningBalancesPage() {
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                 >
                   {isImportLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                  <span>{isImportLoading ? 'Parsing…' : 'Parse PDF'}</span>
+                  <span>{isImportLoading ? t('parsingPdf') : t('parsePdf')}</span>
                 </button>
               </div>
               {importResult && (
@@ -444,7 +445,7 @@ export default function OpeningBalancesPage() {
                   </div>
                   {importResult.warnings && importResult.warnings.length > 0 && (
                     <div className="mt-3 text-xs text-amber-700">
-                      Warnings: {importResult.warnings.join(', ')}
+                      {t('warnings')}: {importResult.warnings.join(', ')}
                     </div>
                   )}
                 </div>
@@ -469,7 +470,7 @@ export default function OpeningBalancesPage() {
             <div className="space-y-6 p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Opening date</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('openingDate')}</span>
                   <input
                     type="date"
                     value={sharedFields.opening_date}
@@ -482,15 +483,15 @@ export default function OpeningBalancesPage() {
                     className={`h-11 w-full rounded-lg border border-slate-200 px-3 ${isDateLocked ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : ''}`}
                   />
                   {isDateLocked && glOpeningDate && (
-                    <p className="text-xs text-slate-500">Locked to GL opening balance date</p>
+                    <p className="text-xs text-slate-500">{t('lockedToGlOpeningDate')}</p>
                   )}
                   {!isDateLocked && detectedDate && (
-                    <p className="text-xs text-emerald-600">Date detected from PDF: {detectedDate}</p>
+                    <p className="text-xs text-emerald-600">{t('detectedDateFromPdf', { date: detectedDate })}</p>
                   )}
                 </div>
 
                 <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Currency</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('currency')}</span>
                   <input
                     type="text"
                     value={sharedFields.currency}
@@ -504,7 +505,7 @@ export default function OpeningBalancesPage() {
 
                 {(mode === 'receivables' || mode === 'payables') && (
                   <label className="space-y-2 md:col-span-2">
-                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Offset account</span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('offsetAccount')}</span>
                     <select
                       value={mode === 'receivables' ? receivablesOffsetAccountId : payablesOffsetAccountId}
                       onChange={(event) => {
@@ -514,7 +515,7 @@ export default function OpeningBalancesPage() {
                       }}
                       className="h-11 w-full rounded-lg border border-slate-200 px-3"
                     >
-                      <option value="">Select offset account</option>
+                      <option value="">{t('selectOffsetAccount')}</option>
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>
                           {account.code} · {account.name}
@@ -525,7 +526,7 @@ export default function OpeningBalancesPage() {
                 )}
 
                 <label className={`space-y-2 ${mode === 'general' ? 'md:col-span-2 xl:col-span-2' : 'md:col-span-2 xl:col-span-4'}`}>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Notes</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('notes')}</span>
                   <input
                     type="text"
                     value={sharedFields.notes}
@@ -533,13 +534,13 @@ export default function OpeningBalancesPage() {
                       setSharedFields((current) => ({ ...current, notes: event.target.value }));
                       invalidatePreview();
                     }}
-                    placeholder="Optional onboarding note"
+                    placeholder={t('optionalOnboardingNote')}
                     className="h-11 w-full rounded-lg border border-slate-200 px-3"
                   />
                 </label>
 
                 <label className={`${mode === 'general' ? 'md:col-span-2 xl:col-span-2' : 'md:col-span-2 xl:col-span-4'} space-y-2`}>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Source document id</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('sourceDocumentId')}</span>
                   <input
                     type="text"
                     value={sharedFields.source_document_id}
@@ -547,7 +548,7 @@ export default function OpeningBalancesPage() {
                       setSharedFields((current) => ({ ...current, source_document_id: event.target.value }));
                       invalidatePreview();
                     }}
-                    placeholder="Optional files.documents id"
+                    placeholder={t('optionalFilesDocumentId')}
                     className="h-11 w-full rounded-lg border border-slate-200 px-3"
                   />
                 </label>
@@ -589,7 +590,7 @@ export default function OpeningBalancesPage() {
 
               <div className="flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="text-sm text-slate-500">
-                  Preview is required before commit. Any edit after preview invalidates the snapshot.
+                  {t('previewRequiredBeforeCommit')}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <button
@@ -598,7 +599,7 @@ export default function OpeningBalancesPage() {
                     className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isPreviewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Layers3 className="h-4 w-4" />}
-                    <span>Preview</span>
+                    <span>{t('preview')}</span>
                   </button>
                   <button
                     onClick={handleCommit}
@@ -606,7 +607,7 @@ export default function OpeningBalancesPage() {
                     className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {isCommitLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                    <span>Commit opening balances</span>
+                    <span>{t('commitOpeningBalances')}</span>
                   </button>
                 </div>
               </div>
@@ -619,20 +620,20 @@ export default function OpeningBalancesPage() {
         <aside className="space-y-6">
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Recent batches</h2>
-              <p className="mt-1 text-sm text-slate-500">Previously committed onboarding batches and their journal links.</p>
+              <h2 className="text-base font-semibold text-slate-900">{t('recentBatches')}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t('recentBatchesDescription')}</p>
             </div>
             <div className="divide-y divide-slate-100">
               {isBootLoading ? (
-                <div className="p-5 text-sm text-slate-500">Loading batches…</div>
+                <div className="p-5 text-sm text-slate-500">{t('loadingBatches')}</div>
               ) : batches.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">No opening-balance batches yet.</div>
+                <div className="p-5 text-sm text-slate-500">{t('noOpeningBalanceBatches')}</div>
               ) : (
                 batches.slice(0, 10).map((batch) => (
                   <div key={batch.id} className="p-4">
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600">
-                        {batch.batch_type || 'general'}
+                        {batch.batch_type || t('general')}
                       </span>
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
                         batch.status === 'committed' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
@@ -641,13 +642,13 @@ export default function OpeningBalancesPage() {
                       </span>
                     </div>
                     <div className="text-sm font-semibold text-slate-900">{batch.opening_date}</div>
-                    <div className="mt-1 text-xs text-slate-500">Currency {batch.currency}</div>
+                    <div className="mt-1 text-xs text-slate-500">{t('currency')} {batch.currency}</div>
                     <div className="mt-2 text-xs text-slate-500">
                       {batch.journal_entry_number
-                        ? `Journal ${batch.journal_entry_number}`
+                        ? t('journalNumber', { number: batch.journal_entry_number })
                         : batch.journal_entry_id
-                          ? `Journal ${batch.journal_entry_id.slice(0, 8)}`
-                          : 'No journal linked yet'}
+                          ? t('journalNumber', { number: batch.journal_entry_id.slice(0, 8) })
+                          : t('noJournalLinkedYet')}
                     </div>
                   </div>
                 ))
@@ -656,10 +657,9 @@ export default function OpeningBalancesPage() {
           </div>
 
           <div className="card p-5">
-            <h2 className="text-base font-semibold text-slate-900">Implementation note</h2>
+            <h2 className="text-base font-semibold text-slate-900">{t('implementationNote')}</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              General mode creates one balanced opening journal. Receivables and payables also create operational
-              invoices so later payment matching and payment batch workflows can continue without manual reconstruction.
+              {t('implementationNoteDescription')}
             </p>
           </div>
         </aside>

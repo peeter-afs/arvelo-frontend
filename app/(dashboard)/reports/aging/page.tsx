@@ -13,7 +13,7 @@ import { downloadCsv } from '@/lib/utils/csvExport';
 import { getIsoToday } from '@/lib/utils/date';
 
 function formatCurrency(amount: number): string {
-  return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function BucketBar({ current, d1, d31, d61, over90, total }: { current: number; d1: number; d31: number; d61: number; over90: number; total: number }) {
@@ -110,7 +110,7 @@ export default function AgingReportPage() {
           style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
         >
           <Download className="h-4 w-4" />
-          Export CSV
+          {t('exportCsv')}
         </button>
       )}
 
@@ -152,10 +152,10 @@ export default function AgingReportPage() {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <SummaryCard label={t('current')} amount={data.summary.current} color="var(--success, #16a34a)" />
-            <SummaryCard label="1-30" amount={data.summary.days_1_30} color="#eab308" />
-            <SummaryCard label="31-60" amount={data.summary.days_31_60} color="#f97316" />
-            <SummaryCard label="61-90" amount={data.summary.days_61_90} color="#ef4444" />
-            <SummaryCard label="90+" amount={data.summary.over_90} color="#991b1b" />
+            <SummaryCard label={t('bucket1To30')} amount={data.summary.days_1_30} color="#eab308" />
+            <SummaryCard label={t('bucket31To60')} amount={data.summary.days_31_60} color="#f97316" />
+            <SummaryCard label={t('bucket61To90')} amount={data.summary.days_61_90} color="#ef4444" />
+            <SummaryCard label={t('bucket90Plus')} amount={data.summary.over_90} color="#991b1b" />
             <SummaryCard label={tc('total')} amount={data.summary.total} color="var(--text-primary)" />
           </div>
 
@@ -178,10 +178,10 @@ export default function AgingReportPage() {
                 <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
                   <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('partner')}</th>
                   <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('current')}</th>
-                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>1-30</th>
-                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>31-60</th>
-                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>61-90</th>
-                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>90+</th>
+                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket1To30')}</th>
+                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket31To60')}</th>
+                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket61To90')}</th>
+                  <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket90Plus')}</th>
                   <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{tc('total')}</th>
                 </tr>
               </thead>
@@ -211,7 +211,7 @@ export default function AgingReportPage() {
                           {inv.invoice_number || inv.id.slice(0, 8)} &mdash; {inv.invoice_date}
                           {inv.days_overdue > 0 && (
                             <span className="ml-2" style={{ color: inv.days_overdue > 90 ? '#991b1b' : inv.days_overdue > 60 ? '#ef4444' : inv.days_overdue > 30 ? '#f97316' : '#eab308' }}>
-                              {inv.days_overdue}d overdue
+                              {t('daysOverdueShort', { days: inv.days_overdue })}
                             </span>
                           )}
                         </td>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -55,6 +56,7 @@ export default function InvoiceListWorkspace({
   description,
   searchPlaceholder,
 }: InvoiceListWorkspaceProps) {
+  const t = useTranslations('invoices');
   const isPurchase = invoiceType === 'purchase_invoice';
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
@@ -232,7 +234,7 @@ export default function InvoiceListWorkspace({
     if (!selectedInvoiceId) return;
     await runAction('submit', async () => {
       await invoicesApi.submitApproval(selectedInvoiceId);
-      setSuccessMessage('Invoice submitted for approval.');
+      setSuccessMessage(t('invoiceSubmittedForApproval'));
       await refreshInvoices(selectedInvoiceId);
     });
   };
@@ -241,7 +243,7 @@ export default function InvoiceListWorkspace({
     if (!selectedInvoiceId) return;
     await runAction('approve', async () => {
       await invoicesApi.approve(selectedInvoiceId);
-      setSuccessMessage('Invoice approved.');
+      setSuccessMessage(t('invoiceApproved'));
       await refreshInvoices(selectedInvoiceId);
     });
   };
@@ -250,7 +252,7 @@ export default function InvoiceListWorkspace({
     if (!selectedInvoiceId) return;
     await runAction('reject', async () => {
       await invoicesApi.reject(selectedInvoiceId, rejectReason || undefined);
-      setSuccessMessage('Invoice rejected.');
+      setSuccessMessage(t('invoiceRejected'));
       await refreshInvoices(selectedInvoiceId);
     });
   };
@@ -259,7 +261,7 @@ export default function InvoiceListWorkspace({
     if (!selectedInvoiceId) return;
     await runAction('confirm', async () => {
       const result = await invoicesApi.confirm(selectedInvoiceId);
-      setSuccessMessage(`Invoice posted. Journal entry ${result.journal_entry_id}.`);
+      setSuccessMessage(t('invoicePostedJournalEntry', { id: result.journal_entry_id }));
       await refreshInvoices(selectedInvoiceId);
     });
   };
@@ -271,7 +273,7 @@ export default function InvoiceListWorkspace({
         to: sendRecipient || undefined,
         message: sendMessage || undefined,
       });
-      setSuccessMessage(`Invoice sent to ${result.sent_to}.`);
+      setSuccessMessage(t('invoiceSentTo', { recipient: result.sent_to }));
       await refreshInvoices(selectedInvoiceId);
     });
   };
@@ -288,12 +290,12 @@ export default function InvoiceListWorkspace({
       anchor.click();
       anchor.remove();
       window.URL.revokeObjectURL(url);
-      setSuccessMessage(`Invoice exported as ${result.filename}.`);
+      setSuccessMessage(t('invoiceExportedAs', { filename: result.filename }));
     });
   };
 
   const selectedPartnerName =
-    partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id)?.name || 'Unknown partner';
+    partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id)?.name || t('unknownPartner');
   const selectedPartner = partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id);
   const lineSummary = useMemo(() => {
     if (!selectedInvoiceDetail) {
@@ -332,14 +334,14 @@ export default function InvoiceListWorkspace({
     const invoice = selectedInvoiceDetail.invoice;
     const items = [
       {
-        label: 'Created',
+        label: t('created'),
         value: invoice.created_at,
         tone: 'neutral' as const,
         detail: invoice.created_by_user_id ? `User ${invoice.created_by_user_id}` : null,
       },
       invoice.approval_requested_at
         ? {
-            label: 'Approval requested',
+            label: t('approvalRequested'),
             value: invoice.approval_requested_at,
             tone: 'warning' as const,
             detail: invoice.approval_requested_by_user_id ? `User ${invoice.approval_requested_by_user_id}` : null,
@@ -347,7 +349,7 @@ export default function InvoiceListWorkspace({
         : null,
       invoice.approved_at
         ? {
-            label: 'Approved',
+            label: t('approved'),
             value: invoice.approved_at,
             tone: 'success' as const,
             detail: invoice.approved_by_user_id ? `User ${invoice.approved_by_user_id}` : null,
@@ -355,7 +357,7 @@ export default function InvoiceListWorkspace({
         : null,
       invoice.rejected_at
         ? {
-            label: 'Rejected',
+            label: t('rejected'),
             value: invoice.rejected_at,
             tone: 'danger' as const,
             detail: invoice.rejected_by_user_id ? `User ${invoice.rejected_by_user_id}` : invoice.rejection_reason || null,
@@ -363,15 +365,15 @@ export default function InvoiceListWorkspace({
         : null,
       invoice.journal_entry_id
         ? {
-            label: 'Posted to ledger',
+            label: t('postedToLedger'),
             value: invoice.updated_at,
             tone: 'success' as const,
-            detail: `Journal ${invoice.journal_entry_id}`,
+            detail: t('journalNumber', { number: invoice.journal_entry_id }),
           }
         : null,
       invoice.status === 'paid'
         ? {
-            label: 'Fully settled',
+            label: t('fullySettled'),
             value: invoice.updated_at,
             tone: 'success' as const,
             detail: `${Number(invoice.paid_amount || 0).toFixed(2)} ${invoice.currency}`,
@@ -394,20 +396,20 @@ export default function InvoiceListWorkspace({
             href={`/invoices/new?type=${invoiceType}`}
             className="inline-flex h-10 items-center rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
           >
-            New invoice
+            {t('newInvoice')}
           </Link>
           <Link
             href={`/invoices/new?type=${invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note'}`}
             className="inline-flex h-10 items-center rounded-lg border border-orange-200 bg-orange-50 px-4 text-sm font-medium text-orange-700 hover:bg-orange-100"
           >
-            New credit note
+            {t('newCreditNote')}
           </Link>
           <button
             onClick={() => void refreshInvoices(selectedInvoiceId)}
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
           >
             <RefreshCw className="h-4 w-4" />
-            <span>Refresh</span>
+            <span>{t('refresh')}</span>
           </button>
         </div>
       </div>
@@ -431,10 +433,10 @@ export default function InvoiceListWorkspace({
       )}
 
       <div className="grid gap-3 md:grid-cols-4">
-        <Metric label="Draft" value={summary.draft} />
-        <Metric label={isPurchase ? 'Approved' : 'Overdue'} value={isPurchase ? summary.approved : summary.overdue} tone={isPurchase ? 'success' : 'danger'} />
-        <Metric label={isPurchase ? 'Payable' : 'Open'} value={isPurchase ? summary.payable : summary.open} tone="warning" />
-        <Metric label="Open total" value={summary.openTotal.toFixed(2)} tone="warning" />
+        <Metric label={t('draft')} value={summary.draft} />
+        <Metric label={isPurchase ? t('approved') : t('overdue')} value={isPurchase ? summary.approved : summary.overdue} tone={isPurchase ? 'success' : 'danger'} />
+        <Metric label={isPurchase ? t('payable') : t('open')} value={isPurchase ? summary.payable : summary.open} tone="warning" />
+        <Metric label={t('openTotal')} value={summary.openTotal.toFixed(2)} tone="warning" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -468,13 +470,13 @@ export default function InvoiceListWorkspace({
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">{isPurchase ? 'Purchase invoices' : 'Sales invoices'}</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{isPurchase ? t('purchaseList') : t('salesList')}</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {isBootLoading ? (
-                <div className="p-4 text-sm text-slate-500">Loading invoices...</div>
+                <div className="p-4 text-sm text-slate-500">{t('loadingInvoices')}</div>
               ) : filteredInvoices.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No invoices for the current filter.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noInvoicesCurrentFilter')}</div>
               ) : (
                 filteredInvoices.map((invoice) => (
                   <button
@@ -486,12 +488,12 @@ export default function InvoiceListWorkspace({
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-900">
                           {(invoice.type === 'sales_credit_note' || invoice.type === 'purchase_credit_note') && (
-                            <span className="mr-1.5 inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-orange-700">CN</span>
-                          )}
+                          <span className="mr-1.5 inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-orange-700">{t('creditNoteAbbrev')}</span>
+                        )}
                           {invoice.invoice_number || invoice.id.slice(0, 8)}
                         </div>
                         <div className="mt-1 truncate text-xs text-slate-500">
-                          {partners.find((partner) => partner.id === invoice.partner_id)?.name || 'Unknown partner'}
+                          {partners.find((partner) => partner.id === invoice.partner_id)?.name || t('unknownPartner')}
                         </div>
                       </div>
                       <span className="font-mono text-sm text-slate-900">
@@ -510,9 +512,9 @@ export default function InvoiceListWorkspace({
 
         <section className="space-y-4">
           {!selectedInvoiceDetail ? (
-            <div className="card p-8 text-sm text-slate-500">Select an invoice to review its details.</div>
+            <div className="card p-8 text-sm text-slate-500">{t('selectInvoiceToReview')}</div>
           ) : isDetailLoading ? (
-            <div className="card p-8 text-sm text-slate-500">Loading invoice detail...</div>
+            <div className="card p-8 text-sm text-slate-500">{t('loadingInvoiceDetail')}</div>
           ) : (
             <>
               <div className="card overflow-hidden">
@@ -523,7 +525,7 @@ export default function InvoiceListWorkspace({
                         {selectedInvoiceDetail.invoice.invoice_number || selectedInvoiceDetail.invoice.id}
                       </h2>
                       <p className="mt-1 text-sm text-slate-500">
-                        {selectedPartnerName} · invoice date {selectedInvoiceDetail.invoice.invoice_date} · due {selectedInvoiceDetail.invoice.due_date || '-'}
+                        {selectedPartnerName} · {t('invoiceDateLabel')} {selectedInvoiceDetail.invoice.invoice_date} · {t('due')} {selectedInvoiceDetail.invoice.due_date || '-'}
                       </p>
                     </div>
                     <div className="text-right">
@@ -531,68 +533,68 @@ export default function InvoiceListWorkspace({
                         {Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} {selectedInvoiceDetail.invoice.currency}
                       </div>
                       <div className="mt-1 text-xs text-slate-500">
-                        Status {humanizeStatus(selectedInvoiceDetail.invoice.status)}
+                        {t('status')} {humanizeStatus(selectedInvoiceDetail.invoice.status)}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-4">
-                  <InfoBox label="Open amount" value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
-                  <InfoBox label="Paid amount" value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
-                  <InfoBox label="Payment reference" value={selectedInvoiceDetail.invoice.payment_reference || '-'} />
-                  <InfoBox label={isPurchase ? 'Approval requested' : 'Journal entry'} value={isPurchase ? selectedInvoiceDetail.invoice.approval_requested_at || '-' : selectedInvoiceDetail.invoice.journal_entry_id || '-'} />
+                  <InfoBox label={t('openAmount')} value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
+                  <InfoBox label={t('paidAmount')} value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
+                  <InfoBox label={t('paymentReference')} value={selectedInvoiceDetail.invoice.payment_reference || '-'} />
+                  <InfoBox label={isPurchase ? t('approvalRequested') : t('journalEntry')} value={isPurchase ? selectedInvoiceDetail.invoice.approval_requested_at || '-' : selectedInvoiceDetail.invoice.journal_entry_id || '-'} />
                 </div>
 
                 <div className="grid gap-4 border-t border-slate-200 p-5 xl:grid-cols-[1.1fr_0.9fr]">
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">Document summary</div>
+                      <div className="text-sm font-semibold text-slate-900">{t('documentSummary')}</div>
                       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <InfoBox label="Issue date" value={selectedInvoiceDetail.invoice.invoice_date || '-'} />
-                        <InfoBox label="Due date" value={selectedInvoiceDetail.invoice.due_date || '-'} />
-                        <InfoBox label="Currency" value={selectedInvoiceDetail.invoice.currency || '-'} />
-                        <InfoBox label="Line count" value={String(selectedInvoiceDetail.lines.length)} />
+                        <InfoBox label={t('issueDate')} value={selectedInvoiceDetail.invoice.invoice_date || '-'} />
+                        <InfoBox label={t('dueDate')} value={selectedInvoiceDetail.invoice.due_date || '-'} />
+                        <InfoBox label={t('currency')} value={selectedInvoiceDetail.invoice.currency || '-'} />
+                        <InfoBox label={t('lineCount')} value={String(selectedInvoiceDetail.lines.length)} />
                       </div>
                       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <InfoBox label="Subtotal" value={Number(selectedInvoiceDetail.invoice.subtotal || 0).toFixed(2)} />
-                        <InfoBox label="Tax total" value={Number(selectedInvoiceDetail.invoice.tax_amount || 0).toFixed(2)} />
-                        <InfoBox label="Gross before discount" value={lineSummary.subtotalBeforeDiscount.toFixed(2)} />
-                        <InfoBox label="Discount value" value={lineSummary.totalDiscountValue.toFixed(2)} />
+                        <InfoBox label={t('subtotal')} value={Number(selectedInvoiceDetail.invoice.subtotal || 0).toFixed(2)} />
+                        <InfoBox label={t('taxTotal')} value={Number(selectedInvoiceDetail.invoice.tax_amount || 0).toFixed(2)} />
+                        <InfoBox label={t('grossBeforeDiscount')} value={lineSummary.subtotalBeforeDiscount.toFixed(2)} />
+                        <InfoBox label={t('discountValue')} value={lineSummary.totalDiscountValue.toFixed(2)} />
                       </div>
                       <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                        <div className="font-medium text-slate-800">Notes</div>
-                        <p className="mt-2 leading-6">{selectedInvoiceDetail.invoice.notes || 'No notes recorded for this invoice.'}</p>
+                        <div className="font-medium text-slate-800">{t('notes')}</div>
+                        <p className="mt-2 leading-6">{selectedInvoiceDetail.invoice.notes || t('noNotesRecorded')}</p>
                       </div>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">Commercial and accounting context</div>
+                      <div className="text-sm font-semibold text-slate-900">{t('commercialAccountingContext')}</div>
                       <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <InfoBox label="Average VAT rate" value={`${lineSummary.averageTaxRate.toFixed(2)}%`} />
-                        <InfoBox label="Accounts used" value={lineSummary.accountsUsed.length ? lineSummary.accountsUsed.join(', ') : '-'} />
-                        <InfoBox label="Payment terms" value={selectedInvoiceDetail.invoice.due_date ? `${dateDiffLabel(selectedInvoiceDetail.invoice.invoice_date, selectedInvoiceDetail.invoice.due_date)}` : '-'} />
+                        <InfoBox label={t('averageVatRate')} value={`${lineSummary.averageTaxRate.toFixed(2)}%`} />
+                        <InfoBox label={t('accountsUsed')} value={lineSummary.accountsUsed.length ? lineSummary.accountsUsed.join(', ') : '-'} />
+                        <InfoBox label={t('paymentTerms')} value={selectedInvoiceDetail.invoice.due_date ? `${dateDiffLabel(selectedInvoiceDetail.invoice.invoice_date, selectedInvoiceDetail.invoice.due_date)}` : '-'} />
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">{isPurchase ? 'Supplier context' : 'Customer context'}</div>
+                      <div className="text-sm font-semibold text-slate-900">{isPurchase ? t('supplierContext') : t('customerContext')}</div>
                       <div className="mt-4 space-y-3">
-                        <DetailRow label="Name" value={selectedPartnerName} />
-                        <DetailRow label="Email" value={selectedPartner?.email || '-'} />
-                        <DetailRow label="Registry code" value={selectedPartner?.reg_code || '-'} />
-                        <DetailRow label="VAT number" value={selectedPartner?.vat_number || '-'} />
-                        <DetailRow label="Address" value={selectedPartner?.address || '-'} />
+                        <DetailRow label={t('name')} value={selectedPartnerName} />
+                        <DetailRow label={t('email')} value={selectedPartner?.email || '-'} />
+                        <DetailRow label={t('registryCode')} value={selectedPartner?.reg_code || '-'} />
+                        <DetailRow label={t('vatNumber')} value={selectedPartner?.vat_number || '-'} />
+                        <DetailRow label={t('address')} value={selectedPartner?.address || '-'} />
                       </div>
                     </div>
 
                     <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">Activity timeline</div>
+                      <div className="text-sm font-semibold text-slate-900">{t('activityTimeline')}</div>
                       <div className="mt-4 space-y-4">
                         {activityTimeline.length === 0 ? (
-                          <div className="text-sm text-slate-500">No timeline events recorded yet.</div>
+                          <div className="text-sm text-slate-500">{t('noTimelineEvents')}</div>
                         ) : (
                           activityTimeline.map((item) => (
                             <TimelineRow
@@ -619,7 +621,7 @@ export default function InvoiceListWorkspace({
                       className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       <ExternalLink className="h-4 w-4" />
-                      <span>Edit draft</span>
+                      <span>{t('editDraft')}</span>
                     </Link>
                   )}
                   <Link
@@ -627,7 +629,7 @@ export default function InvoiceListWorkspace({
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    <span>Preview PDF</span>
+                    <span>{t('previewPdf')}</span>
                   </Link>
                   <button
                     onClick={() => void handleExport('pdf')}
@@ -635,7 +637,7 @@ export default function InvoiceListWorkspace({
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     {actionLoading === 'export-pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>Export PDF</span>
+                    <span>{t('exportPdf')}</span>
                   </button>
                   <button
                     onClick={() => void handleExport('json')}
@@ -643,24 +645,24 @@ export default function InvoiceListWorkspace({
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                   >
                     {actionLoading === 'export-json' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>Export JSON</span>
+                    <span>{t('exportJson')}</span>
                   </button>
                 </div>
 
                 {!isPurchase && (
                   <div className="border-t border-slate-200 p-5">
-                    <div className="mb-3 text-sm font-semibold text-slate-900">Send invoice</div>
+                    <div className="mb-3 text-sm font-semibold text-slate-900">{t('sendInvoice')}</div>
                     <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
                       <input
                         value={sendRecipient}
                         onChange={(event) => setSendRecipient(event.target.value)}
-                        placeholder="Recipient email"
+                        placeholder={t('recipientEmail')}
                         className="h-10 rounded-lg border border-slate-200 px-3"
                       />
                       <input
                         value={sendMessage}
                         onChange={(event) => setSendMessage(event.target.value)}
-                        placeholder="Optional message"
+                        placeholder={t('optionalMessage')}
                         className="h-10 rounded-lg border border-slate-200 px-3"
                       />
                       <button
@@ -669,7 +671,7 @@ export default function InvoiceListWorkspace({
                         className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
                       >
                         {actionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        <span>Send invoice</span>
+                        <span>{t('sendInvoice')}</span>
                       </button>
                     </div>
                   </div>
@@ -677,7 +679,7 @@ export default function InvoiceListWorkspace({
 
                 {isPurchase && (
                   <div className="border-t border-slate-200 p-5">
-                    <div className="mb-3 text-sm font-semibold text-slate-900">Workflow actions</div>
+                    <div className="mb-3 text-sm font-semibold text-slate-900">{t('workflowActions')}</div>
                     <div className="flex flex-wrap gap-3">
                       <button
                         onClick={handleSubmitApproval}
@@ -685,7 +687,7 @@ export default function InvoiceListWorkspace({
                         className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading === 'submit' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        <span>Submit approval</span>
+                        <span>{t('submitApproval')}</span>
                       </button>
                       <button
                         onClick={handleApprove}
@@ -693,7 +695,7 @@ export default function InvoiceListWorkspace({
                         className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
-                        <span>Approve</span>
+                        <span>{t('approveAction')}</span>
                       </button>
                       <button
                         onClick={handleConfirm}
@@ -701,7 +703,7 @@ export default function InvoiceListWorkspace({
                         className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading === 'confirm' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Stamp className="h-4 w-4" />}
-                        <span>Post to payable</span>
+                        <span>{t('postToPayable')}</span>
                       </button>
                     </div>
 
@@ -709,7 +711,7 @@ export default function InvoiceListWorkspace({
                       <input
                         value={rejectReason}
                         onChange={(event) => setRejectReason(event.target.value)}
-                        placeholder="Rejection reason"
+                        placeholder={t('rejectionReason')}
                         className="h-10 rounded-lg border border-slate-200 px-3"
                       />
                       <button
@@ -718,13 +720,13 @@ export default function InvoiceListWorkspace({
                         className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileX2 className="h-4 w-4" />}
-                        <span>Reject</span>
+                        <span>{t('rejectAction')}</span>
                       </button>
                     </div>
 
                     {selectedInvoiceDetail.invoice.rejection_reason && (
                       <div className="mt-3 text-sm text-red-700">
-                        Rejection reason: {selectedInvoiceDetail.invoice.rejection_reason}
+                        {t('rejectionReason')}: {selectedInvoiceDetail.invoice.rejection_reason}
                       </div>
                     )}
                   </div>
@@ -732,35 +734,35 @@ export default function InvoiceListWorkspace({
 
                 <div className="border-t border-slate-200 p-5">
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">Payment history</div>
+                    <div className="text-sm font-semibold text-slate-900">{t('paymentHistory')}</div>
                     {selectedInvoiceDetail && (
                       <Link
                         href={`/accounting/payments?invoice_id=${selectedInvoiceDetail.invoice.id}`}
                         className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        <span>Open payments workspace</span>
+                        <span>{t('openPaymentsWorkspace')}</span>
                       </Link>
                     )}
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-3">
-                    <InfoBox label="Invoice total" value={Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} />
-                    <InfoBox label="Paid amount" value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
-                    <InfoBox label="Remaining open amount" value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
+                    <InfoBox label={t('invoiceTotal')} value={Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} />
+                    <InfoBox label={t('paidAmount')} value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
+                    <InfoBox label={t('remainingOpenAmount')} value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
                   </div>
 
                   <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
                     <div className="grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                      <span>Payment</span>
-                      <span>Date</span>
-                      <span>Amount</span>
-                      <span>Status</span>
+                      <span>{t('payment')}</span>
+                      <span>{t('date')}</span>
+                      <span>{t('amount')}</span>
+                      <span>{t('status')}</span>
                     </div>
                     {isPaymentHistoryLoading ? (
-                      <div className="px-4 py-4 text-sm text-slate-500">Loading payment history...</div>
+                      <div className="px-4 py-4 text-sm text-slate-500">{t('loadingPaymentHistory')}</div>
                     ) : paymentHistory.length === 0 ? (
-                      <div className="px-4 py-4 text-sm text-slate-500">No payments recorded for this invoice yet.</div>
+                      <div className="px-4 py-4 text-sm text-slate-500">{t('noPaymentsRecordedYet')}</div>
                     ) : (
                       paymentHistory.map((payment) => (
                         <div
@@ -791,7 +793,7 @@ export default function InvoiceListWorkspace({
 
               <div className="card overflow-hidden">
                 <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                  <h2 className="text-base font-semibold text-slate-900">Invoice lines</h2>
+                  <h2 className="text-base font-semibold text-slate-900">{t('invoiceLines')}</h2>
                 </div>
                 <div className="divide-y divide-slate-100">
                   {selectedInvoiceDetail.lines.map((line) => (
@@ -799,7 +801,7 @@ export default function InvoiceListWorkspace({
                       <div>
                         <div className="text-sm font-medium text-slate-900">{line.description}</div>
                         <div className="mt-1 text-xs text-slate-500">
-                          Qty {line.quantity} · VAT {Number(line.tax_rate || 0).toFixed(2)}% · Account {line.account_id || '-'}
+                          {t('qty')} {line.quantity} · {t('vatRate')} {Number(line.tax_rate || 0).toFixed(2)}% · {t('account')} {line.account_id || '-'}
                         </div>
                         {line.meta && Object.keys(line.meta).length > 0 && (
                           <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
@@ -813,19 +815,19 @@ export default function InvoiceListWorkspace({
                       </div>
                       <div className="text-sm text-slate-700">
                         <div className="font-medium text-slate-900">{Number(line.unit_price || 0).toFixed(2)}</div>
-                        <div className="mt-1 text-xs text-slate-500">Unit price</div>
+                        <div className="mt-1 text-xs text-slate-500">{t('unitPrice')}</div>
                       </div>
                       <div className="text-sm text-slate-700">
                         <div className="font-medium text-slate-900">{Number(line.discount_percent || 0).toFixed(2)}%</div>
-                        <div className="mt-1 text-xs text-slate-500">Discount</div>
+                        <div className="mt-1 text-xs text-slate-500">{t('discount')}</div>
                       </div>
                       <div className="text-sm text-slate-700">
                         <div className="font-medium text-slate-900">{Number(line.tax_rate || 0).toFixed(2)}%</div>
-                        <div className="mt-1 text-xs text-slate-500">VAT rate</div>
+                        <div className="mt-1 text-xs text-slate-500">{t('vatRate')}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-mono text-sm text-slate-900">{Number(line.line_total || 0).toFixed(2)}</div>
-                        <div className="mt-1 text-xs text-slate-500">Line total</div>
+                        <div className="mt-1 text-xs text-slate-500">{t('lineTotal')}</div>
                       </div>
                     </div>
                   ))}

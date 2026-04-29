@@ -13,7 +13,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 function formatCurrency(amount: number): string {
-  return amount.toLocaleString('en-US', {
+  return amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -82,7 +82,7 @@ export default function ProfitLossPage() {
         <EmptyState
           icon={TrendingUp}
           title={t('profitLoss')}
-          message="No profit & loss data available for the selected period."
+          message={t('noProfitLossData')}
         />
       </div>
     );
@@ -99,7 +99,7 @@ export default function ProfitLossPage() {
           {t('profitLoss')}
         </h1>
         <p className="mt-1 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-          Review your company&apos;s income and expenses for the period
+          {t('profitLossDescriptionDetailed')}
         </p>
       </div>
 
@@ -113,7 +113,7 @@ export default function ProfitLossPage() {
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <Calendar className="inline h-4 w-4 mr-1" />
-                Start Date
+                {tc('startDate')}
               </label>
               <input
                 type="date"
@@ -133,7 +133,7 @@ export default function ProfitLossPage() {
                 style={{ color: 'var(--text-secondary)' }}
               >
                 <Calendar className="inline h-4 w-4 mr-1" />
-                End Date
+                {tc('endDate')}
               </label>
               <input
                 type="date"
@@ -172,9 +172,9 @@ export default function ProfitLossPage() {
                   })),
                 ];
                 downloadCsv(rows, `profit-loss-${startDate}-to-${endDate}.csv`, [
-                  { key: 'account_code', label: 'Account Code' },
-                  { key: 'account_name', label: 'Account Name' },
-                  { key: 'amount', label: 'Amount' },
+                  { key: 'account_code', label: t('accountCode') },
+                  { key: 'account_name', label: t('accountName') },
+                  { key: 'amount', label: tc('amount') },
                 ]);
               }}
               className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
@@ -194,7 +194,7 @@ export default function ProfitLossPage() {
             {t('profitLoss')}
           </h2>
           <p style={{ color: 'var(--text-secondary)' }}>
-            For the period {startDate} to {endDate}
+            {t('periodRange', { startDate, endDate })}
           </p>
         </div>
 
@@ -221,7 +221,7 @@ export default function ProfitLossPage() {
             className="ml-4 flex justify-between pt-2 mt-2 font-semibold"
             style={{ borderTop: '2px solid var(--border)' }}
           >
-            <span style={{ color: 'var(--text-primary)' }}>Total {t('revenue')}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('totalCategory', { category: t('revenue') })}</span>
             <span style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(totalRevenue)}</span>
           </div>
         </div>
@@ -249,7 +249,7 @@ export default function ProfitLossPage() {
             className="ml-4 flex justify-between pt-2 mt-2 font-semibold"
             style={{ borderTop: '2px solid var(--border)' }}
           >
-            <span style={{ color: 'var(--text-primary)' }}>Total {t('expenses')}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{t('totalCategory', { category: t('expenses') })}</span>
             <span style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(totalExpenses)}</span>
           </div>
         </div>
@@ -272,7 +272,7 @@ export default function ProfitLossPage() {
         <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
           <div className="rounded p-4" style={{ backgroundColor: 'var(--surface-elevated)' }}>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Profit Margin
+              {t('profitMargin')}
             </p>
             <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
               {profitMargin.toFixed(2)}%
@@ -288,7 +288,7 @@ export default function ProfitLossPage() {
           </div>
           <div className="rounded p-4" style={{ backgroundColor: 'var(--surface-elevated)' }}>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              Total {t('expenses')}
+              {t('totalCategory', { category: t('expenses') })}
             </p>
             <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
               &euro;{formatCurrency(totalExpenses)}

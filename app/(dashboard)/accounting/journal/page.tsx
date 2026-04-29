@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Plus, Search, Filter, Download, Eye, Edit2, MoreHorizontal } from 'lucide-react';
 
 export default function JournalEntriesPage() {
+  const t = useTranslations('accounting');
   const [searchQuery, setSearchQuery] = useState('');
 
   // Mock data for journal entries
@@ -64,8 +66,8 @@ export default function JournalEntriesPage() {
     <div>
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Journal Entries</h1>
-        <p className="text-sm text-slate-500 mt-1">Record and manage all financial transactions</p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('journalEntries')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('journalDescription')}</p>
       </div>
 
       {/* Actions Bar - Desktop */}
@@ -75,7 +77,7 @@ export default function JournalEntriesPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search entries..."
+            placeholder={t('searchEntries')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ fontSize: '16px' }}
@@ -87,19 +89,19 @@ export default function JournalEntriesPage() {
           {/* Filter */}
           <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
             <Filter className="h-4 w-4" />
-            <span>Filter</span>
+            <span>{t('filter')}</span>
           </button>
 
           {/* Export */}
           <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
             <Download className="h-4 w-4" />
-            <span>Export</span>
+            <span>{t('export')}</span>
           </button>
 
           {/* Create Button */}
           <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
             <Plus className="h-4 w-4" />
-            <span>New Entry</span>
+            <span>{t('newEntry')}</span>
           </button>
         </div>
       </div>
@@ -111,7 +113,7 @@ export default function JournalEntriesPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
             type="text"
-            placeholder="Search entries..."
+            placeholder={t('searchEntries')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{ fontSize: '16px' }}
@@ -123,11 +125,11 @@ export default function JournalEntriesPage() {
         <div className="flex items-center gap-2">
           <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
             <Filter className="h-4 w-4" />
-            <span>Filter</span>
+            <span>{t('filter')}</span>
           </button>
           <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
             <Download className="h-4 w-4" />
-            <span>Export</span>
+            <span>{t('export')}</span>
           </button>
           <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
             <MoreHorizontal className="h-4 w-4" />
@@ -146,31 +148,31 @@ export default function JournalEntriesPage() {
           <thead className="bg-slate-50/80">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Date
+                {t('date')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Reference
+                {t('reference')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Description
+                {t('description')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Debit Account
+                {t('debitAccount')}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
-                Debit
+                {t('debit')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Credit Account
+                {t('creditAccount')}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
-                Credit
+                {t('credit')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Status
+                {t('status')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                Actions
+                {t('actions')}
               </th>
             </tr>
           </thead>
@@ -267,7 +269,7 @@ export default function JournalEntriesPage() {
             <div className="space-y-2 mb-3 bg-slate-50 rounded-lg p-3">
               <div className="flex justify-between text-xs">
                 <div className="text-slate-500">
-                  <div className="font-medium mb-0.5">Debit</div>
+                  <div className="font-medium mb-0.5">{t('debit')}</div>
                   <div>{entry.debit.account} · {entry.debit.name}</div>
                 </div>
                 <div className="font-mono tabular-nums text-slate-900">
@@ -276,7 +278,7 @@ export default function JournalEntriesPage() {
               </div>
               <div className="flex justify-between text-xs">
                 <div className="text-slate-500">
-                  <div className="font-medium mb-0.5">Credit</div>
+                  <div className="font-medium mb-0.5">{t('credit')}</div>
                   <div>{entry.credit.account} · {entry.credit.name}</div>
                 </div>
                 <div className="font-mono tabular-nums text-slate-900">
@@ -288,7 +290,7 @@ export default function JournalEntriesPage() {
             {/* Bottom row: reference + actions */}
             <div className="flex items-center justify-between">
               <div className="text-xs text-slate-500">
-                Ref: {entry.reference}
+                {t('referenceAbbrev')}: {entry.reference}
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -314,14 +316,14 @@ export default function JournalEntriesPage() {
       {/* Pagination - Desktop */}
       <div className="hidden md:flex mt-6 justify-between items-center">
         <p className="text-sm text-slate-600">
-          Showing 1-5 of 5
+          {t('showingEntries', { from: 1, to: 5, total: 5 })}
         </p>
         <div className="flex gap-2">
           <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            Previous
+            {t('previous')}
           </button>
           <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            Next
+            {t('next')}
           </button>
         </div>
       </div>
@@ -331,7 +333,7 @@ export default function JournalEntriesPage() {
         <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
           <span className="text-sm">&lt;</span>
         </button>
-        <p className="text-sm text-slate-600">Page 1 of 1</p>
+        <p className="text-sm text-slate-600">{t('pageOf', { current: 1, total: 1 })}</p>
         <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
           <span className="text-sm">&gt;</span>
         </button>

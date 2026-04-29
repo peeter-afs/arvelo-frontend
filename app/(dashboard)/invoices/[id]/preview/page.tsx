@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, Download, Loader2 } from 'lucide-react';
 import { invoicesApi } from '@/lib/api/invoices.api';
 import { getErrorMessage } from '@/lib/api/client';
 
 export default function InvoicePreviewPage() {
+  const t = useTranslations('invoices');
   const params = useParams<{ id: string }>();
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string>('');
@@ -55,15 +57,15 @@ export default function InvoicePreviewPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">Invoice Preview</h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">Preview the generated PDF before downloading or sending it.</p>
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)]">{t('invoicePreview')}</h1>
+          <p className="mt-1 text-sm text-[var(--text-secondary)]">{t('invoicePreviewDescription')}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/invoices/sales"
             className="inline-flex h-10 items-center rounded-lg border border-[var(--border)] px-4 text-sm text-[var(--text-primary)] hover:bg-[var(--surface-elevated)]"
           >
-            Back to invoices
+            {t('backToInvoices')}
           </Link>
           <button
             onClick={handleDownload}
@@ -71,7 +73,7 @@ export default function InvoicePreviewPage() {
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             <Download className="h-4 w-4" />
-            <span>Download PDF</span>
+            <span>{t('downloadPdf')}</span>
           </button>
         </div>
       </div>
@@ -88,30 +90,28 @@ export default function InvoicePreviewPage() {
       {isLoading ? (
         <div className="card flex min-h-[70vh] items-center justify-center p-8 text-sm text-[var(--text-secondary)]">
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Loading invoice PDF...
+          {t('loadingInvoicePdf')}
         </div>
       ) : pdfUrl ? (
         <>
-          {/* PDF preview - hidden on very small screens where iframes don't work well */}
           <div className="card overflow-hidden hidden sm:block">
-            <iframe src={pdfUrl} title="Invoice PDF preview" className="h-[calc(100vh-200px)] min-h-[500px] w-full bg-white" />
+            <iframe src={pdfUrl} title={t('invoicePdfPreviewTitle')} className="h-[calc(100vh-200px)] min-h-[500px] w-full bg-white" />
           </div>
-          {/* Mobile fallback - download prompt */}
           <div className="card p-8 text-center sm:hidden">
             <p className="text-sm text-[var(--text-secondary)] mb-4">
-              PDF preview is best viewed on a larger screen.
+              {t('pdfPreviewLargeScreen')}
             </p>
             <button
               onClick={handleDownload}
               className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[var(--primary)] hover:bg-[var(--primary-hover)] rounded-lg"
             >
               <Download className="h-4 w-4" />
-              Download PDF
+              {t('downloadPdf')}
             </button>
           </div>
         </>
       ) : (
-        <div className="card p-8 text-sm text-[var(--text-secondary)]">No preview available.</div>
+        <div className="card p-8 text-sm text-[var(--text-secondary)]">{t('noPreviewAvailable')}</div>
       )}
     </div>
   );

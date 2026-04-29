@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, Mail } from 'lucide-react';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 
 export default function ForgotPasswordPage() {
+  const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -20,7 +22,7 @@ export default function ForgotPasswordPage() {
 
     try {
       await authApi.forgotPassword(email);
-      setSuccessMessage('If the account exists, a reset link has been sent to that email address.');
+      setSuccessMessage(t('forgotPasswordSuccessMessage'));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -31,9 +33,9 @@ export default function ForgotPasswordPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">Forgot your password?</h1>
+        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{t('forgotPasswordTitle')}</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Enter your account email and we will send you a reset link.
+          {t('forgotPasswordSubtitle')}
         </p>
       </div>
 
@@ -41,7 +43,7 @@ export default function ForgotPasswordPage() {
         <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
           <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
           <div>
-            <p className="text-sm font-medium text-emerald-900">Reset email sent</p>
+            <p className="text-sm font-medium text-emerald-900">{t('forgotPasswordSentTitle')}</p>
             <p className="mt-0.5 text-sm text-emerald-700">{successMessage}</p>
           </div>
         </div>
@@ -57,7 +59,7 @@ export default function ForgotPasswordPage() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Email address
+            {t('emailAddress')}
           </label>
           <input
             id="email"
@@ -71,7 +73,7 @@ export default function ForgotPasswordPage() {
             style={{ fontSize: '16px' }}
           />
           <p className="mt-1.5 text-xs text-slate-500">
-            The reset link expires in 1 hour.
+            {t('forgotPasswordExpiryHint')}
           </p>
         </div>
 
@@ -83,24 +85,24 @@ export default function ForgotPasswordPage() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Sending reset link...</span>
+              <span>{t('sendingResetLink')}</span>
             </>
           ) : (
             <>
               <Mail className="h-4 w-4" />
-              <span>Send reset link</span>
+              <span>{t('sendResetLink')}</span>
             </>
           )}
         </button>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-600">
-        Remembered it?{' '}
+        {t('rememberedPassword')}{' '}
         <Link
           href="/login"
           className="font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
         >
-          Back to login
+          {t('backToLogin')}
         </Link>
       </p>
     </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -14,6 +15,7 @@ import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscrip
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 
 export default function SettingsPage() {
+  const t = useTranslations('settings');
   const { user, tenant, role } = useAuthStore();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'company';
@@ -122,14 +124,14 @@ export default function SettingsPage() {
   const [dataManagementAction, setDataManagementAction] = useState<string | null>(null);
 
   const tabs = [
-    { id: 'company', label: 'Company', icon: Building, category: 'organization' },
-    { id: 'profile', label: 'Profile', icon: User, category: 'account' },
-    { id: 'billing', label: 'Billing', icon: CreditCard, category: 'organization' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, category: 'preferences' },
-    { id: 'security', label: 'Security', icon: Shield, category: 'account' },
-    { id: 'localization', label: 'Localization', icon: Globe, category: 'preferences' },
-    { id: 'business-registry', label: 'Business Registry', icon: Settings, category: 'organization' },
-    { id: 'data-management', label: 'Data Management', icon: Database, category: 'organization' },
+    { id: 'company', label: t('company'), icon: Building, category: 'organization' },
+    { id: 'profile', label: t('profile'), icon: User, category: 'account' },
+    { id: 'billing', label: t('billing'), icon: CreditCard, category: 'organization' },
+    { id: 'notifications', label: t('notifications'), icon: Bell, category: 'preferences' },
+    { id: 'security', label: t('security'), icon: Shield, category: 'account' },
+    { id: 'localization', label: t('localization'), icon: Globe, category: 'preferences' },
+    { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
+    { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
   ];
 
   useEffect(() => {
@@ -286,7 +288,7 @@ export default function SettingsPage() {
     setSettingsSuccess(null);
     try {
       const result = await accountingApi.resetOpeningBalances('Reset all');
-      setSettingsSuccess(`Opening balances reset successfully. ${result.reversed_count} batch(es) reversed. Backup saved.`);
+      setSettingsSuccess(t('openingBalancesResetSuccess', { count: result.reversed_count }));
       const [status, backups] = await Promise.all([
         accountingApi.getOpeningBalanceImportStatus(),
         accountingApi.listResetBackups().catch(() => []),
@@ -306,7 +308,7 @@ export default function SettingsPage() {
     setSettingsSuccess(null);
     try {
       const result = await accountingApi.restoreOpeningBalances(backupId);
-      setSettingsSuccess(`Opening balances restored successfully. ${result.restored_batch_count} batch(es) re-committed.`);
+      setSettingsSuccess(t('openingBalancesRestoredSuccess', { count: result.restored_batch_count }));
       const [status, backups] = await Promise.all([
         accountingApi.getOpeningBalanceImportStatus(),
         accountingApi.listResetBackups().catch(() => []),
@@ -339,7 +341,7 @@ export default function SettingsPage() {
       });
       setRegistrySettings(updated);
       setRegistryForm((current) => ({ ...current, username: '', password: '' }));
-      setSettingsSuccess('Business Registry settings saved.');
+      setSettingsSuccess(t('businessRegistrySettingsSaved'));
     } catch (error) {
       setSettingsError(getErrorMessage(error));
     } finally {
@@ -353,7 +355,7 @@ export default function SettingsPage() {
     setSettingsSuccess(null);
     try {
       const result = await businessRegistryApi.testSettings();
-      setSettingsSuccess(`Connection test ${result.status} at ${new Date(result.tested_at).toLocaleString()}.`);
+      setSettingsSuccess(t('connectionTestStatus', { status: result.status, testedAt: new Date(result.tested_at).toLocaleString() }));
       const refreshed = await businessRegistryApi.getSettings();
       setRegistrySettings(refreshed);
     } catch (error) {
@@ -398,7 +400,7 @@ export default function SettingsPage() {
       });
       setBillingSubscription(result.subscription);
       await reloadBilling();
-      setSettingsSuccess('Billing subscription saved.');
+      setSettingsSuccess(t('billingSubscriptionSaved'));
     } catch (error) {
       setSettingsError(getErrorMessage(error));
     } finally {
@@ -527,7 +529,7 @@ export default function SettingsPage() {
         iban: '',
         bic: '',
       }));
-      setSettingsSuccess(editingBankAccountId ? 'Bank account updated.' : 'Bank account saved.');
+      setSettingsSuccess(editingBankAccountId ? t('bankAccountUpdated') : t('bankAccountSaved'));
     } catch (error) {
       setSettingsError(getErrorMessage(error));
     } finally {
@@ -555,7 +557,7 @@ export default function SettingsPage() {
     try {
       await bankingApi.updateBankAccount(account.id, { is_active: !account.is_active });
       await reloadCompanyData();
-      setSettingsSuccess(`Bank account ${!account.is_active ? 'activated' : 'deactivated'}.`);
+      setSettingsSuccess(!account.is_active ? t('bankAccountActivated') : t('bankAccountDeactivated'));
     } catch (error) {
       setSettingsError(getErrorMessage(error));
     } finally {
@@ -567,8 +569,8 @@ export default function SettingsPage() {
     <div>
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">Settings</h1>
-        <p className="text-sm text-slate-500 mt-1">Manage your account and company preferences</p>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('title')}</h1>
+        <p className="text-sm text-slate-500 mt-1">{t('description')}</p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6 md:gap-8">
@@ -634,12 +636,12 @@ export default function SettingsPage() {
 
             {activeTab === 'company' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Company Information</h2>
-                <p className="text-sm text-slate-500 mb-6">Update your company details and tax information</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('companyInformation')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('companyDescription')}</p>
                 <form className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Company Name
+                      {t('companyName')}
                     </label>
                     <input
                       type="text"
@@ -650,29 +652,29 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Tax ID
+                      {t('taxId')}
                     </label>
                     <input
                       type="text"
-                      placeholder="Enter tax ID"
+                      placeholder={t('enterTaxId')}
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
                       style={{ fontSize: '16px' }}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Address
+                      {t('address')}
                     </label>
                     <textarea
                       rows={3}
-                      placeholder="Enter company address"
+                      placeholder={t('enterCompanyAddress')}
                       className="w-full min-h-[100px] px-4 py-3 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all resize-y"
                       style={{ fontSize: '16px' }}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Base Currency
+                      {t('baseCurrency')}
                     </label>
                     <select
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
@@ -687,23 +689,23 @@ export default function SettingsPage() {
                     type="submit"
                     className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors"
                   >
-                    Save Changes
+                    {t('saveChanges')}
                   </button>
                 </form>
 
                 <div className="mt-8 rounded-xl border border-slate-200 p-5">
-                  <h3 className="text-sm font-semibold text-slate-900">Bank accounts</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{t('bankAccounts')}</h3>
                   <p className="mt-1 text-sm text-slate-500">
-                    These accounts are used by bank import, payment batches, and PAIN.001 export.
+                    {t('bankAccountsDescription')}
                   </p>
 
                   {companyLoading ? (
-                    <div className="mt-4 text-sm text-slate-500">Loading bank accounts…</div>
+                    <div className="mt-4 text-sm text-slate-500">{t('loadingBankAccounts')}</div>
                   ) : (
                     <div className="mt-4 space-y-3">
                       {bankAccounts.length === 0 ? (
                         <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                          No bank accounts in settings yet.
+                          {t('noBankAccounts')}
                         </div>
                       ) : (
                         bankAccounts.map((account) => (
@@ -712,14 +714,14 @@ export default function SettingsPage() {
                               <div>
                                 <div className="text-sm font-medium text-slate-900">{account.name}</div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  {account.iban || 'No IBAN'} · {account.bank_name || 'No bank name'} · {account.currency}
+                                  {account.iban || t('noIban')} · {account.bank_name || t('noBankName')} · {account.currency}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  Ledger: {account.ledger_account_code || '-'} {account.ledger_account_name || 'No linked account'}
+                                  {t('ledger')}: {account.ledger_account_code || '-'} {account.ledger_account_name || t('noLinkedAccount')}
                                 </div>
                               </div>
                               <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-                                {account.is_active ? 'Active' : 'Inactive'}
+                                {account.is_active ? t('active') : t('inactive')}
                               </span>
                             </div>
                             <div className="mt-4 flex flex-wrap gap-3">
@@ -728,7 +730,7 @@ export default function SettingsPage() {
                                 onClick={() => editBankAccount(account)}
                                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                               >
-                                Edit
+                                {t('edit')}
                               </button>
                               <button
                                 type="button"
@@ -737,8 +739,8 @@ export default function SettingsPage() {
                                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                               >
                                 {companyAction === `toggle-bank-account-${account.id}`
-                                  ? 'Saving…'
-                                  : account.is_active ? 'Deactivate' : 'Activate'}
+                                  ? t('saving')
+                                  : account.is_active ? t('deactivate') : t('activate')}
                               </button>
                             </div>
                           </div>
@@ -748,24 +750,24 @@ export default function SettingsPage() {
                   )}
 
                   <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    <SettingsField label="Display name">
+                    <SettingsField label={t('displayName')}>
                       <input value={bankAccountForm.name} onChange={(event) => setBankAccountForm((current) => ({ ...current, name: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
                     </SettingsField>
-                    <SettingsField label="Bank name">
+                    <SettingsField label={t('bankName')}>
                       <input value={bankAccountForm.bank_name} onChange={(event) => setBankAccountForm((current) => ({ ...current, bank_name: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
                     </SettingsField>
-                    <SettingsField label="IBAN">
+                    <SettingsField label={t('iban')}>
                       <input value={bankAccountForm.iban} onChange={(event) => setBankAccountForm((current) => ({ ...current, iban: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
                     </SettingsField>
-                    <SettingsField label="BIC">
+                    <SettingsField label={t('bic')}>
                       <input value={bankAccountForm.bic} onChange={(event) => setBankAccountForm((current) => ({ ...current, bic: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
                     </SettingsField>
-                    <SettingsField label="Currency">
+                    <SettingsField label={t('currency')}>
                       <input value={bankAccountForm.currency} onChange={(event) => setBankAccountForm((current) => ({ ...current, currency: event.target.value.toUpperCase() }))} className="w-full h-11 rounded-lg border border-slate-200 px-4" />
                     </SettingsField>
-                    <SettingsField label="Ledger account">
+                    <SettingsField label={t('ledgerAccount')}>
                       <select value={bankAccountForm.account_id} onChange={(event) => setBankAccountForm((current) => ({ ...current, account_id: event.target.value }))} className="w-full h-11 rounded-lg border border-slate-200 px-4">
-                        <option value="">Select ledger account</option>
+                        <option value="">{t('selectLedgerAccount')}</option>
                         {ledgerAccounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.code} · {account.name}
@@ -780,7 +782,7 @@ export default function SettingsPage() {
                       checked={bankAccountForm.is_active}
                       onChange={(event) => setBankAccountForm((current) => ({ ...current, is_active: event.target.checked }))}
                     />
-                    <span>Active bank account</span>
+                    <span>{t('activeBankAccount')}</span>
                   </label>
                   <button
                     type="button"
@@ -788,7 +790,7 @@ export default function SettingsPage() {
                     disabled={!bankAccountForm.name || companyAction !== null}
                     className="mt-4 h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                   >
-                    {companyAction === 'save-bank-account' ? 'Saving…' : editingBankAccountId ? 'Save Bank Account' : 'Add Bank Account'}
+                    {companyAction === 'save-bank-account' ? t('saving') : editingBankAccountId ? t('saveBankAccount') : t('addBankAccount')}
                   </button>
                   {editingBankAccountId && (
                     <button
@@ -805,7 +807,7 @@ export default function SettingsPage() {
                       }}
                       className="mt-4 ml-3 h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 font-medium transition-colors"
                     >
-                      Cancel edit
+                      {t('cancelEdit')}
                     </button>
                   )}
                 </div>
@@ -814,12 +816,12 @@ export default function SettingsPage() {
 
             {activeTab === 'profile' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Profile Information</h2>
-                <p className="text-sm text-slate-500 mb-6">Manage your personal account details</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('profileInformation')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('profileDescription')}</p>
                 <form className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Full Name
+                      {t('fullName')}
                     </label>
                     <input
                       type="text"
@@ -830,7 +832,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Email
+                      {t('email')}
                     </label>
                     <input
                       type="email"
@@ -841,11 +843,11 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Phone Number
+                      {t('phoneNumber')}
                     </label>
                     <input
                       type="tel"
-                      placeholder="Enter phone number"
+                      placeholder={t('enterPhoneNumber')}
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
                       style={{ fontSize: '16px' }}
                     />
@@ -854,7 +856,7 @@ export default function SettingsPage() {
                     type="submit"
                     className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors"
                   >
-                    Update Profile
+                    {t('updateProfile')}
                   </button>
                 </form>
               </div>
@@ -862,28 +864,28 @@ export default function SettingsPage() {
 
             {activeTab === 'billing' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Billing & Subscription</h2>
-                <p className="text-sm text-slate-500 mb-6">Manage the recurring SaaS billing subscription, invoices, and entitlement state.</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('billingTitle')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('billingDescription')}</p>
 
                 {!canManageBilling ? (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Only owner or admin users can manage billing.
+                    {t('billingPermission')}
                   </div>
                 ) : billingLoading ? (
-                  <div className="text-sm text-slate-500">Loading billing configuration…</div>
+                  <div className="text-sm text-slate-500">{t('loadingBillingConfiguration')}</div>
                 ) : (
                   <div className="space-y-6">
                     <div className="grid gap-4 md:grid-cols-3">
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Access State</div>
-                        <div className="mt-2 text-lg font-semibold text-slate-900">{billingEntitlement?.access_state || 'active'}</div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingAccessState')}</div>
+                        <div className="mt-2 text-lg font-semibold text-slate-900">{billingEntitlement?.access_state || t('statusActive')}</div>
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Invoice Next No</div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingInvoiceNextNumber')}</div>
                         <div className="mt-2 text-lg font-semibold text-slate-900">{billingSettingsState?.invoice_next_no ?? 1}</div>
                       </div>
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Open Billing Invoices</div>
+                        <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingOpenInvoices')}</div>
                         <div className="mt-2 text-lg font-semibold text-slate-900">
                           {billingInvoices.filter((invoice) => invoice.status !== 'paid' && invoice.status !== 'void').length}
                         </div>
@@ -891,12 +893,12 @@ export default function SettingsPage() {
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
-                      <h3 className="text-sm font-semibold text-slate-900">Annual balance confirmation</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceConfirmation')}</h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Send a manual year-end or as-of-date balance confirmation. The backend calculates whether the counterparty owes you, you owe them, or the balance is settled.
+                        {t('annualBalanceDescription')}
                       </p>
                       <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
-                        <BillingField label="Annual balance text">
+                        <BillingField label={t('annualBalanceText')}>
                           <textarea
                             value={billingForm.annual_balance_template}
                             onChange={(event) => setBillingForm((current) => ({ ...current, annual_balance_template: event.target.value }))}
@@ -905,7 +907,7 @@ export default function SettingsPage() {
                           />
                         </BillingField>
                         <div className="space-y-4">
-                          <BillingField label="Balance reference date">
+                          <BillingField label={t('balanceReferenceDate')}>
                             <input
                               type="date"
                               value={billingForm.annual_balance_reference_date}
@@ -915,7 +917,7 @@ export default function SettingsPage() {
                             />
                           </BillingField>
                           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
-                            Placeholders: <code>{'{{bill_to_name}}'}</code>, <code>{'{{as_of_date}}'}</code>, <code>{'{{balance_amount}}'}</code>, <code>{'{{balance_direction}}'}</code>, <code>{'{{balance_statement}}'}</code>, <code>{'{{open_invoice_count}}'}</code>, <code>{'{{tenant_name}}'}</code>
+                            {t('placeholdersLabel')}: <code>{'{{bill_to_name}}'}</code>, <code>{'{{as_of_date}}'}</code>, <code>{'{{balance_amount}}'}</code>, <code>{'{{balance_direction}}'}</code>, <code>{'{{balance_statement}}'}</code>, <code>{'{{open_invoice_count}}'}</code>, <code>{'{{tenant_name}}'}</code>
                           </div>
                         </div>
                       </div>
@@ -928,12 +930,12 @@ export default function SettingsPage() {
                               settings_override: currentBillingSettingsDraft,
                             });
                             setBillingMessagePreview(preview);
-                            setSettingsSuccess('Annual balance preview loaded.');
+                            setSettingsSuccess(t('annualBalancePreviewLoaded'));
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'preview-annual-balance' ? 'Loading…' : 'Preview Annual Balance'}
+                          {billingAction === 'preview-annual-balance' ? t('loading') : t('previewAnnualBalance')}
                         </button>
                         <button
                           type="button"
@@ -942,65 +944,71 @@ export default function SettingsPage() {
                               reference_date: billingForm.annual_balance_reference_date,
                             });
                             await reloadBilling();
-                            setSettingsSuccess(result.sent ? `Annual balance confirmation sent to ${result.recipient}.` : `No message sent${result.skipped_reason ? `: ${result.skipped_reason}` : '.'}`);
+                            setSettingsSuccess(
+                              result.sent
+                                ? t('annualBalanceSent', { recipient: result.recipient })
+                                : result.skipped_reason
+                                  ? t('noMessageSentWithReason', { reason: result.skipped_reason })
+                                  : t('noMessageSent'),
+                            );
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'send-annual-balance' ? 'Sending…' : 'Send Annual Balance Confirmation'}
+                          {billingAction === 'send-annual-balance' ? t('sending') : t('sendAnnualBalanceConfirmation')}
                         </button>
                       </div>
                       <p className="mt-3 text-xs text-slate-500">
-                        The sent email includes one-click links for <strong>Confirm balance</strong> and <strong>Report mismatch</strong>. Those clicks are recorded in annual balance history.
+                        {t('annualBalanceHelp')}
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
-                      <h3 className="text-sm font-semibold text-slate-900">Reminder automation</h3>
+                      <h3 className="text-sm font-semibold text-slate-900">{t('reminderAutomation')}</h3>
                       <p className="mt-1 text-sm text-slate-500">
-                        Run the general reminder cron every weekday. Each tenant decides which weekday is valid, how often reminders may repeat, and how many overdue days must pass first.
+                        {t('reminderAutomationDescription')}
                       </p>
                       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <BillingField label="Bill-to name">
+                        <BillingField label={t('billToName')}>
                           <input value={billingForm.bill_to_name} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_name: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Bill-to email">
+                        <BillingField label={t('billToEmail')}>
                           <input value={billingForm.bill_to_email} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_email: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Bill-to registry code">
+                        <BillingField label={t('billToRegistryCode')}>
                           <input value={billingForm.bill_to_registry_code} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_registry_code: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Bill-to VAT number">
+                        <BillingField label={t('billToVatNumber')}>
                           <input value={billingForm.bill_to_vat_number} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_vat_number: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Bill-to address">
+                        <BillingField label={t('billToAddress')}>
                           <input value={billingForm.bill_to_address} onChange={(event) => setBillingForm((current) => ({ ...current, bill_to_address: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Invoice due days">
+                        <BillingField label={t('invoiceDueDays')}>
                           <input value={billingForm.invoice_due_days} onChange={(event) => setBillingForm((current) => ({ ...current, invoice_due_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Reminder weekday">
+                        <BillingField label={t('reminderWeekday')}>
                           <select value={billingForm.reminder_weekday} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_weekday: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }}>
-                            <option value="1">Monday</option>
-                            <option value="2">Tuesday</option>
-                            <option value="3">Wednesday</option>
-                            <option value="4">Thursday</option>
-                            <option value="5">Friday</option>
+                            <option value="1">{t('monday')}</option>
+                            <option value="2">{t('tuesday')}</option>
+                            <option value="3">{t('wednesday')}</option>
+                            <option value="4">{t('thursday')}</option>
+                            <option value="5">{t('friday')}</option>
                           </select>
                         </BillingField>
-                        <BillingField label="Reminder frequency days">
+                        <BillingField label={t('reminderFrequencyDays')}>
                           <input value={billingForm.reminder_frequency_days} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_frequency_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Start after overdue days">
+                        <BillingField label={t('startAfterOverdueDays')}>
                           <input value={billingForm.reminder_start_after_days} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_start_after_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
                         <label className="flex items-center gap-3 pt-8">
                           <input type="checkbox" checked={billingForm.reminders_enabled} onChange={(event) => setBillingForm((current) => ({ ...current, reminders_enabled: event.target.checked }))} />
-                          <span className="text-sm text-slate-700">Enable reminders</span>
+                          <span className="text-sm text-slate-700">{t('enableReminders')}</span>
                         </label>
                       </div>
                       <div className="mt-4 grid gap-4 lg:grid-cols-3">
-                        <BillingField label="First reminder text">
+                        <BillingField label={t('firstReminderText')}>
                           <textarea
                             value={billingForm.reminder_template_first}
                             onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_first: event.target.value }))}
@@ -1008,7 +1016,7 @@ export default function SettingsPage() {
                             style={{ fontSize: '16px' }}
                           />
                         </BillingField>
-                        <BillingField label="Second reminder text">
+                        <BillingField label={t('secondReminderText')}>
                           <textarea
                             value={billingForm.reminder_template_second}
                             onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_second: event.target.value }))}
@@ -1016,7 +1024,7 @@ export default function SettingsPage() {
                             style={{ fontSize: '16px' }}
                           />
                         </BillingField>
-                        <BillingField label="Third reminder text">
+                        <BillingField label={t('thirdReminderText')}>
                           <textarea
                             value={billingForm.reminder_template_third}
                             onChange={(event) => setBillingForm((current) => ({ ...current, reminder_template_third: event.target.value }))}
@@ -1026,19 +1034,19 @@ export default function SettingsPage() {
                         </BillingField>
                       </div>
                       <p className="mt-3 text-xs text-slate-500">
-                        Available placeholders: <code>{'{{invoice_no}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{due_date}}'}</code>, <code>{'{{bill_to_name}}'}</code>, <code>{'{{reminder_index}}'}</code>
+                        {t('availablePlaceholders')}: <code>{'{{invoice_no}}'}</code>, <code>{'{{total}}'}</code>, <code>{'{{due_date}}'}</code>, <code>{'{{bill_to_name}}'}</code>, <code>{'{{reminder_index}}'}</code>
                       </p>
                       <div className="mt-4 flex flex-wrap items-end gap-3">
-                        <BillingField label="Preview reminder stage">
+                        <BillingField label={t('previewReminderStage')}>
                           <select
                             value={billingForm.preview_reminder_index}
                             onChange={(event) => setBillingForm((current) => ({ ...current, preview_reminder_index: event.target.value }))}
                             className="h-11 rounded-lg border border-slate-200 px-4"
                             style={{ fontSize: '16px' }}
                           >
-                            <option value="1">First</option>
-                            <option value="2">Second</option>
-                            <option value="3">Third</option>
+                            <option value="1">{t('first')}</option>
+                            <option value="2">{t('second')}</option>
+                            <option value="3">{t('third')}</option>
                           </select>
                         </BillingField>
                         <button
@@ -1049,12 +1057,12 @@ export default function SettingsPage() {
                               settings_override: currentBillingSettingsDraft,
                             });
                             setBillingMessagePreview(preview);
-                            setSettingsSuccess(`Reminder preview loaded for invoice #${preview.invoice?.invoice_no}.`);
+                            setSettingsSuccess(t('reminderPreviewLoaded', { invoiceNo: preview.invoice?.invoice_no || '' }));
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'preview-reminder' ? 'Loading…' : 'Preview Reminder'}
+                          {billingAction === 'preview-reminder' ? t('loading') : t('previewReminder')}
                         </button>
                       </div>
                       <div className="mt-5 flex flex-wrap gap-3">
@@ -1078,94 +1086,100 @@ export default function SettingsPage() {
                               annual_balance_template: billingForm.annual_balance_template || null,
                             });
                             await reloadBilling();
-                            setSettingsSuccess('Billing settings saved.');
+                            setSettingsSuccess(t('billingSettingsSaved'));
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'settings' ? 'Saving…' : 'Save Reminder Settings'}
+                          {billingAction === 'settings' ? t('saving') : t('saveReminderSettings')}
                         </button>
                         <button
                           type="button"
                           onClick={() => void runBillingAction('reminders', async () => {
                             const result = await billingApi.sendReminders({ force: true });
                             await reloadBilling();
-                            setSettingsSuccess(result.sent_count > 0 ? `Sent ${result.sent_count} reminder(s).` : `No reminders sent${result.skipped_reason ? `: ${result.skipped_reason}` : '.'}`);
+                            setSettingsSuccess(
+                              result.sent_count > 0
+                                ? t('remindersSent', { count: result.sent_count })
+                                : result.skipped_reason
+                                  ? t('noRemindersSentWithReason', { reason: result.skipped_reason })
+                                  : t('noRemindersSent'),
+                            );
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'reminders' ? 'Sending…' : 'Send Reminders Now'}
+                          {billingAction === 'reminders' ? t('sending') : t('sendRemindersNow')}
                         </button>
                       </div>
                       <p className="mt-4 text-xs text-slate-500">
-                        Cron automation endpoint: `POST /api/billing/jobs/send-reminders-all` with `x-cron-secret`. Run it every weekday; tenant weekday and frequency settings are applied in the backend.
+                        {t('cronAutomationHelp')}
                       </p>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">
                       <div className="flex items-center justify-between gap-3">
                         <div>
-                          <h3 className="text-sm font-semibold text-slate-900">Subscription</h3>
-                          <p className="mt-1 text-sm text-slate-500">One recurring subscription per tenant in the current MVP.</p>
+                          <h3 className="text-sm font-semibold text-slate-900">{t('subscription')}</h3>
+                          <p className="mt-1 text-sm text-slate-500">{t('subscriptionDescription')}</p>
                         </div>
                       </div>
                       <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <BillingField label="Plan">
+                        <BillingField label={t('plan')}>
                           <select
                             value={billingForm.plan_id}
                             onChange={(event) => setBillingForm((current) => ({ ...current, plan_id: event.target.value }))}
                             className="w-full h-11 px-4 border border-slate-200 rounded-lg"
                             style={{ fontSize: '16px' }}
                           >
-                            <option value="">Select plan</option>
+                            <option value="">{t('selectPlan')}</option>
                             {billingPlans.map((plan) => (
                               <option key={plan.id} value={plan.id}>{plan.code} - {plan.name}</option>
                             ))}
                           </select>
                         </BillingField>
-                        <BillingField label="Status">
+                        <BillingField label={t('status')}>
                           <select
                             value={billingForm.status}
                             onChange={(event) => setBillingForm((current) => ({ ...current, status: event.target.value }))}
                             className="w-full h-11 px-4 border border-slate-200 rounded-lg"
                             style={{ fontSize: '16px' }}
                           >
-                            <option value="active">Active</option>
-                            <option value="paused">Paused</option>
-                            <option value="canceled">Canceled</option>
+                            <option value="active">{t('statusActive')}</option>
+                            <option value="paused">{t('statusPaused')}</option>
+                            <option value="canceled">{t('statusCanceled')}</option>
                           </select>
                         </BillingField>
-                        <BillingField label="Billing day">
+                        <BillingField label={t('billingDay')}>
                           <input value={billingForm.billing_day} onChange={(event) => setBillingForm((current) => ({ ...current, billing_day: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Currency">
+                        <BillingField label={t('currency')}>
                           <input value={billingForm.currency} onChange={(event) => setBillingForm((current) => ({ ...current, currency: event.target.value.toUpperCase() }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Unit price">
+                        <BillingField label={t('unitPrice')}>
                           <input value={billingForm.unit_price} onChange={(event) => setBillingForm((current) => ({ ...current, unit_price: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Quantity">
+                        <BillingField label={t('quantity')}>
                           <input value={billingForm.quantity} onChange={(event) => setBillingForm((current) => ({ ...current, quantity: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Discount %">
+                        <BillingField label={t('discountPercent')}>
                           <input value={billingForm.discount_percent} onChange={(event) => setBillingForm((current) => ({ ...current, discount_percent: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="VAT rate">
+                        <BillingField label={t('vatRate')}>
                           <input value={billingForm.vat_rate} onChange={(event) => setBillingForm((current) => ({ ...current, vat_rate: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Current period start">
+                        <BillingField label={t('currentPeriodStart')}>
                           <input type="date" value={billingForm.current_period_start} onChange={(event) => setBillingForm((current) => ({ ...current, current_period_start: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Current period end">
+                        <BillingField label={t('currentPeriodEnd')}>
                           <input type="date" value={billingForm.current_period_end} onChange={(event) => setBillingForm((current) => ({ ...current, current_period_end: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
-                        <BillingField label="Next invoice date">
+                        <BillingField label={t('nextInvoiceDate')}>
                           <input type="date" value={billingForm.next_invoice_date} onChange={(event) => setBillingForm((current) => ({ ...current, next_invoice_date: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
                         </BillingField>
                         <label className="flex items-center gap-3 pt-8">
                           <input type="checkbox" checked={billingForm.cancel_at_period_end} onChange={(event) => setBillingForm((current) => ({ ...current, cancel_at_period_end: event.target.checked }))} />
-                          <span className="text-sm text-slate-700">Cancel at period end</span>
+                          <span className="text-sm text-slate-700">{t('cancelAtPeriodEnd')}</span>
                         </label>
                       </div>
                       <div className="mt-5 flex flex-wrap gap-3">
@@ -1175,58 +1189,58 @@ export default function SettingsPage() {
                           disabled={billingSaving}
                           className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingSaving ? 'Saving…' : 'Save Subscription'}
+                          {billingSaving ? t('saving') : t('saveSubscription')}
                         </button>
                         <button
                           type="button"
                           onClick={() => void runBillingAction('generate', async () => {
                             const result = await billingApi.generateInvoices();
                             await reloadBilling();
-                            setSettingsSuccess(`Generated ${result.created_count} billing invoice(s).`);
+                            setSettingsSuccess(t('generatedBillingInvoices', { count: result.created_count }));
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'generate' ? 'Generating…' : 'Generate Invoices'}
+                          {billingAction === 'generate' ? t('generating') : t('generateInvoices')}
                         </button>
                         <button
                           type="button"
                           onClick={() => void runBillingAction('entitlements', async () => {
                             const result = await billingApi.recomputeEntitlements();
                             await reloadBilling();
-                            setSettingsSuccess(`Entitlements recomputed: ${result.entitlement.access_state}.`);
+                            setSettingsSuccess(t('entitlementsRecomputed', { state: result.entitlement.access_state }));
                           })}
                           disabled={billingAction !== null}
                           className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                         >
-                          {billingAction === 'entitlements' ? 'Recomputing…' : 'Recompute Entitlements'}
+                          {billingAction === 'entitlements' ? t('recomputing') : t('recomputeEntitlements')}
                         </button>
                       </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Message preview</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('messagePreview')}</h3>
                       </div>
                       {!billingMessagePreview ? (
-                        <div className="p-5 text-sm text-slate-500">Load a reminder or annual balance preview to inspect the rendered text before sending.</div>
+                        <div className="p-5 text-sm text-slate-500">{t('loadPreviewHint')}</div>
                       ) : (
                         <div className="space-y-4 p-5">
                           <div>
-                            <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Subject</div>
+                            <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('subject')}</div>
                             <div className="mt-1 text-sm font-medium text-slate-900">{billingMessagePreview.subject}</div>
                           </div>
                           <div className="grid gap-4 lg:grid-cols-3">
                             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Type</div>
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('type')}</div>
                               <div className="mt-1 text-sm text-slate-900">{billingMessagePreview.kind}</div>
                             </div>
                             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Reference</div>
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('reference')}</div>
                               <div className="mt-1 text-sm text-slate-900">{billingMessagePreview.invoice ? `Invoice #${billingMessagePreview.invoice.invoice_no}` : billingMessagePreview.reference_date || '-'}</div>
                             </div>
                             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">Balance / Stage</div>
+                              <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('balanceOrStage')}</div>
                               <div className="mt-1 text-sm text-slate-900">
                                 {billingMessagePreview.balance?.balance_statement || (billingMessagePreview.reminder_index ? `Reminder ${billingMessagePreview.reminder_index}` : '-')}
                               </div>
@@ -1241,8 +1255,8 @@ export default function SettingsPage() {
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Annual balance reporting</h3>
-                            <p className="mt-1 text-xs text-slate-600">Report, review, and export annual balance confirmations and responses for a selected period.</p>
+                            <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceReporting')}</h3>
+                            <p className="mt-1 text-xs text-slate-600">{t('annualBalanceReportingDescription')}</p>
                           </div>
                           <div className="flex flex-wrap gap-3">
                             <input
@@ -1267,12 +1281,12 @@ export default function SettingsPage() {
                                   end_date: billingForm.annual_balance_report_end_date,
                                 });
                                 setAnnualBalanceReport(report);
-                                setSettingsSuccess('Annual balance report loaded.');
+                                setSettingsSuccess(t('annualBalanceReportLoaded'));
                               })}
                               disabled={billingAction !== null}
                               className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                             >
-                              {billingAction === 'annual-balance-report' ? 'Loading…' : 'Load Report'}
+                              {billingAction === 'annual-balance-report' ? t('loading') : t('loadReport')}
                             </button>
                             <button
                               type="button"
@@ -1280,28 +1294,28 @@ export default function SettingsPage() {
                               disabled={!annualBalanceReport}
                               className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                             >
-                              Export CSV
+                              {t('exportCsv')}
                             </button>
                           </div>
                         </div>
                       </div>
                       {!annualBalanceReport ? (
-                        <div className="p-5 text-sm text-slate-500">Load a period to view annual balance report data.</div>
+                        <div className="p-5 text-sm text-slate-500">{t('loadPeriodForAnnualBalance')}</div>
                       ) : (
                         <div className="space-y-4 p-5">
                           <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
-                            <ReportStat label="Sent" value={annualBalanceReport.summary.sent_count} />
-                            <ReportStat label="Responded" value={annualBalanceReport.summary.responded_count} />
-                            <ReportStat label="Confirmed" value={annualBalanceReport.summary.confirmed_count} />
-                            <ReportStat label="Mismatches" value={annualBalanceReport.summary.mismatch_count} />
-                            <ReportStat label="Open mismatches" value={annualBalanceReport.summary.open_mismatch_count} />
-                            <ReportStat label="Resolved" value={annualBalanceReport.summary.resolved_mismatch_count} />
+                            <ReportStat label={t('sent')} value={annualBalanceReport.summary.sent_count} />
+                            <ReportStat label={t('responded')} value={annualBalanceReport.summary.responded_count} />
+                            <ReportStat label={t('confirmed')} value={annualBalanceReport.summary.confirmed_count} />
+                            <ReportStat label={t('mismatches')} value={annualBalanceReport.summary.mismatch_count} />
+                            <ReportStat label={t('openMismatches')} value={annualBalanceReport.summary.open_mismatch_count} />
+                            <ReportStat label={t('resolved')} value={annualBalanceReport.summary.resolved_mismatch_count} />
                           </div>
                           <div className="overflow-x-auto rounded-lg border border-slate-200">
                             <table className="min-w-full divide-y divide-slate-200 text-sm">
                               <thead className="bg-slate-50">
                                 <tr>
-                                  {['Sent', 'Reference', 'Recipient', 'Balance', 'Response', 'Resolved'].map((label) => (
+                                  {[t('sent'), t('reference'), t('recipient'), t('balance'), t('response'), t('resolved')].map((label) => (
                                     <th key={label} className="px-4 py-3 text-left text-xs font-medium uppercase tracking-[0.16em] text-slate-500">
                                       {label}
                                     </th>
@@ -1316,10 +1330,10 @@ export default function SettingsPage() {
                                     <td className="px-4 py-3 text-slate-700">{row.recipient || '-'}</td>
                                     <td className="px-4 py-3 text-slate-700">
                                       {row.balance_direction === 'you_owe_us'
-                                        ? `They owe ${Math.abs(Number(row.balance_amount || 0)).toFixed(2)} EUR`
+                                        ? t('theyOweAmount', { amount: Math.abs(Number(row.balance_amount || 0)).toFixed(2) })
                                         : row.balance_direction === 'we_owe_you'
-                                          ? `We owe ${Math.abs(Number(row.balance_amount || 0)).toFixed(2)} EUR`
-                                          : 'Settled'}
+                                          ? t('weOweAmount', { amount: Math.abs(Number(row.balance_amount || 0)).toFixed(2) })
+                                          : t('settled')}
                                     </td>
                                     <td className="px-4 py-3 text-slate-700">
                                       {row.response_decision ? (
@@ -1327,7 +1341,7 @@ export default function SettingsPage() {
                                           <div>{row.response_decision}</div>
                                           {row.response_note && <div className="mt-1 text-xs text-slate-500">{row.response_note}</div>}
                                         </div>
-                                      ) : 'No response'}
+                                      ) : t('noResponse')}
                                     </td>
                                     <td className="px-4 py-3 text-slate-700">
                                       <div className="space-y-1">
@@ -1337,7 +1351,7 @@ export default function SettingsPage() {
                                             : '-'}
                                         </div>
                                         <div className="text-xs text-slate-500">
-                                          Notification: {row.notification_status || 'not recorded'}
+                                          {t('notification')}: {row.notification_status || t('notRecorded')}
                                           {row.notified_internal_emails?.length ? ` · ${row.notified_internal_emails.join(', ')}` : ''}
                                           {row.notification_error_message ? ` · ${row.notification_error_message}` : ''}
                                         </div>
@@ -1354,12 +1368,12 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Reminder operations</h3>
-                        <p className="mt-1 text-xs text-slate-600">Operational queue for overdue billing invoices, reminder eligibility, and follow-up timing.</p>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('reminderOperations')}</h3>
+                        <p className="mt-1 text-xs text-slate-600">{t('reminderOperationsDescription')}</p>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {billingReminderOperations.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No open billing invoices eligible for reminder operations.</div>
+                          <div className="p-5 text-sm text-slate-500">{t('noReminderOperations')}</div>
                         ) : (
                           billingReminderOperations.map((invoice) => (
                             <div key={invoice.id} className="flex flex-col gap-3 p-5 xl:flex-row xl:items-center xl:justify-between">
@@ -1368,10 +1382,10 @@ export default function SettingsPage() {
                                   Invoice #{invoice.invoice_no} · {Number(invoice.total || 0).toFixed(2)} {invoice.currency}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  Due {invoice.due_date} · overdue {invoice.overdue_days} day(s) · sent {invoice.reminder_sent_count} reminder(s)
+                                  {t('dueOverdueSent', { dueDate: invoice.due_date, overdueDays: invoice.overdue_days, reminderCount: invoice.reminder_sent_count })}
                                 </div>
                                 <div className="text-xs text-slate-500">
-                                  Recipient: {invoice.recipient || 'missing'} · next eligible: {invoice.next_eligible_reminder_date}
+                                  {t('recipientNextEligible', { recipient: invoice.recipient || t('missing'), date: invoice.next_eligible_reminder_date })}
                                 </div>
                               </div>
                               <div className="flex flex-col items-start gap-2 xl:items-end">
@@ -1381,16 +1395,16 @@ export default function SettingsPage() {
                                     : 'bg-slate-100 text-slate-700'
                                 }`}>
                                   {invoice.eligible_now
-                                    ? 'Eligible now'
+                                    ? t('eligibleNow')
                                     : invoice.blocking_reason === 'disabled'
-                                      ? 'Reminders disabled'
+                                      ? t('remindersDisabled')
                                       : invoice.blocking_reason === 'not_overdue_enough'
-                                        ? 'Too early'
+                                        ? t('tooEarly')
                                         : invoice.blocking_reason === 'frequency_not_reached'
-                                          ? 'Waiting frequency'
+                                          ? t('waitingFrequency')
                                           : invoice.blocking_reason === 'weekday_mismatch'
-                                            ? 'Wrong weekday'
-                                            : 'Not eligible'}
+                                            ? t('wrongWeekday')
+                                            : t('notEligible')}
                                 </div>
                                 <button
                                   type="button"
@@ -1399,24 +1413,24 @@ export default function SettingsPage() {
                                     await reloadBilling();
                                     setSettingsSuccess(
                                       result.sent
-                                        ? `Reminder sent for invoice #${invoice.invoice_no}.`
+                                        ? t('reminderSentForInvoice', { invoiceNo: invoice.invoice_no })
                                         : result.skipped_reason === 'no_recipient'
-                                          ? 'Reminder skipped because no billing recipient email is configured.'
+                                          ? t('reminderSkippedNoRecipient')
                                           : result.skipped_reason === 'disabled'
-                                            ? 'Reminder skipped because reminders are disabled.'
+                                            ? t('reminderSkippedDisabled')
                                             : result.skipped_reason === 'not_overdue_enough'
-                                              ? 'Reminder skipped because the invoice is not overdue long enough yet.'
+                                              ? t('reminderSkippedNotOverdueEnough')
                                               : result.skipped_reason === 'frequency_not_reached'
-                                                ? 'Reminder skipped because the reminder frequency is not reached yet.'
+                                                ? t('reminderSkippedFrequency')
                                                 : result.skipped_reason === 'weekday_mismatch'
-                                                  ? 'Reminder skipped because today does not match the configured reminder weekday.'
-                                                  : 'Reminder was not sent.'
+                                                  ? t('reminderSkippedWeekdayMismatch')
+                                                  : t('reminderWasNotSent')
                                     );
                                   })}
                                   disabled={billingAction !== null}
                                   className="h-10 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-50"
                                 >
-                                  {billingAction === `send-invoice-reminder-${invoice.id}` ? 'Sending…' : 'Send reminder'}
+                                  {billingAction === `send-invoice-reminder-${invoice.id}` ? t('sending') : t('sendReminder')}
                                 </button>
                               </div>
                             </div>
@@ -1427,18 +1441,18 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Billing invoices</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('billingInvoices')}</h3>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {billingInvoices.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No billing invoices generated yet.</div>
+                          <div className="p-5 text-sm text-slate-500">{t('noBillingInvoices')}</div>
                         ) : (
                           billingInvoices.map((invoice) => (
                             <div key={invoice.id} className="flex flex-col gap-3 p-5 lg:flex-row lg:items-center lg:justify-between">
                               <div>
                                 <div className="text-sm font-medium text-slate-900">#{invoice.invoice_no} · {invoice.status}</div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  {invoice.issue_date} to {invoice.period_end} · due {invoice.due_date}
+                                  {t('billingInvoicePeriod', { start: invoice.issue_date, end: invoice.period_end, dueDate: invoice.due_date })}
                                 </div>
                               </div>
                               <div className="flex items-center gap-3">
@@ -1449,12 +1463,12 @@ export default function SettingsPage() {
                                     onClick={() => void runBillingAction(`pay-${invoice.id}`, async () => {
                                       await billingApi.markInvoicePaid(invoice.id);
                                       await reloadBilling();
-                                      setSettingsSuccess(`Billing invoice #${invoice.invoice_no} marked paid.`);
+                                      setSettingsSuccess(t('billingInvoiceMarkedPaid', { invoiceNo: invoice.invoice_no }));
                                     })}
                                     disabled={billingAction !== null}
                                     className="h-9 px-4 border border-emerald-200 rounded-lg hover:bg-emerald-50 text-sm text-emerald-700 font-medium transition-colors disabled:opacity-50"
                                   >
-                                    {billingAction === `pay-${invoice.id}` ? 'Saving…' : 'Mark Paid'}
+                                    {billingAction === `pay-${invoice.id}` ? t('saving') : t('markPaid')}
                                   </button>
                                 )}
                               </div>
@@ -1466,30 +1480,30 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Internal notification status</h3>
-                        <p className="mt-1 text-xs text-slate-600">Latest internal alerts sent when customers report annual balance mismatches.</p>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('internalNotificationStatus')}</h3>
+                        <p className="mt-1 text-xs text-slate-600">{t('internalNotificationDescription')}</p>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {billingAnnualBalanceNotifications.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No internal annual balance notifications recorded.</div>
+                          <div className="p-5 text-sm text-slate-500">{t('noInternalNotifications')}</div>
                         ) : (
                           billingAnnualBalanceNotifications.map((event) => (
                             <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
                               <div>
                                 <div className="text-sm font-medium text-slate-900">
                                   {event.payload?.status === 'sent'
-                                    ? 'Internal notification sent'
+                                    ? t('internalNotificationSent')
                                     : event.payload?.status === 'failed'
-                                      ? 'Internal notification failed'
-                                      : 'Internal notification skipped'}
+                                      ? t('internalNotificationFailed')
+                                      : t('internalNotificationSkipped')}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  As of {event.payload?.reference_date || 'unknown'} · customer {event.payload?.recipient || 'unknown'}
+                                  {t('asOfCustomer', { date: event.payload?.reference_date || t('unknown'), customer: event.payload?.recipient || t('unknown') })}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
                                   {event.payload?.notified_internal_emails?.length
                                     ? event.payload.notified_internal_emails.join(', ')
-                                    : 'No internal recipients'}
+                                    : t('noInternalRecipients')}
                                   {event.payload?.error_message ? ` · ${event.payload.error_message}` : ''}
                                 </div>
                               </div>
@@ -1506,8 +1520,8 @@ export default function SettingsPage() {
                       <div className="border-b border-slate-200 bg-amber-50 px-5 py-4">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                           <div>
-                            <h3 className="text-sm font-semibold text-slate-900">Annual balance mismatch inbox</h3>
-                            <p className="mt-1 text-xs text-slate-600">All reported balance issues are collected here so they can be reviewed from one place.</p>
+                            <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceMismatchInbox')}</h3>
+                            <p className="mt-1 text-xs text-slate-600">{t('annualBalanceMismatchDescription')}</p>
                           </div>
                           <div className="flex gap-2">
                             {(['open', 'resolved', 'all'] as const).map((filterKey) => (
@@ -1521,7 +1535,7 @@ export default function SettingsPage() {
                                     : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
                                 }`}
                               >
-                                {filterKey === 'open' ? 'Open' : filterKey === 'resolved' ? 'Resolved' : 'All'}
+                                {filterKey === 'open' ? t('open') : filterKey === 'resolved' ? t('resolved') : t('all')}
                               </button>
                             ))}
                           </div>
@@ -1531,10 +1545,10 @@ export default function SettingsPage() {
                         {visibleBillingMismatches.length === 0 ? (
                           <div className="p-5 text-sm text-slate-500">
                             {billingMismatchFilter === 'resolved'
-                              ? 'No resolved balance mismatches.'
+                              ? t('noResolvedBalanceMismatches')
                               : billingMismatchFilter === 'all'
-                                ? 'No balance mismatches reported.'
-                                : 'No open balance mismatches.'}
+                                ? t('noBalanceMismatchesReported')
+                                : t('noOpenBalanceMismatches')}
                           </div>
                         ) : (
                           visibleBillingMismatches.map((event) => (
@@ -1543,34 +1557,34 @@ export default function SettingsPage() {
                                 <div>
                                   <div className="text-sm font-medium text-slate-900">
                                     {event.sent_payload?.balance_direction === 'we_owe_you'
-                                      ? `Mismatch on balance where we owe ${Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                      ? t('mismatchWeOwe', { amount: Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2) })
                                       : event.sent_payload?.balance_direction === 'you_owe_us'
-                                        ? `Mismatch on balance where they owe ${Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2)} EUR`
-                                        : 'Mismatch on settled balance confirmation'}
+                                        ? t('mismatchTheyOwe', { amount: Math.abs(Number(event.sent_payload?.balance_amount || 0)).toFixed(2) })
+                                        : t('mismatchSettled')}
                                   </div>
                                   <div className="mt-1 text-xs text-slate-500">
-                                    As of {event.payload?.reference_date || event.sent_payload?.reference_date || 'unknown'} · {event.payload?.recipient || event.sent_payload?.recipient || 'no recipient'}
+                                    {t('asOfRecipient', { date: event.payload?.reference_date || event.sent_payload?.reference_date || t('unknown'), recipient: event.payload?.recipient || event.sent_payload?.recipient || t('noRecipient') })}
                                   </div>
                                 </div>
                                 <div className="text-xs text-slate-500">
                                   {event.payload?.resolved_at
-                                    ? `Resolved ${new Date(event.payload.resolved_at).toLocaleString()}`
+                                    ? t('resolvedAt', { date: new Date(event.payload.resolved_at).toLocaleString() })
                                     : new Date(event.created_at).toLocaleString()}
                                 </div>
                               </div>
                               <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                                {event.payload?.note || 'No mismatch note provided.'}
+                                {event.payload?.note || t('noMismatchNote')}
                               </div>
                               {event.payload?.resolved_at ? (
                                 <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-                                  Resolved{event.payload?.resolution_note ? `: ${event.payload.resolution_note}` : '.'}
+                                  {event.payload?.resolution_note ? t('resolvedWithNote', { note: event.payload.resolution_note }) : t('resolvedOnly')}
                                 </div>
                               ) : (
                                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
                                   <input
                                     value={mismatchResolutionNotes[event.id] || ''}
                                     onChange={(e) => setMismatchResolutionNotes((current) => ({ ...current, [event.id]: e.target.value }))}
-                                    placeholder="Optional resolution note"
+                                    placeholder={t('optionalResolutionNote')}
                                     className="h-11 flex-1 rounded-lg border border-slate-200 px-4"
                                     style={{ fontSize: '16px' }}
                                   />
@@ -1582,12 +1596,12 @@ export default function SettingsPage() {
                                       });
                                       setMismatchResolutionNotes((current) => ({ ...current, [event.id]: '' }));
                                       await reloadBilling();
-                                      setSettingsSuccess('Mismatch marked resolved.');
+                                      setSettingsSuccess(t('mismatchMarkedResolved'));
                                     })}
                                     disabled={billingAction !== null}
                                     className="h-11 px-5 rounded-lg border border-emerald-200 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-50 disabled:opacity-50"
                                   >
-                                    {billingAction === `resolve-mismatch-${event.id}` ? 'Saving…' : 'Mark Resolved'}
+                                    {billingAction === `resolve-mismatch-${event.id}` ? t('saving') : t('markResolved')}
                                   </button>
                                 </div>
                               )}
@@ -1599,20 +1613,20 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Reminder history</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('reminderHistory')}</h3>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {billingReminderHistory.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No reminders sent yet.</div>
+                          <div className="p-5 text-sm text-slate-500">{t('noRemindersSentYet')}</div>
                         ) : (
                           billingReminderHistory.map((event) => (
                             <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
                               <div>
                                 <div className="text-sm font-medium text-slate-900">
-                                  Reminder {event.payload?.reminder_index || '?'} · {event.payload?.template_kind || 'custom'}
+                                  {t('reminderHistoryItem', { index: event.payload?.reminder_index || '?', kind: event.payload?.template_kind || t('custom') })}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
-                                  Invoice #{event.payload?.invoice_no || 'unknown'} · due {event.payload?.due_date || 'unknown'} · {event.payload?.recipient || 'no recipient'}
+                                  {t('invoiceDueRecipient', { invoiceNo: event.payload?.invoice_no || t('unknown'), dueDate: event.payload?.due_date || t('unknown'), recipient: event.payload?.recipient || t('noRecipient') })}
                                 </div>
                               </div>
                               <div className="text-xs text-slate-500">
@@ -1626,11 +1640,11 @@ export default function SettingsPage() {
 
                     <div className="rounded-xl border border-slate-200 overflow-hidden">
                       <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
-                        <h3 className="text-sm font-semibold text-slate-900">Annual balance history</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceHistory')}</h3>
                       </div>
                       <div className="divide-y divide-slate-100">
                         {billingAnnualBalanceHistory.length === 0 ? (
-                          <div className="p-5 text-sm text-slate-500">No annual balance confirmations sent yet.</div>
+                          <div className="p-5 text-sm text-slate-500">{t('noAnnualBalanceHistory')}</div>
                         ) : (
                           billingAnnualBalanceHistory.map((event) => (
                             <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -1638,18 +1652,18 @@ export default function SettingsPage() {
                                 <div className="text-sm font-medium text-slate-900">
                                   {event.type === 'annual_balance_confirmation_response'
                                     ? event.payload?.decision === 'confirm'
-                                      ? 'Customer confirmed balance'
-                                      : 'Customer reported mismatch'
+                                      ? t('customerConfirmedBalance')
+                                      : t('customerReportedMismatch')
                                     : event.payload?.balance_direction === 'we_owe_you'
-                                      ? `We owe them ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
+                                      ? t('weOweThemAmount', { amount: Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2) })
                                       : event.payload?.balance_direction === 'you_owe_us'
-                                        ? `They owe us ${Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2)} EUR`
-                                        : 'Balance settled'}
+                                        ? t('theyOweUsAmount', { amount: Math.abs(Number(event.payload?.balance_amount || 0)).toFixed(2) })
+                                        : t('balanceSettled')}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
                                   {event.type === 'annual_balance_confirmation_response'
-                                    ? `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'}`
-                                    : `As of ${event.payload?.reference_date || 'unknown'} · ${event.payload?.recipient || 'no recipient'} · ${event.payload?.open_invoice_count || 0} open invoice(s)`}
+                                    ? t('asOfRecipient', { date: event.payload?.reference_date || t('unknown'), recipient: event.payload?.recipient || t('noRecipient') })
+                                    : t('asOfRecipientOpenInvoices', { date: event.payload?.reference_date || t('unknown'), recipient: event.payload?.recipient || t('noRecipient'), count: event.payload?.open_invoice_count || 0 })}
                                 </div>
                                 {event.type === 'annual_balance_confirmation_response' && event.payload?.decision === 'mismatch' && event.payload?.note && (
                                   <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -1672,16 +1686,16 @@ export default function SettingsPage() {
 
             {activeTab === 'notifications' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Notification Preferences</h2>
-                <p className="text-sm text-slate-500 mb-6">Choose how you want to receive updates</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('notificationPreferences')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('notificationPreferencesDescription')}</p>
                 <div className="space-y-4">
                   <div className="space-y-3">
-                    <h3 className="text-sm font-medium text-slate-700">Email Notifications</h3>
+                    <h3 className="text-sm font-medium text-slate-700">{t('emailNotifications')}</h3>
                     {[
-                      { id: 'invoices', label: 'New invoices', checked: true },
-                      { id: 'payments', label: 'Payments received', checked: true },
-                      { id: 'weekly', label: 'Weekly summary reports', checked: false },
-                      { id: 'system', label: 'System updates and maintenance', checked: true },
+                      { id: 'invoices', label: t('newInvoices'), checked: true },
+                      { id: 'payments', label: t('paymentsReceived'), checked: true },
+                      { id: 'weekly', label: t('weeklySummaryReports'), checked: false },
+                      { id: 'system', label: t('systemUpdatesMaintenance'), checked: true },
                     ].map(item => (
                       <label key={item.id} className="flex items-center p-3 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer transition-colors">
                         <input
@@ -1699,21 +1713,21 @@ export default function SettingsPage() {
 
             {activeTab === 'security' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Security Settings</h2>
-                <p className="text-sm text-slate-500 mb-6">Keep your account secure</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('securitySettings')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('securityDescription')}</p>
                 <div className="space-y-6">
                   <div className="p-4 border border-slate-200 rounded-lg">
-                    <h3 className="font-medium text-slate-900 mb-2">Change Password</h3>
-                    <p className="text-sm text-slate-500 mb-3">Update your password regularly to keep your account secure</p>
+                    <h3 className="font-medium text-slate-900 mb-2">{t('changePassword')}</h3>
+                    <p className="text-sm text-slate-500 mb-3">{t('changePasswordDescription')}</p>
                     <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors">
-                      Update Password
+                      {t('updatePassword')}
                     </button>
                   </div>
                   <div className="p-4 border border-slate-200 rounded-lg">
-                    <h3 className="font-medium text-slate-900 mb-2">Two-Factor Authentication</h3>
-                    <p className="text-sm text-slate-500 mb-3">Add an extra layer of security to your account</p>
+                    <h3 className="font-medium text-slate-900 mb-2">{t('twoFactorAuthentication')}</h3>
+                    <p className="text-sm text-slate-500 mb-3">{t('twoFactorDescription')}</p>
                     <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors">
-                      Enable 2FA
+                      {t('enable2fa')}
                     </button>
                   </div>
                 </div>
@@ -1722,25 +1736,25 @@ export default function SettingsPage() {
 
             {activeTab === 'localization' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Localization</h2>
-                <p className="text-sm text-slate-500 mb-6">Customize language and regional settings</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('localization')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('localizationDescription')}</p>
                 <form className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Language
+                      {t('language')}
                     </label>
                     <select
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
                       style={{ fontSize: '16px' }}
                     >
                       <option value="en">English</option>
-                      <option value="et">Estonian</option>
-                      <option value="fi">Finnish</option>
+                      <option value="et">{t('estonian')}</option>
+                      <option value="fi">{t('finnish')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Timezone
+                      {t('timezone')}
                     </label>
                     <select
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
@@ -1753,7 +1767,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                      Date Format
+                      {t('dateFormat')}
                     </label>
                     <select
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
@@ -1768,7 +1782,7 @@ export default function SettingsPage() {
                     type="submit"
                     className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors"
                   >
-                    Save Preferences
+                    {t('savePreferences')}
                   </button>
                 </form>
               </div>
@@ -1776,17 +1790,15 @@ export default function SettingsPage() {
 
             {activeTab === 'business-registry' && (
               <div>
-                <h2 className="text-lg font-semibold text-slate-900 mb-1">Business Registry Integration</h2>
-                <p className="text-sm text-slate-500 mb-6">
-                  Configure the backend-only Estonian Business Registry integration. Credentials remain masked after save.
-                </p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('businessRegistryTitle')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('businessRegistryDescription')}</p>
 
                 {!canManageRegistry ? (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-                    Only owner or admin users can manage Business Registry integration settings.
+                    {t('businessRegistryPermission')}
                   </div>
                 ) : registryLoading ? (
-                  <div className="text-sm text-slate-500">Loading integration settings…</div>
+                  <div className="text-sm text-slate-500">{t('loadingIntegrationSettings')}</div>
                 ) : (
                   <div className="space-y-6">
                     <div className="grid gap-5 md:grid-cols-2">
@@ -1798,42 +1810,45 @@ export default function SettingsPage() {
                           className="h-4 w-4"
                         />
                         <div>
-                          <div className="text-sm font-medium text-slate-900">Integration enabled</div>
-                          <div className="text-xs text-slate-500">Turns authenticated registry lookup on or off.</div>
+                          <div className="text-sm font-medium text-slate-900">{t('integrationEnabled')}</div>
+                          <div className="text-xs text-slate-500">{t('integrationEnabledDescription')}</div>
                         </div>
                       </label>
 
                       <div className="rounded-lg border border-slate-200 p-4">
-                        <div className="text-sm font-medium text-slate-900">Stored credentials</div>
+                        <div className="text-sm font-medium text-slate-900">{t('storedCredentials')}</div>
                         <div className="mt-2 text-xs text-slate-500">
-                          Username {registrySettings?.username_masked || 'not set'} · Password {registrySettings?.has_password ? 'stored' : 'not set'}
+                          {t('storedCredentialsValue', {
+                            username: registrySettings?.username_masked || t('notSet'),
+                            password: registrySettings?.has_password ? t('stored') : t('notSet'),
+                          })}
                         </div>
                       </div>
                     </div>
 
                     <div className="grid gap-5 md:grid-cols-2">
                       <Field
-                        label="Provider type"
+                        label={t('providerType')}
                         value={registryForm.provider_type}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, provider_type: value }))}
                       />
                       <Field
-                        label="Service URL"
+                        label={t('serviceUrl')}
                         value={registryForm.service_url}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, service_url: value }))}
                       />
                       <Field
-                        label="Search path"
+                        label={t('searchPath')}
                         value={registryForm.search_path}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, search_path: value }))}
                       />
                       <Field
-                        label="Company path"
+                        label={t('companyPath')}
                         value={registryForm.company_path}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, company_path: value }))}
                       />
                       <Field
-                        label="Test path"
+                        label={t('testPath')}
                         value={registryForm.test_path}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, test_path: value }))}
                       />
@@ -1841,27 +1856,27 @@ export default function SettingsPage() {
 
                     <div className="grid gap-5 md:grid-cols-2">
                       <Field
-                        label={`Username ${registrySettings?.username_masked ? `(current ${registrySettings.username_masked})` : ''}`}
+                        label={registrySettings?.username_masked ? t('usernameCurrent', { current: registrySettings.username_masked }) : t('username')}
                         value={registryForm.username}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, username: value }))}
-                        placeholder="Leave blank to keep existing username"
+                        placeholder={t('leaveBlankKeepUsername')}
                       />
                       <Field
-                        label={`Password ${registrySettings?.has_password ? '(stored)' : ''}`}
+                        label={registrySettings?.has_password ? t('passwordStored') : t('password')}
                         value={registryForm.password}
                         onChange={(value) => setRegistryForm((current) => ({ ...current, password: value }))}
-                        placeholder="Leave blank to keep existing password"
+                        placeholder={t('leaveBlankKeepPassword')}
                         type="password"
                       />
                     </div>
 
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                      <div className="font-medium text-slate-900">Status</div>
+                      <div className="font-medium text-slate-900">{t('status')}</div>
                       <div className="mt-2 space-y-1 text-xs text-slate-600">
-                        <div>Last test status: {registrySettings?.last_test_status || 'not run'}</div>
-                        <div>Last test at: {registrySettings?.last_test_at ? new Date(registrySettings.last_test_at).toLocaleString() : 'n/a'}</div>
-                        <div>Last error: {registrySettings?.last_error_message || 'none'}</div>
-                        <div>Updated at: {registrySettings?.updated_at ? new Date(registrySettings.updated_at).toLocaleString() : 'n/a'}</div>
+                        <div>{t('lastTestStatus')}: {registrySettings?.last_test_status || t('notRun')}</div>
+                        <div>{t('lastTestAt')}: {registrySettings?.last_test_at ? new Date(registrySettings.last_test_at).toLocaleString() : t('na')}</div>
+                        <div>{t('lastError')}: {registrySettings?.last_error_message || t('none')}</div>
+                        <div>{t('updatedAt')}: {registrySettings?.updated_at ? new Date(registrySettings.updated_at).toLocaleString() : t('na')}</div>
                       </div>
                     </div>
 
@@ -1872,7 +1887,7 @@ export default function SettingsPage() {
                         disabled={registrySaving}
                         className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                       >
-                        {registrySaving ? 'Saving…' : 'Save Settings'}
+                        {registrySaving ? t('saving') : t('saveSettings')}
                       </button>
                       <button
                         type="button"
@@ -1880,7 +1895,7 @@ export default function SettingsPage() {
                         disabled={registryTesting}
                         className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                       >
-                        {registryTesting ? 'Testing…' : 'Test Connection'}
+                        {registryTesting ? t('testing') : t('testConnection')}
                       </button>
                     </div>
                   </div>
@@ -1890,23 +1905,23 @@ export default function SettingsPage() {
 
             {activeTab === 'data-management' && (
               <div className="space-y-6">
-                <h2 className="text-lg font-semibold text-slate-900">Data Management</h2>
+                <h2 className="text-lg font-semibold text-slate-900">{t('dataManagement')}</h2>
 
                 <div className="rounded-xl border border-slate-200 p-6">
-                  <h3 className="text-base font-semibold text-slate-900">Opening Balances</h3>
+                  <h3 className="text-base font-semibold text-slate-900">{t('openingBalances')}</h3>
                   {dataManagementLoading ? (
-                    <p className="mt-2 text-sm text-slate-500">Loading...</p>
+                    <p className="mt-2 text-sm text-slate-500">{t('loading')}</p>
                   ) : (
                     <>
                       <p className="mt-2 text-sm text-slate-500">
                         {importStatus?.is_imported
-                          ? `Opening balances have been imported (${importStatus.committed_batches.length} batch${importStatus.committed_batches.length !== 1 ? 'es' : ''}). You can reset to clear all opening balance entries and re-import.`
-                          : 'No opening balances have been imported yet.'}
+                          ? t('openingBalancesImported', { count: importStatus.committed_batches.length })
+                          : t('noOpeningBalancesImported')}
                       </p>
 
                       {importStatus?.is_imported && importStatus.committed_batches.length > 0 && (
                         <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
-                          <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">Committed batches</div>
+                          <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">{t('committedBatches')}</div>
                           {importStatus.committed_batches.map((b: any) => (
                             <div key={b.id} className="flex items-center gap-3 text-sm text-slate-700 py-1">
                               <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 capitalize">{b.batch_type}</span>
@@ -1925,7 +1940,7 @@ export default function SettingsPage() {
                           className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--danger)] px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                         >
                           <RotateCcw className="h-4 w-4" />
-                          Reset Opening Balances
+                          {t('resetOpeningBalances')}
                         </button>
                       )}
                     </>
@@ -1934,20 +1949,20 @@ export default function SettingsPage() {
 
                 {resetBackups.length > 0 && (
                   <div className="rounded-xl border border-slate-200 p-6">
-                    <h3 className="text-base font-semibold text-slate-900">Reset History</h3>
-                    <p className="mt-1 text-sm text-slate-500">Previous opening balance resets with backups that can be restored.</p>
+                    <h3 className="text-base font-semibold text-slate-900">{t('resetHistory')}</h3>
+                    <p className="mt-1 text-sm text-slate-500">{t('resetHistoryDescription')}</p>
                     <div className="mt-4 space-y-3">
                       {resetBackups.map((backup: any) => (
                         <div key={backup.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-4">
                           <div>
                             <div className="text-sm font-medium text-slate-800">
-                              Reset on {new Date(backup.reset_at).toLocaleDateString()} at {new Date(backup.reset_at).toLocaleTimeString()}
+                              {t('resetOn', { date: new Date(backup.reset_at).toLocaleDateString(), time: new Date(backup.reset_at).toLocaleTimeString() })}
                             </div>
                             <div className="mt-0.5 text-xs text-slate-500">
-                              {(backup.batch_snapshots || []).length} batch{(backup.batch_snapshots || []).length !== 1 ? 'es' : ''} backed up
+                              {t('batchesBackedUp', { count: (backup.batch_snapshots || []).length })}
                               {backup.restored_at && (
                                 <span className="ml-2 inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                                  Restored on {new Date(backup.restored_at).toLocaleDateString()}
+                                  {t('restoredOn', { date: new Date(backup.restored_at).toLocaleDateString() })}
                                 </span>
                               )}
                             </div>
@@ -1959,7 +1974,7 @@ export default function SettingsPage() {
                               className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-white transition-colors disabled:opacity-50"
                             >
                               <RotateCcw className="h-3.5 w-3.5" />
-                              Restore
+                              {t('restore')}
                             </button>
                           )}
                         </div>
@@ -1971,10 +1986,10 @@ export default function SettingsPage() {
                 <ConfirmResetDialog
                   open={resetDialogOpen}
                   onOpenChange={setResetDialogOpen}
-                  title="Reset Opening Balances"
-                  description="This will reverse all opening balance journal entries and void any created invoices. A backup will be saved automatically so you can restore later if needed."
-                  requiredText="Reset all"
-                  confirmLabel="Reset Opening Balances"
+                  title={t('resetOpeningBalances')}
+                  description={t('resetOpeningBalancesDescription')}
+                  requiredText={t('resetAll')}
+                  confirmLabel={t('resetOpeningBalances')}
                   onConfirm={handleResetOpeningBalances}
                 />
 
@@ -1982,9 +1997,9 @@ export default function SettingsPage() {
                   <ConfirmDialog
                     open={!!restoreDialogOpen}
                     onOpenChange={(open) => { if (!open) setRestoreDialogOpen(null); }}
-                    title="Restore Opening Balances"
-                    description="This will re-commit the opening balances from this backup. Are you sure?"
-                    confirmLabel="Restore"
+                    title={t('restoreOpeningBalances')}
+                    description={t('restoreOpeningBalancesDescription')}
+                    confirmLabel={t('restore')}
                     variant="warning"
                     onConfirm={() => handleRestoreBackup(restoreDialogOpen)}
                   />

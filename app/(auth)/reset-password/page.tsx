@@ -3,11 +3,13 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, LockKeyhole } from 'lucide-react';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 
 function ResetPasswordContent() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -36,24 +38,24 @@ function ResetPasswordContent() {
     setErrorMessage('');
 
     if (!token) {
-      setErrorMessage('Password reset token is missing.');
+      setErrorMessage(t('errors.resetTokenMissing'));
       return;
     }
 
     if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters.');
+      setErrorMessage(t('errors.passwordMinLengthWithPeriod'));
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
+      setErrorMessage(t('errors.passwordMismatchWithPeriod'));
       return;
     }
 
     setIsLoading(true);
     try {
       await authApi.resetPassword(token, password);
-      setSuccessMessage('Password updated successfully. Redirecting to login...');
+      setSuccessMessage(t('resetPasswordSuccessMessage'));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -65,18 +67,18 @@ function ResetPasswordContent() {
     return (
       <div>
         <div className="mb-8">
-          <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">Reset password</h1>
+          <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{t('resetPasswordTitle')}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Open the reset link from your email to continue.
+            {t('resetPasswordMissingTokenSubtitle')}
           </p>
         </div>
 
         <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-amber-500 bg-amber-50 p-4">
           <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" />
           <div>
-            <p className="text-sm font-medium text-amber-900">Missing reset token</p>
+            <p className="text-sm font-medium text-amber-900">{t('resetPasswordMissingTokenTitle')}</p>
             <p className="mt-0.5 text-sm text-amber-700">
-              Request a new password reset email to get a fresh link.
+              {t('resetPasswordMissingTokenDescription')}
             </p>
           </div>
         </div>
@@ -85,7 +87,7 @@ function ResetPasswordContent() {
           href="/forgot-password"
           className="flex h-11 w-full items-center justify-center rounded-lg bg-[var(--primary)] font-medium text-white transition-all hover:bg-[var(--primary-hover)] sm:h-12"
         >
-          Request new reset link
+          {t('requestNewResetLink')}
         </Link>
       </div>
     );
@@ -94,9 +96,9 @@ function ResetPasswordContent() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">Set a new password</h1>
+        <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{t('setNewPasswordTitle')}</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Choose a strong password for your account.
+          {t('setNewPasswordSubtitle')}
         </p>
       </div>
 
@@ -104,9 +106,9 @@ function ResetPasswordContent() {
         <div className="mb-6 flex items-start gap-3 rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4">
           <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-500" />
           <div>
-            <p className="text-sm font-medium text-emerald-900">Password updated</p>
+            <p className="text-sm font-medium text-emerald-900">{t('passwordUpdatedTitle')}</p>
             <p className="mt-0.5 text-sm text-emerald-700">{successMessage}</p>
-            <p className="mt-2 text-xs text-emerald-600">Redirecting in {countdown}s...</p>
+            <p className="mt-2 text-xs text-emerald-600">{t('redirectingIn', { countdown })}</p>
           </div>
         </div>
       )}
@@ -121,7 +123,7 @@ function ResetPasswordContent() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
-            New password
+            {t('newPassword')}
           </label>
           <input
             id="password"
@@ -130,7 +132,7 @@ function ResetPasswordContent() {
             onChange={(event) => setPassword(event.target.value)}
             required
             disabled={isLoading || !!successMessage}
-            placeholder="At least 8 characters"
+            placeholder={t('passwordPlaceholder')}
             className="h-11 w-full rounded-lg border border-slate-200 px-4 transition-all focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ fontSize: '16px' }}
           />
@@ -138,7 +140,7 @@ function ResetPasswordContent() {
 
         <div>
           <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-slate-700">
-            Confirm new password
+            {t('confirmNewPassword')}
           </label>
           <input
             id="confirmPassword"
@@ -147,7 +149,7 @@ function ResetPasswordContent() {
             onChange={(event) => setConfirmPassword(event.target.value)}
             required
             disabled={isLoading || !!successMessage}
-            placeholder="Repeat your password"
+            placeholder={t('confirmPasswordPlaceholder')}
             className="h-11 w-full rounded-lg border border-slate-200 px-4 transition-all focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 disabled:cursor-not-allowed disabled:opacity-50"
             style={{ fontSize: '16px' }}
           />
@@ -161,12 +163,12 @@ function ResetPasswordContent() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Updating password...</span>
+              <span>{t('updatingPassword')}</span>
             </>
           ) : (
             <>
               <LockKeyhole className="h-4 w-4" />
-              <span>Save new password</span>
+              <span>{t('saveNewPassword')}</span>
             </>
           )}
         </button>
@@ -177,7 +179,7 @@ function ResetPasswordContent() {
           href="/login"
           className="font-medium text-[var(--primary)] transition-colors hover:text-[var(--primary-hover)]"
         >
-          Back to login
+          {t('backToLogin')}
         </Link>
       </p>
     </div>

@@ -11,7 +11,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 function fmt(n: number) {
-  return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 export default function RecurringInvoicesPage() {
@@ -337,13 +337,13 @@ function CreateTemplateModal({ partners, accounts, onClose, onCreated, t, tc }: 
                   </select>
                 </div>
                 <div className="col-span-1">
-                  <input type="number" placeholder="Qty" value={line.quantity} onChange={e => updLine(i, 'quantity', e.target.value)} className="w-full px-2 py-1.5 rounded text-sm" style={inputStyle} />
+                  <input type="number" placeholder={t('quantity')} value={line.quantity} onChange={e => updLine(i, 'quantity', e.target.value)} className="w-full px-2 py-1.5 rounded text-sm" style={inputStyle} />
                 </div>
                 <div className="col-span-2">
                   <input type="number" step="0.01" placeholder={t('price')} value={line.unit_price} onChange={e => updLine(i, 'unit_price', e.target.value)} className="w-full px-2 py-1.5 rounded text-sm" style={inputStyle} />
                 </div>
                 <div className="col-span-1">
-                  <input type="number" placeholder="VAT%" value={line.tax_rate} onChange={e => updLine(i, 'tax_rate', e.target.value)} className="w-full px-2 py-1.5 rounded text-sm" style={inputStyle} />
+                  <input type="number" placeholder={t('vatRate')} value={line.tax_rate} onChange={e => updLine(i, 'tax_rate', e.target.value)} className="w-full px-2 py-1.5 rounded text-sm" style={inputStyle} />
                 </div>
                 <div className="col-span-1 flex items-center">
                   {lines.length > 1 && (

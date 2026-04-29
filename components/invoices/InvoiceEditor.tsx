@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
@@ -38,6 +39,7 @@ const emptyLine = (): DraftLine => ({
 });
 
 export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId }: InvoiceEditorProps) {
+  const t = useTranslations('invoices');
   const router = useRouter();
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -165,7 +167,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       const result = mode === 'create'
         ? await invoicesApi.createInvoice(payload)
         : await invoicesApi.updateInvoice(invoiceId!, payload);
-      setSuccessMessage(mode === 'create' ? 'Invoice draft created.' : 'Invoice draft updated.');
+      setSuccessMessage(mode === 'create' ? t('invoiceDraftCreated') : t('invoiceDraftUpdated'));
       const isSalesType = result.invoice.type === 'sales_invoice' || result.invoice.type === 'sales_credit_note';
       router.push(isSalesType ? '/invoices/sales' : '/invoices/purchase');
       router.refresh();
@@ -182,20 +184,20 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">
             {mode === 'create'
-              ? (isCreditNote ? 'New Credit Note' : 'New Invoice Draft')
-              : (isCreditNote ? 'Edit Credit Note' : 'Edit Invoice Draft')}
+              ? (isCreditNote ? t('newCreditNote') : t('newInvoiceDraft'))
+              : (isCreditNote ? t('editCreditNote') : t('editInvoiceDraft'))}
           </h1>
           <p className="mt-1 text-sm text-slate-500">
             {mode === 'create'
-              ? (isCreditNote ? 'Create a credit note to reverse or correct an invoice.' : 'Create a new sales or purchase invoice draft with live line totals.')
-              : 'Edit a draft or rejected invoice before posting or approval.'}
+              ? (isCreditNote ? t('createCreditNoteDescription') : t('createInvoiceDraftDescription'))
+              : t('editInvoiceDraftDescription')}
           </p>
         </div>
         <Link
           href={type === 'purchase_invoice' || type === 'purchase_credit_note' ? '/invoices/purchase' : '/invoices/sales'}
           className="inline-flex h-10 items-center rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
         >
-          Back to list
+          {t('backToList')}
         </Link>
       </div>
 
@@ -218,48 +220,48 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       )}
 
       {isLoading ? (
-        <div className="card p-8 text-sm text-slate-500">Loading invoice draft...</div>
+        <div className="card p-8 text-sm text-slate-500">{t('loadingInvoiceDraft')}</div>
       ) : (
         <>
           <div className="card p-5">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field label="Invoice type">
+              <Field label={t('invoiceType')}>
                 <select
                   value={type}
                   onChange={(event) => setType(event.target.value as InvoiceType)}
                   disabled={mode === 'edit'}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3 disabled:bg-slate-50"
                 >
-                  <option value="sales_invoice">Sales invoice</option>
-                  <option value="purchase_invoice">Purchase invoice</option>
-                  <option value="sales_credit_note">Sales credit note</option>
-                  <option value="purchase_credit_note">Purchase credit note</option>
+                  <option value="sales_invoice">{t('salesList')}</option>
+                  <option value="purchase_invoice">{t('purchaseList')}</option>
+                  <option value="sales_credit_note">{t('salesCreditNote')}</option>
+                  <option value="purchase_credit_note">{t('purchaseCreditNote')}</option>
                 </select>
               </Field>
-              <Field label="Partner">
+              <Field label={t('partner')}>
                 <select value={partnerId} onChange={(event) => setPartnerId(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3">
-                  <option value="">Select partner</option>
+                  <option value="">{t('selectPartner')}</option>
                   {partners.map((partner) => (
                     <option key={partner.id} value={partner.id}>{partner.name}</option>
                   ))}
                 </select>
               </Field>
-              <Field label="Invoice number">
+              <Field label={t('invoiceNumber')}>
                 <input value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
-              <Field label="Currency">
+              <Field label={t('currency')}>
                 <input value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
-              <Field label="Invoice date">
+              <Field label={t('invoiceDate')}>
                 <input type="date" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
-              <Field label="Due date">
+              <Field label={t('dueDate')}>
                 <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
-              <Field label="Payment reference">
+              <Field label={t('paymentReference')}>
                 <input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
-              <Field label="Notes">
+              <Field label={t('notes')}>
                 <input value={notes} onChange={(event) => setNotes(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
             </div>
@@ -267,13 +269,13 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
 
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Invoice lines</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t('invoiceLines')}</h2>
               <button
                 onClick={() => setLines((current) => [...current, emptyLine()])}
                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-white"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add line</span>
+                <span>{t('addLine')}</span>
               </button>
             </div>
             <div className="space-y-4 p-5">
@@ -283,7 +285,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                     <input
                       value={line.description}
                       onChange={(event) => updateLine(index, { description: event.target.value })}
-                      placeholder="Description"
+                      placeholder={t('description')}
                       className="h-11 rounded-lg border border-slate-200 px-3"
                     />
                     <select
@@ -291,15 +293,15 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                       onChange={(event) => updateLine(index, { account_id: event.target.value })}
                       className="h-11 rounded-lg border border-slate-200 px-3"
                     >
-                      <option value="">Account</option>
+                      <option value="">{t('account')}</option>
                       {accounts.map((account) => (
                         <option key={account.id} value={account.id}>{account.code} {account.name}</option>
                       ))}
                     </select>
-                    <input value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder="Qty" className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} placeholder="Unit price" className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.discount_percent} onChange={(event) => updateLine(index, { discount_percent: event.target.value })} placeholder="Discount %" className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.tax_rate} onChange={(event) => updateLine(index, { tax_rate: event.target.value })} placeholder="VAT %" className="h-11 rounded-lg border border-slate-200 px-3" />
+                    <input value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder={t('qty')} className="h-11 rounded-lg border border-slate-200 px-3" />
+                    <input value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} placeholder={t('unitPrice')} className="h-11 rounded-lg border border-slate-200 px-3" />
+                    <input value={line.discount_percent} onChange={(event) => updateLine(index, { discount_percent: event.target.value })} placeholder={t('discount')} className="h-11 rounded-lg border border-slate-200 px-3" />
+                    <input value={line.tax_rate} onChange={(event) => updateLine(index, { tax_rate: event.target.value })} placeholder={t('vatRate')} className="h-11 rounded-lg border border-slate-200 px-3" />
                     <button
                       onClick={() => removeLine(index)}
                       className="inline-flex h-11 items-center justify-center rounded-lg border border-red-200 px-3 text-red-700 hover:bg-red-50"
@@ -313,9 +315,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <SummaryCard label="Subtotal" value={totals.subtotal} />
-            <SummaryCard label="Tax" value={totals.tax} />
-            <SummaryCard label="Total" value={totals.subtotal + totals.tax} />
+            <SummaryCard label={t('subtotal')} value={totals.subtotal} />
+            <SummaryCard label={t('taxTotal')} value={totals.tax} />
+            <SummaryCard label={t('total')} value={totals.subtotal + totals.tax} />
           </div>
 
           <div className="flex justify-end">
@@ -325,7 +327,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
               className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              <span>{mode === 'create' ? 'Create draft' : 'Save draft'}</span>
+              <span>{mode === 'create' ? t('createDraft') : t('saveDraft')}</span>
             </button>
           </div>
         </>

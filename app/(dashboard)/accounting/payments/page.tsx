@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw, RotateCcw, Stamp, Wallet } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { paymentsApi, type PaymentDetail, type PaymentListItem } from '@/lib/api/payments.api';
@@ -10,6 +11,7 @@ import { paymentsApi, type PaymentDetail, type PaymentListItem } from '@/lib/api
 const FILTERS = ['all', 'draft', 'posted', 'reversed'] as const;
 
 export default function PaymentsPage() {
+  const t = useTranslations('accounting');
   const searchParams = useSearchParams();
   const [payments, setPayments] = useState<PaymentListItem[]>([]);
   const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(searchParams.get('payment_id'));
@@ -112,7 +114,7 @@ export default function PaymentsPage() {
     if (!selectedPaymentId) return;
     await runAction('post', async () => {
       await paymentsApi.postPayment(selectedPaymentId);
-      setSuccessMessage('Payment posted.');
+      setSuccessMessage(t('paymentPosted'));
       await loadPayments(selectedPaymentId);
     });
   };
@@ -121,7 +123,7 @@ export default function PaymentsPage() {
     if (!selectedPaymentId) return;
     await runAction('reverse', async () => {
       await paymentsApi.reversePayment(selectedPaymentId, { reason: reverseReason || undefined });
-      setSuccessMessage('Payment reversed.');
+      setSuccessMessage(t('paymentReversed'));
       setReverseReason('');
       await loadPayments(selectedPaymentId);
     });
@@ -131,20 +133,20 @@ export default function PaymentsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Payments</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{t('paymentsTitle')}</h1>
           <p className="mt-1 max-w-3xl text-sm text-slate-500">
-            Review incoming and outgoing payments, inspect invoice settlement state, and post or reverse payments from one workspace.
+            {t('paymentsDescription')}
           </p>
         </div>
         <button
           onClick={() => void runAction('refresh', async () => {
             await loadPayments(selectedPaymentId);
-            setSuccessMessage('Payments refreshed.');
+            setSuccessMessage(t('paymentsRefreshed'));
           })}
           className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
         >
           {actionLoading === 'refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-          <span>Refresh</span>
+          <span>{t('refreshPayments')}</span>
         </button>
       </div>
 
@@ -167,11 +169,11 @@ export default function PaymentsPage() {
       )}
 
       <div className="grid gap-3 md:grid-cols-5">
-        <Metric label="Draft" value={summary.draft} />
-        <Metric label="Posted" value={summary.posted} tone="success" />
-        <Metric label="Reversed" value={summary.reversed} tone="danger" />
-        <Metric label="Incoming" value={summary.incoming.toFixed(2)} tone="success" />
-        <Metric label="Outgoing" value={summary.outgoing.toFixed(2)} tone="warning" />
+        <Metric label={t('draft')} value={summary.draft} />
+        <Metric label={t('posted')} value={summary.posted} tone="success" />
+        <Metric label={t('reversed')} value={summary.reversed} tone="danger" />
+        <Metric label={t('incoming')} value={summary.incoming.toFixed(2)} tone="success" />
+        <Metric label={t('outgoing')} value={summary.outgoing.toFixed(2)} tone="warning" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
@@ -188,26 +190,26 @@ export default function PaymentsPage() {
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {filter === 'all' ? 'All' : filter[0].toUpperCase() + filter.slice(1)}
+                  {t(filter)}
                 </button>
               ))}
             </div>
             {invoiceFilter && (
               <p className="mt-3 text-xs text-slate-500">
-                Filtered to invoice <span className="font-mono">{invoiceFilter}</span>
+                {t('filteredToInvoice')} <span className="font-mono">{invoiceFilter}</span>
               </p>
             )}
           </div>
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">Payment list</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{t('paymentList')}</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {isBootLoading ? (
-                <div className="p-4 text-sm text-slate-500">Loading payments...</div>
+                <div className="p-4 text-sm text-slate-500">{t('loadingPayments')}</div>
               ) : filteredPayments.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No payments for the current filter.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noPaymentsCurrentFilter')}</div>
               ) : (
                 filteredPayments.map((payment) => (
                   <button
@@ -221,7 +223,7 @@ export default function PaymentsPage() {
                           {payment.invoice_number || payment.reference || payment.id.slice(0, 8)}
                         </div>
                         <div className="mt-1 truncate text-xs text-slate-500">
-                          {payment.partner_name || 'Unknown partner'} · {payment.direction}
+                          {payment.partner_name || t('unknownPartner')} · {t(payment.direction)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -246,9 +248,9 @@ export default function PaymentsPage() {
 
         <section className="space-y-4">
           {!selectedPayment ? (
-            <div className="card p-8 text-sm text-slate-500">Select a payment to inspect its invoice and settlement detail.</div>
+            <div className="card p-8 text-sm text-slate-500">{t('selectPaymentToInspect')}</div>
           ) : isDetailLoading ? (
-            <div className="card p-8 text-sm text-slate-500">Loading payment detail...</div>
+            <div className="card p-8 text-sm text-slate-500">{t('loadingPaymentDetail')}</div>
           ) : (
             <>
               <div className="card overflow-hidden">
@@ -259,50 +261,50 @@ export default function PaymentsPage() {
                         {selectedPayment.reference || selectedPayment.invoice_number || selectedPayment.id}
                       </h2>
                       <p className="mt-1 text-sm text-slate-500">
-                        {selectedPayment.partner_name || 'Unknown partner'} · {selectedPayment.direction} · {selectedPayment.payment_date?.slice(0, 10)}
+                        {selectedPayment.partner_name || t('unknownPartner')} · {t(selectedPayment.direction)} · {selectedPayment.payment_date?.slice(0, 10)}
                       </p>
                     </div>
                     <div className="text-right">
                       <div className="font-mono text-lg font-semibold text-slate-900">
                         {Number(selectedPayment.amount || 0).toFixed(2)} {selectedPayment.currency}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">Status {selectedPayment.status}</div>
+                      <div className="mt-1 text-xs text-slate-500">{t('statusLabel')} {t(selectedPayment.status)}</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-4">
-                  <InfoBox label="Invoice" value={selectedPayment.invoice_number || '-'} />
-                  <InfoBox label="Invoice status" value={selectedPayment.invoice_status || '-'} />
-                  <InfoBox label="Invoice open amount" value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
-                  <InfoBox label="Journal entry" value={selectedPayment.journal_entry_id || '-'} />
+                  <InfoBox label={t('invoice')} value={selectedPayment.invoice_number || '-'} />
+                  <InfoBox label={t('invoiceStatus')} value={selectedPayment.invoice_status || '-'} />
+                  <InfoBox label={t('invoiceOpenAmount')} value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
+                  <InfoBox label={t('journalEntry')} value={selectedPayment.journal_entry_id || '-'} />
                 </div>
 
                 <div className="border-t border-slate-200 p-5">
                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                     <Wallet className="h-4 w-4" />
-                    <span>Invoice settlement</span>
+                    <span>{t('invoiceSettlement')}</span>
                   </div>
                   <div className="grid gap-4 md:grid-cols-3">
-                    <InfoBox label="Invoice total" value={selectedPayment.invoice_total !== null && selectedPayment.invoice_total !== undefined ? Number(selectedPayment.invoice_total).toFixed(2) : '-'} />
-                    <InfoBox label="Paid amount" value={selectedPayment.invoice_paid_amount !== null && selectedPayment.invoice_paid_amount !== undefined ? Number(selectedPayment.invoice_paid_amount).toFixed(2) : '-'} />
-                    <InfoBox label="Open amount" value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
+                    <InfoBox label={t('invoiceTotal')} value={selectedPayment.invoice_total !== null && selectedPayment.invoice_total !== undefined ? Number(selectedPayment.invoice_total).toFixed(2) : '-'} />
+                    <InfoBox label={t('paidAmount')} value={selectedPayment.invoice_paid_amount !== null && selectedPayment.invoice_paid_amount !== undefined ? Number(selectedPayment.invoice_paid_amount).toFixed(2) : '-'} />
+                    <InfoBox label={t('openAmount')} value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
                   </div>
                   <div className="mt-4 text-sm text-slate-500">
-                    Due {selectedPayment.due_date ? selectedPayment.due_date.slice(0, 10) : '-'} · Payment reference {selectedPayment.payment_reference || '-'}
+                    {t('due')} {selectedPayment.due_date ? selectedPayment.due_date.slice(0, 10) : '-'} · {t('paymentReference')} {selectedPayment.payment_reference || '-'}
                   </div>
                   <div className="mt-4">
                     <Link
                       href={`/invoices/${selectedPayment.invoice_id}/preview`}
                       className="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
-                      Open invoice preview
+                      {t('openInvoicePreview')}
                     </Link>
                   </div>
                 </div>
 
                 <div className="border-t border-slate-200 p-5">
-                  <div className="mb-3 text-sm font-semibold text-slate-900">Payment actions</div>
+                  <div className="mb-3 text-sm font-semibold text-slate-900">{t('paymentActions')}</div>
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={handlePost}
@@ -310,12 +312,12 @@ export default function PaymentsPage() {
                       className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {actionLoading === 'post' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Stamp className="h-4 w-4" />}
-                      <span>Post payment</span>
+                      <span>{t('postPayment')}</span>
                     </button>
                     <input
                       value={reverseReason}
                       onChange={(event) => setReverseReason(event.target.value)}
-                      placeholder="Reversal reason"
+                      placeholder={t('reversalReason')}
                       className="h-10 min-w-[240px] rounded-lg border border-slate-200 px-3"
                     />
                     <button
@@ -324,7 +326,7 @@ export default function PaymentsPage() {
                       className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {actionLoading === 'reverse' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
-                      <span>Reverse payment</span>
+                      <span>{t('reversePayment')}</span>
                     </button>
                   </div>
                 </div>

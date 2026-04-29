@@ -13,7 +13,7 @@ import { downloadCsv } from '@/lib/utils/csvExport';
 import { getIsoCurrentMonthEnd, getIsoCurrentMonthStart } from '@/lib/utils/date';
 
 function formatCurrency(amount: number): string {
-  return amount.toLocaleString('en-US', {
+  return amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -228,7 +228,7 @@ export default function VATReportPage() {
             style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           >
             <Download className="h-5 w-5" />
-            <span>CSV</span>
+            <span>{t('exportCsv')}</span>
           </button>
         </div>
       </div>

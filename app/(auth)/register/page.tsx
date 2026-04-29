@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { Loader2, AlertCircle, Info } from 'lucide-react';
 
 export default function RegisterPage() {
+  const t = useTranslations('auth');
   const router = useRouter();
   const { setSession } = useAuthStore();
 
@@ -36,7 +38,7 @@ export default function RegisterPage() {
 
   const passwordStrength = getPasswordStrength(formData.password);
   const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500'];
-  const strengthLabels = ['Weak', 'Fair', 'Good', 'Strong'];
+  const strengthLabels = [t('strength.weak'), t('strength.fair'), t('strength.good'), t('strength.strong')];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -51,13 +53,13 @@ export default function RegisterPage() {
 
     // Validate passwords match
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError(t('errors.passwordMismatch'));
       return;
     }
 
     // Validate password length
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('errors.passwordMinLength'));
       return;
     }
 
@@ -95,10 +97,10 @@ export default function RegisterPage() {
       {/* Heading */}
       <div className="mb-8">
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">
-          Create your account
+          {t('registerTitle')}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          Start managing your finances in minutes
+          {t('registerSubtitle')}
         </p>
       </div>
 
@@ -117,7 +119,7 @@ export default function RegisterPage() {
             htmlFor="name"
             className="block text-sm font-medium text-slate-700 mb-1.5"
           >
-            Full name (optional)
+            {t('fullNameOptional')}
           </label>
           <input
             id="name"
@@ -137,7 +139,7 @@ export default function RegisterPage() {
             htmlFor="email"
             className="block text-sm font-medium text-slate-700 mb-1.5"
           >
-            Email address
+            {t('emailAddress')}
           </label>
           <input
             id="email"
@@ -160,7 +162,7 @@ export default function RegisterPage() {
               htmlFor="password"
               className="block text-sm font-medium text-slate-700 mb-1.5"
             >
-              Password
+              {t('password')}
             </label>
             <input
               id="password"
@@ -170,7 +172,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="At least 8 characters"
+              placeholder={t('passwordPlaceholder')}
               disabled={isLoading}
               style={{ fontSize: '16px' }}
             />
@@ -192,14 +194,14 @@ export default function RegisterPage() {
                 </div>
                 {passwordStrength > 0 && (
                   <p className="text-xs text-slate-500">
-                    Password strength: {strengthLabels[passwordStrength - 1]}
+                    {t('passwordStrength')}: {strengthLabels[passwordStrength - 1]}
                   </p>
                 )}
               </div>
             )}
 
             <p className="mt-2 text-xs text-slate-500 leading-relaxed">
-              Use 8+ characters with a mix of letters and numbers
+              {t('passwordHint')}
             </p>
           </div>
 
@@ -208,7 +210,7 @@ export default function RegisterPage() {
               htmlFor="confirmPassword"
               className="block text-sm font-medium text-slate-700 mb-1.5"
             >
-              Confirm password
+              {t('confirmPassword')}
             </label>
             <input
               id="confirmPassword"
@@ -218,7 +220,7 @@ export default function RegisterPage() {
               onChange={handleChange}
               required
               className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Repeat your password"
+              placeholder={t('confirmPasswordPlaceholder')}
               disabled={isLoading}
               style={{ fontSize: '16px' }}
             />
@@ -237,9 +239,9 @@ export default function RegisterPage() {
               disabled={isLoading}
             />
             <div>
-              <span className="block text-sm font-medium text-slate-800">Create a company workspace now</span>
+              <span className="block text-sm font-medium text-slate-800">{t('createWorkspace')}</span>
               <span className="mt-1 block text-xs leading-relaxed text-slate-500">
-                If unchecked, you will finish company setup after registration or join an existing company later.
+                {t('createWorkspaceHint')}
               </span>
             </div>
           </label>
@@ -250,12 +252,12 @@ export default function RegisterPage() {
                 htmlFor="tenant_name"
                 className={`block text-sm font-medium ${formData.create_company_now ? 'text-slate-700' : 'text-slate-400'}`}
               >
-                Company name
+                {t('companyName')}
               </label>
               <div className="relative group">
                 <Info className="h-4 w-4 text-slate-400 cursor-help" />
                 <span className="hidden sm:group-hover:block absolute left-6 -top-1 w-56 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-lg z-10">
-                  You can still add or change company details later.
+                  {t('companyNameTooltip')}
                 </span>
               </div>
             </div>
@@ -266,14 +268,14 @@ export default function RegisterPage() {
               value={formData.tenant_name}
               onChange={handleChange}
               className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              placeholder="Your Company OÜ"
+              placeholder={t('companyNamePlaceholder')}
               disabled={isLoading || !formData.create_company_now}
               style={{ fontSize: '16px' }}
             />
             <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
               {formData.create_company_now
-                ? 'A tenant workspace will be created during registration.'
-                : 'No company is created yet. You will land in the company setup step after sign-up.'}
+                ? t('companyCreatedNow')
+                : t('companyCreatedLater')}
             </p>
           </div>
         </div>
@@ -286,40 +288,40 @@ export default function RegisterPage() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Creating account...</span>
-            </>
-          ) : (
-            'Create account'
-          )}
+                <span>{t('creatingAccount')}</span>
+              </>
+            ) : (
+            t('createAccount')
+            )}
         </button>
       </form>
 
       {/* Sign In Link */}
       <p className="mt-6 text-center text-sm text-slate-600">
-        Already have an account?{' '}
+        {t('hasAccount')}{' '}
         <Link
           href="/login"
           className="font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
         >
-          Sign in
+          {t('signIn')}
         </Link>
       </p>
 
       {/* Terms Text */}
       <p className="mt-6 text-center text-xs text-slate-400 leading-relaxed pb-8">
-        By signing up, you agree to our{' '}
+        {t('termsPrefix')}{' '}
         <a
           href="#"
           className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
         >
-          Terms of Service
+          {t('termsOfService')}
         </a>{' '}
-        and{' '}
+        {t('and')}{' '}
         <a
           href="#"
           className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
         >
-          Privacy Policy
+          {t('privacyPolicy')}
         </a>
       </p>
     </div>

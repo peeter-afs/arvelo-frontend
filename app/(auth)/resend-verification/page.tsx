@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { Loader2, Mail, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function ResendVerificationPage() {
+  const t = useTranslations('auth');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -34,10 +36,10 @@ export default function ResendVerificationPage() {
       {/* Heading */}
       <div className="mb-8">
         <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">
-          Resend Verification Email
+          {t('resendVerification.title')}
         </h1>
         <p className="text-sm text-slate-500 mt-1">
-          We'll send you a new verification link
+          {t('resendVerification.subtitle')}
         </p>
       </div>
 
@@ -49,13 +51,13 @@ export default function ResendVerificationPage() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-emerald-900">
-              Verification email sent!
+              {t('resendVerification.successTitle')}
             </p>
             <p className="text-sm text-emerald-700 mt-0.5">
-              Please check your inbox and click the verification link.
+              {t('resendVerification.successDescription')}
             </p>
             <p className="text-xs text-emerald-600 mt-2">
-              Didn't receive it? Check your spam folder
+              {t('resendVerification.spamHint')}
             </p>
           </div>
         </div>
@@ -76,7 +78,7 @@ export default function ResendVerificationPage() {
             htmlFor="email"
             className="block text-sm font-medium text-slate-700 mb-1.5"
           >
-            Email address
+            {t('emailAddress')}
           </label>
           <input
             id="email"
@@ -90,7 +92,7 @@ export default function ResendVerificationPage() {
             style={{ fontSize: '16px' }}
           />
           <p className="mt-1.5 text-xs text-slate-500">
-            Enter the email address you used to register.
+            {t('resendVerification.emailHint')}
           </p>
         </div>
 
@@ -102,10 +104,10 @@ export default function ResendVerificationPage() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Sending...</span>
+              <span>{t('sending')}</span>
             </>
           ) : (
-            'Resend Verification Email'
+            t('resendVerification.cta')
           )}
         </button>
       </form>
@@ -116,7 +118,7 @@ export default function ResendVerificationPage() {
           href="/login"
           className="font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
         >
-          Back to Login
+          {t('backToLogin')}
         </Link>
       </p>
     </div>
