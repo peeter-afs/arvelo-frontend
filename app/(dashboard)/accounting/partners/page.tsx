@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -87,6 +88,7 @@ const emptyBankAccountDraft = (): BankAccountDraft => ({
 });
 
 export default function BusinessPartnersPage() {
+  const t = useTranslations('accounting');
   const [partners, setPartners] = useState<PartnerWithBalance[]>([]);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<PartnerRecord | null>(null);
@@ -228,7 +230,7 @@ export default function BusinessPartnersPage() {
       const savedPartner = await accountingApi.updatePartner(selectedPartnerId, payload);
       setSelectedPartnerId(savedPartner.id);
       await refreshPartners(savedPartner.id);
-      setSuccessMessage('Partner updated.');
+      setSuccessMessage(t('partnerUpdated'));
     });
   };
 
@@ -241,7 +243,7 @@ export default function BusinessPartnersPage() {
         iban: newBankAccount.iban || undefined,
       });
       setDuplicateWarnings(duplicates);
-      setSuccessMessage(duplicates.length > 0 ? 'Potential duplicates found.' : 'No partner duplicates found.');
+      setSuccessMessage(duplicates.length > 0 ? t('potentialDuplicatesFound') : t('noPartnerDuplicatesFound'));
     });
   };
 
@@ -261,7 +263,7 @@ export default function BusinessPartnersPage() {
       const syncLog = await businessRegistryApi.getPartnerSyncLog(selectedPartnerId, { limit: 10 });
       setRegistrySyncLog(syncLog.items);
       await refreshPartners(selectedPartnerId);
-      setSuccessMessage('Partner refreshed from Business Registry.');
+      setSuccessMessage(t('partnerRefreshedFromRegistry'));
     });
   };
 
@@ -277,7 +279,7 @@ export default function BusinessPartnersPage() {
       setSelectedPartner(partner);
       setForm(mapPartnerToForm(partner));
       await refreshPartners(selectedPartnerId);
-      setSuccessMessage(`Role ${role} added.`);
+      setSuccessMessage(t('partnerRoleAdded', { role: t(role) }));
     });
   };
 
@@ -297,7 +299,7 @@ export default function BusinessPartnersPage() {
       setBankAccounts((current) => sortBankAccounts([...current, created]));
       setNewBankAccount(emptyBankAccountDraft());
       await refreshPartners(selectedPartnerId);
-      setSuccessMessage('Supplier bank account added.');
+      setSuccessMessage(t('supplierBankAccountAdded'));
     });
   };
 
@@ -306,7 +308,7 @@ export default function BusinessPartnersPage() {
     await runAction(`update-bank-${account.id}`, async () => {
       const updated = await accountingApi.updateSupplierBankAccount(selectedPartnerId, account.id, updates);
       setBankAccounts((current) => sortBankAccounts(current.map((item) => item.id === updated.id ? updated : item)));
-      setSuccessMessage('Supplier bank account updated.');
+      setSuccessMessage(t('supplierBankAccountUpdated'));
     });
   };
 
@@ -316,9 +318,9 @@ export default function BusinessPartnersPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Business Partners</h1>
+          <h1 className="text-2xl font-semibold text-slate-900">{t('businessPartnersTitle')}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Manage customers and suppliers, maintain core master data, and store supplier bank accounts used by payment batches.
+            {t('businessPartnersDescription')}
           </p>
         </div>
         <div className="flex gap-3">
@@ -327,7 +329,7 @@ export default function BusinessPartnersPage() {
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
           >
             <RefreshCw className="h-4 w-4" />
-            <span>Refresh</span>
+            <span>{t('refreshPartners')}</span>
           </button>
           <button
             onClick={() => {
@@ -338,7 +340,7 @@ export default function BusinessPartnersPage() {
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
           >
             <Plus className="h-4 w-4" />
-            <span>Add Partner</span>
+            <span>{t('addPartner')}</span>
           </button>
         </div>
       </div>
@@ -370,7 +372,7 @@ export default function BusinessPartnersPage() {
                 <input
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search partners"
+                  placeholder={t('searchPartners')}
                   className="h-11 w-full rounded-lg border border-slate-200 pl-9 pr-3"
                 />
               </label>
@@ -379,23 +381,23 @@ export default function BusinessPartnersPage() {
                 onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
                 className="h-11 rounded-lg border border-slate-200 px-3"
               >
-                <option value="all">All partner types</option>
-                <option value="customer">Customers</option>
-                <option value="supplier">Suppliers</option>
-                <option value="both">Both</option>
+                <option value="all">{t('allPartnerTypes')}</option>
+                <option value="customer">{t('customerPlural')}</option>
+                <option value="supplier">{t('supplierPlural')}</option>
+                <option value="both">{t('both')}</option>
               </select>
             </div>
           </div>
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">Partners</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{t('partners')}</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {isBootLoading ? (
-                <div className="p-4 text-sm text-slate-500">Loading partners…</div>
+                <div className="p-4 text-sm text-slate-500">{t('loadingPartners')}</div>
               ) : filteredPartners.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No partners for the current filter.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noPartnersCurrentFilter')}</div>
               ) : (
                 filteredPartners.map((partner) => (
                   <button
@@ -410,7 +412,7 @@ export default function BusinessPartnersPage() {
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-900">{partner.name}</div>
                         <div className="mt-1 text-xs text-slate-500">
-                          {partner.type} · {partner.email || partner.reg_code || 'No identifier'}
+                          {t(partner.type)} · {partner.email || partner.reg_code || t('noIdentifier')}
                         </div>
                       </div>
                       <span className={`text-sm font-medium ${partner.balance < 0 ? 'text-emerald-600' : partner.balance > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
@@ -426,24 +428,24 @@ export default function BusinessPartnersPage() {
 
         <section className="space-y-4">
           {!selectedPartnerId && !isCreatingNew ? (
-            <div className="card p-8 text-sm text-slate-500">Select a partner to view details.</div>
+            <div className="card p-8 text-sm text-slate-500">{t('selectPartnerToView')}</div>
           ) : (
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <h2 className="text-base font-semibold text-slate-900">
-                    {selectedPartner?.name || 'Partner detail'}
+                    {selectedPartner?.name || t('partnerDetail')}
                   </h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Core partner details, supplier/customer role state, and duplicate checks.
+                    {t('partnerDetailDescription')}
                   </p>
                 </div>
                 {selectedPartner?.reg_code && (
                   <button
                     onClick={handleRegistryRefresh}
                     disabled={!!actionLoading}
-                    title="Refresh from Business Registry"
+                    title={t('refreshFromBusinessRegistry')}
                     className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -453,67 +455,67 @@ export default function BusinessPartnersPage() {
             </div>
 
             {isDetailLoading ? (
-              <div className="p-6 text-sm text-slate-500">Loading partner detail…</div>
+              <div className="p-6 text-sm text-slate-500">{t('loadingPartnerDetail')}</div>
             ) : (
               <div className="space-y-4 p-4">
                 {/* Identity */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Identity</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">{t('identity')}</div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label="Type" value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
-                      { label: 'Customer', value: 'customer' },
-                      { label: 'Supplier', value: 'supplier' },
-                      { label: 'Both', value: 'both' },
+                    <Field label={t('type')} value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
+                      { label: t('customer'), value: 'customer' },
+                      { label: t('supplier'), value: 'supplier' },
+                      { label: t('both'), value: 'both' },
                     ]} />
-                    <Field label="Name" value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
-                    <Field label="Code" value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
+                    <Field label={t('name')} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
+                    <Field label={t('code')} value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
                   </div>
                 </div>
 
                 {/* Registration */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Registration</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('registration')}</div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label="Registry code" value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
-                    <Field label="VAT number" value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
+                    <Field label={t('registryCode')} value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
+                    <Field label={t('vatNumber')} value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
                   </div>
                 </div>
 
                 {/* Contact */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Contact</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('contact')}</div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label="Email" value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
-                    <Field label="Phone" value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
-                    <Field label="Website" value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
+                    <Field label={t('email')} value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
+                    <Field label={t('phone')} value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
+                    <Field label={t('website')} value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
                   </div>
                 </div>
 
                 {/* Location */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Location</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('location')}</div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label="Country code" value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
-                    <Field label="City" value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
-                    <Field label="Postal code" value={form.postal_code} onChange={(value) => setForm((current) => ({ ...current, postal_code: value }))} />
+                    <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
+                    <Field label={t('city')} value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
+                    <Field label={t('postalCode')} value={form.postal_code} onChange={(value) => setForm((current) => ({ ...current, postal_code: value }))} />
                   </div>
                   <div className="mt-3">
-                    <Field label="Address" value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
+                    <Field label={t('address')} value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
                   </div>
                 </div>
 
                 {/* Billing */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Billing</div>
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('billing')}</div>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label="Payment terms days" value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
+                    <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
                   </div>
                 </div>
 
                 {/* Other */}
                 <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Other</div>
-                  <Field label="Notes" value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
+                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('other')}</div>
+                  <Field label={t('notes')} value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
                 </div>
 
                 <div className="flex flex-wrap gap-3">
@@ -523,7 +525,7 @@ export default function BusinessPartnersPage() {
                     className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'check-duplicates' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
-                    <span>Check duplicates</span>
+                    <span>{t('checkDuplicates')}</span>
                   </button>
                   <button
                     onClick={handleSavePartner}
@@ -531,7 +533,7 @@ export default function BusinessPartnersPage() {
                     className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'save-partner' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    <span>Save changes</span>
+                    <span>{t('saveChanges')}</span>
                   </button>
                 </div>
 
@@ -539,14 +541,14 @@ export default function BusinessPartnersPage() {
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
                     <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-900">
                       <ShieldAlert className="h-4 w-4" />
-                      <span>Duplicate warnings</span>
+                      <span>{t('duplicateWarnings')}</span>
                     </div>
                     <div className="space-y-3">
                       {duplicateWarnings.map((warning) => (
                         <div key={warning.partner.id} className="rounded-lg border border-amber-200 bg-white p-3 text-sm text-amber-900">
                           <div className="font-medium">{warning.partner.name}</div>
                           <div className="mt-1 text-xs text-amber-700">
-                            {warning.match_type} · severity {warning.severity} · roles {warning.roles.join(', ') || 'none'}
+                            {warning.match_type} · {t('severityValue', { value: warning.severity })} · {t('rolesValue', { roles: warning.roles.join(', ') || t('none') })}
                           </div>
                         </div>
                       ))}
@@ -557,11 +559,11 @@ export default function BusinessPartnersPage() {
                 {selectedPartnerId && (
                   <div className="grid gap-3 xl:grid-cols-[0.95fr_1.05fr]">
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 text-sm font-semibold text-slate-900">Partner roles</div>
+                      <div className="mb-3 text-sm font-semibold text-slate-900">{t('partnerRoles')}</div>
                       <div className="flex flex-wrap gap-2">
                         {roles.map((role) => (
                           <span key={role.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                            {role.role}
+                            {t(role.role)}
                           </span>
                         ))}
                         {!roles.some((role) => role.role === 'customer') && (
@@ -570,7 +572,7 @@ export default function BusinessPartnersPage() {
                             disabled={!!actionLoading}
                             className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                           >
-                            Add customer role
+                            {t('addCustomerRole')}
                           </button>
                         )}
                         {!roles.some((role) => role.role === 'supplier') && (
@@ -579,14 +581,14 @@ export default function BusinessPartnersPage() {
                             disabled={!!actionLoading}
                             className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                           >
-                            Add supplier role
+                            {t('addSupplierRole')}
                           </button>
                         )}
                       </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 text-sm font-semibold text-slate-900">Registry refresh</div>
+                      <div className="mb-3 text-sm font-semibold text-slate-900">{t('registryRefresh')}</div>
                       <div className="flex flex-wrap gap-4">
                         <label className="flex items-center gap-2 text-sm text-slate-700">
                           <input
@@ -594,7 +596,7 @@ export default function BusinessPartnersPage() {
                             checked={includeTaxArrearsOnRefresh}
                             onChange={(event) => setIncludeTaxArrearsOnRefresh(event.target.checked)}
                           />
-                          <span>Include tax arrears check</span>
+                          <span>{t('includeTaxArrearsCheck')}</span>
                         </label>
                         <button
                           onClick={handleRegistryRefresh}
@@ -602,21 +604,23 @@ export default function BusinessPartnersPage() {
                           className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          <span>Refresh from registry</span>
+                          <span>{t('refreshFromRegistry')}</span>
                         </button>
                       </div>
 
                       <div className="mt-3 text-xs text-slate-500">
-                        {selectedPartner?.reg_code ? `Using registry code ${selectedPartner.reg_code}.` : 'Partner has no registry code yet.'}
+                        {selectedPartner?.reg_code ? t('usingRegistryCode', { code: selectedPartner.reg_code }) : t('partnerHasNoRegistryCode')}
                       </div>
 
                       {(latestTaxArrears || selectedPartner?.tax_arrears_status) && (
                         <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                          <div className="font-medium text-slate-900">Latest tax arrears status</div>
+                          <div className="font-medium text-slate-900">{t('latestTaxArrearsStatus')}</div>
                           <div className="mt-1 text-xs text-slate-600">
-                            Status {(latestTaxArrears?.status || selectedPartner?.tax_arrears_status || 'n/a')} ·
-                            Amount {latestTaxArrears?.arrearsAmount ?? selectedPartner?.tax_arrears_amount ?? 'n/a'} ·
-                            Note {latestTaxArrears?.note || selectedPartner?.tax_arrears_note || 'n/a'}
+                            {t('statusValue', { value: latestTaxArrears?.status || selectedPartner?.tax_arrears_status || t('notAvailable') })} ·
+                            {' '}
+                            {t('amountValue', { value: String(latestTaxArrears?.arrearsAmount ?? selectedPartner?.tax_arrears_amount ?? t('notAvailable')) })} ·
+                            {' '}
+                            {t('noteValue', { value: latestTaxArrears?.note || selectedPartner?.tax_arrears_note || t('notAvailable') })}
                           </div>
                         </div>
                       )}
@@ -633,21 +637,21 @@ export default function BusinessPartnersPage() {
               <div className="flex items-center gap-3">
                 <Wallet className="h-5 w-5 text-[var(--primary)]" />
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900">Supplier bank accounts</h2>
-                  <p className="mt-1 text-sm text-slate-500">Manage multiple IBANs and one default account for supplier payouts.</p>
+                  <h2 className="text-base font-semibold text-slate-900">{t('supplierBankAccounts')}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{t('supplierBankAccountsDescription')}</p>
                 </div>
               </div>
             </div>
 
             <div className="space-y-5 p-5">
               {!canManageBankAccounts ? (
-                <div className="text-sm text-slate-500">Create or select a partner first.</div>
+                <div className="text-sm text-slate-500">{t('createOrSelectPartnerFirst')}</div>
               ) : (
                 <>
                   <div className="space-y-3">
                     {bankAccounts.length === 0 ? (
                       <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                        No supplier bank accounts yet.
+                        {t('noSupplierBankAccountsYet')}
                       </div>
                     ) : (
                       bankAccounts.map((account) => (
@@ -663,14 +667,14 @@ export default function BusinessPartnersPage() {
 
                   {selectedPartnerId && (
                     <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-4 text-sm font-semibold text-slate-900">Add supplier bank account</div>
+                      <div className="mb-4 text-sm font-semibold text-slate-900">{t('addSupplierBankAccount')}</div>
                       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <Field label="IBAN" value={newBankAccount.iban} onChange={(value) => setNewBankAccount((current) => ({ ...current, iban: value.toUpperCase() }))} />
-                        <Field label="Bank name" value={newBankAccount.bank_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, bank_name: value }))} />
-                        <Field label="BIC" value={newBankAccount.bic} onChange={(value) => setNewBankAccount((current) => ({ ...current, bic: value.toUpperCase() }))} />
-                        <Field label="Currency" value={newBankAccount.currency_code} onChange={(value) => setNewBankAccount((current) => ({ ...current, currency_code: value.toUpperCase() }))} />
-                        <Field label="Account holder" value={newBankAccount.account_holder_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, account_holder_name: value }))} />
-                        <Field label="Notes" value={newBankAccount.notes} onChange={(value) => setNewBankAccount((current) => ({ ...current, notes: value }))} />
+                        <Field label={t('iban')} value={newBankAccount.iban} onChange={(value) => setNewBankAccount((current) => ({ ...current, iban: value.toUpperCase() }))} />
+                        <Field label={t('bankName')} value={newBankAccount.bank_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, bank_name: value }))} />
+                        <Field label={t('bic')} value={newBankAccount.bic} onChange={(value) => setNewBankAccount((current) => ({ ...current, bic: value.toUpperCase() }))} />
+                        <Field label={t('currency')} value={newBankAccount.currency_code} onChange={(value) => setNewBankAccount((current) => ({ ...current, currency_code: value.toUpperCase() }))} />
+                        <Field label={t('accountHolder')} value={newBankAccount.account_holder_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, account_holder_name: value }))} />
+                        <Field label={t('notes')} value={newBankAccount.notes} onChange={(value) => setNewBankAccount((current) => ({ ...current, notes: value }))} />
                       </div>
                       <div className="mt-4 flex flex-wrap gap-4">
                         <label className="flex items-center gap-2 text-sm text-slate-700">
@@ -679,7 +683,7 @@ export default function BusinessPartnersPage() {
                             checked={newBankAccount.is_default}
                             onChange={(event) => setNewBankAccount((current) => ({ ...current, is_default: event.target.checked }))}
                           />
-                          <span>Default account</span>
+                          <span>{t('defaultAccount')}</span>
                         </label>
                         <label className="flex items-center gap-2 text-sm text-slate-700">
                           <input
@@ -687,7 +691,7 @@ export default function BusinessPartnersPage() {
                             checked={newBankAccount.is_active}
                             onChange={(event) => setNewBankAccount((current) => ({ ...current, is_active: event.target.checked }))}
                           />
-                          <span>Active</span>
+                          <span>{t('active')}</span>
                         </label>
                       </div>
                       <button
@@ -696,7 +700,7 @@ export default function BusinessPartnersPage() {
                         className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {actionLoading === 'create-bank-account' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        <span>Add bank account</span>
+                        <span>{t('addBankAccount')}</span>
                       </button>
                     </div>
                   )}
@@ -708,13 +712,13 @@ export default function BusinessPartnersPage() {
           {selectedPartnerId && (
             <div className="card overflow-hidden">
               <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                <h2 className="text-base font-semibold text-slate-900">Registry sync log</h2>
-                <p className="mt-1 text-sm text-slate-500">Recent Business Registry search, autofill, refresh, and tax arrears sync events for this partner.</p>
+                <h2 className="text-base font-semibold text-slate-900">{t('registrySyncLog')}</h2>
+                <p className="mt-1 text-sm text-slate-500">{t('registrySyncLogDescription')}</p>
               </div>
 
               <div className="divide-y divide-slate-100">
                 {registrySyncLog.length === 0 ? (
-                  <div className="p-4 text-sm text-slate-500">No registry sync events for this partner yet.</div>
+                  <div className="p-4 text-sm text-slate-500">{t('noRegistrySyncEventsYet')}</div>
                 ) : (
                   registrySyncLog.map((item) => (
                     <div key={item.id} className="p-4">
@@ -724,7 +728,7 @@ export default function BusinessPartnersPage() {
                             {item.sync_type} · {item.status}
                           </div>
                           <div className="mt-1 text-xs text-slate-500">
-                            {item.request_source || 'unknown source'} · {item.registry_code || 'no registry code'} · {formatDateTime(item.performed_at)}
+                            {item.request_source || t('unknownSource')} · {item.registry_code || t('noRegistryCode')} · {formatDateTime(item.performed_at)}
                           </div>
                           {(item.error_message || item.error_code) && (
                             <div className="mt-2 text-xs text-red-600">
@@ -733,8 +737,8 @@ export default function BusinessPartnersPage() {
                           )}
                         </div>
                         <div className="text-xs text-slate-500">
-                          <div>Duration {item.duration_ms ?? 'n/a'} ms</div>
-                          <div>Actor {item.performed_by || 'n/a'}</div>
+                          <div>{t('durationMs', { value: String(item.duration_ms ?? t('notAvailable')) })}</div>
+                          <div>{t('actorValue', { value: item.performed_by || t('notAvailable') })}</div>
                         </div>
                       </div>
                     </div>
@@ -754,7 +758,7 @@ export default function BusinessPartnersPage() {
           setIsCreatingNew(false);
           setSelectedPartnerId(partner.id);
           void refreshPartners(partner.id);
-          setSuccessMessage('Partner created.');
+          setSuccessMessage(t('partnerCreated'));
         }}
       />
     </div>
@@ -805,31 +809,32 @@ function BankAccountCard({
   onToggleDefault: () => void;
   onToggleActive: () => void;
 }) {
+  const t = useTranslations('accounting');
   return (
     <div className="rounded-xl border border-slate-200 p-4">
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           <div className="text-sm font-semibold text-slate-900">{account.iban}</div>
           <div className="mt-1 text-xs text-slate-500">
-            {account.account_holder_name || '-'} · {account.bank_name || 'No bank name'} · {account.currency_code || 'EUR'}
+            {account.account_holder_name || '-'} · {account.bank_name || t('noBankName')} · {account.currency_code || 'EUR'}
           </div>
           {account.notes && <div className="mt-2 text-xs text-slate-500">{account.notes}</div>}
         </div>
         <div className="flex flex-wrap gap-2">
           <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_default ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-            {account.is_default ? 'Default' : 'Secondary'}
+            {account.is_default ? t('default') : t('secondary')}
           </span>
           <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-            {account.is_active ? 'Active' : 'Inactive'}
+            {account.is_active ? t('active') : t('inactive')}
           </span>
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-3">
         <button onClick={onToggleDefault} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          Set default
+          {t('setDefault')}
         </button>
         <button onClick={onToggleActive} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          {account.is_active ? 'Deactivate' : 'Activate'}
+          {account.is_active ? t('deactivate') : t('activate')}
         </button>
       </div>
     </div>
@@ -884,10 +889,10 @@ function sortBankAccounts(accounts: SupplierBankAccount[]) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return 'n/a';
+  if (!value) return '—';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(undefined, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

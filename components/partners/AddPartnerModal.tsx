@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   ArrowLeft,
@@ -64,6 +65,7 @@ type Props = {
 };
 
 export function AddPartnerModal({ open, onClose, onCreated }: Props) {
+  const t = useTranslations('accounting');
   const [step, setStep] = useState<1 | 2>(1);
   const [registryQuery, setRegistryQuery] = useState('');
   const [registryResults, setRegistryResults] = useState<BusinessRegistrySearchItem[]>([]);
@@ -110,7 +112,7 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
       const result = await businessRegistryApi.searchCompanies(registryQuery);
       setRegistryResults(result.items);
       if (result.items.length === 0) {
-        setErrorMessage('No Business Registry matches found.');
+        setErrorMessage(t('noBusinessRegistryMatchesFound'));
       }
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -121,7 +123,7 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
 
   const handleSelectCompany = async (item: BusinessRegistrySearchItem) => {
     if (!item.registryCode) {
-      setErrorMessage('Selected result has no registry code.');
+      setErrorMessage(t('selectedResultHasNoRegistryCode'));
       return;
     }
     setLoading(`company-${item.registryCode}`);
@@ -221,14 +223,14 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-900">
-                {step === 1 ? 'Add New Partner' : selectedCompany ? 'Create Partner' : 'Create Partner Manually'}
+                {step === 1 ? t('addNewPartner') : selectedCompany ? t('createPartner') : t('createPartnerManually')}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 {step === 1
-                  ? 'Search the Estonian Business Registry to auto-fill company details, or create a partner manually.'
+                  ? t('addPartnerStepOneDescription')
                   : selectedCompany
-                    ? `Pre-filled from ${selectedCompany.name || selectedCompany.registryCode}. Review and adjust.`
-                    : 'Fill in the partner details below.'}
+                    ? t('prefilledFromCompany', { company: selectedCompany.name || selectedCompany.registryCode || '' })
+                    : t('fillPartnerDetailsBelow')}
               </p>
             </div>
             <button
@@ -292,6 +294,7 @@ function StepOne({
   onSelectCompany: (item: BusinessRegistrySearchItem) => void;
   onCreateManually: () => void;
 }) {
+  const t = useTranslations('accounting');
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -301,7 +304,7 @@ function StepOne({
           onKeyDown={(e) => {
             if (e.key === 'Enter' && registryQuery.trim().length >= 2) onSearch();
           }}
-          placeholder="Company name or registry code"
+          placeholder={t('companyNameOrRegistryCode')}
           className="h-11 rounded-lg border border-slate-200 px-3"
           autoFocus
         />
@@ -311,7 +314,7 @@ function StepOne({
           className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {loading === 'search' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          <span>Search registry</span>
+          <span>{t('searchRegistry')}</span>
         </button>
       </div>
 
@@ -325,9 +328,9 @@ function StepOne({
               className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-left transition hover:border-[var(--primary)] hover:bg-blue-50/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <div className="min-w-0">
-                <div className="text-sm font-medium text-slate-900">{item.name || 'Unnamed company'}</div>
+                <div className="text-sm font-medium text-slate-900">{item.name || t('unnamedCompany')}</div>
                 <div className="mt-1 text-xs text-slate-500">
-                  {item.registryCode || 'No registry code'} · {item.vatNumber || 'No VAT'} · {item.registryStatus || 'No status'}
+                  {item.registryCode || t('noRegistryCode')} · {item.vatNumber || t('noVat')} · {item.registryStatus || t('noStatus')}
                 </div>
               </div>
               {loading === `company-${item.registryCode}` ? (
@@ -341,14 +344,14 @@ function StepOne({
       )}
 
       <div className="flex items-center gap-3 text-sm text-slate-400 before:flex-1 before:h-px before:bg-slate-200 after:flex-1 after:h-px after:bg-slate-200">
-        or
+        {t('or')}
       </div>
 
       <button
         onClick={onCreateManually}
         className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
       >
-        Create manually
+        {t('createManually')}
       </button>
     </div>
   );
@@ -371,66 +374,67 @@ function StepTwo({
   onCheckDuplicates: () => void;
   onCreate: () => void;
 }) {
+  const t = useTranslations('accounting');
   return (
     <div className="space-y-4">
       {/* Identity */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Identity</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">{t('identity')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ModalField label="Type" value={form.type} onChange={(v) => setForm((c) => ({ ...c, type: v as PartnerFormState['type'] }))} as="select" options={[
-            { label: 'Customer', value: 'customer' },
-            { label: 'Supplier', value: 'supplier' },
-            { label: 'Both', value: 'both' },
+          <ModalField label={t('type')} value={form.type} onChange={(v) => setForm((c) => ({ ...c, type: v as PartnerFormState['type'] }))} as="select" options={[
+            { label: t('customer'), value: 'customer' },
+            { label: t('supplier'), value: 'supplier' },
+            { label: t('both'), value: 'both' },
           ]} />
-          <ModalField label="Name" value={form.name} onChange={(v) => setForm((c) => ({ ...c, name: v }))} />
-          <ModalField label="Code" value={form.code} onChange={(v) => setForm((c) => ({ ...c, code: v }))} />
+          <ModalField label={t('name')} value={form.name} onChange={(v) => setForm((c) => ({ ...c, name: v }))} />
+          <ModalField label={t('code')} value={form.code} onChange={(v) => setForm((c) => ({ ...c, code: v }))} />
         </div>
       </div>
 
       {/* Registration */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Registration</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('registration')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ModalField label="Registry code" value={form.reg_code} onChange={(v) => setForm((c) => ({ ...c, reg_code: v }))} />
-          <ModalField label="VAT number" value={form.vat_number} onChange={(v) => setForm((c) => ({ ...c, vat_number: v.toUpperCase() }))} />
+          <ModalField label={t('registryCode')} value={form.reg_code} onChange={(v) => setForm((c) => ({ ...c, reg_code: v }))} />
+          <ModalField label={t('vatNumber')} value={form.vat_number} onChange={(v) => setForm((c) => ({ ...c, vat_number: v.toUpperCase() }))} />
         </div>
       </div>
 
       {/* Contact */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Contact</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('contact')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ModalField label="Email" value={form.email} onChange={(v) => setForm((c) => ({ ...c, email: v }))} />
-          <ModalField label="Phone" value={form.phone} onChange={(v) => setForm((c) => ({ ...c, phone: v }))} />
-          <ModalField label="Website" value={form.website} onChange={(v) => setForm((c) => ({ ...c, website: v }))} />
+          <ModalField label={t('email')} value={form.email} onChange={(v) => setForm((c) => ({ ...c, email: v }))} />
+          <ModalField label={t('phone')} value={form.phone} onChange={(v) => setForm((c) => ({ ...c, phone: v }))} />
+          <ModalField label={t('website')} value={form.website} onChange={(v) => setForm((c) => ({ ...c, website: v }))} />
         </div>
       </div>
 
       {/* Location */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Location</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('location')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ModalField label="Country code" value={form.country_code} onChange={(v) => setForm((c) => ({ ...c, country_code: v.toUpperCase() }))} />
-          <ModalField label="City" value={form.city} onChange={(v) => setForm((c) => ({ ...c, city: v }))} />
-          <ModalField label="Postal code" value={form.postal_code} onChange={(v) => setForm((c) => ({ ...c, postal_code: v }))} />
+          <ModalField label={t('countryCode')} value={form.country_code} onChange={(v) => setForm((c) => ({ ...c, country_code: v.toUpperCase() }))} />
+          <ModalField label={t('city')} value={form.city} onChange={(v) => setForm((c) => ({ ...c, city: v }))} />
+          <ModalField label={t('postalCode')} value={form.postal_code} onChange={(v) => setForm((c) => ({ ...c, postal_code: v }))} />
         </div>
         <div className="mt-3">
-          <ModalField label="Address" value={form.address} onChange={(v) => setForm((c) => ({ ...c, address: v }))} />
+          <ModalField label={t('address')} value={form.address} onChange={(v) => setForm((c) => ({ ...c, address: v }))} />
         </div>
       </div>
 
       {/* Billing */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Billing</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('billing')}</div>
         <div className="grid gap-3 sm:grid-cols-2">
-          <ModalField label="Payment terms days" value={form.payment_terms_days} onChange={(v) => setForm((c) => ({ ...c, payment_terms_days: v }))} />
+          <ModalField label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(v) => setForm((c) => ({ ...c, payment_terms_days: v }))} />
         </div>
       </div>
 
       {/* Notes */}
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">Other</div>
-        <ModalField label="Notes" value={form.notes} onChange={(v) => setForm((c) => ({ ...c, notes: v }))} as="textarea" />
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('other')}</div>
+        <ModalField label={t('notes')} value={form.notes} onChange={(v) => setForm((c) => ({ ...c, notes: v }))} as="textarea" />
       </div>
 
       {/* Duplicate warnings */}
@@ -438,14 +442,14 @@ function StepTwo({
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-900">
             <ShieldAlert className="h-4 w-4" />
-            <span>Potential duplicates found</span>
+            <span>{t('potentialDuplicatesFound')}</span>
           </div>
           <div className="space-y-2">
             {duplicateWarnings.map((w) => (
               <div key={w.partner.id} className="rounded-lg border border-amber-200 bg-white p-3 text-sm text-amber-900">
                 <div className="font-medium">{w.partner.name}</div>
                 <div className="mt-1 text-xs text-amber-700">
-                  {w.match_type} · severity {w.severity} · roles {w.roles.join(', ') || 'none'}
+                  {w.match_type} · {t('severityValue', { value: w.severity })} · {t('rolesValue', { roles: w.roles.join(', ') || t('none') })}
                 </div>
               </div>
             ))}
@@ -460,7 +464,7 @@ function StepTwo({
           className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Back</span>
+          <span>{t('back')}</span>
         </button>
 
         <div className="flex gap-3">
@@ -470,7 +474,7 @@ function StepTwo({
             className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading === 'check-duplicates' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
-            <span>Check duplicates</span>
+            <span>{t('checkDuplicates')}</span>
           </button>
           <button
             onClick={onCreate}
@@ -478,7 +482,7 @@ function StepTwo({
             className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            <span>Create partner</span>
+            <span>{t('createPartnerButton')}</span>
           </button>
         </div>
       </div>
