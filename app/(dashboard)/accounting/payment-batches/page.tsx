@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -30,6 +31,7 @@ type DraftLine = {
 };
 
 export default function PaymentBatchesPage() {
+  const t = useTranslations('accounting');
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
   const [batches, setBatches] = useState<PaymentBatchListItem[]>([]);
@@ -150,7 +152,7 @@ export default function PaymentBatchesPage() {
         description: line.description || '',
         warning_flags: line.warning_flags || [],
       })));
-      setSuccessMessage('Draft lines prefilled from payable invoices.');
+      setSuccessMessage(t('draftLinesPrefilled'));
     });
   };
 
@@ -172,7 +174,7 @@ export default function PaymentBatchesPage() {
           description: line.description || undefined,
         })),
       });
-      setSuccessMessage('Payment batch created.');
+      setSuccessMessage(t('paymentBatchCreated'));
       setSelectedInvoiceIds([]);
       setDraftLines([]);
       await refreshBatches(result.batch.id);
@@ -185,7 +187,7 @@ export default function PaymentBatchesPage() {
     if (!selectedBatchId) return;
     await runAction('generate-csv', async () => {
       await bankingApi.generatePaymentBatch(selectedBatchId);
-      setSuccessMessage('CSV export generated.');
+      setSuccessMessage(t('csvExportGenerated'));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -194,7 +196,7 @@ export default function PaymentBatchesPage() {
     if (!selectedBatchId) return;
     await runAction('generate-pain', async () => {
       await bankingApi.generatePaymentBatchPain001(selectedBatchId);
-      setSuccessMessage('PAIN.001 export generated.');
+      setSuccessMessage(t('painExportGenerated'));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -203,7 +205,7 @@ export default function PaymentBatchesPage() {
     if (!selectedBatchId) return;
     await runAction('uploaded', async () => {
       await bankingApi.confirmPaymentBatchUploaded(selectedBatchId);
-      setSuccessMessage('Batch marked uploaded.');
+      setSuccessMessage(t('batchMarkedUploaded'));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -212,7 +214,7 @@ export default function PaymentBatchesPage() {
     if (!selectedBatchId) return;
     await runAction('executed', async () => {
       const result = await bankingApi.confirmPaymentBatchExecuted(selectedBatchId);
-      setSuccessMessage(`Batch executed. Payments created: ${result.payments_created ?? 0}.`);
+      setSuccessMessage(t('batchExecutedPaymentsCreated', { count: result.payments_created ?? 0 }));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -221,7 +223,7 @@ export default function PaymentBatchesPage() {
     if (!selectedBatchId) return;
     await runAction('void', async () => {
       await bankingApi.voidPaymentBatch(selectedBatchId, { reason: voidReason || undefined });
-      setSuccessMessage('Batch voided.');
+      setSuccessMessage(t('batchVoided'));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -229,10 +231,9 @@ export default function PaymentBatchesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Payment Batches</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('paymentBatches')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Select payable purchase invoices, prefill supplier payment lines, create an outgoing payment batch, export
-          CSV or PAIN.001, then confirm upload and execution.
+          {t('paymentBatchesDescription')}
         </p>
       </div>
 
@@ -258,19 +259,19 @@ export default function PaymentBatchesPage() {
         <section className="space-y-4">
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Create batch</h2>
-              <p className="mt-1 text-sm text-slate-500">Prefill from purchase invoices that are approved, payable, or partially paid.</p>
+              <h2 className="text-base font-semibold text-slate-900">{t('createBatch')}</h2>
+              <p className="mt-1 text-sm text-slate-500">{t('createBatchDescription')}</p>
             </div>
             <div className="space-y-5 p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label className="space-y-2">
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bank account</span>
+                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('bankAccount')}</span>
                   <select
                     value={bankAccountId}
                     onChange={(event) => setBankAccountId(event.target.value)}
                     className="h-11 w-full rounded-lg border border-slate-200 px-3"
                   >
-                    <option value="">Select bank account</option>
+                    <option value="">{t('selectBankAccount')}</option>
                     {bankAccounts.map((account) => (
                       <option key={account.id} value={account.id}>
                         {account.name} {account.iban ? `· ${account.iban}` : ''}
@@ -278,16 +279,16 @@ export default function PaymentBatchesPage() {
                     ))}
                   </select>
                 </label>
-                <Field label="Batch name" value={batchName} onChange={setBatchName} placeholder="Optional batch name" />
-                <Field label="Execution date" type="date" value={executionDate} onChange={setExecutionDate} />
-                <Field label="Currency" value={currency} onChange={(value) => setCurrency(value.toUpperCase())} />
+                <Field label={t('batchName')} value={batchName} onChange={setBatchName} placeholder={t('optionalBatchName')} />
+                <Field label={t('executionDate')} type="date" value={executionDate} onChange={setExecutionDate} />
+                <Field label={t('currency')} value={currency} onChange={(value) => setCurrency(value.toUpperCase())} />
               </div>
 
               <div className="rounded-xl border border-slate-200">
                 <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                   <div>
-                    <h3 className="text-sm font-semibold text-slate-900">Payable invoices</h3>
-                    <p className="text-xs text-slate-500">Choose invoices to prefill batch lines.</p>
+                    <h3 className="text-sm font-semibold text-slate-900">{t('payableInvoices')}</h3>
+                    <p className="text-xs text-slate-500">{t('chooseInvoicesToPrefill')}</p>
                   </div>
                   <button
                     onClick={handlePrefill}
@@ -295,14 +296,14 @@ export default function PaymentBatchesPage() {
                     className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'prefill' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-                    <span>Prefill lines</span>
+                    <span>{t('prefillLines')}</span>
                   </button>
                 </div>
                 <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
                   {isBootLoading ? (
-                    <div className="p-4 text-sm text-slate-500">Loading invoices…</div>
+                    <div className="p-4 text-sm text-slate-500">{t('loadingInvoices')}</div>
                   ) : invoices.length === 0 ? (
-                    <div className="p-4 text-sm text-slate-500">No payable purchase invoices available.</div>
+                    <div className="p-4 text-sm text-slate-500">{t('noPayablePurchaseInvoices')}</div>
                   ) : (
                     invoices.map((invoice) => {
                       const openAmount = Number(invoice.open_amount ?? invoice.total ?? 0);
@@ -320,7 +321,7 @@ export default function PaymentBatchesPage() {
                               {invoice.invoice_number || invoice.id.slice(0, 8)}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
-                              Status {invoice.status} · due {invoice.due_date || '-'} · open {openAmount.toFixed(2)} {invoice.currency}
+                              {t('statusValue', { value: invoice.status })} · {t('dueValue', { value: invoice.due_date || '-' })} · {t('openAmountValue', { amount: openAmount.toFixed(2), currency: invoice.currency })}
                             </div>
                           </div>
                         </label>
@@ -332,38 +333,38 @@ export default function PaymentBatchesPage() {
 
               <div className="rounded-xl border border-slate-200">
                 <div className="border-b border-slate-200 px-4 py-3">
-                  <h3 className="text-sm font-semibold text-slate-900">Draft lines</h3>
+                  <h3 className="text-sm font-semibold text-slate-900">{t('draftLines')}</h3>
                 </div>
                 <div className="space-y-3 p-4">
                   {draftLines.length === 0 ? (
-                    <div className="text-sm text-slate-500">Prefill lines from selected invoices first.</div>
+                    <div className="text-sm text-slate-500">{t('prefillLinesFirst')}</div>
                   ) : (
                     draftLines.map((line, index) => (
                       <div key={`${line.invoice_id}-${index}`} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
                         <div className="lg:col-span-2">
-                          <SmallField label="Invoice" value={line.invoice_id.slice(0, 8)} readOnly />
+                          <SmallField label={t('invoice')} value={line.invoice_id.slice(0, 8)} readOnly />
                         </div>
                         <div className="lg:col-span-2">
-                          <SmallField label="Amount" value={line.amount} onChange={(value) => updateDraftLine(setDraftLines, index, 'amount', value)} />
+                          <SmallField label={t('amount')} value={line.amount} onChange={(value) => updateDraftLine(setDraftLines, index, 'amount', value)} />
                         </div>
                         <div className="lg:col-span-3">
-                          <SmallField label="Payee" value={line.payee_name} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_name', value)} />
+                          <SmallField label={t('payee')} value={line.payee_name} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_name', value)} />
                         </div>
                         <div className="lg:col-span-3">
-                          <SmallField label="IBAN" value={line.payee_iban} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_iban', value)} />
+                          <SmallField label={t('iban')} value={line.payee_iban} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_iban', value)} />
                         </div>
                         <div className="lg:col-span-2">
-                          <SmallField label="BIC" value={line.payee_bic} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_bic', value)} />
+                          <SmallField label={t('bic')} value={line.payee_bic} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_bic', value)} />
                         </div>
                         <div className="lg:col-span-4">
-                          <SmallField label="Reference" value={line.reference} onChange={(value) => updateDraftLine(setDraftLines, index, 'reference', value)} />
+                          <SmallField label={t('reference')} value={line.reference} onChange={(value) => updateDraftLine(setDraftLines, index, 'reference', value)} />
                         </div>
                         <div className="lg:col-span-8">
-                          <SmallField label="Description" value={line.description} onChange={(value) => updateDraftLine(setDraftLines, index, 'description', value)} />
+                          <SmallField label={t('description')} value={line.description} onChange={(value) => updateDraftLine(setDraftLines, index, 'description', value)} />
                         </div>
                         {line.warning_flags && line.warning_flags.length > 0 && (
                           <div className="lg:col-span-12 text-xs text-amber-700">
-                            Warnings: {line.warning_flags.join(', ')}
+                            {t('warningsValue', { warnings: line.warning_flags.join(', ') })}
                           </div>
                         )}
                       </div>
@@ -378,7 +379,7 @@ export default function PaymentBatchesPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {actionLoading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                <span>Create batch</span>
+                <span>{t('createBatch')}</span>
               </button>
             </div>
           </div>
@@ -388,8 +389,8 @@ export default function PaymentBatchesPage() {
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
               <div>
-                <h2 className="text-base font-semibold text-slate-900">Existing batches</h2>
-                <p className="mt-1 text-sm text-slate-500">Draft, generated, uploaded, confirmed, and voided batches.</p>
+                <h2 className="text-base font-semibold text-slate-900">{t('existingBatches')}</h2>
+                <p className="mt-1 text-sm text-slate-500">{t('existingBatchesDescription')}</p>
               </div>
               <button
                 onClick={() => void refreshBatches(selectedBatchId)}
@@ -400,7 +401,7 @@ export default function PaymentBatchesPage() {
             </div>
             <div className="divide-y divide-slate-100">
               {batches.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No payment batches yet.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noPaymentBatchesYet')}</div>
               ) : (
                 batches.map((batch) => (
                   <button
@@ -412,7 +413,7 @@ export default function PaymentBatchesPage() {
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-900">{batch.batch_name || batch.id.slice(0, 8)}</div>
                         <div className="mt-1 text-xs text-slate-500">
-                          {batch.line_count || 0} lines · {Number(batch.total_amount || 0).toFixed(2)} {batch.currency}
+                          {t('linesCount', { count: batch.line_count || 0 })} · {Number(batch.total_amount || 0).toFixed(2)} {batch.currency}
                         </div>
                       </div>
                       <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
@@ -428,17 +429,17 @@ export default function PaymentBatchesPage() {
           {selectedBatch && (
             <div className="card overflow-hidden">
               <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                <h2 className="text-base font-semibold text-slate-900">Batch detail</h2>
+                <h2 className="text-base font-semibold text-slate-900">{t('batchDetail')}</h2>
                 <p className="mt-1 text-sm text-slate-500">
                   {selectedBatch.batch.batch_name || selectedBatch.batch.id.slice(0, 8)} · {selectedBatch.batch.status}
                 </p>
               </div>
               <div className="space-y-4 p-5">
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <InfoBox label="Bank account" value={selectedBatch.batch.bank_account_iban || selectedBatch.batch.bank_account_id} />
-                  <InfoBox label="Execution date" value={selectedBatch.batch.execution_date || '-'} />
-                  <InfoBox label="Export format" value={selectedBatch.batch.exported_file_format || '-'} />
-                  <InfoBox label="Lines" value={String(selectedBatch.summary.line_count || 0)} />
+                  <InfoBox label={t('bankAccount')} value={selectedBatch.batch.bank_account_iban || selectedBatch.batch.bank_account_id} />
+                  <InfoBox label={t('executionDate')} value={selectedBatch.batch.execution_date || '-'} />
+                  <InfoBox label={t('exportFormat')} value={selectedBatch.batch.exported_file_format || '-'} />
+                  <InfoBox label={t('lines')} value={String(selectedBatch.summary.line_count || 0)} />
                 </div>
 
                 <div className="grid gap-3">
@@ -448,7 +449,7 @@ export default function PaymentBatchesPage() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'generate-csv' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>Generate CSV</span>
+                    <span>{t('generateCsv')}</span>
                   </button>
                   <button
                     onClick={handleGeneratePain}
@@ -456,7 +457,7 @@ export default function PaymentBatchesPage() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'generate-pain' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
-                    <span>Generate PAIN.001</span>
+                    <span>{t('generatePain')}</span>
                   </button>
                   <button
                     onClick={handleConfirmUploaded}
@@ -464,7 +465,7 @@ export default function PaymentBatchesPage() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'uploaded' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                    <span>Confirm uploaded</span>
+                    <span>{t('confirmUploaded')}</span>
                   </button>
                   <button
                     onClick={handleConfirmExecuted}
@@ -472,16 +473,16 @@ export default function PaymentBatchesPage() {
                     className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'executed' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                    <span>Confirm executed</span>
+                    <span>{t('confirmExecuted')}</span>
                   </button>
                 </div>
 
                 <div className="rounded-xl border border-slate-200 p-4">
-                  <div className="mb-2 text-sm font-semibold text-slate-900">Void batch</div>
+                  <div className="mb-2 text-sm font-semibold text-slate-900">{t('voidBatch')}</div>
                   <input
                     value={voidReason}
                     onChange={(event) => setVoidReason(event.target.value)}
-                    placeholder="Reason for voiding"
+                    placeholder={t('reasonForVoiding')}
                     className="h-10 w-full rounded-lg border border-slate-200 px-3"
                   />
                   <button
@@ -490,13 +491,13 @@ export default function PaymentBatchesPage() {
                     className="mt-3 inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'void' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-                    <span>Void batch</span>
+                    <span>{t('voidBatch')}</span>
                   </button>
                 </div>
 
                 {selectedBatch.batch.exported_file_content && (
                   <div className="rounded-xl border border-slate-200">
-                    <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Export preview</div>
+                    <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">{t('exportPreview')}</div>
                     <pre className="max-h-64 overflow-auto whitespace-pre-wrap p-4 text-xs text-slate-700">
                       {String(selectedBatch.batch.exported_file_content).slice(0, 8000)}
                     </pre>
@@ -504,7 +505,7 @@ export default function PaymentBatchesPage() {
                 )}
 
                 <div className="rounded-xl border border-slate-200">
-                  <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">Batch lines</div>
+                  <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">{t('batchLines')}</div>
                   <div className="max-h-72 overflow-auto divide-y divide-slate-100">
                     {selectedBatch.lines.map((line) => (
                       <div key={line.id} className="px-4 py-3">
@@ -514,7 +515,7 @@ export default function PaymentBatchesPage() {
                               {line.invoice_number || line.invoice_id.slice(0, 8)} · {line.payee_name}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
-                              {line.payee_iban} · {line.reference || 'No reference'}
+                              {line.payee_iban} · {line.reference || t('noReference')}
                             </div>
                           </div>
                           <div className="text-right text-xs text-slate-600">

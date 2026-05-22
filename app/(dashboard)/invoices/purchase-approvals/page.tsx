@@ -275,7 +275,11 @@ export default function PurchaseApprovalQueuePage() {
                       </div>
                     </div>
                     <div className="mt-2 text-xs text-slate-500">
-                      {t('due')} {invoice.due_date || '-'} · {approvalAgeLabel(invoice, t)}
+                      {t('due')} {invoice.due_date || '-'} · {approvalAgeLabel(invoice, {
+                        ageUnavailable: t('ageUnavailable'),
+                        today: t('today'),
+                        daysInQueue: (count) => t('daysInQueue', { count }),
+                      })}
                     </div>
                   </button>
                 ))
@@ -460,15 +464,22 @@ function humanizeStatus(status: string) {
     .join(' ');
 }
 
-function approvalAgeLabel(invoice: InvoiceListItem, t: (key: string) => string) {
+function approvalAgeLabel(
+  invoice: InvoiceListItem,
+  labels: {
+    ageUnavailable: string;
+    today: string;
+    daysInQueue: (count: string) => string;
+  }
+) {
   const anchor = invoice.approval_requested_at || invoice.created_at;
   const anchorDate = new Date(anchor);
   if (Number.isNaN(anchorDate.getTime())) {
-    return t('ageUnavailable');
+    return labels.ageUnavailable;
   }
   const today = new Date();
   anchorDate.setHours(0, 0, 0, 0);
   today.setHours(0, 0, 0, 0);
   const diff = Math.max(0, Math.round((today.getTime() - anchorDate.getTime()) / (1000 * 60 * 60 * 24)));
-  return diff === 0 ? t('today') : t('daysInQueue', { count: String(diff) } as any);
+  return diff === 0 ? labels.today : labels.daysInQueue(String(diff));
 }

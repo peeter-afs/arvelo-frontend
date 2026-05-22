@@ -946,7 +946,7 @@ export default function SettingsPage() {
                             await reloadBilling();
                             setSettingsSuccess(
                               result.sent
-                                ? t('annualBalanceSent', { recipient: result.recipient })
+                                ? t('annualBalanceSent', { recipient: result.recipient || '' })
                                 : result.skipped_reason
                                   ? t('noMessageSentWithReason', { reason: result.skipped_reason })
                                   : t('noMessageSent'),

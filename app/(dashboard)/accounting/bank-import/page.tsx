@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type DragEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -40,6 +41,7 @@ function detectStatementIban(fileContent: string): string | null {
 }
 
 export default function BankImportPage() {
+  const t = useTranslations('accounting');
   const [file, setFile] = useState<File | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
@@ -90,9 +92,9 @@ export default function BankImportPage() {
 
     if (sourceType === 'csv' && !bankAccountId.trim()) {
       setFile(nextFile);
-      setErrorMessage('Bank account selection is still required before CSV import can start.');
+      setErrorMessage(t('bankAccountSelectionRequiredBeforeCsv'));
       setSuccessMessage(null);
-      setPendingMessage(`File ${nextFile.name} is ready. Add the bank account id and upload again to start parsing.`);
+      setPendingMessage(t('fileReadyAddBankAccount', { file: nextFile.name }));
       return;
     }
 
@@ -117,7 +119,7 @@ export default function BankImportPage() {
       setJob(parsed.job);
       setPreviewRows(parsed.preview_rows);
       setSummary(parsed.summary);
-      setSuccessMessage(`Bank file ${nextFile.name} was uploaded, recognized as ${sourceType.toUpperCase()}, and parsed automatically.`);
+      setSuccessMessage(t('bankFileUploadedParsed', { file: nextFile.name, format: sourceType.toUpperCase() }));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -163,7 +165,7 @@ export default function BankImportPage() {
       setJob(result.job);
       setPreviewRows(result.preview_rows);
       setSummary(result.summary);
-      setSuccessMessage('Statement parsed into preview rows.');
+      setSuccessMessage(t('statementParsedIntoPreviewRows'));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -179,7 +181,7 @@ export default function BankImportPage() {
   const handleBankAccountIdChange = (value: string) => {
     setBankAccountId(value);
     if (pendingMessage && value.trim()) {
-      setPendingMessage('Bank account id is now filled. Re-upload the file to start import.');
+      setPendingMessage(t('bankAccountIdFilledReupload'));
     }
   };
 
@@ -195,7 +197,7 @@ export default function BankImportPage() {
       const result = await bankingApi.commitImportJob(job.id);
       setJob(result.job);
       setCommitSummary(result.summary);
-      setSuccessMessage('Approved bank rows imported into banking transactions.');
+      setSuccessMessage(t('approvedBankRowsImported'));
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -206,10 +208,9 @@ export default function BankImportPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Bank Import</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('bankImport')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Upload a bank statement, parse preview rows, inspect duplicate and validation warnings, and commit only the
-          rows the backend currently marks safe. Parsing does not create accounting entries.
+          {t('bankImportDescription')}
         </p>
       </div>
 
@@ -248,20 +249,20 @@ export default function BankImportPage() {
                 <Upload className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-slate-900">Upload bank file</div>
-                <div className="text-xs text-slate-500">Drop CSV or CAMT.053 XML and parsing starts automatically</div>
+                <div className="text-sm font-semibold text-slate-900">{t('uploadBankFile')}</div>
+                <div className="text-xs text-slate-500">{t('uploadBankFileDescription')}</div>
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Bank account</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('bankAccount')}</span>
                 <select
                   value={bankAccountId}
                   onChange={(event) => handleBankAccountIdChange(event.target.value)}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3"
                 >
-                  <option value="">{detectedFormat === 'csv' ? 'Select bank account' : 'Optional fallback for CAMT.053'}</option>
+                  <option value="">{detectedFormat === 'csv' ? t('selectBankAccount') : t('optionalFallbackCamt53')}</option>
                   {bankAccounts.map((account) => (
                     <option key={account.id} value={account.id}>
                       {account.name} {account.iban ? `· ${account.iban}` : ''}
@@ -273,12 +274,11 @@ export default function BankImportPage() {
               {detectedFormat === 'camt53' && (
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-6 text-slate-600">
                   <div>
-                    <span className="font-semibold text-slate-900">Detected statement IBAN:</span>{' '}
-                    {detectedStatementIban || 'Not detected yet'}
+                    <span className="font-semibold text-slate-900">{t('detectedStatementIban')}:</span>{' '}
+                    {detectedStatementIban || t('notDetectedYet')}
                   </div>
                   <div>
-                    If this IBAN exists in bank account settings, the import continues automatically. If not, add it in
-                    settings and retry.
+                    {t('camtIbanInstruction')}
                   </div>
                 </div>
               )}
@@ -293,10 +293,10 @@ export default function BankImportPage() {
                     : 'border-slate-300 bg-slate-50 text-slate-600'
                 }`}
               >
-                <span className="mb-2 block font-medium text-slate-700">Statement file</span>
+                <span className="mb-2 block font-medium text-slate-700">{t('statementFile')}</span>
                 <span className="mb-3 flex items-center gap-2 text-xs text-slate-500">
                   <Upload className="h-4 w-4" />
-                  Drag and drop here or select a file. Format is detected automatically.
+                  {t('dragDropBankFile')}
                 </span>
                 <input
                   type="file"
@@ -304,7 +304,7 @@ export default function BankImportPage() {
                   onChange={(event) => void handleFileSelected(event.target.files?.[0] || null)}
                   className="block w-full text-sm text-slate-500"
                 />
-                {file && <span className="mt-3 block text-xs text-slate-500">Current file: {file.name}</span>}
+                {file && <span className="mt-3 block text-xs text-slate-500">{t('currentFile', { file: file.name })}</span>}
               </label>
 
               <button
@@ -313,32 +313,32 @@ export default function BankImportPage() {
                 className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCreating ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileUp className="h-4 w-4" />}
-                <span>{isCreating ? 'Uploading…' : 'Upload current file again'}</span>
+                <span>{isCreating ? t('uploading') : t('uploadCurrentFileAgain')}</span>
               </button>
             </div>
           </div>
 
           <div className="card p-5">
-            <h2 className="text-sm font-semibold text-slate-900">Workflow</h2>
+            <h2 className="text-sm font-semibold text-slate-900">{t('workflow')}</h2>
             <ol className="mt-3 space-y-2 text-sm text-slate-600">
-              <li>1. Drop or select the bank file. CSV still needs a bank account id, CAMT.053 tries to resolve it from the file IBAN.</li>
-              <li>2. The frontend detects CSV or CAMT.053 and starts create plus parse automatically.</li>
-              <li>3. Review warnings and commit only rows already approved by backend rules.</li>
+              <li>{t('bankImportStep1')}</li>
+              <li>{t('bankImportStep2')}</li>
+              <li>{t('bankImportStep3')}</li>
             </ol>
             <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs leading-6 text-amber-800">
-              Per-row approval editing is not exposed by the backend yet. Rows with warnings stay review-only in this UI.
+              {t('bankImportApprovalNote')}
             </div>
           </div>
 
           {job && (
             <div className="card p-5">
-              <h2 className="text-sm font-semibold text-slate-900">Current job</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{t('currentJob')}</h2>
               <div className="mt-3 space-y-2 text-sm text-slate-600">
-                <div><span className="font-medium text-slate-900">File:</span> {job.file_name}</div>
-                <div><span className="font-medium text-slate-900">Status:</span> {job.status}</div>
-                <div><span className="font-medium text-slate-900">Format:</span> {job.source_type || 'auto-detected'}</div>
+                <div><span className="font-medium text-slate-900">{t('fileLabel')}:</span> {job.file_name}</div>
+                <div><span className="font-medium text-slate-900">{t('status')}:</span> {job.status}</div>
+                <div><span className="font-medium text-slate-900">{t('format')}:</span> {job.source_type || t('autoDetected')}</div>
                 {summary?.detected_statement_iban && (
-                  <div><span className="font-medium text-slate-900">Statement IBAN:</span> {String(summary.detected_statement_iban)}</div>
+                  <div><span className="font-medium text-slate-900">{t('statementIban')}:</span> {String(summary.detected_statement_iban)}</div>
                 )}
               </div>
               <div className="mt-4 flex flex-wrap gap-3">
@@ -348,7 +348,7 @@ export default function BankImportPage() {
                   className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <TableProperties className="h-4 w-4" />}
-                  <span>Parse</span>
+                  <span>{t('parse')}</span>
                 </button>
                 <button
                   onClick={handleCommit}
@@ -356,7 +356,7 @@ export default function BankImportPage() {
                   className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isCommitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  <span>Commit approved rows</span>
+                  <span>{t('commitApprovedRows')}</span>
                 </button>
               </div>
             </div>
@@ -365,31 +365,31 @@ export default function BankImportPage() {
 
         <section className="space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
-            <SummaryCard label="Preview rows" value={counts.total} icon={TableProperties} tone="neutral" />
-            <SummaryCard label="Approved" value={counts.approved} icon={ShieldCheck} tone="success" />
-            <SummaryCard label="Needs review" value={counts.review} icon={ShieldAlert} tone="warning" />
+            <SummaryCard label={t('previewRows')} value={counts.total} icon={TableProperties} tone="neutral" />
+            <SummaryCard label={t('approved')} value={counts.approved} icon={ShieldCheck} tone="success" />
+            <SummaryCard label={t('needsReview')} value={counts.review} icon={ShieldAlert} tone="warning" />
           </div>
 
           {(summary || commitSummary) && (
             <div className="grid gap-4 lg:grid-cols-2">
               {summary && (
                 <div className="card p-5">
-                  <h2 className="text-sm font-semibold text-slate-900">Parse summary</h2>
+                  <h2 className="text-sm font-semibold text-slate-900">{t('parseSummary')}</h2>
                   <div className="mt-3 space-y-2 text-sm text-slate-600">
-                    <div>Source type: {summary.source_type}</div>
-                    <div>Parsed rows: {summary.parsed_row_count}</div>
-                    <div>Approved rows: {summary.approved_row_count}</div>
-                    <div>Review rows: {summary.review_row_count}</div>
+                    <div>{t('sourceType')}: {summary.source_type}</div>
+                    <div>{t('parsedRows')}: {summary.parsed_row_count}</div>
+                    <div>{t('approvedRows')}: {summary.approved_row_count}</div>
+                    <div>{t('reviewRows')}: {summary.review_row_count}</div>
                   </div>
                 </div>
               )}
               {commitSummary && (
                 <div className="card p-5">
-                  <h2 className="text-sm font-semibold text-slate-900">Commit summary</h2>
+                  <h2 className="text-sm font-semibold text-slate-900">{t('commitSummary')}</h2>
                   <div className="mt-3 space-y-2 text-sm text-slate-600">
-                    <div>Imported rows: {commitSummary.imported_count}</div>
-                    <div>Skipped duplicates: {commitSummary.skipped_duplicate_count}</div>
-                    <div>Approved rows sent: {commitSummary.approved_row_count}</div>
+                    <div>{t('importedRows')}: {commitSummary.imported_count}</div>
+                    <div>{t('skippedDuplicates')}: {commitSummary.skipped_duplicate_count}</div>
+                    <div>{t('approvedRowsSent')}: {commitSummary.approved_row_count}</div>
                   </div>
                 </div>
               )}
@@ -398,25 +398,25 @@ export default function BankImportPage() {
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Preview rows</h2>
+              <h2 className="text-base font-semibold text-slate-900">{t('previewRows')}</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Transactions marked with warnings are visible here but will not be committed by the current backend flow.
+                {t('previewRowsDescription')}
               </p>
             </div>
 
             {previewRows.length === 0 ? (
-              <div className="p-8 text-sm text-slate-500">Parse an import job to inspect normalized bank statement rows.</div>
+              <div className="p-8 text-sm text-slate-500">{t('parseJobToInspect')}</div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full">
                   <thead className="bg-slate-50/80">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Row</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Counterparty</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Reference</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('row')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('date')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('counterparty')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('reference')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">{t('amount')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white">
@@ -425,7 +425,7 @@ export default function BankImportPage() {
                         <td className="px-4 py-4 text-sm text-slate-700">{row.row_no}</td>
                         <td className="px-4 py-4 text-sm text-slate-700">{row.tx_date || row.value_date || '-'}</td>
                         <td className="px-4 py-4">
-                          <div className="text-sm font-medium text-slate-900">{row.counterparty_name || 'Unknown counterparty'}</div>
+                          <div className="text-sm font-medium text-slate-900">{row.counterparty_name || t('unknownCounterparty')}</div>
                           <div className="mt-1 text-xs text-slate-500">{row.description || row.counterparty_account || ''}</div>
                         </td>
                         <td className="px-4 py-4 text-sm text-slate-600">{row.reference || '-'}</td>
@@ -436,7 +436,7 @@ export default function BankImportPage() {
                           {row.needs_review ? (
                             <div className="space-y-2">
                               <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">
-                                Needs review
+                                {t('needsReview')}
                               </span>
                               <div className="text-xs text-amber-800">
                                 {row.warning_flags.map(formatLabel).join(', ')}
@@ -444,7 +444,7 @@ export default function BankImportPage() {
                             </div>
                           ) : (
                             <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                              Approved
+                              {t('approved')}
                             </span>
                           )}
                         </td>

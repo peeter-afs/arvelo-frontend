@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -26,6 +27,7 @@ type ManualAllocation = {
 };
 
 export default function BankReviewPage() {
+  const t = useTranslations('accounting');
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
@@ -142,9 +144,9 @@ export default function BankReviewPage() {
     await runAction('auto', async () => {
       const result = await bankingApi.autoMatch(selectedItem.transaction_id);
       if (result.auto_matched) {
-        setSuccessMessage('Transaction auto-matched and posted.');
+        setSuccessMessage(t('transactionAutoMatchedAndPosted'));
       } else {
-        setSuccessMessage('No clear auto-match candidate was available.');
+        setSuccessMessage(t('noClearAutoMatchCandidate'));
       }
       await refreshQueue(selectedItem.transaction_id);
     });
@@ -157,7 +159,7 @@ export default function BankReviewPage() {
         review_state: state,
         note: reviewNote || undefined,
       });
-      setSuccessMessage(`Transaction marked ${state}.`);
+      setSuccessMessage(t('transactionMarkedState', { state: t(state) }));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -166,7 +168,7 @@ export default function BankReviewPage() {
     if (!selectedItem) return;
     await runAction('ignore', async () => {
       await bankingApi.ignoreTransaction(selectedItem.transaction_id, { reason: ignoreReason || undefined });
-      setSuccessMessage('Transaction ignored.');
+      setSuccessMessage(t('transactionIgnored'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -178,7 +180,7 @@ export default function BankReviewPage() {
         counter_account_id: manualAccountId,
         description: manualDescription || undefined,
       });
-      setSuccessMessage('Manual posting created.');
+      setSuccessMessage(t('manualPostingCreated'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -190,7 +192,7 @@ export default function BankReviewPage() {
         invoice_id: candidate.invoice_id,
         reference: selectedItem.reference || undefined,
       });
-      setSuccessMessage('Transaction matched to invoice.');
+      setSuccessMessage(t('transactionMatchedToInvoice'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -207,7 +209,7 @@ export default function BankReviewPage() {
             amount: Number(allocation.amount || 0),
           })),
       });
-      setSuccessMessage('Transaction matched across multiple invoices.');
+      setSuccessMessage(t('transactionMatchedAcrossInvoices'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -221,10 +223,9 @@ export default function BankReviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Bank Review Queue</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('bankReviewQueue')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          Review unmatched bank transactions, inspect invoice suggestions, mark review state, auto-match strong cases,
-          manually match invoices, or create a manual posting.
+          {t('bankReviewDescription')}
         </p>
       </div>
 
@@ -247,9 +248,9 @@ export default function BankReviewPage() {
       )}
 
       <div className="grid gap-3 md:grid-cols-3">
-        <SummaryMetric label="Queue items" value={queueCounts.total} />
-        <SummaryMetric label="Auto-match ready" value={queueCounts.autoReady} tone="success" />
-        <SummaryMetric label="Reviewed" value={queueCounts.reviewed} tone="neutral" />
+        <SummaryMetric label={t('queueItems')} value={queueCounts.total} />
+        <SummaryMetric label={t('autoMatchReady')} value={queueCounts.autoReady} tone="success" />
+        <SummaryMetric label={t('reviewed')} value={queueCounts.reviewed} tone="neutral" />
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
@@ -257,8 +258,8 @@ export default function BankReviewPage() {
           <div className="card p-5">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-slate-900">Filters</h2>
-                <p className="text-xs text-slate-500">Queue view only</p>
+                <h2 className="text-sm font-semibold text-slate-900">{t('filters')}</h2>
+                <p className="text-xs text-slate-500">{t('queueViewOnly')}</p>
               </div>
               <button
                 onClick={() => void refreshQueue(selectedTransactionId)}
@@ -270,15 +271,15 @@ export default function BankReviewPage() {
 
             <div className="space-y-4">
               <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Review state</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('reviewState')}</span>
                 <select
                   value={reviewFilter}
                   onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)}
                   className="h-11 w-full rounded-lg border border-slate-200 px-3"
                 >
-                  <option value="all">All</option>
-                  <option value="pending">Pending</option>
-                  <option value="reviewed">Reviewed</option>
+                  <option value="all">{t('all')}</option>
+                  <option value="pending">{t('pending')}</option>
+                  <option value="reviewed">{t('reviewed')}</option>
                 </select>
               </label>
 
@@ -289,20 +290,20 @@ export default function BankReviewPage() {
                   onChange={(event) => setAutoMatchableOnly(event.target.checked)}
                   className="mt-0.5"
                 />
-                <span>Show only transactions with one strong auto-match candidate.</span>
+                <span>{t('showOnlyStrongAutoMatch')}</span>
               </label>
             </div>
           </div>
 
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">Transactions</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{t('transactions')}</h2>
             </div>
             <div className="divide-y divide-slate-100">
               {isQueueLoading ? (
-                <div className="p-4 text-sm text-slate-500">Loading queue…</div>
+                <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div>
               ) : items.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">No unmatched transactions for this filter.</div>
+                <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div>
               ) : (
                 items.map((item) => (
                   <button
@@ -313,13 +314,13 @@ export default function BankReviewPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="truncate text-sm font-medium text-slate-900">
-                          {item.counterparty_name || 'Unknown counterparty'}
+                          {item.counterparty_name || t('unknownCounterparty')}
                         </div>
                         <div className="mt-1 truncate text-xs text-slate-500">
-                          {item.reference || item.description || 'No reference'}
+                          {item.reference || item.description || t('noReference')}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                          {typeof item.import_row_no === 'number' && <span>Row {item.import_row_no}</span>}
+                          {typeof item.import_row_no === 'number' && <span>{t('rowNumber', { row: item.import_row_no })}</span>}
                           {item.import_file_name && <span>{item.import_file_name}</span>}
                         </div>
                       </div>
@@ -340,7 +341,7 @@ export default function BankReviewPage() {
                       {item.auto_match_ready && (
                         <>
                           <span>·</span>
-                          <span className="font-medium text-emerald-700">Auto-ready</span>
+                          <span className="font-medium text-emerald-700">{t('autoReady')}</span>
                         </>
                       )}
                     </div>
@@ -353,16 +354,16 @@ export default function BankReviewPage() {
 
         <section className="space-y-4">
           {!selectedItem ? (
-            <div className="card p-8 text-sm text-slate-500">Select a queue item to review suggested matches and take action.</div>
+            <div className="card p-8 text-sm text-slate-500">{t('selectQueueItem')}</div>
           ) : (
             <>
               <div className="card overflow-hidden">
                 <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <h2 className="text-base font-semibold text-slate-900">{selectedItem.counterparty_name || 'Bank transaction'}</h2>
+                      <h2 className="text-base font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2>
                       <p className="mt-1 text-sm text-slate-500">
-                        {selectedItem.reference || selectedItem.description || 'No free-text reference'} · {selectedItem.tx_date}
+                        {selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}
                       </p>
                     </div>
                     <div className="text-right">
@@ -370,20 +371,20 @@ export default function BankReviewPage() {
                         {selectedItem.amount.toFixed(2)} {selectedItem.currency}
                       </div>
                       <div className="mt-1 text-xs text-slate-500">
-                        Review state {selectedItem.review_state || 'pending'}
+                        {t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid gap-4 p-5 lg:grid-cols-2">
-                  <InfoBox label="Bank account" value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
-                  <InfoBox label="Counterparty account" value={selectedItem.counterparty_account || '-'} />
-                  <InfoBox label="Auto-match" value={selectedItem.auto_match_ready ? 'Ready' : 'Needs review'} />
-                  <InfoBox label="Description" value={selectedItem.description || '-'} />
-                  <InfoBox label="Review note" value={selectedItem.review_note || '-'} />
+                  <InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
+                  <InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} />
+                  <InfoBox label={t('autoMatch')} value={selectedItem.auto_match_ready ? t('ready') : t('needsReview')} />
+                  <InfoBox label={t('description')} value={selectedItem.description || '-'} />
+                  <InfoBox label={t('reviewNote')} value={selectedItem.review_note || '-'} />
                   <InfoBox
-                    label="Manual-post default"
+                    label={t('manualPostDefault')}
                     value={
                       selectedItem.suggested_manual_account_name
                         ? `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}`
@@ -391,11 +392,11 @@ export default function BankReviewPage() {
                     }
                   />
                   <InfoBox
-                    label="Imported row"
-                    value={typeof selectedItem.import_row_no === 'number' ? `Row ${selectedItem.import_row_no}` : '-'}
+                    label={t('importedRow')}
+                    value={typeof selectedItem.import_row_no === 'number' ? t('rowNumber', { row: selectedItem.import_row_no }) : '-'}
                   />
                   <InfoBox
-                    label="Import source"
+                    label={t('importSource')}
                     value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'}
                   />
                 </div>
@@ -403,7 +404,7 @@ export default function BankReviewPage() {
                 {(selectedItem.import_warning_flags?.length || selectedItem.import_parsed_payload) && (
                   <div className="grid gap-4 border-t border-slate-200 px-5 py-5 lg:grid-cols-2">
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Import warnings</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importWarnings')}</div>
                       {selectedItem.import_warning_flags && selectedItem.import_warning_flags.length > 0 ? (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {selectedItem.import_warning_flags.map((flag) => (
@@ -413,18 +414,18 @@ export default function BankReviewPage() {
                           ))}
                         </div>
                       ) : (
-                        <div className="mt-3 text-sm text-slate-500">No import warning flags.</div>
+                        <div className="mt-3 text-sm text-slate-500">{t('noImportWarningFlags')}</div>
                       )}
                     </div>
 
                     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Imported row payload</div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importedRowPayload')}</div>
                       {selectedItem.import_parsed_payload ? (
                         <pre className="mt-3 max-h-56 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
                           {JSON.stringify(selectedItem.import_parsed_payload, null, 2)}
                         </pre>
                       ) : (
-                        <div className="mt-3 text-sm text-slate-500">No parsed import payload available.</div>
+                        <div className="mt-3 text-sm text-slate-500">{t('noParsedImportPayload')}</div>
                       )}
                     </div>
                   </div>
@@ -435,22 +436,22 @@ export default function BankReviewPage() {
                 <div className="card overflow-hidden">
                   <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                     <div>
-                      <h2 className="text-base font-semibold text-slate-900">Suggested invoice matches</h2>
-                      <p className="mt-1 text-sm text-slate-500">Top candidates from backend scoring.</p>
+                      <h2 className="text-base font-semibold text-slate-900">{t('suggestedInvoiceMatches')}</h2>
+                      <p className="mt-1 text-sm text-slate-500">{t('suggestedInvoiceMatchesDescription')}</p>
                     </div>
                     <button
                       onClick={() => selectedItem && setSelectedTransactionId(selectedItem.transaction_id)}
                       className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
                     >
                       <Eye className="h-4 w-4" />
-                      <span>Selected tx</span>
+                      <span>{t('selectedTx')}</span>
                     </button>
                   </div>
 
                   {isCandidateLoading ? (
-                    <div className="p-5 text-sm text-slate-500">Loading candidates…</div>
+                    <div className="p-5 text-sm text-slate-500">{t('loadingCandidates')}</div>
                   ) : suggestedCandidates.length === 0 ? (
-                    <div className="p-5 text-sm text-slate-500">No invoice candidates returned for this transaction.</div>
+                    <div className="p-5 text-sm text-slate-500">{t('noInvoiceCandidates')}</div>
                   ) : (
                     <div className="divide-y divide-slate-100">
                       {suggestedCandidates.slice(0, 6).map((candidate) => (
@@ -461,7 +462,7 @@ export default function BankReviewPage() {
                                 {candidate.invoice_number || candidate.invoice_id.slice(0, 8)}
                               </div>
                               <div className="mt-1 text-xs text-slate-500">
-                                {candidate.partner_name || 'Unknown partner'} · open {candidate.open_amount.toFixed(2)} {candidate.currency}
+                                {candidate.partner_name || t('unknownPartner')} · {t('openAmountValue', { amount: candidate.open_amount.toFixed(2), currency: candidate.currency })}
                               </div>
                               <div className="mt-2 text-xs text-slate-500">
                                 {candidate.match_reasons.map(formatLabel).join(', ')}
@@ -469,7 +470,7 @@ export default function BankReviewPage() {
                             </div>
                             <div className="text-right">
                               <div className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                                Score {candidate.score}
+                                {t('scoreValue', { score: candidate.score })}
                               </div>
                               <button
                                 onClick={() => handleSingleMatch(candidate)}
@@ -477,7 +478,7 @@ export default function BankReviewPage() {
                                 className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 <ShieldCheck className="h-4 w-4" />
-                                <span>Match</span>
+                                <span>{t('match')}</span>
                               </button>
                             </div>
                           </div>
@@ -489,17 +490,17 @@ export default function BankReviewPage() {
 
                 <div className="space-y-4">
                   <ActionCard
-                    title="Quick actions"
-                    description="Use the backend action that fits the transaction best."
+                    title={t('quickActions')}
+                    description={t('quickActionsDescription')}
                   >
                     <div className="grid gap-3">
                       <button
                         onClick={handleAutoMatch}
                         disabled={!selectedItem.auto_match_ready || !!actionLoading}
                         className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
+                        >
                         {actionLoading === 'auto' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                        <span>Auto-match</span>
+                        <span>{t('autoMatch')}</span>
                       </button>
 
                       <div className="grid gap-3 sm:grid-cols-2">
@@ -509,7 +510,7 @@ export default function BankReviewPage() {
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {actionLoading === 'review-reviewed' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                          <span>Mark reviewed</span>
+                          <span>{t('markReviewed')}</span>
                         </button>
                         <button
                           onClick={() => handleReview('pending')}
@@ -517,27 +518,27 @@ export default function BankReviewPage() {
                           className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {actionLoading === 'review-pending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />}
-                          <span>Reset pending</span>
+                          <span>{t('resetPending')}</span>
                         </button>
                       </div>
 
                       <textarea
                         value={reviewNote}
                         onChange={(event) => setReviewNote(event.target.value)}
-                        placeholder="Review note"
+                        placeholder={t('reviewNote')}
                         className="min-h-24 rounded-lg border border-slate-200 px-3 py-2 text-sm"
                       />
                     </div>
                   </ActionCard>
 
                   <ActionCard
-                    title="Manual posting"
-                    description="No invoice match. Post directly to a counter-account."
+                    title={t('manualPosting')}
+                    description={t('manualPostingDescription')}
                   >
                     <div className="grid gap-3">
                       {selectedItem.suggested_manual_account_name && (
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                          Suggested default: {selectedItem.suggested_manual_account_code || '-'} · {selectedItem.suggested_manual_account_name}
+                          {t('suggestedDefault', { account: `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}` })}
                         </div>
                       )}
                       <select
@@ -545,7 +546,7 @@ export default function BankReviewPage() {
                         onChange={(event) => setManualAccountId(event.target.value)}
                         className="h-11 rounded-lg border border-slate-200 px-3"
                       >
-                        <option value="">Select counter-account</option>
+                        <option value="">{t('selectCounterAccount')}</option>
                         {accounts.map((account) => (
                           <option key={account.id} value={account.id}>
                             {account.code} · {account.name}
@@ -555,23 +556,23 @@ export default function BankReviewPage() {
                       <input
                         value={manualDescription}
                         onChange={(event) => setManualDescription(event.target.value)}
-                        placeholder="Manual posting description"
+                        placeholder={t('manualPostingDescriptionPlaceholder')}
                         className="h-11 rounded-lg border border-slate-200 px-3"
                       />
                       <button
                         onClick={handleManualPost}
                         disabled={!manualAccountId || !!actionLoading}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
+                        >
                         {actionLoading === 'manual-post' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                        <span>Create manual posting</span>
+                        <span>{t('createManualPosting')}</span>
                       </button>
                     </div>
                   </ActionCard>
 
                   <ActionCard
-                    title="Split match"
-                    description="Allocate one bank transaction across multiple invoices."
+                    title={t('splitMatch')}
+                    description={t('splitMatchDescription')}
                   >
                     <div className="space-y-3">
                       {manualAllocations.map((allocation, index) => (
@@ -581,7 +582,7 @@ export default function BankReviewPage() {
                             onChange={(event) => updateAllocation(setManualAllocations, index, 'invoice_id', event.target.value)}
                             className="h-10 rounded-lg border border-slate-200 px-3"
                           >
-                            <option value="">Select invoice</option>
+                            <option value="">{t('selectInvoice')}</option>
                             {suggestedCandidates.map((candidate) => (
                               <option key={candidate.invoice_id} value={candidate.invoice_id}>
                                 {(candidate.invoice_number || candidate.invoice_id.slice(0, 8))} · {candidate.open_amount.toFixed(2)}
@@ -592,7 +593,7 @@ export default function BankReviewPage() {
                             value={allocation.amount}
                             onChange={(event) => updateAllocation(setManualAllocations, index, 'amount', event.target.value)}
                             className="h-10 rounded-lg border border-slate-200 px-3"
-                            placeholder="Amount"
+                            placeholder={t('amount')}
                           />
                         </div>
                       ))}
@@ -602,7 +603,7 @@ export default function BankReviewPage() {
                           className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
                         >
                           <Split className="h-4 w-4" />
-                          <span>Add allocation</span>
+                          <span>{t('addAllocation')}</span>
                         </button>
                         <button
                           onClick={handleSplitMatch}
@@ -610,30 +611,30 @@ export default function BankReviewPage() {
                           className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {actionLoading === 'split-match' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                          <span>Run split match</span>
+                          <span>{t('runSplitMatch')}</span>
                         </button>
                       </div>
                     </div>
                   </ActionCard>
 
                   <ActionCard
-                    title="Ignore transaction"
-                    description="Use only when the transaction should stay out of reconciliation."
+                    title={t('ignoreTransaction')}
+                    description={t('ignoreTransactionDescription')}
                   >
                     <div className="grid gap-3">
                       <input
                         value={ignoreReason}
                         onChange={(event) => setIgnoreReason(event.target.value)}
-                        placeholder="Reason for ignoring"
+                        placeholder={t('reasonForIgnoring')}
                         className="h-11 rounded-lg border border-slate-200 px-3"
                       />
                       <button
                         onClick={handleIgnore}
                         disabled={!!actionLoading}
                         className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
+                        >
                         {actionLoading === 'ignore' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                        <span>Ignore transaction</span>
+                        <span>{t('ignoreTransaction')}</span>
                       </button>
                     </div>
                   </ActionCard>
