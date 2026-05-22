@@ -129,6 +129,32 @@ export type AccountRecord = {
   updated_at: string;
 };
 
+export type JournalEntryRecord = {
+  id: string;
+  tenant_id: string;
+  journal_id?: string | null;
+  entry_number?: string | null;
+  entry_date: string;
+  entry_type: string;
+  description?: string | null;
+  reference_number?: string | null;
+  is_posted: boolean;
+  posted_at?: string | null;
+  created_at: string;
+  updated_at: string;
+  rows?: JournalLineRecord[];
+};
+
+export type JournalLineRecord = {
+  id: string;
+  journal_entry_id: string;
+  account_id: string;
+  partner_id?: string | null;
+  debit: number;
+  credit: number;
+  description?: string | null;
+};
+
 export const accountingApi = {
   async getAccounts() {
     const response = await apiClient.get<ApiResponse<AccountOption[]>>('/api/accounting/accounts?is_active=true');
@@ -152,6 +178,16 @@ export const accountingApi = {
 
   async deleteAccount(id: string) {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/accounting/accounts/${id}`);
+    return response.data.data;
+  },
+
+  async listJournalEntries(params?: { start_date?: string; end_date?: string; entry_type?: string; is_posted?: boolean; limit?: number; offset?: number }) {
+    const response = await apiClient.get<ApiResponse<JournalEntryRecord[]>>('/api/accounting/journal-entries', { params });
+    return response.data.data;
+  },
+
+  async getJournalEntry(id: string) {
+    const response = await apiClient.get<ApiResponse<JournalEntryRecord>>(`/api/accounting/journal-entries/${id}`);
     return response.data.data;
   },
 
