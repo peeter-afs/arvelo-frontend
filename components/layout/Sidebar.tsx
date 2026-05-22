@@ -81,6 +81,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { name: tReports('balanceSheet'), href: '/reports/balance-sheet' },
         { name: tReports('profitLoss'), href: '/reports/profit-loss' },
         { name: tReports('trialBalance'), href: '/reports/trial-balance' },
+        { name: tReports('turnoverReport'), href: '/reports/turnover' },
         { name: tReports('generalLedger'), href: '/reports/general-ledger' },
         { name: tReports('vatReport'), href: '/reports/vat' },
         { name: tReports('agingReport'), href: '/reports/aging' },

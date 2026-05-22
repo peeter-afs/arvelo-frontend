@@ -56,6 +56,32 @@ export type TrialBalanceData = {
   asOfDate: string;
 };
 
+export type TurnoverReportLine = {
+  account_code: string;
+  account_name: string;
+  account_type: string;
+  opening_debit: number;
+  opening_credit: number;
+  period_debit: number;
+  period_credit: number;
+  closing_debit: number;
+  closing_credit: number;
+};
+
+export type TurnoverReportData = {
+  accounts: TurnoverReportLine[];
+  totals: {
+    opening_debit: number;
+    opening_credit: number;
+    period_debit: number;
+    period_credit: number;
+    closing_debit: number;
+    closing_credit: number;
+  };
+  startDate: string;
+  endDate: string;
+};
+
 export type GeneralLedgerTransaction = {
   id: string;
   date: string;
@@ -161,6 +187,13 @@ export const reportsApi = {
   async getTrialBalance(asOfDate?: string) {
     const params = asOfDate ? { as_of_date: asOfDate } : undefined;
     const response = await apiClient.get<ApiResponse<TrialBalanceData>>('/api/reports/trial-balance', { params });
+    return response.data.data;
+  },
+
+  async getTurnoverReport(startDate: string, endDate: string) {
+    const response = await apiClient.get<ApiResponse<TurnoverReportData>>('/api/reports/turnover', {
+      params: { start_date: startDate, end_date: endDate },
+    });
     return response.data.data;
   },
 
