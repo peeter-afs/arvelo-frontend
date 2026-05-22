@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { reportsApi } from '@/lib/api/reports.api';
 import { invoicesApi } from '@/lib/api/invoices.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { getCurrentDateLabelEtEe, getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
-import { PageSkeleton, StatCardSkeleton } from '@/components/ui/LoadingSkeleton';
+import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
+import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
-import { EmptyState } from '@/components/ui/EmptyState';
 import {
   TrendingUp,
   DollarSign,
@@ -31,7 +30,7 @@ type DashboardStats = {
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const t = useTranslations('dashboard');
-  const tc = useTranslations('common');
+  const locale = useLocale();
 
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,12 +42,18 @@ export default function DashboardPage() {
   } | null>(null);
 
   useEffect(() => {
+    const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
     setDashboardDates({
-      formattedDate: getCurrentDateLabelEtEe(),
+      formattedDate: new Intl.DateTimeFormat(dateLocale, {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }).format(new Date()),
       startOfYear: getIsoCurrentYearStart(),
       todayStr: getIsoToday(),
     });
-  }, []);
+  }, [locale]);
 
   const fetchDashboard = useCallback(async () => {
     if (!dashboardDates) {
@@ -106,13 +111,13 @@ export default function DashboardPage() {
       colorClass: 'bg-blue-50 text-blue-600',
     },
     {
-      label: 'Total Expenses',
+      label: t('totalExpenses'),
       value: formatCurrency(stats?.totalExpenses ?? 0),
       icon: TrendingUp,
       colorClass: 'bg-rose-50 text-rose-600',
     },
     {
-      label: 'Net Income',
+      label: t('netIncome'),
       value: formatCurrency(stats?.netIncome ?? 0),
       icon: Activity,
       colorClass: 'bg-emerald-50 text-emerald-600',
@@ -144,14 +149,14 @@ export default function DashboardPage() {
               className="h-10 px-4 border border-[var(--border)] hover:bg-[var(--surface-elevated)] rounded-lg text-sm font-medium text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              New Entry
+              {t('newEntry')}
             </Link>
             <Link
               href="/invoices/new"
               className="h-10 px-4 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              New Invoice
+              {t('newInvoice')}
             </Link>
           </div>
         </div>
@@ -186,8 +191,8 @@ export default function DashboardPage() {
             <BarChart3 className="h-5 w-5 text-blue-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">Profit & Loss</p>
-            <p className="text-xs text-[var(--text-muted)]">View income statement</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">{t('profitLoss')}</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('viewIncomeStatement')}</p>
           </div>
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
@@ -196,8 +201,8 @@ export default function DashboardPage() {
             <Activity className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">Balance Sheet</p>
-            <p className="text-xs text-[var(--text-muted)]">Financial position</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">{t('balanceSheet')}</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('financialPosition')}</p>
           </div>
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
@@ -206,8 +211,8 @@ export default function DashboardPage() {
             <FileText className="h-5 w-5 text-violet-600" />
           </div>
           <div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">Sales Invoices</p>
-            <p className="text-xs text-[var(--text-muted)]">Manage invoices</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">{t('salesInvoices')}</p>
+            <p className="text-xs text-[var(--text-muted)]">{t('manageInvoices')}</p>
           </div>
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
@@ -217,7 +222,7 @@ export default function DashboardPage() {
       <Link
         href="/invoices/new"
         className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-full shadow-xl flex items-center justify-center z-20 transition-all"
-        aria-label="Create new invoice"
+        aria-label={t('createNewInvoice')}
       >
         <Plus className="h-6 w-6" />
       </Link>

@@ -11,25 +11,25 @@ export default function ChartOfAccountsPage() {
 
   // Mock data for chart of accounts
   const accounts = [
-    { id: 1, code: '1000', name: 'Cash', type: 'Asset', category: 'Current Asset', balance: 15000.00, status: 'active' },
-    { id: 2, code: '1100', name: 'Accounts Receivable', type: 'Asset', category: 'Current Asset', balance: 23500.00, status: 'active' },
-    { id: 3, code: '1200', name: 'Inventory', type: 'Asset', category: 'Current Asset', balance: 45000.00, status: 'active' },
-    { id: 4, code: '1500', name: 'Fixed Assets', type: 'Asset', category: 'Fixed Asset', balance: 250000.00, status: 'active' },
-    { id: 5, code: '2000', name: 'Accounts Payable', type: 'Liability', category: 'Current Liability', balance: 18000.00, status: 'active' },
-    { id: 6, code: '2100', name: 'Short-term Loans', type: 'Liability', category: 'Current Liability', balance: 25000.00, status: 'active' },
-    { id: 7, code: '3000', name: 'Common Stock', type: 'Equity', category: 'Equity', balance: 100000.00, status: 'active' },
-    { id: 8, code: '4000', name: 'Sales Revenue', type: 'Revenue', category: 'Operating Revenue', balance: 85000.00, status: 'active' },
-    { id: 9, code: '5000', name: 'Cost of Goods Sold', type: 'Expense', category: 'Operating Expense', balance: 45000.00, status: 'active' },
-    { id: 10, code: '6000', name: 'Salaries & Wages', type: 'Expense', category: 'Operating Expense', balance: 28000.00, status: 'active' },
+    { id: 1, code: '1000', nameKey: 'accountCash', type: 'asset', category: 'currentAsset', balance: 15000.00, status: 'active' },
+    { id: 2, code: '1100', nameKey: 'accountReceivable', type: 'asset', category: 'currentAsset', balance: 23500.00, status: 'active' },
+    { id: 3, code: '1200', nameKey: 'accountInventory', type: 'asset', category: 'currentAsset', balance: 45000.00, status: 'active' },
+    { id: 4, code: '1500', nameKey: 'accountFixedAssets', type: 'asset', category: 'fixedAsset', balance: 250000.00, status: 'active' },
+    { id: 5, code: '2000', nameKey: 'accountPayable', type: 'liability', category: 'currentLiability', balance: 18000.00, status: 'active' },
+    { id: 6, code: '2100', nameKey: 'accountShortTermLoans', type: 'liability', category: 'currentLiability', balance: 25000.00, status: 'active' },
+    { id: 7, code: '3000', nameKey: 'accountCommonStock', type: 'equity', category: 'equity', balance: 100000.00, status: 'active' },
+    { id: 8, code: '4000', nameKey: 'accountSalesRevenue', type: 'revenue', category: 'operatingRevenue', balance: 85000.00, status: 'active' },
+    { id: 9, code: '5000', nameKey: 'accountCostOfGoodsSold', type: 'expense', category: 'operatingExpense', balance: 45000.00, status: 'active' },
+    { id: 10, code: '6000', nameKey: 'accountSalariesWages', type: 'expense', category: 'operatingExpense', balance: 28000.00, status: 'active' },
   ];
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'Asset': return 'bg-blue-50 text-blue-700';
-      case 'Liability': return 'bg-amber-50 text-amber-700';
-      case 'Equity': return 'bg-violet-50 text-violet-700';
-      case 'Revenue': return 'bg-emerald-50 text-emerald-700';
-      case 'Expense': return 'bg-rose-50 text-rose-700';
+      case 'asset': return 'bg-blue-50 text-blue-700';
+      case 'liability': return 'bg-amber-50 text-amber-700';
+      case 'equity': return 'bg-violet-50 text-violet-700';
+      case 'revenue': return 'bg-emerald-50 text-emerald-700';
+      case 'expense': return 'bg-rose-50 text-rose-700';
       default: return 'bg-slate-50 text-slate-700';
     }
   };
@@ -147,15 +147,15 @@ export default function ChartOfAccountsPage() {
                   {account.code}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                  {account.name}
+                  {t(account.nameKey)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-                    {account.type}
+                    {t(account.type)}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                  {account.category}
+                  {t(account.category)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-mono tabular-nums text-slate-900 text-right">
                   €{account.balance.toFixed(2)}
@@ -163,7 +163,7 @@ export default function ChartOfAccountsPage() {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
                     <div className={`h-1.5 w-1.5 rounded-full ${account.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                    <span className="text-xs text-slate-600 capitalize">{account.status}</span>
+                    <span className="text-xs text-slate-600">{t(account.status)}</span>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -189,13 +189,13 @@ export default function ChartOfAccountsPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono text-xs text-slate-500">{account.code}</span>
               <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-                {account.type}
+                {t(account.type)}
               </span>
             </div>
 
             {/* Account name */}
             <div className="font-medium text-base text-slate-900 mb-3">
-              {account.name}
+              {t(account.nameKey)}
             </div>
 
             {/* Bottom row: balance + status + actions */}
@@ -206,7 +206,7 @@ export default function ChartOfAccountsPage() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1.5">
                   <div className={`h-1.5 w-1.5 rounded-full ${account.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                  <span className="text-xs text-slate-600 capitalize">{account.status}</span>
+                  <span className="text-xs text-slate-600">{t(account.status)}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
