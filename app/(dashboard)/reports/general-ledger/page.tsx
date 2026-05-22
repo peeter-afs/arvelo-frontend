@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { BookOpen, Calendar } from 'lucide-react';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
@@ -18,6 +19,7 @@ function formatCurrency(value: number): string {
 }
 
 export default function GeneralLedgerPage() {
+  const searchParams = useSearchParams();
   const t = useTranslations('reports');
   const tAccounting = useTranslations('accounting');
   const tCommon = useTranslations('common');
@@ -26,9 +28,9 @@ export default function GeneralLedgerPage() {
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountsError, setAccountsError] = useState<string | null>(null);
 
-  const [selectedAccountId, setSelectedAccountId] = useState('');
-  const [startDate, setStartDate] = useClientDateInput(getIsoCurrentYearStart);
-  const [endDate, setEndDate] = useClientDateInput(getIsoToday);
+  const [selectedAccountId, setSelectedAccountId] = useState(searchParams.get('account_id') || '');
+  const [startDate, setStartDate] = useClientDateInput(() => searchParams.get('start_date') || getIsoCurrentYearStart());
+  const [endDate, setEndDate] = useClientDateInput(() => searchParams.get('end_date') || getIsoToday());
 
   const [ledgerData, setLedgerData] = useState<GeneralLedgerData | null>(null);
   const [ledgerLoading, setLedgerLoading] = useState(false);

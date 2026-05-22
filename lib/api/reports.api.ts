@@ -57,6 +57,7 @@ export type TrialBalanceData = {
 };
 
 export type TurnoverReportLine = {
+  account_id: string;
   account_code: string;
   account_name: string;
   account_type: string;

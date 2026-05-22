@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { BarChart3, Download, Calendar } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type TurnoverReportData } from '@/lib/api/reports.api';
@@ -17,6 +18,7 @@ function fmt(n: number): string {
 }
 
 export default function TurnoverReportPage() {
+  const router = useRouter();
   const t = useTranslations('reports');
   const tAccounting = useTranslations('accounting');
   const tc = useTranslations('common');
@@ -75,6 +77,11 @@ export default function TurnoverReportPage() {
   }
 
   const { accounts, totals } = data;
+
+  const openLedger = (accountId: string) => {
+    const params = new URLSearchParams({ account_id: accountId, start_date: startDate, end_date: endDate });
+    router.push(`/reports/general-ledger?${params.toString()}`);
+  };
 
   const handleExport = () => {
     const rows = accounts.map((a) => ({
@@ -190,8 +197,8 @@ export default function TurnoverReportPage() {
             </thead>
             <tbody>
               {accounts.map((a) => (
-                <tr key={a.account_code} className="transition-colors hover:opacity-80" style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+                <tr key={a.account_code} onClick={() => openLedger(a.account_id)} className="transition-colors hover:bg-[var(--surface-elevated)] cursor-pointer" style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm font-mono font-bold" style={{ color: 'var(--primary)' }}>
                     {a.account_code}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-sm" style={{ color: 'var(--text-primary)' }}>
@@ -250,7 +257,7 @@ export default function TurnoverReportPage() {
       {/* Mobile Cards */}
       <div className="md:hidden space-y-3">
         {accounts.map((a) => (
-          <div key={a.account_code} className="card p-4">
+          <div key={a.account_code} onClick={() => openLedger(a.account_id)} className="card p-4 cursor-pointer active:bg-slate-50">
             <div className="flex items-center justify-between mb-3">
               <div>
                 <span className="text-xs font-mono font-bold" style={{ color: 'var(--text-muted)' }}>{a.account_code}</span>
