@@ -1,37 +1,59 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Plus, Search, Filter, Download, Upload, Edit2, Trash2, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Filter, Download, Upload, Edit2, Trash2, MoreHorizontal, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import { accountingApi, type AccountRecord } from '@/lib/api/accounting.api';
+import { getErrorMessage } from '@/lib/api/client';
+
+const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const;
+
+function getTypeColor(type: string) {
+  switch (type) {
+    case 'asset': return 'bg-blue-50 text-blue-700';
+    case 'liability': return 'bg-amber-50 text-amber-700';
+    case 'equity': return 'bg-violet-50 text-violet-700';
+    case 'revenue': return 'bg-emerald-50 text-emerald-700';
+    case 'expense': return 'bg-rose-50 text-rose-700';
+    default: return 'bg-slate-50 text-slate-700';
+  }
+}
 
 export default function ChartOfAccountsPage() {
   const t = useTranslations('accounting');
   const [searchQuery, setSearchQuery] = useState('');
+  const [accounts, setAccounts] = useState<AccountRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Mock data for chart of accounts
-  const accounts = [
-    { id: 1, code: '1000', nameKey: 'accountCash', type: 'asset', category: 'currentAsset', balance: 15000.00, status: 'active' },
-    { id: 2, code: '1100', nameKey: 'accountReceivable', type: 'asset', category: 'currentAsset', balance: 23500.00, status: 'active' },
-    { id: 3, code: '1200', nameKey: 'accountInventory', type: 'asset', category: 'currentAsset', balance: 45000.00, status: 'active' },
-    { id: 4, code: '1500', nameKey: 'accountFixedAssets', type: 'asset', category: 'fixedAsset', balance: 250000.00, status: 'active' },
-    { id: 5, code: '2000', nameKey: 'accountPayable', type: 'liability', category: 'currentLiability', balance: 18000.00, status: 'active' },
-    { id: 6, code: '2100', nameKey: 'accountShortTermLoans', type: 'liability', category: 'currentLiability', balance: 25000.00, status: 'active' },
-    { id: 7, code: '3000', nameKey: 'accountCommonStock', type: 'equity', category: 'equity', balance: 100000.00, status: 'active' },
-    { id: 8, code: '4000', nameKey: 'accountSalesRevenue', type: 'revenue', category: 'operatingRevenue', balance: 85000.00, status: 'active' },
-    { id: 9, code: '5000', nameKey: 'accountCostOfGoodsSold', type: 'expense', category: 'operatingExpense', balance: 45000.00, status: 'active' },
-    { id: 10, code: '6000', nameKey: 'accountSalariesWages', type: 'expense', category: 'operatingExpense', balance: 28000.00, status: 'active' },
-  ];
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'asset': return 'bg-blue-50 text-blue-700';
-      case 'liability': return 'bg-amber-50 text-amber-700';
-      case 'equity': return 'bg-violet-50 text-violet-700';
-      case 'revenue': return 'bg-emerald-50 text-emerald-700';
-      case 'expense': return 'bg-rose-50 text-rose-700';
-      default: return 'bg-slate-50 text-slate-700';
+  const loadAccounts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await accountingApi.listAccounts();
+      setAccounts(data);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    void loadAccounts();
+  }, []);
+
+  const filtered = accounts.filter((a) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q);
+  });
+
+  const handleCreated = () => {
+    setShowCreateModal(false);
+    void loadAccounts();
   };
 
   return (
@@ -73,7 +95,10 @@ export default function ChartOfAccountsPage() {
             <span>{t('import')}</span>
           </Link>
 
-          <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors"
+          >
             <Plus className="h-4 w-4" />
             <span>{t('newAccount')}</span>
           </button>
@@ -93,7 +118,6 @@ export default function ChartOfAccountsPage() {
           />
         </div>
 
-        {/* Action buttons row */}
         <div className="flex items-center gap-2">
           <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
             <Filter className="h-4 w-4" />
@@ -109,147 +133,222 @@ export default function ChartOfAccountsPage() {
         </div>
       </div>
 
-      <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
+      <button
+        onClick={() => setShowCreateModal(true)}
+        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95"
+      >
         <Plus className="h-6 w-6" />
       </button>
 
-      <div className="hidden md:block card overflow-hidden">
-        <table className="min-w-full">
-          <thead className="bg-slate-50/80">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('code')}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('accountName')}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('type')}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('category')}
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500">
-                {t('balance')}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('status')}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">
-                {t('actions')}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white">
-            {accounts.map((account) => (
-              <tr key={account.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">
-                  {account.code}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                  {t(account.nameKey)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
+      {error && (
+        <div className="mb-4 card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
+      )}
+
+      {isLoading ? (
+        <div className="card p-12 flex items-center justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card p-12 text-center text-sm text-slate-500">
+          {searchQuery ? t('noResults') : t('noAccounts')}
+        </div>
+      ) : (
+        <>
+          <div className="hidden md:block card overflow-hidden">
+            <table className="min-w-full">
+              <thead className="bg-slate-50/80">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('code')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('accountName')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('type')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('actions')}</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                {filtered.map((account) => (
+                  <tr key={account.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">{account.code}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{account.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
+                        {t(account.type)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <div className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                        <span className="text-xs text-slate-600">{account.is_active ? t('active') : t('inactive')}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="md:hidden space-y-2">
+            {filtered.map((account) => (
+              <div key={account.id} className="card p-4 active:bg-slate-50 transition-colors cursor-pointer">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-mono text-xs text-slate-500">{account.code}</span>
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
                     {t(account.type)}
                   </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">
-                  {t(account.category)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-mono tabular-nums text-slate-900 text-right">
-                  €{account.balance.toFixed(2)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    <div className={`h-1.5 w-1.5 rounded-full ${account.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                    <span className="text-xs text-slate-600">{t(account.status)}</span>
+                </div>
+                <div className="font-medium text-base text-slate-900 mb-3">{account.name}</div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
+                    <span className="text-xs text-slate-600">{account.is_active ? t('active') : t('inactive')}</span>
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-1">
-                    <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                    <button
+                      className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Edit2 className="h-4 w-4" />
                     </button>
-                    <button className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition-colors">
+                    <button
+                      className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
-
-      <div className="md:hidden space-y-2">
-        {accounts.map((account) => (
-          <div key={account.id} className="card p-4 active:bg-slate-50 transition-colors cursor-pointer">
-            {/* Top row: code + type badge */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-xs text-slate-500">{account.code}</span>
-              <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-                {t(account.type)}
-              </span>
-            </div>
-
-            {/* Account name */}
-            <div className="font-medium text-base text-slate-900 mb-3">
-              {t(account.nameKey)}
-            </div>
-
-            {/* Bottom row: balance + status + actions */}
-            <div className="flex items-center justify-between">
-              <div className="font-mono text-sm text-slate-900 tabular-nums">
-                €{account.balance.toFixed(2)}
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <div className={`h-1.5 w-1.5 rounded-full ${account.status === 'active' ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
-                  <span className="text-xs text-slate-600">{t(account.status)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                  </button>
-                  <button
-                    className="p-1.5 rounded-md hover:bg-slate-100 text-slate-600 active:bg-slate-200 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
-        ))}
-      </div>
+        </>
+      )}
 
       <div className="hidden md:flex mt-6 justify-between items-center">
         <p className="text-sm text-slate-600">
-          {t('showingEntries', { from: 1, to: 10, total: 10 })}
+          {t('showingEntries', { from: 1, to: filtered.length, total: filtered.length })}
         </p>
-        <div className="flex gap-2">
-          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            {t('previous')}
-          </button>
-          <button className="h-8 px-3 border border-slate-200 rounded-md text-sm text-slate-600 hover:bg-slate-50 transition-colors opacity-50 cursor-not-allowed" disabled>
-            {t('next')}
-          </button>
-        </div>
       </div>
 
-      <div className="md:hidden mt-4 flex items-center justify-center gap-4">
-        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
-          <span className="text-sm">&lt;</span>
-        </button>
-        <p className="text-sm text-slate-600">{t('pageOf', { current: 1, total: 1 })}</p>
-        <button className="h-8 w-8 flex items-center justify-center border border-slate-200 rounded-md text-slate-600 opacity-50 cursor-not-allowed" disabled>
-          <span className="text-sm">&gt;</span>
-        </button>
+      {showCreateModal && (
+        <CreateAccountModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleCreated}
+        />
+      )}
+    </div>
+  );
+}
+
+function CreateAccountModal({
+  onClose,
+  onCreated
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
+  const t = useTranslations('accounting');
+  const [code, setCode] = useState('');
+  const [name, setName] = useState('');
+  const [type, setType] = useState<string>('asset');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim() || !name.trim()) return;
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      await accountingApi.createAccount({ code: code.trim(), name: name.trim(), type });
+      onCreated();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">{t('newAccount')}</h2>
+          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountCode')}</span>
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="1000"
+              required
+              autoFocus
+              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+            />
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountName')}</span>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+            />
+          </label>
+
+          <label className="block space-y-1.5">
+            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountType')}</span>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+            >
+              {ACCOUNT_TYPES.map((t_) => (
+                <option key={t_} value={t_}>{t(t_)}</option>
+              ))}
+            </select>
+          </label>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              {t('cancel')}
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving || !code.trim() || !name.trim()}
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+            >
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>{t('createAccount')}</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

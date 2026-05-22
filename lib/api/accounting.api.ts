@@ -117,9 +117,41 @@ export type FiscalYearWithPeriods = {
   periods: PeriodItem[];
 };
 
+export type AccountRecord = {
+  id: string;
+  code: string;
+  name: string;
+  type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
+  parent_id?: string | null;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
 export const accountingApi = {
   async getAccounts() {
     const response = await apiClient.get<ApiResponse<AccountOption[]>>('/api/accounting/accounts?is_active=true');
+    return response.data.data;
+  },
+
+  async listAccounts(params?: { type?: string; is_active?: boolean }) {
+    const response = await apiClient.get<ApiResponse<AccountRecord[]>>('/api/accounting/accounts', { params });
+    return response.data.data;
+  },
+
+  async createAccount(payload: { code: string; name: string; type: string; parent_id?: string }) {
+    const response = await apiClient.post<ApiResponse<AccountRecord>>('/api/accounting/accounts', payload);
+    return response.data.data;
+  },
+
+  async updateAccount(id: string, payload: Record<string, any>) {
+    const response = await apiClient.put<ApiResponse<AccountRecord>>(`/api/accounting/accounts/${id}`, payload);
+    return response.data.data;
+  },
+
+  async deleteAccount(id: string) {
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/accounting/accounts/${id}`);
     return response.data.data;
   },
 
