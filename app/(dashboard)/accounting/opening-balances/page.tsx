@@ -763,14 +763,14 @@ function GeneralEditor({
               <label className="mb-1 block text-xs font-medium text-slate-500">Description</label>
               <input value={row.description} onChange={(e) => updateRow(row.id, 'description', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
-            <div className="md:col-span-2">
+            <div className="md:col-span-1">
               <label className="mb-1 block text-xs font-medium text-slate-500">Side</label>
               <select value={row.side} onChange={(e) => updateRow(row.id, 'side', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3">
                 <option value="debit">Debit</option>
                 <option value="credit">Credit</option>
               </select>
             </div>
-            <div className="md:col-span-1">
+            <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-500">Amount</label>
               <input value={row.amount} onChange={(e) => updateRow(row.id, 'amount', e.target.value)} inputMode="decimal" className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
@@ -888,11 +888,11 @@ function SubledgerEditor({
               <label className="mb-1 block text-xs font-medium text-slate-500">Reference</label>
               <input value={row.reference} onChange={(e) => updateRow(row.id, 'reference', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
-            <div className="md:col-span-4">
+            <div className="md:col-span-3">
               <label className="mb-1 block text-xs font-medium text-slate-500">Description</label>
               <input value={row.description} onChange={(e) => updateRow(row.id, 'description', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
-            <div className="md:col-span-1">
+            <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-500">Amount</label>
               <input value={row.amount} onChange={(e) => updateRow(row.id, 'amount', e.target.value)} inputMode="decimal" className="h-10 w-full rounded-lg border border-slate-200 px-3" />
             </div>
