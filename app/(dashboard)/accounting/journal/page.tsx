@@ -1,28 +1,75 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { Plus, Search, Filter, Download, Eye, MoreHorizontal, Loader2, X } from 'lucide-react';
-import { accountingApi, type JournalEntryRecord, type JournalLineRecord, type AccountOption } from '@/lib/api/accounting.api';
+import {
+  Copy,
+  Download,
+  Filter,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Search,
+  Upload,
+} from 'lucide-react';
+import { accountingApi, type AccountOption, type JournalEntryRecord, type JournalLineRecord } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { Button } from '@/components/ui/Button';
+import { Kbd } from '@/components/ui/Kbd';
+import { Stat } from '@/components/ui/Stat';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 
-function statusColor(isPosted: boolean) {
-  return isPosted ? 'bg-emerald-500' : 'bg-amber-500';
+type JournalEntryWithRows = JournalEntryRecord & { rows?: JournalLineRecord[] };
+
+function formatEUR(value: number) {
+  return new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR' }).format(value);
 }
 
-function statusLabel(isPosted: boolean, t: (k: string) => string) {
-  return isPosted ? t('posted') : t('draft');
+function formatDate(value?: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+}
+
+function humanize(value?: string | null) {
+  return value ? value.replace(/_/g, ' ') : '-';
+}
+
+function entryAmount(entry: JournalEntryWithRows) {
+  if (!entry.rows?.length) return null;
+  const debit = entry.rows.reduce((sum, row) => sum + Number(row.debit || 0), 0);
+  const credit = entry.rows.reduce((sum, row) => sum + Number(row.credit || 0), 0);
+  return Math.max(debit, credit);
 }
 
 export default function JournalEntriesPage() {
   const t = useTranslations('accounting');
+  const searchRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [entries, setEntries] = useState<JournalEntryRecord[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedEntry, setSelectedEntry] = useState<(JournalEntryRecord & { rows?: JournalLineRecord[] }) | null>(null);
+  const [selectedEntry, setSelectedEntry] = useState<JournalEntryWithRows | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  const accountMap = useMemo(() => new Map(accounts.map((account) => [account.id, account])), [accounts]);
+
+  const filtered = useMemo(() => {
+    return entries.filter((entry) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        (entry.entry_number || '').toLowerCase().includes(query) ||
+        (entry.description || '').toLowerCase().includes(query) ||
+        (entry.reference_number || '').toLowerCase().includes(query) ||
+        (entry.entry_type || '').toLowerCase().includes(query)
+      );
+    });
+  }, [entries, searchQuery]);
 
   useEffect(() => {
     const load = async () => {
@@ -35,6 +82,14 @@ export default function JournalEntriesPage() {
         ]);
         setEntries(entryData);
         setAccounts(accountData);
+        if (entryData[0]) {
+          try {
+            const detail = await accountingApi.getJournalEntry(entryData[0].id);
+            setSelectedEntry(detail);
+          } catch {
+            setSelectedEntry(entryData[0]);
+          }
+        }
       } catch (err) {
         setError(getErrorMessage(err));
       } finally {
@@ -44,23 +99,8 @@ export default function JournalEntriesPage() {
     void load();
   }, []);
 
-  const accountMap = new Map(accounts.map((a) => [a.id, a]));
-
-  const filtered = entries.filter((e) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (e.entry_number || '').toLowerCase().includes(q) ||
-      (e.description || '').toLowerCase().includes(q) ||
-      (e.reference_number || '').toLowerCase().includes(q)
-    );
-  });
-
   const handleSelect = async (entry: JournalEntryRecord) => {
-    if (selectedEntry?.id === entry.id) {
-      setSelectedEntry(null);
-      return;
-    }
+    setSelectedEntry(entry);
     setIsDetailLoading(true);
     try {
       const detail = await accountingApi.getJournalEntry(entry.id);
@@ -72,274 +112,356 @@ export default function JournalEntriesPage() {
     }
   };
 
-  const accountLabel = (id: string) => {
-    const a = accountMap.get(id);
-    return a ? `${a.code} · ${a.name}` : id.slice(0, 8);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditingText = ['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '');
+
+      if (event.key === '/' && !isEditingText) {
+        event.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
+
+      if (isEditingText || filtered.length === 0) return;
+      const currentIndex = Math.max(0, filtered.findIndex((entry) => entry.id === selectedEntry?.id));
+
+      if (event.key.toLowerCase() === 'j') {
+        event.preventDefault();
+        void handleSelect(filtered[Math.min(filtered.length - 1, currentIndex + 1)]);
+      }
+      if (event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        void handleSelect(filtered[Math.max(0, currentIndex - 1)]);
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [filtered, selectedEntry?.id]);
+
+  const draftCount = entries.filter((entry) => !entry.is_posted).length;
+  const postedCount = entries.filter((entry) => entry.is_posted).length;
+  const visibleAmount = filtered.reduce((sum, entry) => sum + (entryAmount(entry) || 0), 0);
+  const selectedRows = selectedEntry?.rows || [];
+  const totalDebit = selectedRows.reduce((sum, row) => sum + Number(row.debit || 0), 0);
+  const totalCredit = selectedRows.reduce((sum, row) => sum + Number(row.credit || 0), 0);
+
+  const accountLabel = (id?: string | null) => {
+    if (!id) return '-';
+    const account = accountMap.get(id);
+    return account ? `${account.code} · ${account.name}` : id.slice(0, 8);
   };
 
+  const firstDebit = (entry: JournalEntryWithRows) => entry.rows?.find((row) => Number(row.debit || 0) > 0);
+  const firstCredit = (entry: JournalEntryWithRows) => entry.rows?.find((row) => Number(row.credit || 0) > 0);
+
   return (
-    <div>
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">{t('journalEntries')}</h1>
-        <p className="text-sm text-slate-500 mt-1">{t('journalDescription')}</p>
-      </div>
-
-      <div className="hidden md:flex mb-6 justify-between items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder={t('searchEntries')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ fontSize: '16px' }}
-            className="w-72 h-10 pl-9 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
-          />
+    <div className="flex min-h-full flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="micro text-[var(--a-text-3)]">Journal workspace</div>
+          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('journalEntries')}</h1>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{filtered.length} entries in the current view</p>
         </div>
-        <div className="flex items-center gap-3 ml-auto">
-          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
-            <Filter className="h-4 w-4" />
-            <span>{t('filter')}</span>
-          </button>
-          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
-            <Download className="h-4 w-4" />
-            <span>{t('export')}</span>
-          </button>
-          <button className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors">
-            <Plus className="h-4 w-4" />
-            <span>{t('newEntry')}</span>
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button>
+            <Upload className="h-3.5 w-3.5" />
+            Import
+          </Button>
+          <Button>
+            <Download className="h-3.5 w-3.5" />
+            {t('export')}
+          </Button>
+          <Button variant="primary">
+            <Plus className="h-3.5 w-3.5" />
+            {t('newEntry')}
+            <Kbd inverse>N</Kbd>
+          </Button>
         </div>
       </div>
 
-      <div className="md:hidden mb-4 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-          <input
-            type="text"
-            placeholder={t('searchEntries')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ fontSize: '16px' }}
-            className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
-          />
+      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
+        <Stat label="Posted entries" value={postedCount} subtle="current ledger" delta="+8.4%" />
+        <Stat label="Drafts to review" value={draftCount} subtle="oldest draft first" tone="warning" />
+        <Stat label="Visible movement" value={formatEUR(visibleAmount)} subtle={`${filtered.length} rows`} />
+        <Stat label="Book balance" value={Math.abs(totalDebit - totalCredit) < 0.01 ? 'Balanced' : 'Open'} subtle="selected entry" tone="positive" check />
+      </div>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-1">
+          {[
+            ['All', entries.length, true],
+            ['Posted', postedCount, false],
+            ['Drafts', draftCount, false],
+            ['Manual', entries.filter((entry) => entry.entry_type === 'manual').length, false],
+          ].map(([label, count, active]) => (
+            <button
+              key={label as string}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+                active
+                  ? 'bg-[var(--a-text)] text-white'
+                  : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
+              }`}
+            >
+              {label}
+              <span className={active ? 'text-white/60' : label === 'Drafts' ? 'text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}>
+                {count}
+              </span>
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
-            <Filter className="h-4 w-4" />
-            <span>{t('filter')}</span>
-          </button>
-          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
-            <Download className="h-4 w-4" />
-            <span>{t('export')}</span>
-          </button>
-          <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <label className="relative block w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
+            <input
+              ref={searchRef}
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={t('searchEntries')}
+              className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
+            />
+          </label>
+          <Button>
+            <Filter className="h-3.5 w-3.5" />
+            {t('filter')}
+          </Button>
+          <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex">
+            <Kbd>J</Kbd>
+            <Kbd>K</Kbd>
+            <span>navigate</span>
+            <span>·</span>
+            <Kbd>E</Kbd>
+            <span>edit</span>
+            <span>·</span>
+            <Kbd>D</Kbd>
+            <span>duplicate</span>
+          </div>
         </div>
       </div>
 
-      <button className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95">
-        <Plus className="h-6 w-6" />
-      </button>
+      {error && <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-4 text-sm text-[var(--a-neg)]">{error}</div>}
 
-      {error && (
-        <div className="mb-4 card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
-      )}
-
-      {isLoading ? (
-        <div className="card p-12 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center text-sm text-slate-500">
-          {searchQuery ? t('noResults') : t('noJournalEntries')}
-        </div>
-      ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,400px)]">
-          <div>
-            <div className="hidden md:block card overflow-hidden">
-              <table className="min-w-full">
-                <thead className="bg-slate-50/80">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('date')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('reference')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('description')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('type')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
-                    <th className="w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {filtered.map((entry) => (
-                    <tr
-                      key={entry.id}
-                      onClick={() => handleSelect(entry)}
-                      className={`border-b border-slate-100 cursor-pointer transition-colors ${
-                        selectedEntry?.id === entry.id ? 'bg-[var(--primary)]/5' : 'hover:bg-slate-50/50'
-                      } ${!entry.is_posted ? 'border-l-2 border-l-amber-300' : ''}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{entry.entry_date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-[var(--primary)]">
-                        {entry.entry_number || entry.reference_number || '-'}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">{entry.description || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 capitalize">{entry.entry_type?.replace(/_/g, ' ') || '-'}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-1.5 w-1.5 rounded-full ${statusColor(entry.is_posted)}`} />
-                          <span className="text-xs text-slate-600">{statusLabel(entry.is_posted, t)}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <Eye className="h-4 w-4 text-slate-400" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="md:hidden space-y-2">
-              {filtered.map((entry) => (
-                <div
-                  key={entry.id}
-                  onClick={() => handleSelect(entry)}
-                  className={`card p-4 cursor-pointer transition-colors ${
-                    selectedEntry?.id === entry.id ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/10' : 'active:bg-slate-50'
-                  } ${!entry.is_posted ? 'border-l-2 border-l-amber-300' : ''}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-slate-500">{entry.entry_date}</span>
-                    <div className="flex items-center gap-1.5">
-                      <div className={`h-1.5 w-1.5 rounded-full ${statusColor(entry.is_posted)}`} />
-                      <span className="text-xs text-slate-600">{statusLabel(entry.is_posted, t)}</span>
-                    </div>
-                  </div>
-                  <div className="font-mono text-sm text-[var(--primary)] mb-1">
-                    {entry.entry_number || entry.reference_number || '-'}
-                  </div>
-                  <div className="text-sm text-slate-600">{entry.description || '-'}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden md:flex mt-6 justify-between items-center">
-              <p className="text-sm text-slate-600">
-                {t('showingEntries', { from: 1, to: filtered.length, total: filtered.length })}
-              </p>
-            </div>
+      <SplitPane className="flex-1">
+        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+          <div className="grid grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+            <div />
+            <div>JE code</div>
+            <div>{t('date')}</div>
+            <div>{t('description')}</div>
+            <div>Debit</div>
+            <div>Credit</div>
+            <div className="text-right">{t('total')}</div>
+            <div className="text-right">{t('status')}</div>
           </div>
 
-          {selectedEntry && (
-            <EntryDetailPanel
-              entry={selectedEntry}
-              isLoading={isDetailLoading}
-              accountLabel={accountLabel}
-              onClose={() => setSelectedEntry(null)}
-            />
-          )}
-        </div>
-      )}
+          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+            {isLoading ? (
+              <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-sm text-[var(--a-text-3)]">{searchQuery ? t('noResults') : t('noJournalEntries')}</div>
+            ) : (
+              filtered.map((entry, index) => {
+                const selected = selectedEntry?.id === entry.id;
+                const debit = firstDebit(entry);
+                const credit = firstCredit(entry);
+                const amount = entryAmount(entry);
+
+                return (
+                  <button
+                    key={entry.id}
+                    onClick={() => void handleSelect(entry)}
+                    className={`grid w-full grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] transition-colors ${
+                      selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
+                    }`}
+                  >
+                    <span className={`font-mono text-[10.5px] ${selected ? 'font-semibold text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}`}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="truncate font-mono text-[12px] font-medium text-[var(--a-accent)]">
+                      {entry.entry_number || entry.reference_number || entry.id.slice(0, 8)}
+                    </span>
+                    <span className="truncate font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(entry.entry_date)}</span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-[var(--a-text)]">{entry.description || humanize(entry.entry_type)}</span>
+                      <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">
+                        {entry.reference_number || humanize(entry.entry_type)}
+                      </span>
+                    </span>
+                    <span className="truncate font-mono text-[11.5px] text-[var(--a-text-2)]">{debit ? accountLabel(debit.account_id).split(' · ')[0] : '-'}</span>
+                    <span className="truncate font-mono text-[11.5px] text-[var(--a-text-2)]">{credit ? accountLabel(credit.account_id).split(' · ')[0] : '-'}</span>
+                    <span className={`truncate text-right font-mono text-[13px] font-medium ${entry.is_posted ? 'text-[var(--a-text)]' : 'text-[var(--a-warn)]'}`}>
+                      {amount === null ? '-' : formatEUR(amount)}
+                    </span>
+                    <span className="text-right">
+                      <StatusPill tone={entry.is_posted ? 'posted' : 'draft'}>{entry.is_posted ? t('posted') : t('draft')}</StatusPill>
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+            <span><span className="text-[var(--a-text)]">{filtered.length}</span> shown</span>
+            <span>Σ Dr <span className="text-[var(--a-text)]">{formatEUR(totalDebit)}</span></span>
+            <span>Σ Cr <span className="text-[var(--a-text)]">{formatEUR(totalCredit)}</span></span>
+            <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              balanced
+            </span>
+            <span className="flex-1" />
+            <span>Synced now</span>
+          </div>
+        </section>
+
+        <SplitPaneDetail>
+          <EntryDetailPanel
+            entry={selectedEntry}
+            rows={selectedRows}
+            isLoading={isDetailLoading}
+            accountLabel={accountLabel}
+            totalDebit={totalDebit}
+            totalCredit={totalCredit}
+          />
+        </SplitPaneDetail>
+      </SplitPane>
     </div>
   );
 }
 
 function EntryDetailPanel({
   entry,
+  rows,
   isLoading,
   accountLabel,
-  onClose,
+  totalDebit,
+  totalCredit,
 }: {
-  entry: JournalEntryRecord & { rows?: JournalLineRecord[] };
+  entry: JournalEntryWithRows | null;
+  rows: JournalLineRecord[];
   isLoading: boolean;
-  accountLabel: (id: string) => string;
-  onClose: () => void;
+  accountLabel: (id?: string | null) => string;
+  totalDebit: number;
+  totalCredit: number;
 }) {
   const t = useTranslations('accounting');
 
-  const rows = entry.rows || [];
-  const totalDebit = rows.reduce((s, r) => s + Number(r.debit || 0), 0);
-  const totalCredit = rows.reduce((s, r) => s + Number(r.credit || 0), 0);
+  if (!entry) {
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">Select a journal entry to inspect its posting.</div>;
+  }
 
   return (
-    <div className="card overflow-hidden self-start sticky top-6">
-      <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4 flex items-center justify-between">
-        <div>
-          <div className="text-base font-semibold text-slate-900">
-            {entry.entry_number || entry.reference_number || t('journalEntry')}
+    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+      <div className="border-b border-[var(--a-border)] px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-mono text-[12px] text-[var(--a-text-3)]">{entry.entry_number || entry.id.slice(0, 8)}</div>
+            <h2 className="mt-2 truncate text-[17px] font-semibold text-[var(--a-text)]">{entry.description || t('journalEntry')}</h2>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12.5px] text-[var(--a-text-2)]">
+              <span className="font-mono">{formatDate(entry.entry_date)}</span>
+              <span>·</span>
+              <span>{humanize(entry.entry_type)}</span>
+            </div>
           </div>
-          <div className="mt-0.5 text-xs text-slate-500">{entry.entry_date} · {entry.entry_type?.replace(/_/g, ' ')}</div>
+          <StatusPill tone={entry.is_posted ? 'posted' : 'draft'}>{entry.is_posted ? t('posted') : t('draft')}</StatusPill>
         </div>
-        <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-          <X className="h-4 w-4" />
-        </button>
       </div>
 
-      <div className="divide-y divide-slate-100">
-        {entry.description && (
-          <div className="px-5 py-3">
-            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 mb-1">{t('description')}</div>
-            <div className="text-sm text-slate-900">{entry.description}</div>
-          </div>
-        )}
-
-        <div className="px-5 py-3 flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('status')}</span>
-          <div className="flex items-center gap-2">
-            <div className={`h-1.5 w-1.5 rounded-full ${statusColor(entry.is_posted)}`} />
-            <span className="text-sm text-slate-900">{statusLabel(entry.is_posted, t)}</span>
-          </div>
+      <div className="border-b border-[var(--a-border)] bg-[var(--a-bg)] px-5 py-4">
+        <div className="micro text-[var(--a-text-3)]">{t('total')}</div>
+        <div className="mt-1 font-mono text-[30px] font-semibold leading-none text-[var(--a-text)] tabular-nums">
+          {formatEUR(Math.max(totalDebit, totalCredit))}
         </div>
-
-        {entry.reference_number && (
-          <div className="px-5 py-3 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('reference')}</span>
-            <span className="text-sm font-mono text-slate-900">{entry.reference_number}</span>
-          </div>
-        )}
+        <div className="mt-2 text-[12px] text-[var(--a-text-3)]">
+          Difference <span className={Math.abs(totalDebit - totalCredit) < 0.01 ? 'font-mono text-[var(--a-pos)]' : 'font-mono text-[var(--a-neg)]'}>
+            {formatEUR(totalDebit - totalCredit)}
+          </span>
+        </div>
       </div>
 
-      <div className="border-t border-slate-200">
-        <div className="px-5 py-3 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-          {t('journalLines')}
-        </div>
-
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="micro mb-3 text-[var(--a-text-3)]">{t('journalLines')}</div>
         {isLoading ? (
-          <div className="px-5 pb-4 flex justify-center">
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+          <div className="flex py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
           </div>
         ) : rows.length === 0 ? (
-          <div className="px-5 pb-4 text-sm text-slate-500">{t('noLines')}</div>
+          <div className="text-sm text-[var(--a-text-3)]">{t('noLines')}</div>
         ) : (
-          <div className="divide-y divide-slate-100">
-            {rows.map((row) => (
-              <div key={row.id} className="px-5 py-2.5 flex items-center justify-between gap-3">
-                <div className="text-sm text-slate-700 truncate min-w-0">{accountLabel(row.account_id)}</div>
-                <div className="flex items-center gap-4 flex-shrink-0">
-                  {Number(row.debit) > 0 && (
-                    <span className="font-mono text-sm tabular-nums text-slate-900">
-                      D {Number(row.debit).toFixed(2)}
-                    </span>
-                  )}
-                  {Number(row.credit) > 0 && (
-                    <span className="font-mono text-sm tabular-nums text-slate-900">
-                      C {Number(row.credit).toFixed(2)}
-                    </span>
-                  )}
+          <div className="space-y-2">
+            {rows.map((row) => {
+              const debit = Number(row.debit || 0);
+              const credit = Number(row.credit || 0);
+              const side = debit > 0 ? 'Dr' : 'Cr';
+
+              return (
+                <div key={row.id} className="flex items-center gap-2 text-[12.5px]">
+                  <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${side === 'Dr' ? 'bg-[var(--a-surface-2)] text-[var(--a-text)]' : 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]'}`}>
+                    {side.toUpperCase()}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[var(--a-text)]">{accountLabel(row.account_id)}</span>
+                  <span className="font-mono font-medium tabular-nums text-[var(--a-text)]">{formatEUR(debit || credit)}</span>
                 </div>
-              </div>
-            ))}
-            <div className="px-5 py-3 flex items-center justify-between bg-slate-50/80">
-              <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{t('total')}</span>
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">D {totalDebit.toFixed(2)}</span>
-                <span className="font-mono text-sm font-semibold tabular-nums text-slate-900">C {totalCredit.toFixed(2)}</span>
-              </div>
+              );
+            })}
+            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[var(--a-border)] pt-3">
+              <TotalBox label="Debit" value={totalDebit} />
+              <TotalBox label="Credit" value={totalCredit} />
             </div>
           </div>
         )}
+
+        {entry.reference_number && (
+          <div className="mt-5 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+            <div className="micro text-[var(--a-text-3)]">{t('reference')}</div>
+            <div className="mt-1 font-mono text-sm text-[var(--a-accent)]">{entry.reference_number}</div>
+          </div>
+        )}
+
+        <div className="mt-5">
+          <div className="micro mb-3 text-[var(--a-text-3)]">Activity</div>
+          <div className="space-y-3 text-[12px] text-[var(--a-text-2)]">
+            <div className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--a-pos)]" />
+              <span>
+                {entry.is_posted ? 'Posted to ledger' : 'Saved as draft'} · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.updated_at)}</span>
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--a-text-3)]" />
+              <span>
+                Created · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.created_at)}</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <div className="flex items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+        <Button className="h-8 flex-1 text-xs">
+          <Pencil className="h-3.5 w-3.5" />
+          Edit <Kbd>E</Kbd>
+        </Button>
+        <Button className="h-8 flex-1 text-xs">
+          <Copy className="h-3.5 w-3.5" />
+          Copy <Kbd>D</Kbd>
+        </Button>
+        <Button className="h-8 w-8 px-0">
+          <MoreHorizontal className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function TotalBox({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-lg bg-[var(--a-surface-2)] p-3">
+      <div className="micro text-[var(--a-text-3)]">{label}</div>
+      <div className="mt-1 font-mono text-sm font-semibold text-[var(--a-text)] tabular-nums">{formatEUR(value)}</div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "docs2/design_handoff_halo_pro/prototype/**",
   ]),
 ]);
 

@@ -73,24 +73,24 @@ export default function MobileNav() {
   return (
     <>
       {/* Top Bar - Only visible on mobile/tablet (< lg) */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--surface)] border-b border-[var(--border)] z-30 flex items-center justify-between px-4">
+      <div className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface)] px-4 lg:hidden">
         <button
           ref={triggerRef}
           onClick={() => setIsOpen(true)}
-          className="p-2 -ml-2 hover:bg-[var(--surface-elevated)] rounded-md transition-colors"
+          className="-ml-2 rounded-md p-2 hover:bg-[var(--a-surface-2)]"
           aria-label="Open navigation menu"
           aria-expanded={isOpen}
           aria-controls="mobile-sidebar"
         >
-          <Menu className="h-5 w-5 text-[var(--text-primary)]" />
+          <Menu className="h-5 w-5 text-[var(--a-text)]" />
         </button>
 
-        <h1 className="text-lg font-bold text-[var(--text-primary)] [font-family:var(--font-display)]">
+        <h1 className="text-lg font-semibold text-[var(--a-text)]">
           Arvelo
         </h1>
 
         <div
-          className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-sm font-semibold"
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--a-accent)] text-sm font-semibold text-white"
           aria-label={`User: ${user?.name || user?.email || 'Unknown'}`}
           role="img"
         >

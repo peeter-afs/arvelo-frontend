@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import {
@@ -11,6 +11,7 @@ import {
   FileCheck2,
   FileX2,
   Loader2,
+  Plus,
   RefreshCw,
   Search,
   Send,
@@ -20,6 +21,11 @@ import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type PartnerRecord } from '@/lib/api/accounting.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { paymentsApi, type PaymentListItem } from '@/lib/api/payments.api';
+import { Button } from '@/components/ui/Button';
+import { Kbd } from '@/components/ui/Kbd';
+import { Stat } from '@/components/ui/Stat';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 
 type InvoiceDetail = {
   invoice: InvoiceListItem;
@@ -32,7 +38,7 @@ type InvoiceDetail = {
     tax_rate?: number | string | null;
     line_total: number | string;
     account_id?: string | null;
-    meta?: Record<string, any> | null;
+    meta?: Record<string, unknown> | null;
   }>;
 };
 
@@ -44,11 +50,28 @@ type InvoiceListWorkspaceProps = {
 };
 
 const PURCHASE_APPROVAL_STATUSES = ['pending_approval', 'approved', 'rejected', 'draft', 'payable'] as const;
+
 type StatusTab = {
   id: string;
   label: string;
   count?: number;
 };
+
+function formatMoney(value: number | string | null | undefined, currency = 'EUR') {
+  return new Intl.NumberFormat('et-EE', { style: 'currency', currency }).format(Number(value || 0));
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
+}
+
+function initials(name: string) {
+  const parts = name.split(/\s+/).filter(Boolean);
+  return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || 'A';
+}
 
 export default function InvoiceListWorkspace({
   invoiceType,
@@ -75,10 +98,12 @@ export default function InvoiceListWorkspace({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const partnerMap = useMemo(() => new Map(partners.map((partner) => [partner.id, partner])), [partners]);
+
   const statusTabs = useMemo<StatusTab[]>(() => {
     if (isPurchase) {
       return [
-        { id: 'all', label: 'All' },
+        { id: 'all', label: 'All', count: invoices.length },
         ...PURCHASE_APPROVAL_STATUSES.map((status) => ({
           id: status,
           label: humanizeStatus(status),
@@ -88,12 +113,11 @@ export default function InvoiceListWorkspace({
     }
 
     return [
-      { id: 'all', label: 'All' },
+      { id: 'all', label: 'All', count: invoices.length },
       { id: 'overdue', label: 'Overdue', count: invoices.filter((invoice) => isOverdue(invoice)).length },
       { id: 'open', label: 'Open', count: invoices.filter((invoice) => isOpenInvoice(invoice)).length },
       { id: 'paid', label: 'Paid', count: invoices.filter((invoice) => invoice.status === 'paid').length },
       { id: 'draft', label: 'Draft', count: invoices.filter((invoice) => invoice.status === 'draft').length },
-      { id: 'confirmed', label: 'Confirmed', count: invoices.filter((invoice) => invoice.status === 'confirmed').length },
     ];
   }, [invoices, isPurchase]);
 
@@ -101,30 +125,24 @@ export default function InvoiceListWorkspace({
     const query = searchQuery.trim().toLowerCase();
     return invoices.filter((invoice) => {
       const matchesTab = matchesInvoiceTab(invoice, activeTab, isPurchase);
-      const partnerName = partners.find((partner) => partner.id === invoice.partner_id)?.name || '';
-      const haystack = [
-        invoice.invoice_number,
-        invoice.notes,
-        invoice.payment_reference,
-        partnerName,
-      ]
+      const partnerName = partnerMap.get(invoice.partner_id || '')?.name || '';
+      const haystack = [invoice.invoice_number, invoice.notes, invoice.payment_reference, partnerName]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
       return matchesTab && (!query || haystack.includes(query));
     });
-  }, [activeTab, invoices, partners, searchQuery]);
+  }, [activeTab, invoices, isPurchase, partnerMap, searchQuery]);
 
   const summary = useMemo(() => {
     const draft = invoices.filter((invoice) => invoice.status === 'draft').length;
     const approved = invoices.filter((invoice) => invoice.status === 'approved').length;
     const payable = invoices.filter((invoice) => invoice.status === 'payable').length;
-    const confirmed = invoices.filter((invoice) => invoice.status === 'confirmed').length;
     const paid = invoices.filter((invoice) => invoice.status === 'paid').length;
     const openTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.open_amount || 0), 0);
     const overdue = invoices.filter((invoice) => isOverdue(invoice)).length;
     const open = invoices.filter((invoice) => isOpenInvoice(invoice)).length;
-    return { draft, approved, payable, confirmed, paid, openTotal, overdue, open };
+    return { draft, approved, payable, paid, openTotal, overdue, open };
   }, [invoices]);
 
   useEffect(() => {
@@ -156,6 +174,7 @@ export default function InvoiceListWorkspace({
 
   useEffect(() => {
     if (!selectedInvoiceId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedInvoiceDetail(null);
       return;
     }
@@ -167,7 +186,7 @@ export default function InvoiceListWorkspace({
         const result = await invoicesApi.getInvoice(selectedInvoiceId);
         setSelectedInvoiceDetail(result);
         setRejectReason(result.invoice.rejection_reason || '');
-        const selectedPartner = partners.find((partner) => partner.id === result.invoice.partner_id);
+        const selectedPartner = partnerMap.get(result.invoice.partner_id || '');
         setSendRecipient(selectedPartner?.email || '');
         setSendMessage('');
       } catch (error) {
@@ -178,10 +197,11 @@ export default function InvoiceListWorkspace({
     };
 
     void loadDetail();
-  }, [partners, selectedInvoiceId]);
+  }, [partnerMap, selectedInvoiceId]);
 
   useEffect(() => {
     if (!selectedInvoiceId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentHistory([]);
       return;
     }
@@ -294,628 +314,470 @@ export default function InvoiceListWorkspace({
     });
   };
 
-  const selectedPartnerName =
-    partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id)?.name || t('unknownPartner');
-  const selectedPartner = partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id);
-  const lineSummary = useMemo(() => {
-    if (!selectedInvoiceDetail) {
-      return {
-        subtotalBeforeDiscount: 0,
-        totalDiscountValue: 0,
-        averageTaxRate: 0,
-        accountsUsed: [] as string[],
-      };
-    }
-
-    const subtotalBeforeDiscount = selectedInvoiceDetail.lines.reduce((sum, line) => {
-      return sum + Number(line.quantity || 0) * Number(line.unit_price || 0);
-    }, 0);
-    const totalDiscountValue = selectedInvoiceDetail.lines.reduce((sum, line) => {
-      const gross = Number(line.quantity || 0) * Number(line.unit_price || 0);
-      const discountPercent = Number(line.discount_percent || 0);
-      return sum + gross * (discountPercent / 100);
-    }, 0);
-    const averageTaxRate = selectedInvoiceDetail.lines.length > 0
-      ? selectedInvoiceDetail.lines.reduce((sum, line) => sum + Number(line.tax_rate || 0), 0) / selectedInvoiceDetail.lines.length
-      : 0;
-    const accountsUsed = Array.from(
-      new Set(selectedInvoiceDetail.lines.map((line) => line.account_id).filter(Boolean))
-    ) as string[];
-
-    return {
-      subtotalBeforeDiscount,
-      totalDiscountValue,
-      averageTaxRate,
-      accountsUsed,
-    };
-  }, [selectedInvoiceDetail]);
-  const activityTimeline = useMemo(() => {
-    if (!selectedInvoiceDetail) return [];
-    const invoice = selectedInvoiceDetail.invoice;
-    const items = [
-      {
-        label: t('created'),
-        value: invoice.created_at,
-        tone: 'neutral' as const,
-        detail: invoice.created_by_user_id ? `User ${invoice.created_by_user_id}` : null,
-      },
-      invoice.approval_requested_at
-        ? {
-            label: t('approvalRequested'),
-            value: invoice.approval_requested_at,
-            tone: 'warning' as const,
-            detail: invoice.approval_requested_by_user_id ? `User ${invoice.approval_requested_by_user_id}` : null,
-          }
-        : null,
-      invoice.approved_at
-        ? {
-            label: t('approved'),
-            value: invoice.approved_at,
-            tone: 'success' as const,
-            detail: invoice.approved_by_user_id ? `User ${invoice.approved_by_user_id}` : null,
-          }
-        : null,
-      invoice.rejected_at
-        ? {
-            label: t('rejected'),
-            value: invoice.rejected_at,
-            tone: 'danger' as const,
-            detail: invoice.rejected_by_user_id ? `User ${invoice.rejected_by_user_id}` : invoice.rejection_reason || null,
-          }
-        : null,
-      invoice.journal_entry_id
-        ? {
-            label: t('postedToLedger'),
-            value: invoice.updated_at,
-            tone: 'success' as const,
-            detail: t('journalNumber', { number: invoice.journal_entry_id }),
-          }
-        : null,
-      invoice.status === 'paid'
-        ? {
-            label: t('fullySettled'),
-            value: invoice.updated_at,
-            tone: 'success' as const,
-            detail: `${Number(invoice.paid_amount || 0).toFixed(2)} ${invoice.currency}`,
-          }
-        : null,
-    ].filter(Boolean);
-
-    return items as Array<{ label: string; value: string; tone: 'neutral' | 'success' | 'warning' | 'danger'; detail: string | null }>;
-  }, [selectedInvoiceDetail]);
+  const selectedPartnerName = partnerMap.get(selectedInvoiceDetail?.invoice.partner_id || '')?.name || t('unknownPartner');
+  const selectedPartner = partnerMap.get(selectedInvoiceDetail?.invoice.partner_id || '');
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex min-h-full flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{title}</h1>
-          <p className="mt-1 text-sm text-slate-500">{description}</p>
+          <div className="micro text-[var(--a-text-3)]">{isPurchase ? 'Accounts payable' : 'Accounts receivable'}</div>
+          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{title}</h1>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/invoices/new?type=${invoiceType}`}
-            className="inline-flex h-10 items-center rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--a-accent)] bg-[var(--a-accent)] px-3 text-[13px] font-medium text-white hover:bg-[#e74324]"
           >
+            <Plus className="h-3.5 w-3.5" />
             {t('newInvoice')}
+            <Kbd inverse>N</Kbd>
           </Link>
           <Link
             href={`/invoices/new?type=${invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note'}`}
-            className="inline-flex h-10 items-center rounded-lg border border-orange-200 bg-orange-50 px-4 text-sm font-medium text-orange-700 hover:bg-orange-100"
+            className="inline-flex h-9 items-center justify-center rounded-md border border-[var(--a-warn-soft)] bg-[var(--a-warn-soft)] px-3 text-[13px] font-medium text-[var(--a-warn)]"
           >
             {t('newCreditNote')}
           </Link>
-          <button
-            onClick={() => void refreshInvoices(selectedInvoiceId)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>{t('refresh')}</span>
-          </button>
+          <Button onClick={() => void refreshInvoices(selectedInvoiceId)}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            {t('refresh')}
+          </Button>
         </div>
       </div>
 
-      {errorMessage && (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        </div>
-      )}
+      {errorMessage && <Notice tone="danger" icon={<AlertCircle className="h-4 w-4" />}>{errorMessage}</Notice>}
+      {successMessage && <Notice tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>{successMessage}</Notice>}
 
-      {successMessage && (
-        <div className="card border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-3 md:grid-cols-4">
-        <Metric label={t('draft')} value={summary.draft} />
-        <Metric label={isPurchase ? t('approved') : t('overdue')} value={isPurchase ? summary.approved : summary.overdue} tone={isPurchase ? 'success' : 'danger'} />
-        <Metric label={isPurchase ? t('payable') : t('open')} value={isPurchase ? summary.payable : summary.open} tone="warning" />
-        <Metric label={t('openTotal')} value={summary.openTotal.toFixed(2)} tone="warning" />
+      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
+        <Stat label={t('draft')} value={summary.draft} subtle="not posted" />
+        <Stat
+          label={isPurchase ? t('approved') : t('overdue')}
+          value={isPurchase ? summary.approved : summary.overdue}
+          subtle={isPurchase ? 'ready for payable' : 'needs attention'}
+          tone={isPurchase ? 'positive' : 'danger'}
+        />
+        <Stat
+          label={isPurchase ? t('payable') : t('open')}
+          value={isPurchase ? summary.payable : summary.open}
+          subtle={isPurchase ? 'awaiting payment' : 'awaiting payment'}
+          tone="warning"
+        />
+        <Stat label={t('openTotal')} value={formatMoney(summary.openTotal)} subtle={`${summary.paid} paid`} />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="mb-4 flex flex-wrap gap-2">
-              {statusTabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`rounded-full px-3 py-2 text-sm transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-[var(--primary)] text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {tab.label}{typeof tab.count === 'number' ? ` (${tab.count})` : ''}
-                </button>
-              ))}
-            </div>
-            <label className="relative block">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder={searchPlaceholder}
-                className="h-11 w-full rounded-lg border border-slate-200 pl-9 pr-3"
-              />
-            </label>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap gap-1">
+          {statusTabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+                activeTab === tab.id
+                  ? 'bg-[var(--a-text)] text-white'
+                  : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
+              }`}
+            >
+              {tab.label}
+              {typeof tab.count === 'number' && (
+                <span className={activeTab === tab.id ? 'text-white/60' : tab.id === 'overdue' ? 'text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <label className="relative block w-full sm:w-80">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={searchPlaceholder}
+            className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
+          />
+        </label>
+      </div>
+
+      <SplitPane className="flex-1">
+        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+          <div className="grid grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+            <div />
+            <div>Invoice</div>
+            <div>{isPurchase ? 'Supplier' : 'Customer'}</div>
+            <div className="text-right">Amount</div>
+            <div>Issued</div>
+            <div>Due</div>
+            <div className="text-right">Status</div>
           </div>
 
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">{isPurchase ? t('purchaseList') : t('salesList')}</h2>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {isBootLoading ? (
-                <div className="p-4 text-sm text-slate-500">{t('loadingInvoices')}</div>
-              ) : filteredInvoices.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">{t('noInvoicesCurrentFilter')}</div>
-              ) : (
-                filteredInvoices.map((invoice) => (
+          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+            {isBootLoading ? (
+              <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+              </div>
+            ) : filteredInvoices.length === 0 ? (
+              <div className="p-8 text-sm text-[var(--a-text-3)]">{t('noInvoicesCurrentFilter')}</div>
+            ) : (
+              filteredInvoices.map((invoice, index) => {
+                const selected = selectedInvoiceId === invoice.id;
+                const partner = partnerMap.get(invoice.partner_id || '');
+                const status = invoiceStatus(invoice, isPurchase);
+                const paidPct = Number(invoice.total || 0) > 0 ? (Number(invoice.paid_amount || 0) / Number(invoice.total || 0)) * 100 : 0;
+
+                return (
                   <button
                     key={invoice.id}
                     onClick={() => setSelectedInvoiceId(invoice.id)}
-                    className={`block w-full px-4 py-3 text-left transition-colors ${selectedInvoiceId === invoice.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                    className={`grid w-full grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                      selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-900">
-                          {(invoice.type === 'sales_credit_note' || invoice.type === 'purchase_credit_note') && (
-                          <span className="mr-1.5 inline-flex items-center rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-orange-700">{t('creditNoteAbbrev')}</span>
-                        )}
-                          {invoice.invoice_number || invoice.id.slice(0, 8)}
-                        </div>
-                        <div className="mt-1 truncate text-xs text-slate-500">
-                          {partners.find((partner) => partner.id === invoice.partner_id)?.name || t('unknownPartner')}
-                        </div>
-                      </div>
-                      <span className="font-mono text-sm text-slate-900">
-                        {Number(invoice.total || 0).toFixed(2)}
+                    <span className={`font-mono text-[10.5px] ${selected ? 'font-semibold text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}`}>
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-mono text-[12px] font-medium text-[var(--a-accent)]">
+                        {invoice.invoice_number || invoice.id.slice(0, 8)}
                       </span>
-                    </div>
-                    <div className="mt-2 text-xs text-slate-500">
-                      {renderListMeta(invoice, isPurchase)} · {invoice.invoice_date}
-                    </div>
+                      {(invoice.type === 'sales_credit_note' || invoice.type === 'purchase_credit_note') && (
+                        <span className="mt-1 inline-flex rounded bg-[var(--a-warn-soft)] px-1.5 py-0.5 text-[10px] font-semibold uppercase text-[var(--a-warn)]">
+                          {t('creditNoteAbbrev')}
+                        </span>
+                      )}
+                    </span>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Avatar name={partner?.name || t('unknownPartner')} />
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-[var(--a-text)]">{partner?.name || t('unknownPartner')}</span>
+                        <span className="mt-0.5 block h-1 rounded-full bg-[var(--a-surface-2)]">
+                          <span className="block h-1 rounded-full bg-[var(--a-pos)]" style={{ width: `${Math.min(100, paidPct)}%` }} />
+                        </span>
+                      </span>
+                    </span>
+                    <span className="text-right font-mono text-[13px] font-medium text-[var(--a-text)]">{formatMoney(invoice.total, invoice.currency)}</span>
+                    <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(invoice.invoice_date)}</span>
+                    <span>
+                      <span className="block font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(invoice.due_date)}</span>
+                      <span className="text-[10.5px] font-medium text-[var(--a-text-3)]">{status.label}</span>
+                    </span>
+                    <span className="text-right">
+                      <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                    </span>
                   </button>
-                ))
-              )}
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+            <span>Showing <span className="text-[var(--a-text)]">{filteredInvoices.length}</span></span>
+            <span>Open <span className="text-[var(--a-text)]">{formatMoney(summary.openTotal)}</span></span>
+            {summary.overdue > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-[var(--a-neg)]">
+                <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                {summary.overdue} overdue
+              </span>
+            )}
+            <span className="flex-1" />
+            <span>Sync live</span>
+          </div>
+        </section>
+
+        <SplitPaneDetail>
+          <InvoiceDetailPanel
+            detail={selectedInvoiceDetail}
+            selectedPartnerName={selectedPartnerName}
+            selectedPartner={selectedPartner}
+            isPurchase={isPurchase}
+            isLoading={isDetailLoading}
+            actionLoading={actionLoading}
+            paymentHistory={paymentHistory}
+            isPaymentHistoryLoading={isPaymentHistoryLoading}
+            rejectReason={rejectReason}
+            sendRecipient={sendRecipient}
+            sendMessage={sendMessage}
+            onRejectReasonChange={setRejectReason}
+            onSendRecipientChange={setSendRecipient}
+            onSendMessageChange={setSendMessage}
+            onSubmitApproval={handleSubmitApproval}
+            onApprove={handleApprove}
+            onReject={handleReject}
+            onConfirm={handleConfirm}
+            onSend={handleSend}
+            onExport={handleExport}
+          />
+        </SplitPaneDetail>
+      </SplitPane>
+    </div>
+  );
+}
+
+function InvoiceDetailPanel({
+  detail,
+  selectedPartnerName,
+  selectedPartner,
+  isPurchase,
+  isLoading,
+  actionLoading,
+  paymentHistory,
+  isPaymentHistoryLoading,
+  rejectReason,
+  sendRecipient,
+  sendMessage,
+  onRejectReasonChange,
+  onSendRecipientChange,
+  onSendMessageChange,
+  onSubmitApproval,
+  onApprove,
+  onReject,
+  onConfirm,
+  onSend,
+  onExport,
+}: {
+  detail: InvoiceDetail | null;
+  selectedPartnerName: string;
+  selectedPartner?: PartnerRecord;
+  isPurchase: boolean;
+  isLoading: boolean;
+  actionLoading: string | null;
+  paymentHistory: PaymentListItem[];
+  isPaymentHistoryLoading: boolean;
+  rejectReason: string;
+  sendRecipient: string;
+  sendMessage: string;
+  onRejectReasonChange: (value: string) => void;
+  onSendRecipientChange: (value: string) => void;
+  onSendMessageChange: (value: string) => void;
+  onSubmitApproval: () => void;
+  onApprove: () => void;
+  onReject: () => void;
+  onConfirm: () => void;
+  onSend: () => void;
+  onExport: (format: 'pdf' | 'html' | 'json') => void;
+}) {
+  const t = useTranslations('invoices');
+
+  if (!detail) {
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">{t('selectInvoiceToReview')}</div>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[520px] items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+      </div>
+    );
+  }
+
+  const invoice = detail.invoice;
+  const status = invoiceStatus(invoice, isPurchase);
+
+  return (
+    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+      <div className="border-b border-[var(--a-border)] px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-mono text-[12px] text-[var(--a-accent)]">{invoice.invoice_number || invoice.id.slice(0, 8)}</div>
+            <h2 className="mt-2 truncate text-[17px] font-semibold text-[var(--a-text)]">{selectedPartnerName}</h2>
+            <div className="mt-1.5 text-[12.5px] text-[var(--a-text-2)]">
+              {formatDate(invoice.invoice_date)} · {t('due')} {formatDate(invoice.due_date)}
             </div>
           </div>
-        </aside>
+          <StatusPill tone={status.tone}>{status.label}</StatusPill>
+        </div>
+      </div>
 
-        <section className="space-y-4">
-          {!selectedInvoiceDetail ? (
-            <div className="card p-8 text-sm text-slate-500">{t('selectInvoiceToReview')}</div>
-          ) : isDetailLoading ? (
-            <div className="card p-8 text-sm text-slate-500">{t('loadingInvoiceDetail')}</div>
+      <div className="border-b border-[var(--a-border)] bg-[var(--a-bg)] px-5 py-4">
+        <div className="micro text-[var(--a-text-3)]">{t('invoiceTotal')}</div>
+        <div className="mt-1 font-mono text-[30px] font-semibold leading-none text-[var(--a-text)] tabular-nums">
+          {formatMoney(invoice.total, invoice.currency)}
+        </div>
+        <div className="mt-2 text-[12px] text-[var(--a-text-3)]">
+          Open <span className="font-mono text-[var(--a-text)]">{formatMoney(invoice.open_amount, invoice.currency)}</span> · Paid{' '}
+          <span className="font-mono text-[var(--a-pos)]">{formatMoney(invoice.paid_amount, invoice.currency)}</span>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="grid grid-cols-2 gap-3">
+          <InfoBox label={t('paymentReference')} value={invoice.payment_reference || '-'} />
+          <InfoBox label={isPurchase ? t('approvalRequested') : t('journalEntry')} value={isPurchase ? invoice.approval_requested_at || '-' : invoice.journal_entry_id || '-'} />
+          <InfoBox label={t('subtotal')} value={formatMoney(invoice.subtotal, invoice.currency)} />
+          <InfoBox label={t('taxTotal')} value={formatMoney(invoice.tax_amount, invoice.currency)} />
+        </div>
+
+        <section className="mt-5">
+          <div className="micro mb-3 text-[var(--a-text-3)]">{isPurchase ? t('supplierContext') : t('customerContext')}</div>
+          <div className="space-y-2 text-[12.5px]">
+            <KV label={t('name')} value={selectedPartnerName} />
+            <KV label={t('email')} value={selectedPartner?.email || '-'} />
+            <KV label={t('registryCode')} value={selectedPartner?.reg_code || '-'} />
+            <KV label={t('vatNumber')} value={selectedPartner?.vat_number || '-'} />
+          </div>
+        </section>
+
+        <section className="mt-5">
+          <div className="micro mb-3 text-[var(--a-text-3)]">{t('invoiceLines')}</div>
+          <div className="space-y-2">
+            {detail.lines.map((line) => (
+              <div key={line.id} className="rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium text-[var(--a-text)]">{line.description}</div>
+                    <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
+                      {t('qty')} {line.quantity} · {t('vatRate')} {Number(line.tax_rate || 0).toFixed(2)}% · {t('account')} {line.account_id || '-'}
+                    </div>
+                  </div>
+                  <div className="font-mono text-[13px] font-semibold text-[var(--a-text)]">{formatMoney(line.line_total, invoice.currency)}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="mt-5">
+          <div className="micro mb-3 text-[var(--a-text-3)]">{t('paymentHistory')}</div>
+          {isPaymentHistoryLoading ? (
+            <div className="text-sm text-[var(--a-text-3)]">{t('loadingPaymentHistory')}</div>
+          ) : paymentHistory.length === 0 ? (
+            <div className="text-sm text-[var(--a-text-3)]">{t('noPaymentsRecordedYet')}</div>
           ) : (
-            <>
-              <div className="card overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <h2 className="text-base font-semibold text-slate-900">
-                        {selectedInvoiceDetail.invoice.invoice_number || selectedInvoiceDetail.invoice.id}
-                      </h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {selectedPartnerName} · {t('invoiceDateLabel')} {selectedInvoiceDetail.invoice.invoice_date} · {t('due')} {selectedInvoiceDetail.invoice.due_date || '-'}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono text-lg font-semibold text-slate-900">
-                        {Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} {selectedInvoiceDetail.invoice.currency}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {t('status')} {humanizeStatus(selectedInvoiceDetail.invoice.status)}
-                      </div>
-                    </div>
+            <div className="space-y-2">
+              {paymentHistory.slice(0, 5).map((payment) => (
+                <div key={payment.id} className="flex items-center justify-between gap-3 text-[12.5px]">
+                  <div className="min-w-0">
+                    <div className="truncate font-medium text-[var(--a-text)]">{payment.reference || payment.id.slice(0, 8)}</div>
+                    <div className="font-mono text-[11px] text-[var(--a-text-3)]">{formatDate(payment.payment_date)}</div>
                   </div>
+                  <div className="font-mono text-[var(--a-text)]">{formatMoney(payment.amount, payment.currency)}</div>
                 </div>
-
-                <div className="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-4">
-                  <InfoBox label={t('openAmount')} value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
-                  <InfoBox label={t('paidAmount')} value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
-                  <InfoBox label={t('paymentReference')} value={selectedInvoiceDetail.invoice.payment_reference || '-'} />
-                  <InfoBox label={isPurchase ? t('approvalRequested') : t('journalEntry')} value={isPurchase ? selectedInvoiceDetail.invoice.approval_requested_at || '-' : selectedInvoiceDetail.invoice.journal_entry_id || '-'} />
-                </div>
-
-                <div className="grid gap-4 border-t border-slate-200 p-5 xl:grid-cols-[1.1fr_0.9fr]">
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">{t('documentSummary')}</div>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <InfoBox label={t('issueDate')} value={selectedInvoiceDetail.invoice.invoice_date || '-'} />
-                        <InfoBox label={t('dueDate')} value={selectedInvoiceDetail.invoice.due_date || '-'} />
-                        <InfoBox label={t('currency')} value={selectedInvoiceDetail.invoice.currency || '-'} />
-                        <InfoBox label={t('lineCount')} value={String(selectedInvoiceDetail.lines.length)} />
-                      </div>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <InfoBox label={t('subtotal')} value={Number(selectedInvoiceDetail.invoice.subtotal || 0).toFixed(2)} />
-                        <InfoBox label={t('taxTotal')} value={Number(selectedInvoiceDetail.invoice.tax_amount || 0).toFixed(2)} />
-                        <InfoBox label={t('grossBeforeDiscount')} value={lineSummary.subtotalBeforeDiscount.toFixed(2)} />
-                        <InfoBox label={t('discountValue')} value={lineSummary.totalDiscountValue.toFixed(2)} />
-                      </div>
-                      <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
-                        <div className="font-medium text-slate-800">{t('notes')}</div>
-                        <p className="mt-2 leading-6">{selectedInvoiceDetail.invoice.notes || t('noNotesRecorded')}</p>
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">{t('commercialAccountingContext')}</div>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                        <InfoBox label={t('averageVatRate')} value={`${lineSummary.averageTaxRate.toFixed(2)}%`} />
-                        <InfoBox label={t('accountsUsed')} value={lineSummary.accountsUsed.length ? lineSummary.accountsUsed.join(', ') : '-'} />
-                        <InfoBox label={t('paymentTerms')} value={selectedInvoiceDetail.invoice.due_date ? `${dateDiffLabel(selectedInvoiceDetail.invoice.invoice_date, selectedInvoiceDetail.invoice.due_date)}` : '-'} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">{isPurchase ? t('supplierContext') : t('customerContext')}</div>
-                      <div className="mt-4 space-y-3">
-                        <DetailRow label={t('name')} value={selectedPartnerName} />
-                        <DetailRow label={t('email')} value={selectedPartner?.email || '-'} />
-                        <DetailRow label={t('registryCode')} value={selectedPartner?.reg_code || '-'} />
-                        <DetailRow label={t('vatNumber')} value={selectedPartner?.vat_number || '-'} />
-                        <DetailRow label={t('address')} value={selectedPartner?.address || '-'} />
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                      <div className="text-sm font-semibold text-slate-900">{t('activityTimeline')}</div>
-                      <div className="mt-4 space-y-4">
-                        {activityTimeline.length === 0 ? (
-                          <div className="text-sm text-slate-500">{t('noTimelineEvents')}</div>
-                        ) : (
-                          activityTimeline.map((item) => (
-                            <TimelineRow
-                              key={`${item.label}-${item.value}`}
-                              label={item.label}
-                              value={item.value}
-                              tone={item.tone}
-                              detail={item.detail}
-                            />
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2 border-t border-slate-200 px-5 py-4">
-                  <StatePill tone={isPurchase ? 'neutral' : (isOverdue(selectedInvoiceDetail.invoice) ? 'danger' : isOpenInvoice(selectedInvoiceDetail.invoice) ? 'warning' : 'success')}>
-                    {isPurchase ? humanizeStatus(selectedInvoiceDetail.invoice.status) : derivedSalesState(selectedInvoiceDetail.invoice)}
-                  </StatePill>
-                  {canEditInvoice(selectedInvoiceDetail.invoice) && (
-                    <Link
-                      href={`/invoices/${selectedInvoiceDetail.invoice.id}/edit`}
-                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      <span>{t('editDraft')}</span>
-                    </Link>
-                  )}
-                  <Link
-                    href={`/invoices/${selectedInvoiceDetail.invoice.id}/preview`}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    <span>{t('previewPdf')}</span>
-                  </Link>
-                  <button
-                    onClick={() => void handleExport('pdf')}
-                    disabled={!!actionLoading}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    {actionLoading === 'export-pdf' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>{t('exportPdf')}</span>
-                  </button>
-                  <button
-                    onClick={() => void handleExport('json')}
-                    disabled={!!actionLoading}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                  >
-                    {actionLoading === 'export-json' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                    <span>{t('exportJson')}</span>
-                  </button>
-                </div>
-
-                {!isPurchase && (
-                  <div className="border-t border-slate-200 p-5">
-                    <div className="mb-3 text-sm font-semibold text-slate-900">{t('sendInvoice')}</div>
-                    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                      <input
-                        value={sendRecipient}
-                        onChange={(event) => setSendRecipient(event.target.value)}
-                        placeholder={t('recipientEmail')}
-                        className="h-10 rounded-lg border border-slate-200 px-3"
-                      />
-                      <input
-                        value={sendMessage}
-                        onChange={(event) => setSendMessage(event.target.value)}
-                        placeholder={t('optionalMessage')}
-                        className="h-10 rounded-lg border border-slate-200 px-3"
-                      />
-                      <button
-                        onClick={handleSend}
-                        disabled={!!actionLoading}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
-                      >
-                        {actionLoading === 'send' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        <span>{t('sendInvoice')}</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {isPurchase && (
-                  <div className="border-t border-slate-200 p-5">
-                    <div className="mb-3 text-sm font-semibold text-slate-900">{t('workflowActions')}</div>
-                    <div className="flex flex-wrap gap-3">
-                      <button
-                        onClick={handleSubmitApproval}
-                        disabled={!['draft', 'rejected'].includes(selectedInvoiceDetail.invoice.status) || !!actionLoading}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading === 'submit' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                        <span>{t('submitApproval')}</span>
-                      </button>
-                      <button
-                        onClick={handleApprove}
-                        disabled={!['pending_approval', 'draft', 'rejected'].includes(selectedInvoiceDetail.invoice.status) || !!actionLoading}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading === 'approve' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCheck2 className="h-4 w-4" />}
-                        <span>{t('approveAction')}</span>
-                      </button>
-                      <button
-                        onClick={handleConfirm}
-                        disabled={!['approved'].includes(selectedInvoiceDetail.invoice.status) || !!actionLoading}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading === 'confirm' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Stamp className="h-4 w-4" />}
-                        <span>{t('postToPayable')}</span>
-                      </button>
-                    </div>
-
-                    <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
-                      <input
-                        value={rejectReason}
-                        onChange={(event) => setRejectReason(event.target.value)}
-                        placeholder={t('rejectionReason')}
-                        className="h-10 rounded-lg border border-slate-200 px-3"
-                      />
-                      <button
-                        onClick={handleReject}
-                        disabled={!['pending_approval', 'approved'].includes(selectedInvoiceDetail.invoice.status) || !!actionLoading}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-red-200 px-4 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading === 'reject' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileX2 className="h-4 w-4" />}
-                        <span>{t('rejectAction')}</span>
-                      </button>
-                    </div>
-
-                    {selectedInvoiceDetail.invoice.rejection_reason && (
-                      <div className="mt-3 text-sm text-red-700">
-                        {t('rejectionReason')}: {selectedInvoiceDetail.invoice.rejection_reason}
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                <div className="border-t border-slate-200 p-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
-                    <div className="text-sm font-semibold text-slate-900">{t('paymentHistory')}</div>
-                    {selectedInvoiceDetail && (
-                      <Link
-                        href={`/accounting/payments?invoice_id=${selectedInvoiceDetail.invoice.id}`}
-                        className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                        <span>{t('openPaymentsWorkspace')}</span>
-                      </Link>
-                    )}
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <InfoBox label={t('invoiceTotal')} value={Number(selectedInvoiceDetail.invoice.total || 0).toFixed(2)} />
-                    <InfoBox label={t('paidAmount')} value={Number(selectedInvoiceDetail.invoice.paid_amount || 0).toFixed(2)} />
-                    <InfoBox label={t('remainingOpenAmount')} value={Number(selectedInvoiceDetail.invoice.open_amount || 0).toFixed(2)} />
-                  </div>
-
-                  <div className="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                    <div className="grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr] gap-3 border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-medium uppercase tracking-wide text-slate-500">
-                      <span>{t('payment')}</span>
-                      <span>{t('date')}</span>
-                      <span>{t('amount')}</span>
-                      <span>{t('status')}</span>
-                    </div>
-                    {isPaymentHistoryLoading ? (
-                      <div className="px-4 py-4 text-sm text-slate-500">{t('loadingPaymentHistory')}</div>
-                    ) : paymentHistory.length === 0 ? (
-                      <div className="px-4 py-4 text-sm text-slate-500">{t('noPaymentsRecordedYet')}</div>
-                    ) : (
-                      paymentHistory.map((payment) => (
-                        <div
-                          key={payment.id}
-                          className="grid grid-cols-[1.1fr_0.9fr_0.8fr_0.8fr] gap-3 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0"
-                        >
-                          <div className="min-w-0">
-                            <div className="truncate font-medium text-slate-900">
-                              {payment.reference || payment.id.slice(0, 8)}
-                            </div>
-                            <div className="truncate text-xs text-slate-500">{payment.direction}</div>
-                          </div>
-                          <div className="text-slate-700">{payment.payment_date?.slice(0, 10)}</div>
-                          <div className="font-mono text-slate-900">
-                            {Number(payment.amount || 0).toFixed(2)} {payment.currency}
-                          </div>
-                          <div>
-                            <StatePill tone={payment.status === 'posted' ? 'success' : payment.status === 'reversed' ? 'danger' : 'warning'}>
-                              {payment.status}
-                            </StatePill>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="card overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                  <h2 className="text-base font-semibold text-slate-900">{t('invoiceLines')}</h2>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  {selectedInvoiceDetail.lines.map((line) => (
-                    <div key={line.id} className="grid gap-4 px-5 py-4 lg:grid-cols-[minmax(0,1.2fr)_110px_110px_110px_120px]">
-                      <div>
-                        <div className="text-sm font-medium text-slate-900">{line.description}</div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {t('qty')} {line.quantity} · {t('vatRate')} {Number(line.tax_rate || 0).toFixed(2)}% · {t('account')} {line.account_id || '-'}
-                        </div>
-                        {line.meta && Object.keys(line.meta).length > 0 && (
-                          <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                            {Object.entries(line.meta).slice(0, 4).map(([key, value]) => (
-                              <div key={key}>
-                                {key}: {String(value)}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-slate-700">
-                        <div className="font-medium text-slate-900">{Number(line.unit_price || 0).toFixed(2)}</div>
-                        <div className="mt-1 text-xs text-slate-500">{t('unitPrice')}</div>
-                      </div>
-                      <div className="text-sm text-slate-700">
-                        <div className="font-medium text-slate-900">{Number(line.discount_percent || 0).toFixed(2)}%</div>
-                        <div className="mt-1 text-xs text-slate-500">{t('discount')}</div>
-                      </div>
-                      <div className="text-sm text-slate-700">
-                        <div className="font-medium text-slate-900">{Number(line.tax_rate || 0).toFixed(2)}%</div>
-                        <div className="mt-1 text-xs text-slate-500">{t('vatRate')}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-mono text-sm text-slate-900">{Number(line.line_total || 0).toFixed(2)}</div>
-                        <div className="mt-1 text-xs text-slate-500">{t('lineTotal')}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
+              ))}
+            </div>
           )}
         </section>
+
+        {!isPurchase && (
+          <section className="mt-5 space-y-2">
+            <div className="micro text-[var(--a-text-3)]">{t('sendInvoice')}</div>
+            <input
+              value={sendRecipient}
+              onChange={(event) => onSendRecipientChange(event.target.value)}
+              placeholder={t('recipientEmail')}
+              className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] outline-none"
+            />
+            <input
+              value={sendMessage}
+              onChange={(event) => onSendMessageChange(event.target.value)}
+              placeholder={t('optionalMessage')}
+              className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] outline-none"
+            />
+            <Button variant="primary" className="w-full" disabled={!!actionLoading} onClick={onSend}>
+              {actionLoading === 'send' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+              {t('sendInvoice')}
+            </Button>
+          </section>
+        )}
+
+        {isPurchase && (
+          <section className="mt-5 space-y-2">
+            <div className="micro text-[var(--a-text-3)]">{t('workflowActions')}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button disabled={!!actionLoading} onClick={onSubmitApproval}>
+                {actionLoading === 'submit' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                {t('submitApproval')}
+              </Button>
+              <Button disabled={!!actionLoading} onClick={onApprove}>
+                {actionLoading === 'approve' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileCheck2 className="h-3.5 w-3.5" />}
+                {t('approveAction')}
+              </Button>
+              <Button variant="primary" disabled={!!actionLoading} onClick={onConfirm}>
+                {actionLoading === 'confirm' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Stamp className="h-3.5 w-3.5" />}
+                {t('postToPayable')}
+              </Button>
+              <Button variant="danger" disabled={!!actionLoading} onClick={onReject}>
+                {actionLoading === 'reject' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileX2 className="h-3.5 w-3.5" />}
+                {t('rejectAction')}
+              </Button>
+            </div>
+            <input
+              value={rejectReason}
+              onChange={(event) => onRejectReasonChange(event.target.value)}
+              placeholder={t('rejectionReason')}
+              className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] outline-none"
+            />
+          </section>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+        {canEditInvoice(invoice) && (
+          <Link
+            href={`/invoices/${invoice.id}/edit`}
+            className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-xs font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            {t('editDraft')}
+          </Link>
+        )}
+        <Link
+          href={`/invoices/${invoice.id}/preview`}
+          className="inline-flex h-8 items-center gap-2 rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-xs font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          {t('previewPdf')}
+        </Link>
+        <Button className="h-8 text-xs" onClick={() => onExport('pdf')} disabled={!!actionLoading}>
+          {actionLoading === 'export-pdf' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+          PDF
+        </Button>
+        <Button className="h-8 text-xs" onClick={() => onExport('json')} disabled={!!actionLoading}>
+          JSON
+        </Button>
       </div>
     </div>
   );
 }
 
-function Metric({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: number | string;
-  tone?: 'neutral' | 'success' | 'warning' | 'danger';
-}) {
-  const color =
-    tone === 'success'
-      ? 'text-emerald-700'
-      : tone === 'warning'
-        ? 'text-amber-700'
-        : tone === 'danger'
-          ? 'text-red-700'
-          : 'text-slate-900';
-
+function Notice({ tone, icon, children }: { tone: 'danger' | 'success'; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="card p-5">
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className={`mt-2 text-2xl font-semibold ${color}`}>{value}</div>
+    <div
+      className={`rounded-lg border p-3 text-sm ${
+        tone === 'danger'
+          ? 'border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] text-[var(--a-neg)]'
+          : 'border-[var(--a-pos-soft)] bg-[var(--a-pos-soft)] text-[var(--a-pos)]'
+      }`}
+    >
+      <div className="flex items-start gap-2">
+        {icon}
+        <span>{children}</span>
+      </div>
     </div>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  return (
+    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[var(--a-surface-2)] text-[10px] font-semibold text-[var(--a-text-2)]">
+      {initials(name)}
+    </span>
   );
 }
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl bg-slate-50 p-4">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm text-slate-800">{value}</div>
+    <div className="rounded-lg bg-[var(--a-surface-2)] p-3">
+      <div className="micro text-[var(--a-text-3)]">{label}</div>
+      <div className="mt-1 truncate text-[12.5px] text-[var(--a-text)]">{value}</div>
     </div>
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function KV({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3 last:border-b-0 last:pb-0">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</div>
-      <div className="max-w-[65%] text-right text-sm text-slate-700">{value}</div>
-    </div>
-  );
-}
-
-function TimelineRow({
-  label,
-  value,
-  tone,
-  detail,
-}: {
-  label: string;
-  value: string;
-  tone: 'neutral' | 'success' | 'warning' | 'danger';
-  detail: string | null;
-}) {
-  const dotClass =
-    tone === 'success'
-      ? 'bg-emerald-500'
-      : tone === 'warning'
-        ? 'bg-amber-500'
-        : tone === 'danger'
-          ? 'bg-red-500'
-          : 'bg-slate-400';
-
-  return (
-    <div className="flex gap-3">
-      <div className="flex flex-col items-center">
-        <div className={`mt-1 h-2.5 w-2.5 rounded-full ${dotClass}`} />
-        <div className="mt-1 h-full w-px bg-slate-200 last:hidden" />
-      </div>
-      <div className="min-w-0 pb-2">
-        <div className="text-sm font-medium text-slate-900">{label}</div>
-        <div className="mt-1 text-xs text-slate-500">{formatDateTime(value)}</div>
-        {detail && <div className="mt-1 text-xs text-slate-500">{detail}</div>}
-      </div>
+    <div className="flex items-start justify-between gap-3 border-b border-[var(--a-border)] pb-2 last:border-0">
+      <span className="text-[12px] text-[var(--a-text-3)]">{label}</span>
+      <span className="max-w-[65%] truncate text-right text-[12.5px] text-[var(--a-text)]">{value}</span>
     </div>
   );
 }
@@ -950,59 +812,21 @@ function isOverdue(invoice: InvoiceListItem) {
   return due < today;
 }
 
-function derivedSalesState(invoice: InvoiceListItem) {
-  if (invoice.status === 'draft') return 'Draft';
-  if (invoice.status === 'paid') return 'Paid';
-  if (isOverdue(invoice)) return 'Overdue';
-  if (isOpenInvoice(invoice)) return 'Open';
-  return humanizeStatus(invoice.status);
-}
+function invoiceStatus(invoice: InvoiceListItem, isPurchase: boolean): { label: string; tone: 'posted' | 'draft' | 'open' | 'paid' | 'overdue' | 'neutral' | 'danger' | 'warning' | 'success' } {
+  if (isPurchase) {
+    if (invoice.status === 'approved' || invoice.status === 'paid') return { label: humanizeStatus(invoice.status), tone: 'success' };
+    if (invoice.status === 'rejected') return { label: humanizeStatus(invoice.status), tone: 'danger' };
+    if (invoice.status === 'draft' || invoice.status === 'pending_approval') return { label: humanizeStatus(invoice.status), tone: 'warning' };
+    return { label: humanizeStatus(invoice.status), tone: 'neutral' };
+  }
 
-function renderListMeta(invoice: InvoiceListItem, isPurchase: boolean) {
-  return isPurchase ? humanizeStatus(invoice.status) : derivedSalesState(invoice);
+  if (invoice.status === 'draft') return { label: 'Draft', tone: 'draft' };
+  if (invoice.status === 'paid') return { label: 'Paid', tone: 'paid' };
+  if (isOverdue(invoice)) return { label: 'Overdue', tone: 'overdue' };
+  if (isOpenInvoice(invoice)) return { label: 'Open', tone: 'open' };
+  return { label: humanizeStatus(invoice.status), tone: 'neutral' };
 }
 
 function canEditInvoice(invoice: InvoiceListItem) {
   return ['draft', 'rejected'].includes(invoice.status) && !invoice.journal_entry_id;
-}
-
-function dateDiffLabel(fromDate: string, toDate: string) {
-  const from = new Date(fromDate);
-  const to = new Date(toDate);
-  if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) return '-';
-  const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays === 0) return 'Same day';
-  if (diffDays === 1) return '1 day';
-  return `${diffDays} days`;
-}
-
-function formatDateTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('en-GB', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
-}
-
-function StatePill({
-  children,
-  tone,
-}: {
-  children: ReactNode;
-  tone: 'neutral' | 'success' | 'warning' | 'danger';
-}) {
-  const className =
-    tone === 'success'
-      ? 'bg-emerald-100 text-emerald-700'
-      : tone === 'warning'
-        ? 'bg-amber-100 text-amber-700'
-        : tone === 'danger'
-          ? 'bg-red-100 text-red-700'
-          : 'bg-slate-100 text-slate-700';
-
-  return <span className={`inline-flex rounded-full px-3 py-1 text-xs font-medium ${className}`}>{children}</span>;
 }

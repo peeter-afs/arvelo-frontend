@@ -1,27 +1,34 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { Plus, Search, Filter, Download, Upload, Edit2, Trash2, MoreHorizontal, X, Loader2, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { ChevronDown, Edit2, Filter, Loader2, Plus, Search, Upload, X } from 'lucide-react';
 import { accountingApi, type AccountRecord } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { Button } from '@/components/ui/Button';
+import { Kbd } from '@/components/ui/Kbd';
+import { Stat } from '@/components/ui/Stat';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { TypeBadge } from '@/components/ui/TypeBadge';
+import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 
 const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const;
 
-function getTypeColor(type: string) {
-  switch (type) {
-    case 'asset': return 'bg-blue-50 text-blue-700';
-    case 'liability': return 'bg-amber-50 text-amber-700';
-    case 'equity': return 'bg-violet-50 text-violet-700';
-    case 'revenue': return 'bg-emerald-50 text-emerald-700';
-    case 'expense': return 'bg-rose-50 text-rose-700';
-    default: return 'bg-slate-50 text-slate-700';
-  }
+function labelOfType(type: string) {
+  return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(date);
 }
 
 export default function ChartOfAccountsPage() {
   const t = useTranslations('accounting');
+  const searchRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +42,7 @@ export default function ChartOfAccountsPage() {
     try {
       const data = await accountingApi.listAccounts();
       setAccounts(data);
+      setSelectedAccount((current) => current || data[0] || null);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -43,203 +51,189 @@ export default function ChartOfAccountsPage() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAccounts();
   }, []);
 
-  const filtered = accounts.filter((a) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
-    return a.code.toLowerCase().includes(q) || a.name.toLowerCase().includes(q);
-  });
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(target?.tagName || '')) {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  const filtered = useMemo(() => {
+    return accounts.filter((account) => {
+      if (!searchQuery) return true;
+      const query = searchQuery.toLowerCase();
+      return account.code.toLowerCase().includes(query) || account.name.toLowerCase().includes(query) || account.type.includes(query);
+    });
+  }, [accounts, searchQuery]);
+
+  const grouped = useMemo(() => {
+    return ACCOUNT_TYPES.map((type) => ({
+      type,
+      rows: filtered.filter((account) => account.type === type),
+      total: accounts.filter((account) => account.type === type).length,
+    })).filter((group) => group.rows.length > 0 || !searchQuery);
+  }, [accounts, filtered, searchQuery]);
 
   const handleCreated = () => {
     setShowCreateModal(false);
     void loadAccounts();
   };
 
-  const handleSelect = (account: AccountRecord) => {
-    setSelectedAccount((prev) => prev?.id === account.id ? null : account);
-  };
+  const activeCount = accounts.filter((account) => account.is_active).length;
+  const systemCount = accounts.filter((account) => account.is_system).length;
 
   return (
-    <div>
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900">{t('chartOfAccounts')}</h1>
-        <p className="text-sm text-slate-500 mt-1">{t('chartOfAccountsDescription')}</p>
-      </div>
-
-      <div className="hidden md:flex mb-6 justify-between items-center gap-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder={t('searchAccounts')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ fontSize: '16px' }}
-            className="w-72 h-10 pl-9 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
-          />
+    <div className="flex min-h-full flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
+        <div>
+          <div className="micro text-[var(--a-text-3)]">Master register</div>
+          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('chartOfAccounts')}</h1>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{accounts.length} accounts · {activeCount} active · {systemCount} system locked</p>
         </div>
-
-        <div className="flex items-center gap-3 ml-auto">
-          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
-            <Filter className="h-4 w-4" />
-            <span>{t('filter')}</span>
-          </button>
-
-          <button className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors">
-            <Download className="h-4 w-4" />
-            <span>{t('export')}</span>
-          </button>
-
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             href="/accounting/accounts/import"
-            className="h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 text-sm text-slate-700 transition-colors"
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
           >
-            <Upload className="h-4 w-4" />
-            <span>{t('import')}</span>
+            <Upload className="h-3.5 w-3.5" />
+            {t('import')}
           </Link>
-
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="h-10 px-4 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] flex items-center gap-2 text-sm font-medium transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            <span>{t('newAccount')}</span>
-          </button>
+          <Button variant="primary" onClick={() => setShowCreateModal(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            {t('newAccount')}
+            <Kbd inverse>N</Kbd>
+          </Button>
         </div>
       </div>
 
-      <div className="md:hidden mb-4 space-y-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
+      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
+        <Stat label="Accounts" value={accounts.length} subtle={`${activeCount} active`} />
+        <Stat label="Assets" value={accounts.filter((account) => account.type === 'asset').length} subtle="balance sheet" />
+        <Stat label="Revenue" value={accounts.filter((account) => account.type === 'revenue').length} subtle="income statement" tone="positive" />
+        <Stat label="Expenses" value={accounts.filter((account) => account.type === 'expense').length} subtle="income statement" tone="danger" />
+      </div>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <label className="relative block w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
           <input
-            type="text"
-            placeholder={t('searchAccounts')}
+            ref={searchRef}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{ fontSize: '16px' }}
-            className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('searchAccounts')}
+            className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
           />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
-            <Filter className="h-4 w-4" />
-            <span>{t('filter')}</span>
-          </button>
-          <button className="flex-1 h-10 px-4 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center gap-2 text-sm text-slate-700">
-            <Download className="h-4 w-4" />
-            <span>{t('export')}</span>
-          </button>
-          <button className="h-10 w-10 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center justify-center text-slate-700">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
+        </label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button>
+            <Filter className="h-3.5 w-3.5" />
+            Type: All
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+          <Button>
+            Status: Active
+            <ChevronDown className="h-3 w-3" />
+          </Button>
+          <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex">
+            <Kbd>J</Kbd>
+            <Kbd>K</Kbd>
+            <span>navigate</span>
+            <span>·</span>
+            <Kbd>↵</Kbd>
+            <span>open ledger</span>
+          </div>
         </div>
       </div>
 
-      <button
-        onClick={() => setShowCreateModal(true)}
-        className="md:hidden fixed bottom-6 right-6 w-[52px] h-[52px] bg-[var(--primary)] text-white rounded-full shadow-lg hover:bg-[var(--primary-hover)] flex items-center justify-center z-20 transition-all active:scale-95"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      {error && <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-4 text-sm text-[var(--a-neg)]">{error}</div>}
 
-      {error && (
-        <div className="mb-4 card border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>
-      )}
-
-      {isLoading ? (
-        <div className="card p-12 flex items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card p-12 text-center text-sm text-slate-500">
-          {searchQuery ? t('noResults') : t('noAccounts')}
-        </div>
-      ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,380px)]">
-          <div>
-            <div className="hidden md:block card overflow-hidden">
-              <table className="min-w-full">
-                <thead className="bg-slate-50/80">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('code')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('accountName')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('type')}</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
-                    <th className="w-10"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white">
-                  {filtered.map((account) => (
-                    <tr
-                      key={account.id}
-                      onClick={() => handleSelect(account)}
-                      className={`border-b border-slate-100 cursor-pointer transition-colors ${selectedAccount?.id === account.id ? 'bg-[var(--primary)]/5' : 'hover:bg-slate-50/50'}`}
-                    >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-slate-600">{account.code}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{account.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-                          {t(account.type)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                          <span className="text-xs text-slate-600">{account.is_active ? t('active') : t('inactive')}</span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-4">
-                        <ChevronRight className={`h-4 w-4 text-slate-400 transition-transform ${selectedAccount?.id === account.id ? 'rotate-90' : ''}`} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="md:hidden space-y-2">
-              {filtered.map((account) => (
-                <div
-                  key={account.id}
-                  onClick={() => handleSelect(account)}
-                  className={`card p-4 transition-colors cursor-pointer ${selectedAccount?.id === account.id ? 'border-[var(--primary)] ring-2 ring-[var(--primary)]/10' : 'active:bg-slate-50'}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-mono text-xs text-slate-500">{account.code}</span>
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-                      {t(account.type)}
-                    </span>
-                  </div>
-                  <div className="font-medium text-base text-slate-900 mb-3">{account.name}</div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <div className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-                      <span className="text-xs text-slate-600">{account.is_active ? t('active') : t('inactive')}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hidden md:flex mt-6 justify-between items-center">
-              <p className="text-sm text-slate-600">
-                {t('showingEntries', { from: 1, to: filtered.length, total: filtered.length })}
-              </p>
-            </div>
+      <SplitPane className="flex-1">
+        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+          <div className="grid grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+            <div />
+            <div>{t('code')}</div>
+            <div>{t('accountName')}</div>
+            <div>{t('type')}</div>
+            <div>Status</div>
+            <div>Updated</div>
+            <div className="text-right">Locked</div>
           </div>
 
-          {selectedAccount && (
-            <AccountDetailPanel
-              account={selectedAccount}
-              onClose={() => setSelectedAccount(null)}
-              onUpdated={loadAccounts}
-            />
-          )}
-        </div>
-      )}
+          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+            {isLoading ? (
+              <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="p-8 text-sm text-[var(--a-text-3)]">{searchQuery ? t('noResults') : t('noAccounts')}</div>
+            ) : (
+              grouped.map((group) => (
+                <div key={group.type}>
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className="h-3.5 w-3.5 text-[var(--a-text-2)]" />
+                      <TypeBadge type={group.type} label={labelOfType(group.type)} />
+                      <span className="text-[11.5px] text-[var(--a-text-3)]">· {group.rows.length} accounts</span>
+                    </div>
+                    <span className="font-mono text-[11.5px] text-[var(--a-text-3)]">{group.total} total</span>
+                  </div>
+                  {group.rows.map((account) => {
+                    const selected = selectedAccount?.id === account.id;
+
+                    return (
+                      <button
+                        key={account.id}
+                        onClick={() => setSelectedAccount(account)}
+                        className={`grid w-full grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                          selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
+                        }`}
+                      >
+                        <span className={`h-2 w-2 rounded-full ${account.is_active ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-text-3)]'}`} />
+                        <span className="font-mono text-[13px] text-[var(--a-text-2)]">{account.code}</span>
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-[var(--a-text)]">{account.name}</span>
+                          <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">{account.parent_id ? `Parent ${account.parent_id.slice(0, 8)}` : 'Top level'}</span>
+                        </span>
+                        <TypeBadge type={account.type} label={t(account.type)} />
+                        <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
+                        <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(account.updated_at)}</span>
+                        <span className="text-right text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? 'System' : 'Editable'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+            <span>Showing <span className="text-[var(--a-text)]">{filtered.length}</span></span>
+            <span><span className="text-[var(--a-text)]">{ACCOUNT_TYPES.length}</span> types</span>
+            <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              balanced
+            </span>
+            <span className="flex-1" />
+            <span>Press J K navigate</span>
+          </div>
+        </section>
+
+        <SplitPaneDetail>
+          <AccountDetailPanel
+            account={selectedAccount}
+            onUpdated={loadAccounts}
+          />
+        </SplitPaneDetail>
+      </SplitPane>
 
       {showCreateModal && (
         <CreateAccountModal
@@ -253,28 +247,28 @@ export default function ChartOfAccountsPage() {
 
 function AccountDetailPanel({
   account,
-  onClose,
-  onUpdated
+  onUpdated,
 }: {
-  account: AccountRecord;
-  onClose: () => void;
+  account: AccountRecord | null;
   onUpdated: () => void;
 }) {
   const t = useTranslations('accounting');
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(account.name);
-  const [editType, setEditType] = useState(account.type);
+  const [editName, setEditName] = useState(account?.name || '');
+  const [editType, setEditType] = useState<AccountRecord['type']>(account?.type || 'asset');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsEditing(false);
-    setEditName(account.name);
-    setEditType(account.type);
+    setEditName(account?.name || '');
+    setEditType(account?.type || 'asset');
     setError(null);
-  }, [account.id]);
+  }, [account?.id, account?.name, account?.type]);
 
   const handleSave = async () => {
+    if (!account) return;
     setIsSaving(true);
     setError(null);
     try {
@@ -291,114 +285,104 @@ function AccountDetailPanel({
     }
   };
 
-  const rows: Array<{ label: string; value: React.ReactNode }> = [
-    { label: t('code'), value: <span className="font-mono">{account.code}</span> },
-    {
-      label: t('accountName'),
-      value: isEditing ? (
-        <input
-          value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          className="h-9 w-full rounded-lg border border-slate-200 px-2 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
-        />
-      ) : (
-        account.name
-      ),
-    },
-    {
-      label: t('type'),
-      value: isEditing ? (
-        <select
-          value={editType}
-          onChange={(e) => setEditType(e.target.value as typeof editType)}
-          className="h-9 w-full rounded-lg border border-slate-200 px-2 text-sm focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
-        >
-          {ACCOUNT_TYPES.map((t_) => (
-            <option key={t_} value={t_}>{t(t_)}</option>
-          ))}
-        </select>
-      ) : (
-        <span className={`px-2 py-0.5 text-xs font-medium rounded-md ${getTypeColor(account.type)}`}>
-          {t(account.type)}
-        </span>
-      ),
-    },
-    {
-      label: t('status'),
-      value: (
-        <div className="flex items-center gap-2">
-          <div className={`h-1.5 w-1.5 rounded-full ${account.is_active ? 'bg-emerald-500' : 'bg-slate-300'}`} />
-          <span className="text-sm">{account.is_active ? t('active') : t('inactive')}</span>
-        </div>
-      ),
-    },
-    {
-      label: 'ID',
-      value: <span className="font-mono text-xs text-slate-400 break-all">{account.id}</span>,
-    },
-  ];
+  if (!account) {
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">Select an account to inspect its setup.</div>;
+  }
 
   return (
-    <div className="card overflow-hidden self-start sticky top-6">
-      <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4 flex items-center justify-between">
-        <div>
-          <div className="text-base font-semibold text-slate-900">{account.code} · {account.name}</div>
-          <div className="mt-0.5 text-xs text-slate-500">{t('accountDetails')}</div>
-        </div>
-        <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
-      {error && (
-        <div className="mx-5 mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
-      )}
-
-      <div className="divide-y divide-slate-100">
-        {rows.map((row) => (
-          <div key={row.label} className="px-5 py-3 flex items-center justify-between gap-4">
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 whitespace-nowrap">{row.label}</span>
-            <div className="text-sm text-slate-900 text-right min-w-0">{row.value}</div>
+    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+      <div className="border-b border-[var(--a-border)] px-5 py-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="font-mono text-[12px] text-[var(--a-accent)]">{account.code}</div>
+            <h2 className="mt-2 truncate text-[17px] font-semibold text-[var(--a-text)]">{account.name}</h2>
+            <div className="mt-2 flex items-center gap-2">
+              <TypeBadge type={account.type} label={t(account.type)} />
+              <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
+            </div>
           </div>
-        ))}
-      </div>
-
-      <div className="border-t border-slate-200 px-5 py-4 flex items-center justify-end gap-3">
-        {isEditing ? (
-          <>
-            <button
-              onClick={() => { setIsEditing(false); setEditName(account.name); setEditType(account.type); }}
-              className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !editName.trim()}
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
-            >
-              {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>{t('save')}</span>
-            </button>
-          </>
-        ) : (
-          <button
-            onClick={() => setIsEditing(true)}
+          <Button
+            className="h-8 w-8 px-0"
             disabled={account.is_system}
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            onClick={() => setIsEditing(true)}
           >
             <Edit2 className="h-3.5 w-3.5" />
-            <span>{t('edit')}</span>
-          </button>
+          </Button>
+        </div>
+      </div>
+
+      {error && <div className="mx-5 mt-4 rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-3 text-sm text-[var(--a-neg)]">{error}</div>}
+
+      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+        <div className="space-y-4">
+          <DetailRow label={t('code')} value={<span className="font-mono">{account.code}</span>} />
+          <div>
+            <div className="micro mb-2 text-[var(--a-text-3)]">{t('accountName')}</div>
+            {isEditing ? (
+              <input
+                value={editName}
+                onChange={(event) => setEditName(event.target.value)}
+                className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-sm outline-none"
+              />
+            ) : (
+              <div className="text-sm text-[var(--a-text)]">{account.name}</div>
+            )}
+          </div>
+          <div>
+            <div className="micro mb-2 text-[var(--a-text-3)]">{t('type')}</div>
+            {isEditing ? (
+              <select
+                value={editType}
+                onChange={(event) => setEditType(event.target.value as AccountRecord['type'])}
+                className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-sm outline-none"
+              >
+                {ACCOUNT_TYPES.map((type) => (
+                  <option key={type} value={type}>{t(type)}</option>
+                ))}
+              </select>
+            ) : (
+              <TypeBadge type={account.type} label={t(account.type)} />
+            )}
+          </div>
+          <DetailRow label="System account" value={account.is_system ? 'Yes' : 'No'} />
+          <DetailRow label="Created" value={<span className="font-mono">{formatDate(account.created_at)}</span>} />
+          <DetailRow label="Updated" value={<span className="font-mono">{formatDate(account.updated_at)}</span>} />
+          <DetailRow label="ID" value={<span className="break-all font-mono text-[11px] text-[var(--a-text-3)]">{account.id}</span>} />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+        {isEditing ? (
+          <>
+            <Button onClick={() => { setIsEditing(false); setEditName(account.name); setEditType(account.type); }}>{t('cancel')}</Button>
+            <Button variant="primary" onClick={handleSave} disabled={isSaving || !editName.trim()}>
+              {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('save')}
+            </Button>
+          </>
+        ) : (
+          <Button disabled={account.is_system} onClick={() => setIsEditing(true)}>
+            <Edit2 className="h-3.5 w-3.5" />
+            {t('edit')}
+          </Button>
         )}
       </div>
     </div>
   );
 }
 
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="border-b border-[var(--a-border)] pb-3 last:border-0">
+      <div className="micro mb-1 text-[var(--a-text-3)]">{label}</div>
+      <div className="text-sm text-[var(--a-text)]">{value}</div>
+    </div>
+  );
+}
+
 function CreateAccountModal({
   onClose,
-  onCreated
+  onCreated,
 }: {
   onClose: () => void;
   onCreated: () => void;
@@ -406,12 +390,12 @@ function CreateAccountModal({
   const t = useTranslations('accounting');
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
-  const [type, setType] = useState<string>('asset');
+  const [type, setType] = useState<AccountRecord['type']>('asset');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     if (!code.trim() || !name.trim()) return;
 
     setIsSaving(true);
@@ -427,76 +411,73 @@ function CreateAccountModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
+      <form
+        onSubmit={handleSubmit}
+        className="w-full max-w-md rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-5"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{t('newAccount')}</h2>
-          <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-5 w-5" />
+          <div>
+            <div className="micro text-[var(--a-text-3)]">Chart of accounts</div>
+            <h2 className="mt-1 text-lg font-semibold text-[var(--a-text)]">{t('newAccount')}</h2>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-md p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]">
+            <X className="h-4 w-4" />
           </button>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
-        )}
+        {error && <div className="mb-4 rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-3 text-sm text-[var(--a-neg)]">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <label className="block space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountCode')}</span>
+        <div className="space-y-4">
+          <Field label={t('accountCode')}>
             <input
-              type="text"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(event) => setCode(event.target.value)}
               placeholder="1000"
               required
               autoFocus
-              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+              className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 font-mono text-sm outline-none"
             />
-          </label>
-
-          <label className="block space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountName')}</span>
+          </Field>
+          <Field label={t('accountName')}>
             <input
-              type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(event) => setName(event.target.value)}
               required
-              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+              className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-sm outline-none"
             />
-          </label>
-
-          <label className="block space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('accountType')}</span>
+          </Field>
+          <Field label={t('accountType')}>
             <select
               value={type}
-              onChange={(e) => setType(e.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3 focus:border-[var(--primary)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10"
+              onChange={(event) => setType(event.target.value as AccountRecord['type'])}
+              className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-sm outline-none"
             >
-              {ACCOUNT_TYPES.map((t_) => (
-                <option key={t_} value={t_}>{t(t_)}</option>
+              {ACCOUNT_TYPES.map((accountType) => (
+                <option key={accountType} value={accountType}>{t(accountType)}</option>
               ))}
             </select>
-          </label>
+          </Field>
+        </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="h-10 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              {t('cancel')}
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving || !code.trim() || !name.trim()}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
-            >
-              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-              <span>{t('createAccount')}</span>
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="mt-6 flex items-center justify-end gap-2">
+          <Button onClick={onClose}>{t('cancel')}</Button>
+          <Button variant="primary" type="submit" disabled={isSaving || !code.trim() || !name.trim()}>
+            {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            {t('createAccount')}
+          </Button>
+        </div>
+      </form>
     </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="micro text-[var(--a-text-3)]">{label}</span>
+      {children}
+    </label>
   );
 }

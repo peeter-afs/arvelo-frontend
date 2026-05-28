@@ -16,7 +16,6 @@ import {
 import { getErrorMessage } from '@/lib/api/client';
 import {
   businessRegistryApi,
-  type BusinessRegistryCompany,
   type PartnerRegistrySyncLogItem,
 } from '@/lib/api/businessRegistry.api';
 import {
@@ -27,6 +26,11 @@ import {
   type SupplierBankAccount,
 } from '@/lib/api/accounting.api';
 import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
+import { Button } from '@/components/ui/Button';
+import { Kbd } from '@/components/ui/Kbd';
+import { Stat } from '@/components/ui/Stat';
+import { StatusPill } from '@/components/ui/StatusPill';
+import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 
 type PartnerFormState = {
   type: 'customer' | 'supplier' | 'both';
@@ -58,6 +62,12 @@ type BankAccountDraft = {
   notes: string;
 };
 
+type TaxArrearsInfo = {
+  status?: string | null;
+  arrearsAmount?: number | string | null;
+  note?: string | null;
+} & Record<string, unknown>;
+
 const emptyPartnerForm = (): PartnerFormState => ({
   type: 'customer',
   name: '',
@@ -87,6 +97,16 @@ const emptyBankAccountDraft = (): BankAccountDraft => ({
   notes: '',
 });
 
+function formatEUR(value: number) {
+  return new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR' }).format(value);
+}
+
+function initials(name?: string | null) {
+  if (!name) return 'A';
+  const parts = name.split(/\s+/).filter(Boolean);
+  return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || name.slice(0, 2).toUpperCase();
+}
+
 export default function BusinessPartnersPage() {
   const t = useTranslations('accounting');
   const [partners, setPartners] = useState<PartnerWithBalance[]>([]);
@@ -108,13 +128,11 @@ export default function BusinessPartnersPage() {
     severity: string;
   }>>([]);
   const [form, setForm] = useState<PartnerFormState>(emptyPartnerForm());
-  const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [newBankAccount, setNewBankAccount] = useState<BankAccountDraft>(emptyBankAccountDraft());
-  const [selectedRegistryCompany, setSelectedRegistryCompany] = useState<BusinessRegistryCompany | null>(null);
   const [registrySyncLog, setRegistrySyncLog] = useState<PartnerRegistrySyncLogItem[]>([]);
   const [includeTaxArrearsOnRefresh, setIncludeTaxArrearsOnRefresh] = useState(false);
-  const [latestTaxArrears, setLatestTaxArrears] = useState<Record<string, any> | null>(null);
+  const [latestTaxArrears, setLatestTaxArrears] = useState<TaxArrearsInfo | null>(null);
 
   const filteredPartners = useMemo(() => {
     return partners.filter((partner) => {
@@ -128,6 +146,12 @@ export default function BusinessPartnersPage() {
     });
   }, [partners, searchQuery, typeFilter]);
 
+  const selectedPartnerWithBalance = partners.find((partner) => partner.id === selectedPartnerId) || null;
+  const customers = partners.filter((partner) => partner.type === 'customer' || partner.type === 'both');
+  const suppliers = partners.filter((partner) => partner.type === 'supplier' || partner.type === 'both');
+  const receivable = partners.reduce((sum, partner) => sum + Math.max(0, partner.balance), 0);
+  const payable = partners.reduce((sum, partner) => sum + Math.max(0, -partner.balance), 0);
+
   useEffect(() => {
     const load = async () => {
       setIsBootLoading(true);
@@ -135,9 +159,7 @@ export default function BusinessPartnersPage() {
       try {
         const result = await accountingApi.listPartnersWithBalances();
         setPartners(result);
-        if (result[0]?.id) {
-          setSelectedPartnerId(result[0].id);
-        }
+        setSelectedPartnerId((current) => current || result[0]?.id || null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -149,21 +171,11 @@ export default function BusinessPartnersPage() {
   }, []);
 
   useEffect(() => {
-    if (isCreatingNew) {
+    if (!selectedPartnerId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPartner(null);
       setRoles([]);
       setBankAccounts([]);
-      setForm(emptyPartnerForm());
-      setDuplicateWarnings([]);
-      setNewBankAccount(emptyBankAccountDraft());
-      setSelectedRegistryCompany(null);
-      setRegistrySyncLog([]);
-      setLatestTaxArrears(null);
-      return;
-    }
-
-    if (!selectedPartnerId) {
-      setSelectedPartner(null);
       return;
     }
 
@@ -181,7 +193,6 @@ export default function BusinessPartnersPage() {
         setBankAccounts(supplierBankAccounts);
         setForm(mapPartnerToForm(partner));
         setDuplicateWarnings([]);
-        setSelectedRegistryCompany(null);
         setLatestTaxArrears(null);
 
         if (partner.reg_code) {
@@ -198,7 +209,7 @@ export default function BusinessPartnersPage() {
     };
 
     void loadDetail();
-  }, [selectedPartnerId, isCreatingNew]);
+  }, [selectedPartnerId]);
 
   const runAction = async (key: string, fn: () => Promise<void>) => {
     setActionLoading(key);
@@ -258,7 +269,6 @@ export default function BusinessPartnersPage() {
       const refreshedPartner = result.partner as PartnerRecord;
       setSelectedPartner(refreshedPartner);
       setForm(mapPartnerToForm(refreshedPartner));
-      setSelectedRegistryCompany(result.company);
       setLatestTaxArrears(result.tax_arrears || null);
       const syncLog = await businessRegistryApi.getPartnerSyncLog(selectedPartnerId, { limit: 10 });
       setRegistrySyncLog(syncLog.items);
@@ -312,456 +322,438 @@ export default function BusinessPartnersPage() {
     });
   };
 
-  const canManageBankAccounts = !!selectedPartnerId;
-
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex min-h-full flex-col gap-4">
+      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">{t('businessPartnersTitle')}</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {t('businessPartnersDescription')}
+          <div className="micro text-[var(--a-text-3)]">Customers, suppliers, employees</div>
+          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('businessPartnersTitle')}</h1>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
+            {partners.length} contacts · {customers.length} customers · {suppliers.length} suppliers
           </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => void refreshPartners(selectedPartnerId)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>{t('refreshPartners')}</span>
-          </button>
-          <button
+        <div className="flex flex-wrap items-center gap-2">
+          <Button onClick={() => void refreshPartners(selectedPartnerId)}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            {t('refreshPartners')}
+          </Button>
+          <Button
+            variant="primary"
             onClick={() => {
               setAddModalOpen(true);
               setSuccessMessage(null);
               setErrorMessage(null);
             }}
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
           >
-            <Plus className="h-4 w-4" />
-            <span>{t('addPartner')}</span>
-          </button>
+            <Plus className="h-3.5 w-3.5" />
+            {t('addPartner')}
+            <Kbd inverse>N</Kbd>
+          </Button>
         </div>
       </div>
 
-      {errorMessage && (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
+      {errorMessage && <Notice tone="danger" icon={<AlertCircle className="h-4 w-4" />}>{errorMessage}</Notice>}
+      {successMessage && <Notice tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>{successMessage}</Notice>}
+
+      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-3">
+        <Stat label="Receivable" value={formatEUR(receivable)} subtle={`${customers.filter((partner) => partner.balance > 0).length} customers with balance`} tone="positive" />
+        <Stat label="Payable" value={formatEUR(payable)} subtle={`${suppliers.filter((partner) => partner.balance < 0).length} suppliers with balance`} tone="warning" />
+        <Stat label="Contacts" value={partners.length} subtle={`${partners.filter((partner) => partner.is_active).length} active`} />
+      </div>
+
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <label className="relative block w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t('searchPartners')}
+            className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
+          />
+        </label>
+        <div className="flex flex-wrap gap-1">
+          {[
+            ['all', t('allPartnerTypes'), partners.length],
+            ['customer', t('customerPlural'), customers.length],
+            ['supplier', t('supplierPlural'), suppliers.length],
+            ['both', t('both'), partners.filter((partner) => partner.type === 'both').length],
+          ].map(([id, label, count]) => (
+            <button
+              key={id as string}
+              onClick={() => setTypeFilter(id as typeof typeFilter)}
+              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+                typeFilter === id
+                  ? 'bg-[var(--a-text)] text-white'
+                  : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
+              }`}
+            >
+              {label}
+              <span className={typeFilter === id ? 'text-white/60' : 'text-[var(--a-text-3)]'}>{count}</span>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
 
-      {successMessage && (
-        <div className="card border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{successMessage}</span>
+      <SplitPane className="flex-1">
+        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+          <div className="grid grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+            <div />
+            <div>Partner</div>
+            <div>Type</div>
+            <div className="text-right">Balance</div>
+            <div>Updated</div>
           </div>
-        </div>
-      )}
+          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+            {isBootLoading ? (
+              <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+              </div>
+            ) : filteredPartners.length === 0 ? (
+              <div className="p-8 text-sm text-[var(--a-text-3)]">{t('noPartnersCurrentFilter')}</div>
+            ) : (
+              filteredPartners.map((partner) => {
+                const selected = selectedPartnerId === partner.id;
+                const balanceTone = partner.balance > 0 ? 'text-[var(--a-pos)]' : partner.balance < 0 ? 'text-[var(--a-warn)]' : 'text-[var(--a-text-3)]';
 
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="grid gap-3">
-              <label className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder={t('searchPartners')}
-                  className="h-11 w-full rounded-lg border border-slate-200 pl-9 pr-3"
-                />
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}
-                className="h-11 rounded-lg border border-slate-200 px-3"
-              >
-                <option value="all">{t('allPartnerTypes')}</option>
-                <option value="customer">{t('customerPlural')}</option>
-                <option value="supplier">{t('supplierPlural')}</option>
-                <option value="both">{t('both')}</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">{t('partners')}</h2>
-            </div>
-            <div className="divide-y divide-slate-100">
-              {isBootLoading ? (
-                <div className="p-4 text-sm text-slate-500">{t('loadingPartners')}</div>
-              ) : filteredPartners.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">{t('noPartnersCurrentFilter')}</div>
-              ) : (
-                filteredPartners.map((partner) => (
+                return (
                   <button
                     key={partner.id}
-                    onClick={() => {
-                      setIsCreatingNew(false);
-                      setSelectedPartnerId(partner.id);
-                    }}
-                    className={`block w-full px-4 py-3 text-left transition-colors ${selectedPartnerId === partner.id && !isCreatingNew ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                    onClick={() => setSelectedPartnerId(partner.id)}
+                    className={`grid w-full grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                      selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-900">{partner.name}</div>
-                        <div className="mt-1 text-xs text-slate-500">
-                          {t(partner.type)} · {partner.email || partner.reg_code || t('noIdentifier')}
-                        </div>
-                      </div>
-                      <span className={`text-sm font-medium ${partner.balance < 0 ? 'text-emerald-600' : partner.balance > 0 ? 'text-amber-600' : 'text-slate-500'}`}>
-                        {partner.balance.toFixed(2)}
+                    <span className="grid h-6 w-6 place-items-center rounded-md bg-[var(--a-surface-2)] text-[10px] font-semibold text-[var(--a-text-2)]">
+                      {initials(partner.name)}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium text-[var(--a-text)]">{partner.name}</span>
+                      <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">
+                        {partner.vat_number || partner.reg_code || t('noIdentifier')} · {partner.country_code || 'EE'}
                       </span>
-                    </div>
+                    </span>
+                    <PartnerTypeBadge type={partner.type} />
+                    <span className={`text-right font-mono text-[13px] font-medium ${balanceTone}`}>
+                      {formatEUR(Math.abs(partner.balance))}
+                    </span>
+                    <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{shortDate(partner.updated_at)}</span>
                   </button>
-                ))
-              )}
-            </div>
-          </div>
-        </aside>
-
-        <section className="space-y-4">
-          {!selectedPartnerId && !isCreatingNew ? (
-            <div className="card p-8 text-sm text-slate-500">{t('selectPartnerToView')}</div>
-          ) : (
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">
-                    {selectedPartner?.name || t('partnerDetail')}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {t('partnerDetailDescription')}
-                  </p>
-                </div>
-                {selectedPartner?.reg_code && (
-                  <button
-                    onClick={handleRegistryRefresh}
-                    disabled={!!actionLoading}
-                    title={t('refreshFromBusinessRegistry')}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {isDetailLoading ? (
-              <div className="p-6 text-sm text-slate-500">{t('loadingPartnerDetail')}</div>
-            ) : (
-              <div className="space-y-4 p-4">
-                {/* Identity */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">{t('identity')}</div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label={t('type')} value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
-                      { label: t('customer'), value: 'customer' },
-                      { label: t('supplier'), value: 'supplier' },
-                      { label: t('both'), value: 'both' },
-                    ]} />
-                    <Field label={t('name')} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
-                    <Field label={t('code')} value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
-                  </div>
-                </div>
-
-                {/* Registration */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('registration')}</div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label={t('registryCode')} value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
-                    <Field label={t('vatNumber')} value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
-                  </div>
-                </div>
-
-                {/* Contact */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('contact')}</div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label={t('email')} value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
-                    <Field label={t('phone')} value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
-                    <Field label={t('website')} value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
-                  </div>
-                </div>
-
-                {/* Location */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('location')}</div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
-                    <Field label={t('city')} value={form.city} onChange={(value) => setForm((current) => ({ ...current, city: value }))} />
-                    <Field label={t('postalCode')} value={form.postal_code} onChange={(value) => setForm((current) => ({ ...current, postal_code: value }))} />
-                  </div>
-                  <div className="mt-3">
-                    <Field label={t('address')} value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
-                  </div>
-                </div>
-
-                {/* Billing */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('billing')}</div>
-                  <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
-                  </div>
-                </div>
-
-                {/* Other */}
-                <div>
-                  <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 mt-4">{t('other')}</div>
-                  <Field label={t('notes')} value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
-                </div>
-
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleCheckDuplicates}
-                    disabled={!!actionLoading}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {actionLoading === 'check-duplicates' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
-                    <span>{t('checkDuplicates')}</span>
-                  </button>
-                  <button
-                    onClick={handleSavePartner}
-                    disabled={!form.name || !!actionLoading}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {actionLoading === 'save-partner' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                    <span>{t('saveChanges')}</span>
-                  </button>
-                </div>
-
-                {duplicateWarnings.length > 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-amber-900">
-                      <ShieldAlert className="h-4 w-4" />
-                      <span>{t('duplicateWarnings')}</span>
-                    </div>
-                    <div className="space-y-3">
-                      {duplicateWarnings.map((warning) => (
-                        <div key={warning.partner.id} className="rounded-lg border border-amber-200 bg-white p-3 text-sm text-amber-900">
-                          <div className="font-medium">{warning.partner.name}</div>
-                          <div className="mt-1 text-xs text-amber-700">
-                            {warning.match_type} · {t('severityValue', { value: warning.severity })} · {t('rolesValue', { roles: warning.roles.join(', ') || t('none') })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedPartnerId && (
-                  <div className="grid gap-3 xl:grid-cols-[0.95fr_1.05fr]">
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 text-sm font-semibold text-slate-900">{t('partnerRoles')}</div>
-                      <div className="flex flex-wrap gap-2">
-                        {roles.map((role) => (
-                          <span key={role.id} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
-                            {t(role.role)}
-                          </span>
-                        ))}
-                        {!roles.some((role) => role.role === 'customer') && (
-                          <button
-                            onClick={() => handleAddRole('customer')}
-                            disabled={!!actionLoading}
-                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                          >
-                            {t('addCustomerRole')}
-                          </button>
-                        )}
-                        {!roles.some((role) => role.role === 'supplier') && (
-                          <button
-                            onClick={() => handleAddRole('supplier')}
-                            disabled={!!actionLoading}
-                            className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                          >
-                            {t('addSupplierRole')}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 text-sm font-semibold text-slate-900">{t('registryRefresh')}</div>
-                      <div className="flex flex-wrap gap-4">
-                        <label className="flex items-center gap-2 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={includeTaxArrearsOnRefresh}
-                            onChange={(event) => setIncludeTaxArrearsOnRefresh(event.target.checked)}
-                          />
-                          <span>{t('includeTaxArrearsCheck')}</span>
-                        </label>
-                        <button
-                          onClick={handleRegistryRefresh}
-                          disabled={!selectedPartner?.reg_code || !!actionLoading}
-                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {actionLoading === 'registry-refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          <span>{t('refreshFromRegistry')}</span>
-                        </button>
-                      </div>
-
-                      <div className="mt-3 text-xs text-slate-500">
-                        {selectedPartner?.reg_code ? t('usingRegistryCode', { code: selectedPartner.reg_code }) : t('partnerHasNoRegistryCode')}
-                      </div>
-
-                      {(latestTaxArrears || selectedPartner?.tax_arrears_status) && (
-                        <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
-                          <div className="font-medium text-slate-900">{t('latestTaxArrearsStatus')}</div>
-                          <div className="mt-1 text-xs text-slate-600">
-                            {t('statusValue', { value: latestTaxArrears?.status || selectedPartner?.tax_arrears_status || t('notAvailable') })} ·
-                            {' '}
-                            {t('amountValue', { value: String(latestTaxArrears?.arrearsAmount ?? selectedPartner?.tax_arrears_amount ?? t('notAvailable')) })} ·
-                            {' '}
-                            {t('noteValue', { value: latestTaxArrears?.note || selectedPartner?.tax_arrears_note || t('notAvailable') })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
+                );
+              })
             )}
           </div>
-          )}
-
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <div className="flex items-center gap-3">
-                <Wallet className="h-5 w-5 text-[var(--primary)]" />
-                <div>
-                  <h2 className="text-base font-semibold text-slate-900">{t('supplierBankAccounts')}</h2>
-                  <p className="mt-1 text-sm text-slate-500">{t('supplierBankAccountsDescription')}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-5 p-5">
-              {!canManageBankAccounts ? (
-                <div className="text-sm text-slate-500">{t('createOrSelectPartnerFirst')}</div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {bankAccounts.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
-                        {t('noSupplierBankAccountsYet')}
-                      </div>
-                    ) : (
-                      bankAccounts.map((account) => (
-                        <BankAccountCard
-                          key={account.id}
-                          account={account}
-                          onToggleDefault={() => handleUpdateBankAccount(account, { is_default: !account.is_default || true })}
-                          onToggleActive={() => handleUpdateBankAccount(account, { is_active: !account.is_active })}
-                        />
-                      ))
-                    )}
-                  </div>
-
-                  {selectedPartnerId && (
-                    <div className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-4 text-sm font-semibold text-slate-900">{t('addSupplierBankAccount')}</div>
-                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                        <Field label={t('iban')} value={newBankAccount.iban} onChange={(value) => setNewBankAccount((current) => ({ ...current, iban: value.toUpperCase() }))} />
-                        <Field label={t('bankName')} value={newBankAccount.bank_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, bank_name: value }))} />
-                        <Field label={t('bic')} value={newBankAccount.bic} onChange={(value) => setNewBankAccount((current) => ({ ...current, bic: value.toUpperCase() }))} />
-                        <Field label={t('currency')} value={newBankAccount.currency_code} onChange={(value) => setNewBankAccount((current) => ({ ...current, currency_code: value.toUpperCase() }))} />
-                        <Field label={t('accountHolder')} value={newBankAccount.account_holder_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, account_holder_name: value }))} />
-                        <Field label={t('notes')} value={newBankAccount.notes} onChange={(value) => setNewBankAccount((current) => ({ ...current, notes: value }))} />
-                      </div>
-                      <div className="mt-4 flex flex-wrap gap-4">
-                        <label className="flex items-center gap-2 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={newBankAccount.is_default}
-                            onChange={(event) => setNewBankAccount((current) => ({ ...current, is_default: event.target.checked }))}
-                          />
-                          <span>{t('defaultAccount')}</span>
-                        </label>
-                        <label className="flex items-center gap-2 text-sm text-slate-700">
-                          <input
-                            type="checkbox"
-                            checked={newBankAccount.is_active}
-                            onChange={(event) => setNewBankAccount((current) => ({ ...current, is_active: event.target.checked }))}
-                          />
-                          <span>{t('active')}</span>
-                        </label>
-                      </div>
-                      <button
-                        onClick={handleCreateBankAccount}
-                        disabled={!newBankAccount.iban || !!actionLoading}
-                        className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {actionLoading === 'create-bank-account' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        <span>{t('addBankAccount')}</span>
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+            <span>Showing <span className="text-[var(--a-text)]">{filteredPartners.length}</span></span>
+            <span>Receivable <span className="text-[var(--a-pos)]">{formatEUR(receivable)}</span></span>
+            <span>Payable <span className="text-[var(--a-warn)]">{formatEUR(payable)}</span></span>
+            <span className="flex-1" />
+            <span>Registry sync enabled</span>
           </div>
-
-          {selectedPartnerId && (
-            <div className="card overflow-hidden">
-              <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                <h2 className="text-base font-semibold text-slate-900">{t('registrySyncLog')}</h2>
-                <p className="mt-1 text-sm text-slate-500">{t('registrySyncLogDescription')}</p>
-              </div>
-
-              <div className="divide-y divide-slate-100">
-                {registrySyncLog.length === 0 ? (
-                  <div className="p-4 text-sm text-slate-500">{t('noRegistrySyncEventsYet')}</div>
-                ) : (
-                  registrySyncLog.map((item) => (
-                    <div key={item.id} className="p-4">
-                      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                        <div>
-                          <div className="text-sm font-medium text-slate-900">
-                            {item.sync_type} · {item.status}
-                          </div>
-                          <div className="mt-1 text-xs text-slate-500">
-                            {item.request_source || t('unknownSource')} · {item.registry_code || t('noRegistryCode')} · {formatDateTime(item.performed_at)}
-                          </div>
-                          {(item.error_message || item.error_code) && (
-                            <div className="mt-2 text-xs text-red-600">
-                              {item.error_code ? `${item.error_code}: ` : ''}{item.error_message}
-                            </div>
-                          )}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          <div>{t('durationMs', { value: String(item.duration_ms ?? t('notAvailable')) })}</div>
-                          <div>{t('actorValue', { value: item.performed_by || t('notAvailable') })}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </section>
-      </div>
+
+        <SplitPaneDetail>
+          <PartnerDetailPanel
+            partner={selectedPartner}
+            partnerWithBalance={selectedPartnerWithBalance}
+            roles={roles}
+            bankAccounts={bankAccounts}
+            registrySyncLog={registrySyncLog}
+            isLoading={isDetailLoading}
+            actionLoading={actionLoading}
+            duplicateWarnings={duplicateWarnings}
+            form={form}
+            setForm={setForm}
+            newBankAccount={newBankAccount}
+            setNewBankAccount={setNewBankAccount}
+            includeTaxArrearsOnRefresh={includeTaxArrearsOnRefresh}
+            setIncludeTaxArrearsOnRefresh={setIncludeTaxArrearsOnRefresh}
+            latestTaxArrears={latestTaxArrears}
+            onSave={handleSavePartner}
+            onCheckDuplicates={handleCheckDuplicates}
+            onRegistryRefresh={handleRegistryRefresh}
+            onAddRole={handleAddRole}
+            onCreateBankAccount={handleCreateBankAccount}
+            onUpdateBankAccount={handleUpdateBankAccount}
+          />
+        </SplitPaneDetail>
+      </SplitPane>
 
       <AddPartnerModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onCreated={(partner) => {
           setAddModalOpen(false);
-          setIsCreatingNew(false);
           setSelectedPartnerId(partner.id);
           void refreshPartners(partner.id);
           setSuccessMessage(t('partnerCreated'));
         }}
       />
     </div>
+  );
+}
+
+function PartnerDetailPanel({
+  partner,
+  partnerWithBalance,
+  roles,
+  bankAccounts,
+  registrySyncLog,
+  isLoading,
+  actionLoading,
+  duplicateWarnings,
+  form,
+  setForm,
+  newBankAccount,
+  setNewBankAccount,
+  includeTaxArrearsOnRefresh,
+  setIncludeTaxArrearsOnRefresh,
+  latestTaxArrears,
+  onSave,
+  onCheckDuplicates,
+  onRegistryRefresh,
+  onAddRole,
+  onCreateBankAccount,
+  onUpdateBankAccount,
+}: {
+  partner: PartnerRecord | null;
+  partnerWithBalance: PartnerWithBalance | null;
+  roles: PartnerRole[];
+  bankAccounts: SupplierBankAccount[];
+  registrySyncLog: PartnerRegistrySyncLogItem[];
+  isLoading: boolean;
+  actionLoading: string | null;
+  duplicateWarnings: Array<{ partner: PartnerRecord; roles: string[]; match_type: string; severity: string }>;
+  form: PartnerFormState;
+  setForm: React.Dispatch<React.SetStateAction<PartnerFormState>>;
+  newBankAccount: BankAccountDraft;
+  setNewBankAccount: React.Dispatch<React.SetStateAction<BankAccountDraft>>;
+  includeTaxArrearsOnRefresh: boolean;
+  setIncludeTaxArrearsOnRefresh: (value: boolean) => void;
+  latestTaxArrears: TaxArrearsInfo | null;
+  onSave: () => void;
+  onCheckDuplicates: () => void;
+  onRegistryRefresh: () => void;
+  onAddRole: (role: 'customer' | 'supplier') => void;
+  onCreateBankAccount: () => void;
+  onUpdateBankAccount: (account: SupplierBankAccount, updates: Partial<BankAccountDraft>) => void;
+}) {
+  const t = useTranslations('accounting');
+
+  if (!partner) {
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">{t('selectPartnerToView')}</div>;
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[520px] items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
+      </div>
+    );
+  }
+
+  const balance = partnerWithBalance?.balance || 0;
+  const balanceTone = balance > 0 ? 'text-[var(--a-pos)]' : balance < 0 ? 'text-[var(--a-warn)]' : 'text-[var(--a-text)]';
+
+  return (
+    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+      <div className="border-b border-[var(--a-border)] bg-[linear-gradient(180deg,var(--a-accent-soft-2),var(--a-surface))] px-5 py-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-12 w-12 place-items-center rounded-lg bg-[var(--a-surface-2)] text-sm font-semibold text-[var(--a-text-2)]">
+            {initials(partner.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-[17px] font-semibold text-[var(--a-text)]">{partner.name}</h2>
+            <div className="mt-1 truncate text-[12.5px] text-[var(--a-text-2)]">
+              {partner.reg_code || t('noIdentifier')} · {partner.vat_number || 'No VAT'} · {partner.country_code || 'EE'}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <PartnerTypeBadge type={partner.type} />
+              <StatusPill tone={partner.is_active ? 'success' : 'neutral'}>{partner.is_active ? t('active') : t('inactive')}</StatusPill>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+          <div className="micro text-[var(--a-text-3)]">Outstanding balance</div>
+          <div className={`mt-1 font-mono text-[22px] font-semibold ${balanceTone}`}>{formatEUR(Math.abs(balance))}</div>
+          <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
+            {balance > 0 ? 'Receivable from partner' : balance < 0 ? 'Payable to partner' : 'Settled'}
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+        <Section label={t('identity')}>
+          <Field label={t('type')} value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
+            { label: t('customer'), value: 'customer' },
+            { label: t('supplier'), value: 'supplier' },
+            { label: t('both'), value: 'both' },
+          ]} />
+          <Field label={t('name')} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
+          <Field label={t('code')} value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
+        </Section>
+
+        <Section label={t('registration')}>
+          <Field label={t('registryCode')} value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
+          <Field label={t('vatNumber')} value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
+        </Section>
+
+        <Section label={t('contact')}>
+          <Field label={t('email')} value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
+          <Field label={t('phone')} value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
+          <Field label={t('website')} value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
+          <Field label={t('address')} value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
+        </Section>
+
+        <Section label={t('billing')}>
+          <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
+          <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
+        </Section>
+
+        <Section label={t('other')}>
+          <Field label={t('notes')} value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
+        </Section>
+
+        <div className="grid grid-cols-2 gap-2">
+          <Button onClick={onCheckDuplicates} disabled={!!actionLoading}>
+            {actionLoading === 'check-duplicates' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+            {t('checkDuplicates')}
+          </Button>
+          <Button variant="primary" onClick={onSave} disabled={!form.name || !!actionLoading}>
+            {actionLoading === 'save-partner' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+            {t('saveChanges')}
+          </Button>
+        </div>
+
+        {duplicateWarnings.length > 0 && (
+          <div className="rounded-lg border border-[var(--a-warn-soft)] bg-[var(--a-warn-soft)] p-3">
+            <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-[var(--a-warn)]">
+              <ShieldAlert className="h-4 w-4" />
+              {t('duplicateWarnings')}
+            </div>
+            <div className="space-y-2">
+              {duplicateWarnings.map((warning) => (
+                <div key={warning.partner.id} className="rounded-md bg-[var(--a-surface)] p-2 text-[12px] text-[var(--a-text-2)]">
+                  <div className="font-medium text-[var(--a-text)]">{warning.partner.name}</div>
+                  <div>{warning.match_type} · {warning.severity} · {warning.roles.join(', ') || t('none')}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Section label={t('partnerRoles')}>
+          <div className="flex flex-wrap gap-2">
+            {roles.map((role) => (
+              <StatusPill key={role.id} tone="neutral">{t(role.role)}</StatusPill>
+            ))}
+            {!roles.some((role) => role.role === 'customer') && (
+              <Button className="h-8 text-xs" onClick={() => onAddRole('customer')} disabled={!!actionLoading}>{t('addCustomerRole')}</Button>
+            )}
+            {!roles.some((role) => role.role === 'supplier') && (
+              <Button className="h-8 text-xs" onClick={() => onAddRole('supplier')} disabled={!!actionLoading}>{t('addSupplierRole')}</Button>
+            )}
+          </div>
+        </Section>
+
+        <Section label={t('registryRefresh')}>
+          <label className="flex items-center gap-2 text-[12.5px] text-[var(--a-text-2)]">
+            <input
+              type="checkbox"
+              checked={includeTaxArrearsOnRefresh}
+              onChange={(event) => setIncludeTaxArrearsOnRefresh(event.target.checked)}
+            />
+            {t('includeTaxArrearsCheck')}
+          </label>
+          <Button onClick={onRegistryRefresh} disabled={!partner.reg_code || !!actionLoading}>
+            {actionLoading === 'registry-refresh' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+            {t('refreshFromRegistry')}
+          </Button>
+          {(latestTaxArrears || partner.tax_arrears_status) && (
+            <div className="rounded-lg bg-[var(--a-surface-2)] p-3 text-[12px] text-[var(--a-text-2)]">
+              {latestTaxArrears?.status || partner.tax_arrears_status || t('notAvailable')} · {String(latestTaxArrears?.arrearsAmount ?? partner.tax_arrears_amount ?? t('notAvailable'))}
+            </div>
+          )}
+        </Section>
+
+        <Section label={t('supplierBankAccounts')} icon={<Wallet className="h-3.5 w-3.5" />}>
+          {bankAccounts.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[var(--a-border-strong)] bg-[var(--a-surface-2)] p-3 text-sm text-[var(--a-text-3)]">
+              {t('noSupplierBankAccountsYet')}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {bankAccounts.map((account) => (
+                <BankAccountCard
+                  key={account.id}
+                  account={account}
+                  onToggleDefault={() => onUpdateBankAccount(account, { is_default: !account.is_default || true })}
+                  onToggleActive={() => onUpdateBankAccount(account, { is_active: !account.is_active })}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="grid gap-2">
+            <Field label={t('iban')} value={newBankAccount.iban} onChange={(value) => setNewBankAccount((current) => ({ ...current, iban: value.toUpperCase() }))} />
+            <Field label={t('bankName')} value={newBankAccount.bank_name} onChange={(value) => setNewBankAccount((current) => ({ ...current, bank_name: value }))} />
+            <Field label={t('bic')} value={newBankAccount.bic} onChange={(value) => setNewBankAccount((current) => ({ ...current, bic: value.toUpperCase() }))} />
+            <Field label={t('currency')} value={newBankAccount.currency_code} onChange={(value) => setNewBankAccount((current) => ({ ...current, currency_code: value.toUpperCase() }))} />
+          </div>
+          <Button onClick={onCreateBankAccount} disabled={!newBankAccount.iban || !!actionLoading}>
+            {actionLoading === 'create-bank-account' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            {t('addBankAccount')}
+          </Button>
+        </Section>
+
+        <Section label={t('registrySyncLog')}>
+          {registrySyncLog.length === 0 ? (
+            <div className="text-sm text-[var(--a-text-3)]">{t('noRegistrySyncEventsYet')}</div>
+          ) : (
+            <div className="space-y-2">
+              {registrySyncLog.map((item) => (
+                <div key={item.id} className="rounded-lg border border-[var(--a-border)] p-3 text-[12px]">
+                  <div className="font-medium text-[var(--a-text)]">{item.sync_type} · {item.status}</div>
+                  <div className="mt-1 font-mono text-[11px] text-[var(--a-text-3)]">
+                    {item.request_source || t('unknownSource')} · {item.registry_code || t('noRegistryCode')} · {formatDateTime(item.performed_at)}
+                  </div>
+                  {(item.error_message || item.error_code) && (
+                    <div className="mt-1 text-[var(--a-neg)]">{item.error_code ? `${item.error_code}: ` : ''}{item.error_message}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </Section>
+      </div>
+    </div>
+  );
+}
+
+function Notice({ tone, icon, children }: { tone: 'danger' | 'success'; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <div className={`rounded-lg border p-3 text-sm ${tone === 'danger' ? 'border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] text-[var(--a-neg)]' : 'border-[var(--a-pos-soft)] bg-[var(--a-pos-soft)] text-[var(--a-pos)]'}`}>
+      <div className="flex items-start gap-2">{icon}<span>{children}</span></div>
+    </div>
+  );
+}
+
+function PartnerTypeBadge({ type }: { type: PartnerRecord['type'] }) {
+  const style =
+    type === 'customer'
+      ? 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]'
+      : type === 'supplier'
+        ? 'bg-[var(--a-warn-soft)] text-[var(--a-warn)]'
+        : 'bg-[#ece4f0] text-[#5a3974]';
+
+  return <span className={`inline-flex rounded px-2 py-1 text-[11px] font-semibold capitalize leading-none ${style}`}>{type}</span>;
+}
+
+function Section({ label, children, icon }: { label: string; children: React.ReactNode; icon?: React.ReactNode }) {
+  return (
+    <section>
+      <div className="micro mb-3 flex items-center gap-1.5 text-[var(--a-text-3)]">{icon}{label}</div>
+      <div className="space-y-3">{children}</div>
+    </section>
   );
 }
 
@@ -783,18 +775,18 @@ function Field({
   placeholder?: string;
 }) {
   return (
-    <label className="space-y-2">
-      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</span>
+    <label className="block space-y-1.5">
+      <span className="micro text-[var(--a-text-3)]">{label}</span>
       {as === 'select' ? (
-        <select value={String(value)} onChange={(event) => onChange(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3">
+        <select value={String(value)} onChange={(event) => onChange(event.target.value)} className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] outline-none">
           {options?.map((option) => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
       ) : as === 'textarea' ? (
-        <textarea value={String(value)} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="min-h-28 w-full rounded-lg border border-slate-200 px-3 py-2" />
+        <textarea value={String(value)} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="min-h-20 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2 text-[13px] outline-none" />
       ) : (
-        <input type={type} value={String(value)} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
+        <input type={type} value={String(value)} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] outline-none" />
       )}
     </label>
   );
@@ -811,34 +803,28 @@ function BankAccountCard({
 }) {
   const t = useTranslations('accounting');
   return (
-    <div className="rounded-xl border border-slate-200 p-4">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">{account.iban}</div>
-          <div className="mt-1 text-xs text-slate-500">
-            {account.account_holder_name || '-'} · {account.bank_name || t('noBankName')} · {account.currency_code || 'EUR'}
-          </div>
-          {account.notes && <div className="mt-2 text-xs text-slate-500">{account.notes}</div>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_default ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
-            {account.is_default ? t('default') : t('secondary')}
-          </span>
-          <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>
-            {account.is_active ? t('active') : t('inactive')}
-          </span>
-        </div>
+    <div className="rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+      <div className="font-mono text-[12px] font-semibold text-[var(--a-text)]">{account.iban}</div>
+      <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
+        {account.account_holder_name || '-'} · {account.bank_name || t('noBankName')} · {account.currency_code || 'EUR'}
       </div>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <button onClick={onToggleDefault} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          {t('setDefault')}
-        </button>
-        <button onClick={onToggleActive} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">
-          {account.is_active ? t('deactivate') : t('activate')}
-        </button>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <StatusPill tone={account.is_default ? 'success' : 'neutral'}>{account.is_default ? t('default') : t('secondary')}</StatusPill>
+        <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
+      </div>
+      <div className="mt-3 flex gap-2">
+        <Button className="h-8 text-xs" onClick={onToggleDefault}>{t('setDefault')}</Button>
+        <Button className="h-8 text-xs" onClick={onToggleActive}>{account.is_active ? t('deactivate') : t('activate')}</Button>
       </div>
     </div>
   );
+}
+
+function shortDate(value?: string | null) {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value.slice(0, 10);
+  return new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit' }).format(date);
 }
 
 function mapPartnerToForm(partner: PartnerRecord): PartnerFormState {
@@ -889,7 +875,7 @@ function sortBankAccounts(accounts: SupplierBankAccount[]) {
 }
 
 function formatDateTime(value?: string | null) {
-  if (!value) return '—';
+  if (!value) return '-';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(undefined, {

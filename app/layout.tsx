@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist_Mono, Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import { Toaster } from '@/components/ui/Toast';
@@ -7,7 +7,7 @@ import "./globals.css";
 
 const inter = Inter({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-inter',
 });
@@ -19,6 +19,13 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   variable: '--font-jakarta',
 });
 
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-geist-mono',
+});
+
 export const metadata: Metadata = {
   title: "Arvelo — Estonian Bookkeeping",
   description: "Modern bookkeeping software for Estonian businesses",
@@ -28,7 +35,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#0F172A',
+  themeColor: '#0a0a0a',
 };
 
 export default async function RootLayout({
@@ -40,7 +47,7 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${inter.variable} ${plusJakartaSans.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${plusJakartaSans.variable} ${geistMono.variable}`}>
       <body className={inter.className}>
         <NextIntlClientProvider messages={messages}>
           {children}
