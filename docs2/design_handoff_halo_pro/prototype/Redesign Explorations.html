@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Redesign Explorations</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=JetBrains+Mono:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; color: #0f172a; }
+  /* prevent global font from leaking into Variant B; each variant root sets its own */
+  /* Lucide icon helpers — use SVG sprites via inline */
+  .lucide { width: 1em; height: 1em; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; fill: none; stroke: currentColor; display: inline-block; vertical-align: -0.125em; flex-shrink: 0; }
+
+  /* === Variant A : Halo — modern minimalist (Linear/Mercury energy) === */
+  .v-a {
+    --a-bg: #f6f4ee;
+    --a-surface: #ffffff;
+    --a-surface-2: #f0ede5;
+    --a-border: #e6e1d4;
+    --a-border-strong: #d4cebe;
+    --a-text: #0a0a0a;
+    --a-text-2: #4a4946;
+    --a-text-3: #8e8c84;
+    --a-accent: #ff4e2c;        /* electric coral */
+    --a-accent-on: #ffffff;
+    --a-accent-soft: #ffe7df;
+    --a-accent-soft-2: #fff3ee;
+    --a-pos: #0e7b5a;
+    --a-pos-soft: #e2efe9;
+    --a-neg: #c84b3e;
+    --a-neg-soft: #fbe7e3;
+    --a-warn: #b07d1f;
+    --a-warn-soft: #f5ecd6;
+    --a-side-bg: #0a0a0a;
+    --a-side-text: #d4d1c8;
+    --a-side-muted: #6b6964;
+    --a-side-border: rgba(255,255,255,0.06);
+    --a-side-active: rgba(255,255,255,0.06);
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--a-text);
+    background: var(--a-bg);
+    letter-spacing: -0.01em;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
+  }
+  .v-a .mono { font-family: var(--mono-a, 'Geist Mono'), 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1; letter-spacing: -0.02em; }
+  .v-a .display { font-family: 'Inter', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.03em; }
+
+  /* === Variant B : Quire — modernised editorial (Mercury/Notion) === */
+  .v-b {
+    --b-bg: #f1ede2;
+    --b-surface: #faf6ec;
+    --b-surface-2: #ebe6d7;
+    --b-border: #ddd6c3;
+    --b-border-strong: #c4bba2;
+    --b-text: #1a1612;
+    --b-text-2: #58524a;
+    --b-text-3: #8e877b;
+    --b-accent: #5a1e3a;         /* deep plum */
+    --b-accent-on: #f6f0e6;
+    --b-accent-soft: #f0e3ea;
+    --b-sage: #4d6a52;
+    --b-sage-soft: #e1e8dd;
+    --b-pos: #4d6a52;
+    --b-neg: #8b2a2a;
+    --b-neg-soft: #f0dcd8;
+    --b-warn: #92581c;
+    --b-warn-soft: #f3ebd6;
+    --b-side-bg: #1c1814;
+    --b-side-text: #d2cab9;
+    --b-side-muted: #7a7363;
+    --b-side-active: rgba(245,228,212,0.07);
+    font-family: 'Inter', 'Instrument Sans', system-ui, sans-serif;
+    color: var(--b-text);
+    background: var(--b-bg);
+    letter-spacing: -0.005em;
+  }
+  .v-b .display { font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: -0.035em; font-optical-sizing: auto; }
+  .v-b .serif { font-family: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif; font-weight: 500; letter-spacing: -0.035em; font-optical-sizing: auto; } /* legacy alias → modern grotesk */
+  .v-b .mono { font-family: var(--mono-b, 'Geist Mono'), 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1; letter-spacing: -0.01em; }
+  .v-b .italic-sans { font-family: 'Instrument Sans', 'Inter', system-ui, sans-serif; font-style: italic; }
+
+  /* === Variant C : Aktiv — bold split-pane pro-tool (Ramp/Superhuman) === */
+  .v-c {
+    --c-bg: #ecebe5;
+    --c-frame: #d6d2c4;
+    --c-surface: #ffffff;
+    --c-dark: #111113;            /* dark inset panels */
+    --c-dark-2: #1a1a1d;
+    --c-dark-3: #232328;
+    --c-dark-border: #2a2a30;
+    --c-text: #0a0a0a;
+    --c-text-2: #4a4946;
+    --c-text-3: #8e8c84;
+    --c-on-dark: #ebe9e0;
+    --c-on-dark-2: #9b988c;
+    --c-on-dark-3: #5a5852;
+    --c-accent: #c5f02c;           /* acid lime */
+    --c-accent-on: #0a0a0a;
+    --c-accent-soft: rgba(197,240,44,0.14);
+    --c-pos: #6fe39a;
+    --c-neg: #ff5c5c;
+    --c-warn: #ffc34a;
+    --c-side-bg: #0c0c0e;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--c-text);
+    background: var(--c-bg);
+    letter-spacing: -0.01em;
+    font-feature-settings: 'cv11', 'ss01', 'cv03';
+  }
+  .v-c .mono { font-family: var(--mono-c, 'Geist Mono'), 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: 'tnum' 1; }
+  .v-c .display { font-family: 'Inter', system-ui, sans-serif; font-weight: 600; letter-spacing: -0.03em; }
+
+  /* === Common helpers === */
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Tighten labels w/ tracking-wider feel */
+  .micro { font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+
+  /* Subtle grid placeholder for chart areas */
+  .placeholder-stripes {
+    background-image: repeating-linear-gradient(135deg, rgba(0,0,0,0.04) 0 1px, transparent 1px 12px);
+  }
+</style>
+
+<template id="__bundler_thumbnail">
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" fill="#f0eee9"/>
+    <rect x="18" y="22" width="64" height="56" rx="3" fill="#fff" stroke="#1a1612" stroke-width="1.5"/>
+    <line x1="26" y1="36" x2="74" y2="36" stroke="#245c3c" stroke-width="1.5"/>
+    <line x1="26" y1="46" x2="60" y2="46" stroke="#1a1612" stroke-width="1"/>
+    <line x1="26" y1="54" x2="68" y2="54" stroke="#1a1612" stroke-width="1"/>
+    <line x1="26" y1="62" x2="55" y2="62" stroke="#1a1612" stroke-width="1"/>
+    <text x="50" y="92" font-family="serif" font-size="9" text-anchor="middle" fill="#1a1612">Arvelo</text>
+  </svg>
+</template>
+
+<!-- React / Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<!-- Tweaks panel + design canvas -->
+<script type="text/babel" src="src/tweaks-panel.jsx"></script>
+<script type="text/babel" src="src/design-canvas.jsx"></script>
+
+<!-- Project source -->
+<script type="text/babel" src="src/icons.jsx"></script>
+<script type="text/babel" src="src/data.jsx"></script>
+<script type="text/babel" src="src/sidebar.jsx"></script>
+<script type="text/babel" src="src/screen-helpers.jsx"></script>
+<script type="text/babel" src="src/screen-transactions.jsx"></script>
+<script type="text/babel" src="src/screen-transactions-pro.jsx"></script>
+<script type="text/babel" src="src/screen-transaction-edit.jsx"></script>
+<script type="text/babel" src="src/screen-accounts.jsx"></script>
+<script type="text/babel" src="src/screen-invoices.jsx"></script>
+<script type="text/babel" src="src/screen-partners.jsx"></script>
+<script type="text/babel" src="src/screens-c.jsx"></script>
+<script type="text/babel" src="src/foundations.jsx"></script>
+<script type="text/babel" src="src/app.jsx"></script>
+
+</head>
+<body>
+<div id="root"></div>
+</body>
+</html>
