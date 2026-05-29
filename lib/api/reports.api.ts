@@ -130,6 +130,11 @@ export type VATReportData = {
   line4_output_vat: number;
   line5_input_vat: number;
   line6_net_vat: number;
+  line7_intra_community_supply: number;
+  line8_intra_community_vat: number;
+  line9_reverse_charge_supply: number;
+  line10_reverse_charge_vat: number;
+  line11_third_country_supply: number;
   sales_invoices: VATInvoiceSummary[];
   purchase_invoices: VATInvoiceSummary[];
   startDate: string;
@@ -217,5 +222,21 @@ export const reportsApi = {
       params: { direction, as_of_date: asOfDate },
     });
     return response.data.data;
+  },
+
+  async downloadKmdXml(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/reports/kmd', {
+      params: { start_date: startDate, end_date: endDate },
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
+
+  async downloadKmdInfXml(startDate: string, endDate: string) {
+    const response = await apiClient.get('/api/reports/kmd-inf', {
+      params: { start_date: startDate, end_date: endDate },
+      responseType: 'blob',
+    });
+    return response.data as Blob;
   },
 };

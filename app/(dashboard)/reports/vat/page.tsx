@@ -19,32 +19,28 @@ function formatCurrency(amount: number): string {
   });
 }
 
-function generateKmdXml(data: VATReportData): string {
-  const period = data.startDate.slice(0, 7); // YYYY-MM
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<KMD xmlns="http://www.emta.ee/KMD">
-  <Header>
-    <Period>${period}</Period>
-  </Header>
-  <Body>
-    <Line1>${data.line1_taxable_22.toFixed(2)}</Line1>
-    <Line2>${data.line2_taxable_9.toFixed(2)}</Line2>
-    <Line3>${data.line3_taxable_0.toFixed(2)}</Line3>
-    <Line4>${data.line4_output_vat.toFixed(2)}</Line4>
-    <Line5>${data.line5_input_vat.toFixed(2)}</Line5>
-    <Line6>${data.line6_net_vat.toFixed(2)}</Line6>
-  </Body>
-</KMD>`;
-}
-
-function downloadXml(xml: string, filename: string) {
-  const blob = new Blob([xml], { type: 'application/xml' });
+function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+function KmdLine({ num, label, value, bold }: { num: number; label: string; value: number; bold?: boolean }) {
+  const cls = bold ? 'font-semibold' : '';
+  const borderStyle = bold ? '2px solid var(--border)' : '1px solid var(--border)';
+  return (
+    <div className={`ml-4 flex justify-between pb-2 ${cls}`} style={{ borderBottom: borderStyle }}>
+      <span style={{ color: bold ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+        {num}. {label}
+      </span>
+      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
+        &euro;{formatCurrency(value)}
+      </span>
+    </div>
+  );
 }
 
 function InvoiceTable({ invoices, t }: { invoices: VATInvoiceSummary[]; t: (key: string) => string }) {
@@ -115,11 +111,26 @@ export default function VATReportPage() {
     fetchData();
   }, [endDate, fetchData, startDate]);
 
-  const handleExportKmd = () => {
-    if (!data) return;
-    const xml = generateKmdXml(data);
-    const period = data.startDate.slice(0, 7);
-    downloadXml(xml, `KMD_${period}.xml`);
+  const handleExportKmd = async () => {
+    if (!startDate || !endDate) return;
+    try {
+      const blob = await reportsApi.downloadKmdXml(startDate, endDate);
+      const period = startDate.slice(0, 7);
+      downloadBlob(blob, `KMD_${period}.xml`);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
+  const handleExportKmdInf = async () => {
+    if (!startDate || !endDate) return;
+    try {
+      const blob = await reportsApi.downloadKmdInfXml(startDate, endDate);
+      const period = startDate.slice(0, 7);
+      downloadBlob(blob, `KMD_INF_${period}.xml`);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   };
 
   if (loading || !startDate || !endDate) {
@@ -202,34 +213,44 @@ export default function VATReportPage() {
             </div>
           </div>
 
-          <button
-            onClick={handleExportKmd}
-            className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            <Download className="h-5 w-5" />
-            <span>{t('kmdExport')}</span>
-          </button>
-          <button
-            onClick={() => {
-              if (!data) return;
-              const allInvoices = [...data.sales_invoices, ...data.purchase_invoices];
-              const rows = allInvoices.map((inv) => ({
-                invoice_number: inv.invoice_number,
-                partner: inv.partner_name || '',
-                date: inv.invoice_date,
-                subtotal: inv.subtotal.toFixed(2),
-                tax_amount: inv.tax_amount.toFixed(2),
-                total: inv.total.toFixed(2),
-              }));
-              downloadCsv(rows, `VAT_${startDate}_${endDate}.csv`);
-            }}
-            className="flex-1 sm:flex-none px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:opacity-80"
-            style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-          >
-            <Download className="h-5 w-5" />
-            <span>{t('exportCsv')}</span>
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleExportKmd}
+              className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              <Download className="h-5 w-5" />
+              <span>{t('kmdExport')}</span>
+            </button>
+            <button
+              onClick={handleExportKmdInf}
+              className="flex-1 sm:flex-none px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              <Download className="h-5 w-5" />
+              <span>{t('kmdInfExport')}</span>
+            </button>
+            <button
+              onClick={() => {
+                if (!data) return;
+                const allInvoices = [...data.sales_invoices, ...data.purchase_invoices];
+                const rows = allInvoices.map((inv) => ({
+                  invoice_number: inv.invoice_number,
+                  partner: inv.partner_name || '',
+                  date: inv.invoice_date,
+                  subtotal: inv.subtotal.toFixed(2),
+                  tax_amount: inv.tax_amount.toFixed(2),
+                  total: inv.total.toFixed(2),
+                }));
+                downloadCsv(rows, `VAT_${startDate}_${endDate}.csv`);
+              }}
+              className="flex-1 sm:flex-none px-4 py-2 rounded-lg flex items-center justify-center gap-2 hover:opacity-80"
+              style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+            >
+              <Download className="h-5 w-5" />
+              <span>{t('exportCsv')}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -250,32 +271,17 @@ export default function VATReportPage() {
             {t('outputVat')}
           </h3>
 
-          <div className="ml-4 flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>1. {t('kmdLine1')}</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(data.line1_taxable_22)}</span>
-          </div>
-          <div className="ml-4 flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>2. {t('kmdLine2')}</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(data.line2_taxable_9)}</span>
-          </div>
-          <div className="ml-4 flex justify-between pb-2" style={{ borderBottom: '1px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-secondary)' }}>3. {t('kmdLine3')}</span>
-            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(data.line3_taxable_0)}</span>
-          </div>
-          <div className="ml-4 flex justify-between pb-2 font-semibold" style={{ borderBottom: '2px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-primary)' }}>4. {t('kmdLine4')}</span>
-            <span style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(data.line4_output_vat)}</span>
-          </div>
+          <KmdLine num={1} label={t('kmdLine1')} value={data.line1_taxable_22} />
+          <KmdLine num={2} label={t('kmdLine2')} value={data.line2_taxable_9} />
+          <KmdLine num={3} label={t('kmdLine3')} value={data.line3_taxable_0} />
+          <KmdLine num={4} label={t('kmdLine4')} value={data.line4_output_vat} bold />
 
           {/* Input VAT section */}
           <h3 className="text-lg font-bold mt-6" style={{ color: 'var(--text-primary)' }}>
             {t('inputVat')}
           </h3>
 
-          <div className="ml-4 flex justify-between pb-2 font-semibold" style={{ borderBottom: '2px solid var(--border)' }}>
-            <span style={{ color: 'var(--text-primary)' }}>5. {t('kmdLine5')}</span>
-            <span style={{ color: 'var(--text-primary)' }}>&euro;{formatCurrency(data.line5_input_vat)}</span>
-          </div>
+          <KmdLine num={5} label={t('kmdLine5')} value={data.line5_input_vat} bold />
 
           {/* Net VAT */}
           <div
@@ -293,6 +299,17 @@ export default function VATReportPage() {
               </span>
             </span>
           </div>
+
+          {/* Intra-community / Reverse charge / Third country */}
+          <h3 className="text-lg font-bold mt-6" style={{ color: 'var(--text-primary)' }}>
+            {t('intraCommunityAndOther')}
+          </h3>
+
+          <KmdLine num={7} label={t('kmdLine7')} value={data.line7_intra_community_supply} />
+          <KmdLine num={8} label={t('kmdLine8')} value={data.line8_intra_community_vat} />
+          <KmdLine num={9} label={t('kmdLine9')} value={data.line9_reverse_charge_supply} />
+          <KmdLine num={10} label={t('kmdLine10')} value={data.line10_reverse_charge_vat} />
+          <KmdLine num={11} label={t('kmdLine11')} value={data.line11_third_country_supply} />
         </div>
       </div>
 

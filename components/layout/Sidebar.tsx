@@ -94,6 +94,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tAccounting('journal'), href: '/accounting/journal', icon: ReceiptText },
         { label: tNavigation('reports'), href: '/reports/profit-loss', icon: BarChart3 },
         { label: tReports('vatReport'), href: '/reports/vat', icon: Shield },
+        { label: tReports('annualReport'), href: '/reports/annual-report', icon: FileText },
       ],
     },
     {

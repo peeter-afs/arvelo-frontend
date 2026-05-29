@@ -11,6 +11,8 @@ import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { invoicesApi, type InvoiceDraftPayload } from '@/lib/api/invoices.api';
 import { getIsoToday } from '@/lib/utils/date';
 
+type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
+
 type DraftLine = {
   description: string;
   account_id: string;
@@ -18,6 +20,7 @@ type DraftLine = {
   unit_price: string;
   discount_percent: string;
   tax_rate: string;
+  supply_type: SupplyType;
 };
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
@@ -36,6 +39,7 @@ const emptyLine = (): DraftLine => ({
   unit_price: '',
   discount_percent: '0',
   tax_rate: '22',
+  supply_type: 'domestic',
 });
 
 export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId }: InvoiceEditorProps) {
@@ -100,6 +104,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 unit_price: String(line.unit_price ?? ''),
                 discount_percent: String(line.discount_percent ?? 0),
                 tax_rate: String(line.tax_rate ?? 0),
+                supply_type: (line.supply_type as SupplyType) || 'domestic',
               }))
             : [emptyLine()]
         );
@@ -155,6 +160,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       unit_price: Number(line.unit_price || 0),
       discount_percent: Number(line.discount_percent || 0),
       tax_rate: Number(line.tax_rate || 0),
+      supply_type: line.supply_type,
     })),
   });
 
@@ -281,7 +287,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
             <div className="space-y-4 p-5">
               {lines.map((line, index) => (
                 <div key={`${index}-${line.description}`} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_180px_110px_140px_120px_120px_auto]">
+                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_180px_110px_140px_120px_120px_150px_auto]">
                     <input
                       value={line.description}
                       onChange={(event) => updateLine(index, { description: event.target.value })}
@@ -302,6 +308,16 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                     <input value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} placeholder={t('unitPrice')} className="h-11 rounded-lg border border-slate-200 px-3" />
                     <input value={line.discount_percent} onChange={(event) => updateLine(index, { discount_percent: event.target.value })} placeholder={t('discount')} className="h-11 rounded-lg border border-slate-200 px-3" />
                     <input value={line.tax_rate} onChange={(event) => updateLine(index, { tax_rate: event.target.value })} placeholder={t('vatRate')} className="h-11 rounded-lg border border-slate-200 px-3" />
+                    <select
+                      value={line.supply_type}
+                      onChange={(event) => updateLine(index, { supply_type: event.target.value as SupplyType })}
+                      className="h-11 rounded-lg border border-slate-200 px-3 text-sm"
+                    >
+                      <option value="domestic">{t('supplyDomestic')}</option>
+                      <option value="intra_community">{t('supplyIntraCommunity')}</option>
+                      <option value="reverse_charge">{t('supplyReverseCharge')}</option>
+                      <option value="third_country">{t('supplyThirdCountry')}</option>
+                    </select>
                     <button
                       onClick={() => removeLine(index)}
                       className="inline-flex h-11 items-center justify-center rounded-lg border border-red-200 px-3 text-red-700 hover:bg-red-50"

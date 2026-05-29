@@ -42,6 +42,7 @@ export type InvoiceLineInput = {
   unit_price: number;
   discount_percent?: number;
   tax_rate?: number;
+  supply_type?: string;
   meta?: Record<string, any>;
 };
 
@@ -81,6 +82,7 @@ export const invoicesApi = {
         tax_rate?: number | string | null;
         line_total: number | string;
         account_id?: string | null;
+        supply_type?: string | null;
         meta?: Record<string, any> | null;
       }>;
     }>>(`/api/invoices/${id}`);
