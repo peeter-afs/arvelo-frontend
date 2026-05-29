@@ -1,37 +1,21 @@
 'use client';
 
-import { useMemo } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ChevronRight, Command } from 'lucide-react';
 import { Kbd } from '@/components/ui/Kbd';
 
-const labelMap: Record<string, string> = {
-  accounting: 'Books',
-  accounts: 'Chart of accounts',
-  journal: 'Transactions',
-  partners: 'Partners',
-  invoices: 'Invoices',
-  sales: 'Sales',
-  purchase: 'Bills',
-  reports: 'Reports',
-  settings: 'Settings',
-  assets: 'Assets',
-  new: 'New',
-  edit: 'Edit',
-  preview: 'Preview',
-};
-
-function humanize(segment: string) {
-  if (/^[0-9a-f-]{12,}$/i.test(segment)) return 'Record';
-  return labelMap[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
+function humanize(segment: string, labels: Record<string, string>, recordLabel: string) {
+  if (/^[0-9a-f-]{12,}$/i.test(segment)) return recordLabel;
+  return labels[segment] || segment.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 }
 
-function crumbsForPath(pathname: string) {
-  if (pathname === '/') return ['Dashboard', 'Today'];
+function crumbsForPath(pathname: string, labels: Record<string, string>, recordLabel: string, dashboardLabel: string, todayLabel: string) {
+  if (pathname === '/') return [dashboardLabel, todayLabel];
   const parts = pathname.split('/').filter(Boolean);
-  const crumbs = parts.map(humanize);
-  if (crumbs[0] === 'Books' && crumbs[1]) return [crumbs[1], ...crumbs.slice(2)];
-  return crumbs.length ? crumbs : ['Dashboard'];
+  const crumbs = parts.map((part) => humanize(part, labels, recordLabel));
+  if (parts[0] === 'accounting' && crumbs[1]) return [crumbs[1], ...crumbs.slice(2)];
+  return crumbs.length ? crumbs : [dashboardLabel];
 }
 
 export function CommandBar({
@@ -44,7 +28,35 @@ export function CommandBar({
   hints?: boolean;
 }) {
   const pathname = usePathname();
-  const computedCrumbs = useMemo(() => crumbs || crumbsForPath(pathname || '/'), [crumbs, pathname]);
+  const tCommon = useTranslations('common');
+  const tNavigation = useTranslations('navigation');
+  const tAccounting = useTranslations('accounting');
+  const tInvoices = useTranslations('invoices');
+  const tReports = useTranslations('reports');
+  const labels = {
+    accounting: tNavigation('books'),
+    accounts: tAccounting('chartOfAccounts'),
+    'bank-review': tAccounting('bankReview'),
+    journal: tAccounting('journalEntries'),
+    partners: tAccounting('partners'),
+    invoices: tInvoices('overview'),
+    sales: tInvoices('salesList'),
+    purchase: tInvoices('purchaseList'),
+    'purchase-approvals': tInvoices('purchaseApprovals'),
+    'purchase-imports': tInvoices('purchaseImports'),
+    recurring: tInvoices('recurring'),
+    reminders: tInvoices('reminders'),
+    reports: tNavigation('reports'),
+    'profit-loss': tReports('profitLoss'),
+    vat: tReports('vatReport'),
+    settings: tNavigation('settings'),
+    security: tNavigation('security'),
+    assets: tNavigation('fixedAssets'),
+    new: tCommon('newEntry'),
+    edit: tCommon('edit'),
+    preview: tCommon('preview'),
+  };
+  const computedCrumbs = crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), tCommon('today'));
 
   return (
     <div className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 lg:px-7">
@@ -63,9 +75,9 @@ export function CommandBar({
         <span className="flex-1" />
         {hints && (
           <span className="hidden items-center gap-1.5 text-[var(--a-text-3)] md:inline-flex">
-            <span>Press</span>
+            <span>{tCommon('press')}</span>
             <Kbd>/</Kbd>
-            <span>to filter</span>
+            <span>{tCommon('toFilter')}</span>
             <span className="mx-1 h-3.5 w-px bg-[var(--a-border)]" />
           </span>
         )}

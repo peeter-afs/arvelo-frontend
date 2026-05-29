@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type Dispatch, type SetStateAction } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
@@ -25,6 +25,16 @@ type EditableLine = {
   account_id?: string | null;
 };
 
+type PreviewDraft = Record<string, string | number | null | undefined | unknown[]>;
+
+type DraftInvoiceResult = {
+  draft_invoice?: {
+    invoice?: {
+      id: string;
+    };
+  };
+};
+
 const emptyLine = (): EditableLine => ({
   description: '',
   quantity: '1',
@@ -36,6 +46,8 @@ const emptyLine = (): EditableLine => ({
 
 export default function PurchaseInvoiceImportsPage() {
   const t = useTranslations('invoices');
+  const tCommon = useTranslations('common');
+  const locale = useLocale();
   const [imports, setImports] = useState<PurchaseInvoiceImportListItem[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -51,8 +63,8 @@ export default function PurchaseInvoiceImportsPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [manualPartnerId, setManualPartnerId] = useState('');
   const [confirmDuplicateWarning, setConfirmDuplicateWarning] = useState(false);
-  const [draftResult, setDraftResult] = useState<any | null>(null);
-  const [previewDraft, setPreviewDraft] = useState<Record<string, any> | null>(null);
+  const [draftResult, setDraftResult] = useState<DraftInvoiceResult | null>(null);
+  const [previewDraft, setPreviewDraft] = useState<PreviewDraft | null>(null);
   const [lineDrafts, setLineDrafts] = useState<EditableLine[]>([emptyLine()]);
 
   useEffect(() => {
@@ -81,7 +93,6 @@ export default function PurchaseInvoiceImportsPage() {
 
   useEffect(() => {
     if (!selectedId) {
-      setDetail(null);
       return;
     }
 
@@ -325,7 +336,7 @@ export default function PurchaseInvoiceImportsPage() {
                       <div className="flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-sm font-medium text-slate-900">{item.file_name || t('importedPdf')}</div>
-                          <div className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at)}</div>
+                          <div className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at, locale, tCommon('noTimestamp'))}</div>
                         </div>
                         <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${statusBadge(item.status)}`}>
                           {formatLabel(item.status)}
@@ -379,7 +390,7 @@ export default function PurchaseInvoiceImportsPage() {
                     </div>
                     <div className="text-right text-xs text-slate-500">
                       <div>{detail.import.source_type}</div>
-                      <div className="mt-1">{formatDateTime(detail.import.created_at)}</div>
+                      <div className="mt-1">{formatDateTime(detail.import.created_at, locale, tCommon('noTimestamp'))}</div>
                     </div>
                   </div>
                 </div>
@@ -418,7 +429,7 @@ export default function PurchaseInvoiceImportsPage() {
                         {lineDrafts.map((line, index) => (
                           <div key={index} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
                             <div className="lg:col-span-4">
-                              <SmallField label={t('description')} value={line.description} onChange={(value) => updateLine(setLineDrafts, index, 'description', value)} />
+                              <SmallField label={tCommon('description')} value={line.description} onChange={(value) => updateLine(setLineDrafts, index, 'description', value)} />
                             </div>
                             <div className="lg:col-span-2">
                               <SmallField label={t('qty')} value={line.quantity} onChange={(value) => updateLine(setLineDrafts, index, 'quantity', value)} />
@@ -590,19 +601,27 @@ export default function PurchaseInvoiceImportsPage() {
   );
 }
 
-function normalizeLines(lines: any): EditableLine[] {
+function normalizeLines(lines: unknown): EditableLine[] {
   if (!Array.isArray(lines) || lines.length === 0) {
     return [emptyLine()];
   }
 
-  return lines.map((line) => ({
-    description: String(line.description || ''),
-    quantity: stringNumber(line.quantity ?? 1),
-    unit_price: stringNumber(line.unit_price ?? 0),
-    tax_rate: stringNumber(line.tax_rate ?? 0),
-    line_total: stringNumber(line.line_total ?? 0),
-    account_id: line.account_id || '',
-  }));
+  return lines.map((rawLine) => {
+    const line = toRecord(rawLine);
+
+    return {
+      description: String(line.description || ''),
+      quantity: stringNumber(line.quantity ?? 1),
+      unit_price: stringNumber(line.unit_price ?? 0),
+      tax_rate: stringNumber(line.tax_rate ?? 0),
+      line_total: stringNumber(line.line_total ?? 0),
+      account_id: typeof line.account_id === 'string' ? line.account_id : '',
+    };
+  });
+}
+
+function toRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
 function updateLine(
@@ -712,11 +731,11 @@ function stringNumber(value: unknown) {
   return String(value);
 }
 
-function formatDateTime(value?: string | null) {
-  if (!value) return 'No timestamp';
+function formatDateTime(value: string | null | undefined, locale: string, noTimestamp: string) {
+  if (!value) return noTimestamp;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('en-GB', {
+  return new Intl.DateTimeFormat(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

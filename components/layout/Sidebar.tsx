@@ -10,16 +10,17 @@ import {
   Home,
   Landmark,
   LogOut,
-  MoreHorizontal,
   ReceiptText,
   Scale,
   Settings,
   Shield,
-  WalletCards,
+  type LucideIcon,
   X,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
+import { formatMetricCount, useNavigationMetrics } from '@/lib/hooks/useNavigationMetrics';
 import { Kbd } from '@/components/ui/Kbd';
 
 interface SidebarProps {
@@ -27,35 +28,18 @@ interface SidebarProps {
   isMobile?: boolean;
 }
 
-const navGroups = [
-  {
-    label: 'Workspace',
-    items: [
-      { label: 'Inbox', href: '/', icon: Home },
-      { label: 'Transactions', href: '/accounting/journal', icon: ReceiptText, badge: '142' },
-      { label: 'Invoices', href: '/invoices/sales', icon: FileText, badge: '7' },
-      { label: 'Bills', href: '/invoices/purchase', icon: WalletCards },
-      { label: 'Bank', href: '/accounting/bank-review', icon: Landmark },
-    ],
-  },
-  {
-    label: 'Books',
-    items: [
-      { label: 'Chart of accounts', href: '/accounting/accounts', icon: Scale },
-      { label: 'Journals', href: '/accounting/journal', icon: ReceiptText },
-      { label: 'Reports', href: '/reports/profit-loss', icon: BarChart3 },
-      { label: 'VAT', href: '/reports/vat', icon: Shield },
-    ],
-  },
-  {
-    label: 'Settings',
-    items: [
-      { label: 'Partners', href: '/accounting/partners', icon: Building2 },
-      { label: 'Settings', href: '/settings', icon: Settings },
-      { label: 'Team', href: '/settings/security', icon: Shield },
-    ],
-  },
-];
+type NavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  badge?: string;
+  children?: Omit<NavItem, 'children' | 'icon'>[];
+};
+
+type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
 
 function initials(value?: string | null) {
   if (!value) return 'A';
@@ -72,7 +56,55 @@ function isActivePath(pathname: string, href: string) {
 
 export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const pathname = usePathname();
+  const tCommon = useTranslations('common');
+  const tNavigation = useTranslations('navigation');
+  const tAccounting = useTranslations('accounting');
+  const tInvoices = useTranslations('invoices');
+  const tReports = useTranslations('reports');
   const { user, tenant, role, logout } = useAuthStore();
+  const navigationMetrics = useNavigationMetrics();
+  const currentPath = pathname || '/';
+  const navGroups: NavGroup[] = [
+    {
+      label: tNavigation('workspace'),
+      items: [
+        { label: tNavigation('dashboard'), href: '/', icon: Home },
+        { label: tAccounting('journalEntries'), href: '/accounting/journal', icon: ReceiptText, badge: formatMetricCount(navigationMetrics.journalEntryCount) },
+        {
+          label: tInvoices('overview'),
+          href: '/invoices',
+          icon: FileText,
+          badge: formatMetricCount(navigationMetrics.invoiceCount),
+          children: [
+            { label: tInvoices('salesList'), href: '/invoices/sales' },
+            { label: tInvoices('purchaseList'), href: '/invoices/purchase' },
+            { label: tInvoices('purchaseApprovals'), href: '/invoices/purchase-approvals' },
+            { label: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
+            { label: tInvoices('recurring'), href: '/invoices/recurring' },
+            { label: tInvoices('reminders'), href: '/invoices/reminders' },
+          ],
+        },
+        { label: tAccounting('bankReview'), href: '/accounting/bank-review', icon: Landmark },
+      ],
+    },
+    {
+      label: tNavigation('books'),
+      items: [
+        { label: tAccounting('chartOfAccounts'), href: '/accounting/accounts', icon: Scale },
+        { label: tAccounting('journal'), href: '/accounting/journal', icon: ReceiptText },
+        { label: tNavigation('reports'), href: '/reports/profit-loss', icon: BarChart3 },
+        { label: tReports('vatReport'), href: '/reports/vat', icon: Shield },
+      ],
+    },
+    {
+      label: tNavigation('settings'),
+      items: [
+        { label: tAccounting('partners'), href: '/accounting/partners', icon: Building2 },
+        { label: tNavigation('settings'), href: '/settings', icon: Settings },
+        { label: tNavigation('security'), href: '/settings/security', icon: Shield },
+      ],
+    },
+  ];
 
   const handleLogout = async () => {
     await authApi.logout();
@@ -97,7 +129,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <button
               onClick={onClose}
               className="rounded-md p-1.5 text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white"
-              aria-label="Close menu"
+              aria-label={tCommon('closeMenu')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -109,16 +141,16 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             {initials(tenant?.name)}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-medium text-white">{tenant?.name || 'Company workspace'}</span>
+            <span className="block truncate text-[13px] font-medium text-white">{tenant?.name || tCommon('companyWorkspace')}</span>
             <span className="mt-0.5 inline-flex rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[var(--a-side-muted)]">
-              2026
+              {navigationMetrics.fiscalYearLabel}
             </span>
           </span>
           <ChevronDown className="h-3.5 w-3.5 text-[var(--a-side-muted)]" />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label="Main navigation">
+      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label={tCommon('mainNavigation')}>
         {navGroups.map((group) => (
           <div key={group.label} className="pb-2">
             <div className="px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--a-side-muted)]">
@@ -127,32 +159,57 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const Icon = item.icon;
-                const active = isActivePath(pathname || '/', item.href);
+                const active = isActivePath(currentPath, item.href);
 
                 return (
-                  <Link
-                    key={`${group.label}-${item.href}-${item.label}`}
-                    href={item.href}
-                    onClick={onClose}
-                    className={`relative flex items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-[13.5px] transition-colors ${
-                      active
-                        ? 'bg-[var(--a-side-active)] font-medium text-white'
-                        : 'text-[var(--a-side-text)] hover:bg-[var(--a-side-active)] hover:text-white'
-                    }`}
-                  >
-                    {active && <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded bg-[var(--a-accent)]" />}
-                    <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-[var(--a-side-muted)]'}`} />
-                    <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                    {item.badge && (
-                      <span
-                        className={`rounded px-1.5 py-0.5 font-mono text-[10.5px] ${
-                          active ? 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]' : 'bg-white/[0.05] text-[var(--a-side-muted)]'
-                        }`}
-                      >
-                        {item.badge}
-                      </span>
+                  <div key={`${group.label}-${item.href}-${item.label}`}>
+                    <Link
+                      href={item.href}
+                      onClick={onClose}
+                      className={`relative flex items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-[13.5px] transition-colors ${
+                        active
+                          ? 'bg-[var(--a-side-active)] font-medium text-white'
+                          : 'text-[var(--a-side-text)] hover:bg-[var(--a-side-active)] hover:text-white'
+                      }`}
+                    >
+                      {active && <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded bg-[var(--a-accent)]" />}
+                      <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-[var(--a-side-muted)]'}`} />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {item.badge && (
+                        <span
+                          className={`rounded px-1.5 py-0.5 font-mono text-[10.5px] ${
+                            active ? 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]' : 'bg-white/[0.05] text-[var(--a-side-muted)]'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </Link>
+
+                    {item.children && (
+                      <div className="mt-0.5 space-y-0.5 pl-8">
+                        {item.children.map((child) => {
+                          const childActive = isActivePath(currentPath, child.href);
+
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={onClose}
+                              className={`relative flex min-h-8 items-center rounded-[7px] px-2 py-1.5 text-[12.5px] transition-colors ${
+                                childActive
+                                  ? 'bg-[var(--a-side-active)] font-medium text-white'
+                                  : 'text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white'
+                              }`}
+                            >
+                              {childActive && <span className="absolute left-0 top-1/2 h-3 w-0.5 -translate-y-1/2 rounded bg-[var(--a-accent)]" />}
+                              <span className="truncate">{child.label}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     )}
-                  </Link>
+                  </div>
                 );
               })}
             </div>
@@ -166,18 +223,17 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             {initials(user?.name || user?.email)}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-medium text-white">{user?.name || user?.email || 'User'}</div>
-            <div className="truncate text-[11px] capitalize text-[var(--a-side-muted)]">{role || 'viewer'}</div>
+            <div className="truncate text-[13px] font-medium text-white">{user?.name || user?.email || tCommon('user')}</div>
+            <div className="truncate text-[11px] capitalize text-[var(--a-side-muted)]">{role || tCommon('viewer')}</div>
           </div>
           <Kbd className="border-white/10 bg-white/[0.06] text-[var(--a-side-muted)]">⌘K</Kbd>
           <button
             onClick={handleLogout}
             className="rounded-md p-1.5 text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white"
-            aria-label="Sign out"
+            aria-label={tCommon('signOut')}
           >
             <LogOut className="h-4 w-4" />
           </button>
-          <MoreHorizontal className="hidden h-4 w-4 text-[var(--a-side-muted)]" />
         </div>
       </div>
     </aside>

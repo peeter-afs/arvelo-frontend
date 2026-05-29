@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Menu } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import Sidebar from './Sidebar';
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore();
+  const tCommon = useTranslations('common');
   const sidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -78,7 +80,7 @@ export default function MobileNav() {
           ref={triggerRef}
           onClick={() => setIsOpen(true)}
           className="-ml-2 rounded-md p-2 hover:bg-[var(--a-surface-2)]"
-          aria-label="Open navigation menu"
+          aria-label={tCommon('openNavigationMenu')}
           aria-expanded={isOpen}
           aria-controls="mobile-sidebar"
         >
@@ -91,7 +93,7 @@ export default function MobileNav() {
 
         <div
           className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--a-accent)] text-sm font-semibold text-white"
-          aria-label={`User: ${user?.name || user?.email || 'Unknown'}`}
+          aria-label={`${tCommon('user')}: ${user?.name || user?.email || tCommon('unknown')}`}
           role="img"
         >
           {userInitial}
@@ -100,7 +102,7 @@ export default function MobileNav() {
 
       {/* Slide-over Sidebar */}
       {isOpen && (
-        <div role="dialog" aria-modal="true" aria-label="Navigation menu">
+        <div role="dialog" aria-modal="true" aria-label={tCommon('navigationMenu')}>
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"

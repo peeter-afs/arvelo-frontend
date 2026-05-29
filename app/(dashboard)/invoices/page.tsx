@@ -40,7 +40,7 @@ export default function InvoicesHubPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('title')}</h1>
+        <h1 className="text-2xl font-semibold text-slate-900">{t('overview')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
           {t('hubDescription')}
         </p>
