@@ -73,6 +73,7 @@ export type PartnerRecord = {
   notes?: string | null;
   country_code?: string | null;
   payment_terms_days?: number | null;
+  receipt_responsible_email?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

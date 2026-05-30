@@ -85,6 +85,8 @@ export type BankReviewQueueItem = {
   is_reconciled: boolean;
   auto_match_ready: boolean;
   top_candidates: BankMatchCandidate[];
+  has_missing_receipt_placeholder: boolean;
+  placeholder_invoice_id: string | null;
 };
 
 export type PaymentBatchListItem = {
@@ -331,6 +333,26 @@ export const bankingApi = {
 
   async voidPaymentBatch(id: string, payload?: { reason?: string }) {
     const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/void`, payload || {});
+    return response.data.data;
+  },
+
+  async markMissingReceipt(transactionId: string, payload?: { partner_id?: string; description?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${transactionId}/mark-missing-receipt`, payload || {});
+    return response.data.data;
+  },
+
+  async dismissMissingReceipt(transactionId: string, payload?: { reason?: string }) {
+    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${transactionId}/dismiss-missing-receipt`, payload || {});
+    return response.data.data;
+  },
+
+  async getMissingReceiptSettings() {
+    const response = await apiClient.get<ApiResponse<any>>('/api/banking/missing-receipt-settings');
+    return response.data.data;
+  },
+
+  async updateMissingReceiptSettings(data: Record<string, any>) {
+    const response = await apiClient.put<ApiResponse<any>>('/api/banking/missing-receipt-settings', data);
     return response.data.data;
   },
 };

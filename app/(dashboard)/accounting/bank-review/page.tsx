@@ -6,6 +6,7 @@ import {
   AlertCircle,
   CheckCircle2,
   Eye,
+  FileQuestion,
   Filter,
   Loader2,
   RefreshCw,
@@ -44,6 +45,7 @@ export default function BankReviewPage() {
   const [manualAccountId, setManualAccountId] = useState('');
   const [manualDescription, setManualDescription] = useState('');
   const [manualAllocations, setManualAllocations] = useState<ManualAllocation[]>([]);
+  const [dismissReason, setDismissReason] = useState('');
 
   const selectedItem = useMemo(
     () => items.find((item) => item.transaction_id === selectedTransactionId) || null,
@@ -169,6 +171,27 @@ export default function BankReviewPage() {
     await runAction('ignore', async () => {
       await bankingApi.ignoreTransaction(selectedItem.transaction_id, { reason: ignoreReason || undefined });
       setSuccessMessage(t('transactionIgnored'));
+      await refreshQueue(selectedItem.transaction_id);
+    });
+  };
+
+  const handleMarkMissingReceipt = async () => {
+    if (!selectedItem) return;
+    await runAction('mark-missing-receipt', async () => {
+      await bankingApi.markMissingReceipt(selectedItem.transaction_id);
+      setSuccessMessage(t('receiptPlaceholderCreated'));
+      await refreshQueue(selectedItem.transaction_id);
+    });
+  };
+
+  const handleDismissMissingReceipt = async () => {
+    if (!selectedItem) return;
+    await runAction('dismiss-missing-receipt', async () => {
+      await bankingApi.dismissMissingReceipt(selectedItem.transaction_id, {
+        reason: dismissReason || undefined,
+      });
+      setDismissReason('');
+      setSuccessMessage(t('receiptPlaceholderDismissed'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -342,6 +365,12 @@ export default function BankReviewPage() {
                         <>
                           <span>·</span>
                           <span className="font-medium text-emerald-700">{t('autoReady')}</span>
+                        </>
+                      )}
+                      {item.has_missing_receipt_placeholder && (
+                        <>
+                          <span>·</span>
+                          <span className="font-medium text-amber-600">{t('missingReceiptDraft')}</span>
                         </>
                       )}
                     </div>
@@ -638,6 +667,57 @@ export default function BankReviewPage() {
                       </button>
                     </div>
                   </ActionCard>
+
+                  {selectedItem.amount < 0 && (
+                    <ActionCard
+                      title={t('markMissingReceipt')}
+                      description={selectedItem.has_missing_receipt_placeholder ? t('receiptPlaceholderCreated') : t('markMissingReceiptDescription')}
+                    >
+                      <div className="grid gap-3">
+                        {selectedItem.has_missing_receipt_placeholder ? (
+                          <>
+                            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                              <CheckCircle2 className="h-4 w-4" />
+                              <span>{t('receiptPlaceholderCreated')}</span>
+                            </div>
+                            <input
+                              value={dismissReason}
+                              onChange={(event) => setDismissReason(event.target.value)}
+                              placeholder={t('dismissReason')}
+                              className="h-11 rounded-lg border border-slate-200 px-3"
+                            />
+                            <button
+                              onClick={handleDismissMissingReceipt}
+                              disabled={!!actionLoading}
+                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {actionLoading === 'dismiss-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                              <span>{t('noReceiptExpected')}</span>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={handleMarkMissingReceipt}
+                              disabled={!!actionLoading}
+                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {actionLoading === 'mark-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />}
+                              <span>{t('markMissingReceipt')}</span>
+                            </button>
+                            <button
+                              onClick={handleDismissMissingReceipt}
+                              disabled={!!actionLoading}
+                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {actionLoading === 'dismiss-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+                              <span>{t('noReceiptExpected')}</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </ActionCard>
+                  )}
                 </div>
               </div>
             </>

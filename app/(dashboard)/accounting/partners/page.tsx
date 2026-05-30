@@ -47,6 +47,7 @@ type PartnerFormState = {
   notes: string;
   country_code: string;
   payment_terms_days: string;
+  receipt_responsible_email: string;
   is_active: boolean;
 };
 
@@ -83,6 +84,7 @@ const emptyPartnerForm = (): PartnerFormState => ({
   notes: '',
   country_code: 'EE',
   payment_terms_days: '',
+  receipt_responsible_email: '',
   is_active: true,
 });
 
@@ -607,6 +609,7 @@ function PartnerDetailPanel({
         <Section label={t('billing')}>
           <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
           <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
+          <Field label={t('receiptResponsibleEmail')} value={form.receipt_responsible_email || ''} onChange={(value) => setForm((current) => ({ ...current, receipt_responsible_email: value }))} />
         </Section>
 
         <Section label={t('other')}>
@@ -843,6 +846,7 @@ function mapPartnerToForm(partner: PartnerRecord): PartnerFormState {
     notes: partner.notes || '',
     country_code: partner.country_code || 'EE',
     payment_terms_days: partner.payment_terms_days !== null && partner.payment_terms_days !== undefined ? String(partner.payment_terms_days) : '',
+    receipt_responsible_email: partner.receipt_responsible_email || '',
     is_active: partner.is_active,
   };
 }
@@ -863,6 +867,7 @@ function buildPartnerPayload(form: PartnerFormState) {
     notes: form.notes || undefined,
     country_code: form.country_code || undefined,
     payment_terms_days: form.payment_terms_days ? Number(form.payment_terms_days) : undefined,
+    receipt_responsible_email: form.receipt_responsible_email || undefined,
     is_active: form.is_active,
   };
 }

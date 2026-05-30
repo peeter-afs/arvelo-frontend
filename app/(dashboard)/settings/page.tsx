@@ -99,6 +99,16 @@ export default function SettingsPage() {
     next_invoice_date: '',
     cancel_at_period_end: false,
   });
+  const [missingReceiptForm, setMissingReceiptForm] = useState({
+    is_enabled: false,
+    responsible_email: '',
+    frequency_days: '7',
+    start_after_days: '0',
+    weekday: '',
+    max_reminders: '5',
+    email_subject: 'Missing receipt reminder: {{supplier_name}} — {{amount}} {{currency}}',
+    email_body: 'Hello,\n\nA bank payment of {{amount}} {{currency}} on {{tx_date}} to {{supplier_name}} (ref: {{reference}}) has no matching purchase invoice or receipt on file.\n\nPlease upload the receipt or forward the invoice so it can be recorded.\n\n→ {{draft_link}}\n\nThis is reminder #{{reminder_index}}.\n\nThank you.',
+  });
   const canManageRegistry = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
@@ -216,6 +226,7 @@ export default function SettingsPage() {
           next_invoice_date: overview.subscription?.next_invoice_date || new Date().toISOString().slice(0, 10),
           cancel_at_period_end: Boolean(overview.subscription?.cancel_at_period_end),
         });
+        await loadMissingReceiptSettings();
       } catch (error) {
         setSettingsError(getErrorMessage(error));
       } finally {
@@ -377,6 +388,44 @@ export default function SettingsPage() {
     setBillingAnnualBalanceNotifications(overview.annual_balance_notifications || []);
     setBillingEntitlement(overview.entitlement);
     setBillingSettingsState(overview.settings);
+  };
+
+  const loadMissingReceiptSettings = async () => {
+    try {
+      const data = await bankingApi.getMissingReceiptSettings();
+      if (data) {
+        setMissingReceiptForm({
+          is_enabled: data.is_enabled ?? false,
+          responsible_email: data.responsible_email || '',
+          frequency_days: String(data.frequency_days ?? 7),
+          start_after_days: String(data.start_after_days ?? 0),
+          weekday: data.weekday ? String(data.weekday) : '',
+          max_reminders: data.max_reminders ? String(data.max_reminders) : '',
+          email_subject: data.email_subject || '',
+          email_body: data.email_body || '',
+        });
+      }
+    } catch { /* settings not yet created, use defaults */ }
+  };
+
+  const saveMissingReceiptSettings = async () => {
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      await bankingApi.updateMissingReceiptSettings({
+        is_enabled: missingReceiptForm.is_enabled,
+        responsible_email: missingReceiptForm.responsible_email || null,
+        frequency_days: Number(missingReceiptForm.frequency_days || 7),
+        start_after_days: Number(missingReceiptForm.start_after_days || 0),
+        weekday: missingReceiptForm.weekday ? Number(missingReceiptForm.weekday) : null,
+        max_reminders: missingReceiptForm.max_reminders ? Number(missingReceiptForm.max_reminders) : null,
+        email_subject: missingReceiptForm.email_subject || null,
+        email_body: missingReceiptForm.email_body || null,
+      });
+      setSettingsSuccess(t('missingReceiptSettingsSaved'));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    }
   };
 
   const saveBillingSubscription = async () => {
@@ -1115,6 +1164,67 @@ export default function SettingsPage() {
                       <p className="mt-4 text-xs text-slate-500">
                         {t('cronAutomationHelp')}
                       </p>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
+                      <h3 className="text-sm font-semibold text-slate-900">{t('missingReceiptReminders')}</h3>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {t('missingReceiptRemindersDescription')}
+                      </p>
+                      <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <label className="flex items-center gap-3 pt-2">
+                          <input type="checkbox" checked={missingReceiptForm.is_enabled} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, is_enabled: event.target.checked }))} />
+                          <span className="text-sm text-slate-700">{t('enableMissingReceiptReminders')}</span>
+                        </label>
+                        <BillingField label={t('missingReceiptResponsibleEmail')}>
+                          <input type="email" value={missingReceiptForm.responsible_email} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, responsible_email: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label={t('missingReceiptFrequencyDays')}>
+                          <input type="number" min="1" value={missingReceiptForm.frequency_days} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, frequency_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label={t('missingReceiptStartAfterDays')}>
+                          <input type="number" min="0" value={missingReceiptForm.start_after_days} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, start_after_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <BillingField label={t('missingReceiptWeekday')}>
+                          <select value={missingReceiptForm.weekday} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, weekday: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }}>
+                            <option value="">{t('anyWeekday')}</option>
+                            <option value="1">{t('monday')}</option>
+                            <option value="2">{t('tuesday')}</option>
+                            <option value="3">{t('wednesday')}</option>
+                            <option value="4">{t('thursday')}</option>
+                            <option value="5">{t('friday')}</option>
+                          </select>
+                        </BillingField>
+                        <BillingField label={t('missingReceiptMaxReminders')}>
+                          <input type="number" min="0" value={missingReceiptForm.max_reminders} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, max_reminders: event.target.value }))} placeholder={t('missingReceiptMaxRemindersUnlimited')} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                      </div>
+                      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                        <BillingField label={t('missingReceiptEmailSubject')}>
+                          <input value={missingReceiptForm.email_subject} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, email_subject: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
+                        </BillingField>
+                        <div />
+                        <BillingField label={t('missingReceiptEmailBody')}>
+                          <textarea
+                            value={missingReceiptForm.email_body}
+                            onChange={(event) => setMissingReceiptForm((c) => ({ ...c, email_body: event.target.value }))}
+                            className="min-h-[180px] w-full rounded-lg border border-slate-200 px-4 py-3"
+                            style={{ fontSize: '16px' }}
+                          />
+                        </BillingField>
+                      </div>
+                      <p className="mt-3 text-xs text-slate-500">
+                        {t('missingReceiptPlaceholders')}
+                      </p>
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => void saveMissingReceiptSettings()}
+                          className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                        >
+                          {t('saveReminderSettings')}
+                        </button>
+                      </div>
                     </div>
 
                     <div className="rounded-xl border border-slate-200 p-5">

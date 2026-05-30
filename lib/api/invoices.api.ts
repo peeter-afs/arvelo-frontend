@@ -33,6 +33,12 @@ export type InvoiceListItem = {
   rejected_at?: string | null;
   rejected_by_user_id?: string | null;
   rejection_reason?: string | null;
+  source?: string | null;
+  bank_transaction_id?: string | null;
+  receipt_reminder_state?: string | null;
+  receipt_reminder_sent_count?: number | null;
+  receipt_reminder_last_sent_at?: string | null;
+  receipt_dismissed_reason?: string | null;
 };
 
 export type InvoiceLineInput = {

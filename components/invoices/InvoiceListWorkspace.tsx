@@ -80,6 +80,7 @@ export default function InvoiceListWorkspace({
   searchPlaceholder,
 }: InvoiceListWorkspaceProps) {
   const t = useTranslations('invoices');
+  const tAccounting = useTranslations('accounting');
   const isPurchase = invoiceType === 'purchase_invoice';
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
@@ -102,6 +103,7 @@ export default function InvoiceListWorkspace({
 
   const statusTabs = useMemo<StatusTab[]>(() => {
     if (isPurchase) {
+      const missingReceiptCount = invoices.filter((i) => i.source === 'bank_missing_receipt' && i.receipt_reminder_state === 'active').length;
       return [
         { id: 'all', label: 'All', count: invoices.length },
         ...PURCHASE_APPROVAL_STATUSES.map((status) => ({
@@ -109,6 +111,7 @@ export default function InvoiceListWorkspace({
           label: humanizeStatus(status),
           count: invoices.filter((invoice) => invoice.status === status).length,
         })),
+        ...(missingReceiptCount > 0 ? [{ id: 'missing_receipt', label: tAccounting('missingReceiptDraft'), count: missingReceiptCount }] : []),
       ];
     }
 
@@ -461,8 +464,11 @@ export default function InvoiceListWorkspace({
                       <span className="block font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(invoice.due_date)}</span>
                       <span className="text-[10.5px] font-medium text-[var(--a-text-3)]">{status.label}</span>
                     </span>
-                    <span className="text-right">
+                    <span className="flex items-center justify-end gap-1.5">
                       <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                      {invoice.source === 'bank_missing_receipt' && invoice.receipt_reminder_state === 'active' && (
+                        <StatusPill tone="warning">{tAccounting('missingReceiptDraft')}</StatusPill>
+                      )}
                     </span>
                   </button>
                 );
@@ -792,6 +798,7 @@ function humanizeStatus(status: string | null | undefined) {
 
 function matchesInvoiceTab(invoice: InvoiceListItem, activeTab: string, isPurchase: boolean) {
   if (activeTab === 'all') return true;
+  if (activeTab === 'missing_receipt') return invoice.source === 'bank_missing_receipt' && invoice.receipt_reminder_state === 'active';
   if (isPurchase) return invoice.status === activeTab;
   if (activeTab === 'overdue') return isOverdue(invoice);
   if (activeTab === 'open') return isOpenInvoice(invoice);
