@@ -57,12 +57,12 @@ export type TemplateRun = {
 
 export const recurringInvoicesApi = {
   async list(): Promise<RecurringTemplate[]> {
-    const { data } = await apiClient.get<ApiResponse<RecurringTemplate[]>>('/recurring-invoices');
+    const { data } = await apiClient.get<ApiResponse<RecurringTemplate[]>>('/api/recurring-invoices');
     return data.data;
   },
 
   async get(id: string): Promise<RecurringTemplate> {
-    const { data } = await apiClient.get<ApiResponse<RecurringTemplate>>(`/recurring-invoices/${id}`);
+    const { data } = await apiClient.get<ApiResponse<RecurringTemplate>>(`/api/recurring-invoices/${id}`);
     return data.data;
   },
 
@@ -89,7 +89,7 @@ export const recurringInvoicesApi = {
       tax_rate?: number;
     }>;
   }): Promise<RecurringTemplate> {
-    const { data } = await apiClient.post<ApiResponse<RecurringTemplate>>('/recurring-invoices', input);
+    const { data } = await apiClient.post<ApiResponse<RecurringTemplate>>('/api/recurring-invoices', input);
     return data.data;
   },
 
@@ -107,21 +107,21 @@ export const recurringInvoicesApi = {
     end_date: string;
     is_active: boolean;
   }>): Promise<RecurringTemplate> {
-    const { data } = await apiClient.put<ApiResponse<RecurringTemplate>>(`/recurring-invoices/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<RecurringTemplate>>(`/api/recurring-invoices/${id}`, input);
     return data.data;
   },
 
   async delete(id: string): Promise<void> {
-    await apiClient.delete(`/recurring-invoices/${id}`);
+    await apiClient.delete(`/api/recurring-invoices/${id}`);
   },
 
   async generateDue(asOfDate?: string): Promise<{ generated: number; errors: number }> {
-    const { data } = await apiClient.post<ApiResponse<{ generated: number; errors: number }>>('/recurring-invoices/generate', { as_of_date: asOfDate });
+    const { data } = await apiClient.post<ApiResponse<{ generated: number; errors: number }>>('/api/recurring-invoices/generate', { as_of_date: asOfDate });
     return data.data;
   },
 
   async listRuns(id: string): Promise<TemplateRun[]> {
-    const { data } = await apiClient.get<ApiResponse<TemplateRun[]>>(`/recurring-invoices/${id}/runs`);
+    const { data } = await apiClient.get<ApiResponse<TemplateRun[]>>(`/api/recurring-invoices/${id}/runs`);
     return data.data;
   },
 
@@ -131,7 +131,7 @@ export const recurringInvoicesApi = {
     quantity?: number;
     invoice_date?: string;
   }): Promise<TemplateRun> {
-    const { data } = await apiClient.post<ApiResponse<TemplateRun>>(`/recurring-invoices/${id}/generate-period`, input);
+    const { data } = await apiClient.post<ApiResponse<TemplateRun>>(`/api/recurring-invoices/${id}/generate-period`, input);
     return data.data;
   },
 };

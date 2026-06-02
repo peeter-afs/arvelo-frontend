@@ -27,7 +27,7 @@ export default function SecuritySettingsPage() {
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/auth/2fa/status');
+      const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/api/auth/2fa/status');
       setEnabled(data.data.enabled);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -41,7 +41,7 @@ export default function SecuritySettingsPage() {
   const handleSetup = async () => {
     setError('');
     try {
-      const { data } = await apiClient.post<ApiResponse<{ secret: string; otpauthUri: string }>>('/auth/2fa/setup');
+      const { data } = await apiClient.post<ApiResponse<{ secret: string; otpauthUri: string }>>('/api/auth/2fa/setup');
       setSetupData(data.data);
     } catch (err) {
       setError(getErrorMessage(err));
@@ -52,7 +52,7 @@ export default function SecuritySettingsPage() {
     setSaving(true);
     setError('');
     try {
-      await apiClient.post('/auth/2fa/enable', { code: verifyCode });
+      await apiClient.post('/api/auth/2fa/enable', { code: verifyCode });
       setEnabled(true);
       setSetupData(null);
       setVerifyCode('');
@@ -67,7 +67,7 @@ export default function SecuritySettingsPage() {
     setSaving(true);
     setError('');
     try {
-      await apiClient.post('/auth/2fa/disable', { code: disableCode });
+      await apiClient.post('/api/auth/2fa/disable', { code: disableCode });
       setEnabled(false);
       setShowDisable(false);
       setDisableCode('');
