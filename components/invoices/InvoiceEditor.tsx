@@ -25,11 +25,26 @@ type DraftLine = {
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
 
+type AiPrefillData = {
+  partner_id?: string;
+  invoice_date?: string | null;
+  due_date?: string | null;
+  currency?: string;
+  notes?: string | null;
+  lines?: Array<{
+    description: string;
+    quantity: number;
+    unit_price: number;
+    tax_rate: number;
+  }>;
+};
+
 type InvoiceEditorProps = {
   mode: 'create' | 'edit';
   invoiceId?: string;
   defaultType?: InvoiceType;
   creditNoteForInvoiceId?: string;
+  prefill?: AiPrefillData;
 };
 
 const emptyLine = (): DraftLine => ({
@@ -42,21 +57,33 @@ const emptyLine = (): DraftLine => ({
   supply_type: 'domestic',
 });
 
-export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId }: InvoiceEditorProps) {
+export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId, prefill }: InvoiceEditorProps) {
   const t = useTranslations('invoices');
   const router = useRouter();
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [type, setType] = useState<InvoiceType>(defaultType);
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
-  const [partnerId, setPartnerId] = useState('');
+  const [partnerId, setPartnerId] = useState(prefill?.partner_id || '');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useClientDateInput(getIsoToday);
-  const [dueDate, setDueDate] = useState('');
-  const [currency, setCurrency] = useState('EUR');
+  const [invoiceDate, setInvoiceDate] = useClientDateInput(() => prefill?.invoice_date || getIsoToday());
+  const [dueDate, setDueDate] = useState(prefill?.due_date || '');
+  const [currency, setCurrency] = useState(prefill?.currency || 'EUR');
   const [paymentReference, setPaymentReference] = useState('');
-  const [notes, setNotes] = useState('');
-  const [lines, setLines] = useState<DraftLine[]>([emptyLine()]);
+  const [notes, setNotes] = useState(prefill?.notes || '');
+  const [lines, setLines] = useState<DraftLine[]>(
+    prefill?.lines && prefill.lines.length > 0
+      ? prefill.lines.map(l => ({
+          description: l.description,
+          account_id: '',
+          quantity: String(l.quantity),
+          unit_price: String(l.unit_price),
+          discount_percent: '0',
+          tax_rate: String(l.tax_rate),
+          supply_type: 'domestic' as const,
+        }))
+      : [emptyLine()]
+  );
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);

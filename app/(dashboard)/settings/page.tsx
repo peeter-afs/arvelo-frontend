@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
@@ -13,6 +13,7 @@ import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
+import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -142,6 +143,7 @@ export default function SettingsPage() {
     { id: 'localization', label: t('localization'), icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
     { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
+    ...(canManageBilling ? [{ id: 'ai', label: t('ai'), icon: Sparkles, category: 'organization' as const }] : []),
   ];
 
   useEffect(() => {
@@ -2115,6 +2117,10 @@ export default function SettingsPage() {
                   />
                 )}
               </div>
+            )}
+
+            {activeTab === 'ai' && canManageBilling && (
+              <AiInvoiceSettingsTab />
             )}
           </div>
         </div>

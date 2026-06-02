@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  Sparkles,
   Stamp,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
@@ -26,6 +27,8 @@ import { Kbd } from '@/components/ui/Kbd';
 import { Stat } from '@/components/ui/Stat';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
+import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
+import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
 
 type InvoiceDetail = {
   invoice: InvoiceListItem;
@@ -98,6 +101,8 @@ export default function InvoiceListWorkspace({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
 
   const partnerMap = useMemo(() => new Map(partners.map((partner) => [partner.id, partner])), [partners]);
 
@@ -147,6 +152,11 @@ export default function InvoiceListWorkspace({
     const open = invoices.filter((invoice) => isOpenInvoice(invoice)).length;
     return { draft, approved, payable, paid, openTotal, overdue, open };
   }, [invoices]);
+
+  useEffect(() => {
+    if (isPurchase) return;
+    aiInvoiceApi.getSettings().then(s => setAiEnabled(s.ai_provider !== 'disabled')).catch(() => {});
+  }, [isPurchase]);
 
   useEffect(() => {
     const load = async () => {
@@ -329,6 +339,15 @@ export default function InvoiceListWorkspace({
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {aiEnabled && !isPurchase && (
+            <button
+              onClick={() => setAiPanelOpen(true)}
+              className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--a-accent)] bg-[var(--a-accent)] px-3 text-[13px] font-medium text-white hover:bg-[#e74324]"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {t('aiInvoice')}
+            </button>
+          )}
           <Link
             href={`/invoices/new?type=${invoiceType}`}
             className="inline-flex h-9 items-center justify-center gap-2 rounded-md border border-[var(--a-accent)] bg-[var(--a-accent)] px-3 text-[13px] font-medium text-white hover:bg-[#e74324]"
@@ -515,6 +534,15 @@ export default function InvoiceListWorkspace({
           />
         </SplitPaneDetail>
       </SplitPane>
+
+      {aiEnabled && !isPurchase && (
+        <AiInvoicePanel
+          open={aiPanelOpen}
+          onOpenChange={setAiPanelOpen}
+          onDraftCreated={() => void refreshInvoices(selectedInvoiceId)}
+          partners={partners.map(p => ({ id: p.id, name: p.name }))}
+        />
+      )}
     </div>
   );
 }
