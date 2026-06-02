@@ -2,6 +2,8 @@ import apiClient from './client';
 
 type ApiResponse<T> = { success: boolean; data: T };
 
+export type BillingMode = 'monthly' | 'quarterly' | 'yearly' | 'per_quantity';
+
 export type TemplateLine = {
   id: string;
   template_id: string;
@@ -26,14 +28,31 @@ export type RecurringTemplate = {
   frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   interval_count: number;
   day_of_month: number | null;
+  billing_mode: BillingMode;
+  period_note_template: string | null;
   next_invoice_date: string;
   end_date: string | null;
   is_active: boolean;
   last_generated_at: string | null;
   invoices_generated: number;
+  latest_run_status: string | null;
   created_at: string;
   updated_at: string;
   lines?: TemplateLine[];
+};
+
+export type TemplateRun = {
+  id: string;
+  tenant_id: string;
+  template_id: string;
+  period_start: string;
+  period_end: string;
+  invoice_date: string;
+  invoice_id: string | null;
+  status: 'generated' | 'failed' | 'skipped';
+  quantity: number | null;
+  error: string | null;
+  created_at: string;
 };
 
 export const recurringInvoicesApi = {
@@ -57,6 +76,8 @@ export const recurringInvoicesApi = {
     frequency: 'weekly' | 'monthly' | 'quarterly' | 'yearly';
     interval_count?: number;
     day_of_month?: number;
+    billing_mode?: BillingMode;
+    period_note_template?: string;
     next_invoice_date: string;
     end_date?: string;
     lines: Array<{
@@ -80,6 +101,8 @@ export const recurringInvoicesApi = {
     frequency: string;
     interval_count: number;
     day_of_month: number;
+    billing_mode: string;
+    period_note_template: string;
     next_invoice_date: string;
     end_date: string;
     is_active: boolean;
@@ -94,6 +117,21 @@ export const recurringInvoicesApi = {
 
   async generateDue(asOfDate?: string): Promise<{ generated: number; errors: number }> {
     const { data } = await apiClient.post<ApiResponse<{ generated: number; errors: number }>>('/recurring-invoices/generate', { as_of_date: asOfDate });
+    return data.data;
+  },
+
+  async listRuns(id: string): Promise<TemplateRun[]> {
+    const { data } = await apiClient.get<ApiResponse<TemplateRun[]>>(`/recurring-invoices/${id}/runs`);
+    return data.data;
+  },
+
+  async generatePeriod(id: string, input: {
+    period_start: string;
+    period_end: string;
+    quantity?: number;
+    invoice_date?: string;
+  }): Promise<TemplateRun> {
+    const { data } = await apiClient.post<ApiResponse<TemplateRun>>(`/recurring-invoices/${id}/generate-period`, input);
     return data.data;
   },
 };

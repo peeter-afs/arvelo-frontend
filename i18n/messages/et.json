@@ -600,10 +600,23 @@
     "noTemplates": "Korduvaid malle pole veel. Looge mall arvete automaatseks genereerimiseks.",
     "lines": "Arve read",
     "addLine": "Lisa rida",
-    "price": "Hind"
-    ,
+    "price": "Hind",
     "quantity": "Kogus",
-    "vatRate": "Käibemaksumäär"
+    "vatRate": "Käibemaksumäär",
+    "billingMode": "Arveldusviis",
+    "perQuantity": "Kogusepõhine",
+    "perQuantityHint": "Perioodid luuakse käsitsi koos kogusega — kuupäev ei liigu automaatselt edasi.",
+    "periodNoteTemplate": "Perioodi märkus (perioodi tekst)",
+    "periodTokensHint": "Muutujad: {period}, {month}, {year}, {period_start}, {period_end}",
+    "periodsLog": "Perioodid",
+    "period": "Periood",
+    "periodStart": "Perioodi algus",
+    "periodEnd": "Perioodi lõpp",
+    "invoiceDate": "Arve kuupäev",
+    "invoice": "Arve",
+    "generatePeriod": "Genereeri perioodi arve",
+    "noRuns": "Perioode pole veel genereeritud.",
+    "catchUpNote": "Puudunud perioodid genereeriti automaatselt."
   },
   "reports": {
     "balanceSheet": "Bilanss",

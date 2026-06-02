@@ -600,10 +600,23 @@
     "noTemplates": "No recurring templates yet. Create a template to automate invoice generation.",
     "lines": "Invoice Lines",
     "addLine": "Add line",
-    "price": "Price"
-    ,
+    "price": "Price",
     "quantity": "Quantity",
-    "vatRate": "VAT rate"
+    "vatRate": "VAT rate",
+    "billingMode": "Billing Mode",
+    "perQuantity": "Per Quantity",
+    "perQuantityHint": "Periods are generated manually with a quantity — no automatic date advance.",
+    "periodNoteTemplate": "Period Note (per-period text)",
+    "periodTokensHint": "Tokens: {period}, {month}, {year}, {period_start}, {period_end}",
+    "periodsLog": "Periods",
+    "period": "Period",
+    "periodStart": "Period Start",
+    "periodEnd": "Period End",
+    "invoiceDate": "Invoice Date",
+    "invoice": "Invoice",
+    "generatePeriod": "Generate Period Invoice",
+    "noRuns": "No periods generated yet.",
+    "catchUpNote": "Missed periods were caught up automatically."
   },
   "reports": {
     "balanceSheet": "Balance Sheet",

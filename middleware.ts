@@ -23,6 +23,13 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
+  // Temporarily disable public registration
+  if (pathname === '/register') {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = '/login';
+    return NextResponse.redirect(redirectUrl);
+  }
+
   const cookieLocale = request.cookies.get(localeCookieName)?.value as Locale | undefined;
   const locale = cookieLocale && locales.includes(cookieLocale) ? cookieLocale : defaultLocale;
 

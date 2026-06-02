@@ -260,28 +260,7 @@ function LoginForm() {
         </form>
       )}
 
-      {/* Divider */}
-      <div className="relative my-8">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-slate-200"></div>
-        </div>
-        <div className="relative flex justify-center text-xs">
-            <span className="px-2 bg-[var(--surface-elevated)] text-slate-400">
-            {t('or')}
-          </span>
-        </div>
-      </div>
-
-      {/* Sign Up Link */}
-      <p className="text-center text-sm text-slate-600 pb-8">
-        {t('noAccount')}{' '}
-        <Link
-          href="/register"
-          className="font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
-        >
-          {t('signUp')}
-        </Link>
-      </p>
+      {/* TODO: Restore registration link when ready for public launch */}
     </div>
   );
 }
