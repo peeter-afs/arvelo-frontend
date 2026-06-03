@@ -27,6 +27,7 @@
     "unknown": "Unknown",
     "noTimestamp": "No timestamp",
     "today": "Today",
+    "weekNumber": "Week {week}",
     "record": "Record",
     "preview": "Preview",
     "press": "Press",

@@ -27,6 +27,7 @@
     "unknown": "Tundmatu",
     "noTimestamp": "Ajatempel puudub",
     "today": "Täna",
+    "weekNumber": "{week}. nädal",
     "record": "Kirje",
     "preview": "Eelvaade",
     "press": "Vajuta",

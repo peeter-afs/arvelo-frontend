@@ -1,9 +1,17 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight, Command } from 'lucide-react';
 import { Kbd } from '@/components/ui/Kbd';
+
+function isoWeek(date: Date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  return 1 + Math.round(((d.getTime() - firstThursday.getTime()) / 86400000 - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+}
 
 function humanize(segment: string, labels: Record<string, string>, recordLabel: string) {
   if (/^[0-9a-f-]{12,}$/i.test(segment)) return recordLabel;
@@ -28,6 +36,7 @@ export function CommandBar({
   hints?: boolean;
 }) {
   const pathname = usePathname();
+  const locale = useLocale();
   const tCommon = useTranslations('common');
   const tNavigation = useTranslations('navigation');
   const tAccounting = useTranslations('accounting');
@@ -56,7 +65,10 @@ export function CommandBar({
     edit: tCommon('edit'),
     preview: tCommon('preview'),
   };
-  const computedCrumbs = crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), tCommon('today'));
+  const now = new Date();
+  const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
+  const todayCrumb = `${new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }).format(now)} · ${tCommon('weekNumber', { week: isoWeek(now) })}`;
+  const computedCrumbs = crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb);
 
   return (
     <div className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 lg:px-7">

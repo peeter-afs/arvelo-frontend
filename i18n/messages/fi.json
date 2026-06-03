@@ -31,6 +31,7 @@
     "balanced": "Tasapainossa",
     "notBalanced": "Ei tasapainossa",
     "today": "Tänään",
+    "weekNumber": "Viikko {week}",
     "record": "Tietue",
     "preview": "Esikatselu",
     "press": "Paina",

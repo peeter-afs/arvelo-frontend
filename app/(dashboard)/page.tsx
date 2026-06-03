@@ -11,7 +11,7 @@ import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
 import {
   TrendingUp,
-  DollarSign,
+  Euro,
   FileText,
   Activity,
   Plus,
@@ -239,8 +239,8 @@ export default function DashboardPage() {
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-pos-soft)]">
-              <DollarSign className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--a-pos)]" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
@@ -254,8 +254,8 @@ export default function DashboardPage() {
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-neg-soft)]">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--a-neg)]" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
@@ -269,8 +269,8 @@ export default function DashboardPage() {
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-accent-soft)]">
-              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--a-accent)]" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
@@ -432,8 +432,8 @@ export default function DashboardPage() {
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <Link href="/reports/profit-loss" className="card card-hover p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
+            <BarChart3 className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>
           <div>
             <p className="text-sm font-medium text-[var(--text-primary)]">{t('profitLoss')}</p>
@@ -442,8 +442,8 @@ export default function DashboardPage() {
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
         <Link href="/reports/balance-sheet" className="card card-hover p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center flex-shrink-0">
-            <Activity className="h-5 w-5 text-emerald-600" />
+          <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
+            <Activity className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>
           <div>
             <p className="text-sm font-medium text-[var(--text-primary)]">{t('balanceSheet')}</p>
@@ -452,8 +452,8 @@ export default function DashboardPage() {
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
         <Link href="/invoices/sales" className="card card-hover p-5 flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-violet-50 flex items-center justify-center flex-shrink-0">
-            <FileText className="h-5 w-5 text-violet-600" />
+          <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
+            <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>
           <div>
             <p className="text-sm font-medium text-[var(--text-primary)]">{t('salesInvoices')}</p>
