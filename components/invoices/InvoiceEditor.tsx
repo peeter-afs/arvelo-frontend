@@ -9,6 +9,7 @@ import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { invoicesApi, type InvoiceDraftPayload } from '@/lib/api/invoices.api';
+import { recurringExpensesApi, type ExpenseFrequency } from '@/lib/api/recurringExpenses.api';
 import { getIsoToday } from '@/lib/utils/date';
 
 type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
@@ -88,6 +89,12 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  // Recurring toggle (purchase invoices only)
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringMaxSum, setRecurringMaxSum] = useState('');
+  const [recurringExpectedDay, setRecurringExpectedDay] = useState('');
+  const [recurringFrequency, setRecurringFrequency] = useState<ExpenseFrequency>('monthly');
 
   useEffect(() => {
     const loadBase = async () => {
@@ -200,7 +207,33 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       const result = mode === 'create'
         ? await invoicesApi.createInvoice(payload)
         : await invoicesApi.updateInvoice(invoiceId!, payload);
-      setSuccessMessage(mode === 'create' ? t('invoiceDraftCreated') : t('invoiceDraftUpdated'));
+
+      // If recurring is ticked on a purchase invoice, upsert the recurring expense entry
+      if (isRecurring && type === 'purchase_invoice' && partnerId) {
+        const invoiceTotal = totals.subtotal + totals.tax;
+        const dominantAccountId = lines.find(l => l.account_id)?.account_id || null;
+        const partnerName = partners.find(p => p.id === partnerId)?.name || '';
+        const expectedDay = Number(recurringExpectedDay) || new Date(invoiceDate).getDate();
+        const maxSum = Number(recurringMaxSum) || invoiceTotal;
+
+        const { created } = await recurringExpensesApi.upsertFromInvoice({
+          partner_id: partnerId,
+          account_id: dominantAccountId,
+          label: partnerName,
+          expected_amount: invoiceTotal,
+          max_amount: maxSum,
+          currency_code: currency,
+          expected_day_of_month: expectedDay,
+          frequency: recurringFrequency,
+          start_date: invoiceDate,
+        });
+
+        const tRecurring = created ? 'Created new recurring expense entry' : 'Updated existing recurring expense entry';
+        setSuccessMessage((mode === 'create' ? t('invoiceDraftCreated') : t('invoiceDraftUpdated')) + ` · ${tRecurring}`);
+      } else {
+        setSuccessMessage(mode === 'create' ? t('invoiceDraftCreated') : t('invoiceDraftUpdated'));
+      }
+
       const isSalesType = result.invoice.type === 'sales_invoice' || result.invoice.type === 'sales_credit_note';
       router.push(isSalesType ? '/invoices/sales' : '/invoices/purchase');
       router.refresh();
@@ -298,6 +331,64 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 <input value={notes} onChange={(event) => setNotes(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
               </Field>
             </div>
+
+            {/* Recurring toggle — purchase invoices only */}
+            {type === 'purchase_invoice' && (
+              <div className="mt-4 border-t border-slate-200 pt-4">
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isRecurring}
+                    onChange={e => {
+                      setIsRecurring(e.target.checked);
+                      if (e.target.checked) {
+                        const total = totals.subtotal + totals.tax;
+                        if (!recurringMaxSum) setRecurringMaxSum(total.toFixed(2));
+                        if (!recurringExpectedDay) setRecurringExpectedDay(String(new Date(invoiceDate).getDate() || 1));
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                  />
+                  <span className="text-sm font-medium text-slate-700">Recurring</span>
+                </label>
+
+                {isRecurring && (
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
+                    <Field label="Max sum">
+                      <input
+                        type="number"
+                        value={recurringMaxSum}
+                        onChange={e => setRecurringMaxSum(e.target.value)}
+                        placeholder={(totals.subtotal + totals.tax).toFixed(2)}
+                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                      />
+                    </Field>
+                    <Field label="Expected day of month">
+                      <input
+                        type="number"
+                        min={1}
+                        max={31}
+                        value={recurringExpectedDay}
+                        onChange={e => setRecurringExpectedDay(e.target.value)}
+                        placeholder={String(new Date(invoiceDate).getDate() || 1)}
+                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                      />
+                    </Field>
+                    <Field label="Frequency">
+                      <select
+                        value={recurringFrequency}
+                        onChange={e => setRecurringFrequency(e.target.value as ExpenseFrequency)}
+                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annual">Annual</option>
+                      </select>
+                    </Field>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="card overflow-hidden">

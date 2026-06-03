@@ -11,6 +11,7 @@ import {
   Landmark,
   LogOut,
   ReceiptText,
+  RefreshCw,
   Scale,
   Settings,
   Shield,
@@ -61,6 +62,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const tAccounting = useTranslations('accounting');
   const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
+  const tExpenses = useTranslations('recurringExpenses');
   const { user, tenant, role, logout } = useAuthStore();
   const navigationMetrics = useNavigationMetrics();
   const currentPath = pathname || '/';
@@ -92,6 +94,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       items: [
         { label: tAccounting('chartOfAccounts'), href: '/accounting/accounts', icon: Scale },
         { label: tAccounting('journal'), href: '/accounting/journal', icon: ReceiptText },
+        { label: tExpenses('title'), href: '/accounting/recurring-expenses', icon: RefreshCw },
         { label: tNavigation('reports'), href: '/reports/profit-loss', icon: BarChart3 },
         { label: tReports('vatReport'), href: '/reports/vat', icon: Shield },
         { label: tReports('annualReport'), href: '/reports/annual-report', icon: FileText },

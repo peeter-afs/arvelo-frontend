@@ -261,5 +261,54 @@
     "modelPlaceholder": "Syötä mallin tunnus",
     "settingsNote": "API-avaimet on määritetty järjestelmänvalvojan toimesta ympäristömuuttujilla.",
     "settingsSaved": "AI-asetukset tallennettu"
+  },
+  "recurringExpenses": {
+    "title": "Toistuvat kulut",
+    "description": "Seuraa toistuvia ostolaskuja — vuokra, leasing, SaaS ja muut säännölliset sitoumukset.",
+    "receivedThisMonth": "Vastaanotettu tässä kuussa",
+    "missing": "Puuttuu",
+    "overBudget": "Yli budjetin",
+    "committedMonthly": "Kuukausittainen sitoumus",
+    "summaryLine": "{received}/{total} odotetuista laskuista vastaanotettu · {missing} puuttuu · {overBudget} yli budjetin",
+    "reconcile": "Täsmäytä nyt",
+    "reconciling": "Täsmäytetään...",
+    "reconcileComplete": "Täsmäytys valmis: {matched} täsmäytetty {processed} tarkistetusta",
+    "monitorTab": "Seuranta",
+    "budgetTab": "Budjetti",
+    "noEntries": "Ei seurattavia toistuvia kuluja",
+    "noEntriesDescription": "Merkitse ostolasku 'Toistuvaksi' aloittaaksesi sen seurannan täällä.",
+    "status": {
+      "received": "Vastaanotettu",
+      "over_budget": "Yli budjetin",
+      "due_soon": "Erääntymässä",
+      "missing": "Puuttuu",
+      "not_due": "Ei erääntynyt"
+    },
+    "columns": {
+      "label": "Nimike",
+      "supplier": "Toimittaja",
+      "expectedDay": "Odotuspäivä",
+      "expected": "Odotettu",
+      "actual": "Todellinen",
+      "status": "Tila"
+    },
+    "budget": {
+      "title": "Budjettikooste",
+      "account": "Tili",
+      "expected": "Odotettu",
+      "actual": "Todellinen",
+      "variance": "Poikkeama",
+      "monthlyEquiv": "Kuukausiekviv.",
+      "total": "Yhteensä"
+    },
+    "recurring": "Toistuva",
+    "maxSum": "Enimmäismäärä",
+    "expectedDayOfMonth": "Odotuspäivä kuussa",
+    "frequency": "Taajuus",
+    "monthly": "Kuukausittain",
+    "quarterly": "Neljännesvuosittain",
+    "annual": "Vuosittain",
+    "updatedExisting": "Olemassa oleva toistuva kulumerkintä päivitetty",
+    "createdNew": "Uusi toistuva kulumerkintä luotu"
   }
 }

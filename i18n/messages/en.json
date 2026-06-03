@@ -1506,5 +1506,54 @@
     "modelPlaceholder": "Enter model ID",
     "settingsNote": "API keys are configured by the system administrator via environment variables.",
     "settingsSaved": "AI settings saved"
+  },
+  "recurringExpenses": {
+    "title": "Recurring Expenses",
+    "description": "Monitor recurring purchase invoices — rent, leasing, SaaS, and other regular commitments.",
+    "receivedThisMonth": "Received this month",
+    "missing": "Missing",
+    "overBudget": "Over budget",
+    "committedMonthly": "Committed monthly",
+    "summaryLine": "{received} of {total} expected invoices received · {missing} missing · {overBudget} over budget",
+    "reconcile": "Reconcile now",
+    "reconciling": "Reconciling...",
+    "reconcileComplete": "Reconciliation complete: {matched} matched of {processed} checked",
+    "monitorTab": "Monitor",
+    "budgetTab": "Budget",
+    "noEntries": "No recurring expenses tracked",
+    "noEntriesDescription": "Tick 'Recurring' on any purchase invoice to start tracking it here.",
+    "status": {
+      "received": "Received",
+      "over_budget": "Over budget",
+      "due_soon": "Due soon",
+      "missing": "Missing",
+      "not_due": "Not due"
+    },
+    "columns": {
+      "label": "Label",
+      "supplier": "Supplier",
+      "expectedDay": "Expected day",
+      "expected": "Expected",
+      "actual": "Actual",
+      "status": "Status"
+    },
+    "budget": {
+      "title": "Budget summary",
+      "account": "Account",
+      "expected": "Expected",
+      "actual": "Actual",
+      "variance": "Variance",
+      "monthlyEquiv": "Monthly equiv.",
+      "total": "Total"
+    },
+    "recurring": "Recurring",
+    "maxSum": "Max sum",
+    "expectedDayOfMonth": "Expected day of month",
+    "frequency": "Frequency",
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "annual": "Annual",
+    "updatedExisting": "Updated existing recurring expense entry",
+    "createdNew": "Created new recurring expense entry"
   }
 }

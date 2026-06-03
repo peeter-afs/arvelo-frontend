@@ -261,5 +261,54 @@
     "modelPlaceholder": "Ange modell-ID",
     "settingsNote": "API-nycklar konfigureras av systemadministratören via miljövariabler.",
     "settingsSaved": "AI-inställningar sparade"
+  },
+  "recurringExpenses": {
+    "title": "Återkommande utgifter",
+    "description": "Övervaka återkommande inköpsfakturor — hyra, leasing, SaaS och andra fasta åtaganden.",
+    "receivedThisMonth": "Mottagna denna månad",
+    "missing": "Saknas",
+    "overBudget": "Över budget",
+    "committedMonthly": "Månadsåtagande",
+    "summaryLine": "{received} av {total} förväntade fakturor mottagna · {missing} saknas · {overBudget} över budget",
+    "reconcile": "Stäm av nu",
+    "reconciling": "Stämmer av...",
+    "reconcileComplete": "Avstämning klar: {matched} matchade av {processed} kontrollerade",
+    "monitorTab": "Monitor",
+    "budgetTab": "Budget",
+    "noEntries": "Inga återkommande utgifter spårade",
+    "noEntriesDescription": "Markera 'Återkommande' på en inköpsfaktura för att börja spåra den här.",
+    "status": {
+      "received": "Mottagen",
+      "over_budget": "Över budget",
+      "due_soon": "Förfaller snart",
+      "missing": "Saknas",
+      "not_due": "Ej förfallen"
+    },
+    "columns": {
+      "label": "Benämning",
+      "supplier": "Leverantör",
+      "expectedDay": "Förväntad dag",
+      "expected": "Förväntat",
+      "actual": "Verkligt",
+      "status": "Status"
+    },
+    "budget": {
+      "title": "Budgetsammanfattning",
+      "account": "Konto",
+      "expected": "Förväntat",
+      "actual": "Verkligt",
+      "variance": "Avvikelse",
+      "monthlyEquiv": "Månadsekv.",
+      "total": "Totalt"
+    },
+    "recurring": "Återkommande",
+    "maxSum": "Maxbelopp",
+    "expectedDayOfMonth": "Förväntad dag i månaden",
+    "frequency": "Frekvens",
+    "monthly": "Månadsvis",
+    "quarterly": "Kvartalsvis",
+    "annual": "Årligen",
+    "updatedExisting": "Befintlig återkommande utgiftspost uppdaterad",
+    "createdNew": "Ny återkommande utgiftspost skapad"
   }
 }

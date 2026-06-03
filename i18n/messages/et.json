@@ -1505,5 +1505,54 @@
     "modelPlaceholder": "Sisesta mudeli ID",
     "settingsNote": "API võtmed on seadistatud süsteemiadministraatori poolt keskkonnamuutujatega.",
     "settingsSaved": "AI seaded salvestatud"
+  },
+  "recurringExpenses": {
+    "title": "Korduvad kulud",
+    "description": "Jälgi korduvaid ostuarveid — üür, liising, SaaS ja muud regulaarsed kohustused.",
+    "receivedThisMonth": "Kätte saadud sel kuul",
+    "missing": "Puuduvad",
+    "overBudget": "Üle eelarve",
+    "committedMonthly": "Igakuine kohustus",
+    "summaryLine": "{received}/{total} oodatud arvest saabunud · {missing} puudub · {overBudget} üle eelarve",
+    "reconcile": "Korda vastavust",
+    "reconciling": "Vastavust kontrollitakse...",
+    "reconcileComplete": "Vastavus uuendatud: {matched} seostatud {processed} kontrollitust",
+    "monitorTab": "Monitor",
+    "budgetTab": "Eelarve",
+    "noEntries": "Korduvaid kulukohustusi pole lisatud",
+    "noEntriesDescription": "Märgi ostuarvel 'Korduv', et seda siin jälgida.",
+    "status": {
+      "received": "Saabunud",
+      "over_budget": "Üle eelarve",
+      "due_soon": "Varsti oodata",
+      "missing": "Puudub",
+      "not_due": "Ei ole tähtaeg"
+    },
+    "columns": {
+      "label": "Nimetus",
+      "supplier": "Tarnija",
+      "expectedDay": "Oodatav päev",
+      "expected": "Oodatav",
+      "actual": "Tegelik",
+      "status": "Olek"
+    },
+    "budget": {
+      "title": "Eelarve kokkuvõte",
+      "account": "Konto",
+      "expected": "Oodatav",
+      "actual": "Tegelik",
+      "variance": "Hälve",
+      "monthlyEquiv": "Kuu ekvivalent",
+      "total": "Kokku"
+    },
+    "recurring": "Korduv",
+    "maxSum": "Maksimaalne summa",
+    "expectedDayOfMonth": "Oodatav päev kuus",
+    "frequency": "Sagedus",
+    "monthly": "Igakuine",
+    "quarterly": "Kvartaalne",
+    "annual": "Aastane",
+    "updatedExisting": "Olemasolev korduv kulukanne uuendatud",
+    "createdNew": "Uus korduv kulukanne loodud"
   }
 }
