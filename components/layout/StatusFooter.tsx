@@ -78,7 +78,9 @@ export function StatusFooter() {
         <span className="uppercase">{tCommon('sync')} <span className="text-[var(--a-text)]">{syncLabel}</span></span>
         <span className="flex-1" />
         <span>⌘K {tCommon('search')}</span>
-        <span>⏎ {tCommon('open')}</span>
+        {/\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '') && (
+          <span>⏎ {tCommon('open')}</span>
+        )}
       </div>
     </footer>
   );

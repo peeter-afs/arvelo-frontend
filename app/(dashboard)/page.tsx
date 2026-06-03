@@ -154,7 +154,7 @@ export default function DashboardPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
@@ -211,7 +211,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-5">
         <div className="card card-hover p-4 sm:p-5">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -274,7 +274,7 @@ export default function DashboardPage() {
       </div>
 
       {/* This Week Cashflow */}
-      <div className="mb-6 sm:mb-8">
+      <div className="mt-5 mb-5">
         <div className="flex items-center justify-between mb-3">
           <span className="micro text-[var(--text-muted)]">{t('thisWeek')}</span>
           <span className="font-mono text-[11px] text-[var(--text-muted)]">{weekStartStr} – {weekEndStr}</span>
@@ -306,9 +306,9 @@ export default function DashboardPage() {
             </div>
 
             {receiptsWeek.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)] flex-1">{t('noReceiptsThisWeek')}</p>
+              <p className="text-sm text-[var(--text-muted)]">{t('noReceiptsThisWeek')}</p>
             ) : (
-              <div className="space-y-1.5 flex-1">
+              <div className="space-y-1.5">
                 {receiptsWeek.slice(0, 3).map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between text-[13px]">
                     <span className="truncate text-[var(--text-secondary)] min-w-0 mr-2">
@@ -329,7 +329,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="border-t border-[var(--border)] pt-3 mt-4">
+            <div className={`mt-4 pt-3 ${receiptsWeek.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
               <Link
                 href="/invoices/sales"
                 className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -364,9 +364,9 @@ export default function DashboardPage() {
             </div>
 
             {paymentsWeek.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)] flex-1">{t('noPaymentsThisWeek')}</p>
+              <p className="text-sm text-[var(--text-muted)]">{t('noPaymentsThisWeek')}</p>
             ) : (
-              <div className="space-y-1.5 flex-1">
+              <div className="space-y-1.5">
                 {paymentsWeek.slice(0, 3).map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between text-[13px]">
                     <span className="truncate text-[var(--text-secondary)] min-w-0 mr-2">
@@ -387,7 +387,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="border-t border-[var(--border)] pt-3 mt-4">
+            <div className={`mt-4 pt-3 ${paymentsWeek.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
               <Link
                 href="/invoices/purchase"
                 className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"

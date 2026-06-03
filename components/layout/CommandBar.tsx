@@ -68,6 +68,7 @@ export function CommandBar({
   const now = new Date();
   const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
   const todayCrumb = `${new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }).format(now)} · ${tCommon('weekNumber', { week: isoWeek(now) })}`;
+  const isListView = /\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '');
   const computedCrumbs = crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb);
 
   return (
@@ -85,7 +86,7 @@ export function CommandBar({
           </span>
         ))}
         <span className="flex-1" />
-        {hints && (
+        {hints && isListView && (
           <span className="hidden items-center gap-1.5 text-[var(--a-text-3)] md:inline-flex">
             <span>{tCommon('press')}</span>
             <Kbd>/</Kbd>
