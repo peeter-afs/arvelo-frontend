@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/stores/auth.store';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { reportsApi } from '@/lib/api/reports.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { accountingApi } from '@/lib/api/accounting.api';
@@ -48,7 +48,6 @@ const isUnpaid = (inv: InvoiceListItem) => inv.status !== 'draft' && openAmt(inv
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const t = useTranslations('dashboard');
-  const locale = useLocale();
 
   const [period, setPeriod] = useState<Period>('year');
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -56,20 +55,6 @@ export default function DashboardPage() {
   const [partnerNames, setPartnerNames] = useState<Map<string, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [formattedDate, setFormattedDate] = useState('');
-
-  useEffect(() => {
-    const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
-    setFormattedDate(
-      new Intl.DateTimeFormat(dateLocale, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      }).format(new Date()),
-    );
-  }, [locale]);
-
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -175,9 +160,6 @@ export default function DashboardPage() {
             <h1 className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
               {t('welcomeBack')}, {user?.name || user?.email?.split('@')[0]}
             </h1>
-            <p className="text-sm text-[var(--text-secondary)] mt-1">
-              {t('happeningToday')} &mdash; {formattedDate}
-            </p>
           </div>
           <div className="hidden lg:flex gap-3">
             <Link
