@@ -154,7 +154,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-2 py-3" aria-label={tCommon('mainNavigation')}>
+      <nav className="sidebar-scroll flex-1 overflow-y-auto px-2 py-3" aria-label={tCommon('mainNavigation')}>
         {navGroups.map((group) => (
           <div key={group.label} className="pb-2">
             <div className="px-3 py-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-[var(--a-side-muted)]">
