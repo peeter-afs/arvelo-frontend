@@ -308,7 +308,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <p className="font-mono tabular-nums text-2xl font-semibold text-[var(--a-pos)]">
+            <p className="font-mono tabular-nums text-xl font-semibold tracking-[-0.02em] text-[var(--a-pos)]">
               {formatCurrency(receiptsWeekSum)}
             </p>
 
@@ -366,7 +366,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <p className="font-mono tabular-nums text-2xl font-semibold text-[var(--text-primary)]">
+            <p className="font-mono tabular-nums text-xl font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
               {formatCurrency(paymentsWeekSum)}
             </p>
 

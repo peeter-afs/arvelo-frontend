@@ -179,7 +179,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                       {active && <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded bg-[var(--a-accent)]" />}
                       <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-white' : 'text-[var(--a-side-muted)]'}`} />
                       <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {item.badge && (
+                      {item.badge && item.badge !== '0' && (
                         <span
                           className={`rounded px-1.5 py-0.5 font-mono text-[10.5px] ${
                             active ? 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]' : 'bg-white/[0.05] text-[var(--a-side-muted)]'
