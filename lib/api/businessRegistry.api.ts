@@ -61,7 +61,7 @@ export type PartnerRegistrySyncLogItem = {
 
 export const businessRegistryApi = {
   async getSettings() {
-    const response = await apiClient.get<ApiResponse<BusinessRegistrySettings>>('/api/admin/integrations/business-registry');
+    const response = await apiClient.get<ApiResponse<BusinessRegistrySettings>>('/api/tenant-admin/integrations/business-registry');
     return response.data.data;
   },
 
@@ -75,7 +75,7 @@ export const businessRegistryApi = {
     company_path?: string;
     test_path?: string;
   }) {
-    const response = await apiClient.put<ApiResponse<BusinessRegistrySettings>>('/api/admin/integrations/business-registry', payload);
+    const response = await apiClient.put<ApiResponse<BusinessRegistrySettings>>('/api/tenant-admin/integrations/business-registry', payload);
     return response.data.data;
   },
 
@@ -83,7 +83,7 @@ export const businessRegistryApi = {
     const response = await apiClient.post<ApiResponse<{
       status: string;
       tested_at: string;
-    }>>('/api/admin/integrations/business-registry/test');
+    }>>('/api/tenant-admin/integrations/business-registry/test');
     return response.data.data;
   },
 

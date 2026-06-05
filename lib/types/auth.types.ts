@@ -7,6 +7,7 @@ export interface User {
   name?: string;
   status: UserStatus;
   email_verified: boolean;
+  is_platform_admin: boolean;
   last_login?: string;
   created_at: string;
   updated_at: string;
