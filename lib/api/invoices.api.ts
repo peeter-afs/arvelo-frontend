@@ -11,6 +11,7 @@ export type InvoiceListItem = {
   status: string;
   invoice_number?: string | null;
   partner_id?: string | null;
+  partner_name?: string | null;
   invoice_date: string;
   due_date?: string | null;
   currency: string;

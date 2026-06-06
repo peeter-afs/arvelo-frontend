@@ -133,7 +133,7 @@ export default function InvoiceListWorkspace({
     const query = searchQuery.trim().toLowerCase();
     return invoices.filter((invoice) => {
       const matchesTab = matchesInvoiceTab(invoice, activeTab, isPurchase);
-      const partnerName = partnerMap.get(invoice.partner_id || '')?.name || '';
+      const partnerName = invoice.partner_name || partnerMap.get(invoice.partner_id || '')?.name || '';
       const haystack = [invoice.invoice_number, invoice.notes, invoice.payment_reference, partnerName]
         .filter(Boolean)
         .join(' ')
@@ -164,16 +164,16 @@ export default function InvoiceListWorkspace({
       setErrorMessage(null);
       try {
         const creditNoteType = invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note';
-        const [invoiceItems, creditNoteItems, partnerItems] = await Promise.all([
+        const [invoiceItems, creditNoteItems] = await Promise.all([
           invoicesApi.listInvoices({ type: invoiceType, limit: 200 }),
           invoicesApi.listInvoices({ type: creditNoteType, limit: 200 }),
-          accountingApi.listPartners({ is_active: true }),
         ]);
         const allItems = [...invoiceItems, ...creditNoteItems].sort(
           (a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime()
         );
         setInvoices(allItems);
-        setPartners(partnerItems);
+        // Load partners in the background for AI panel and send-email features.
+        accountingApi.listPartners({ is_active: true }).then(setPartners).catch(() => {});
         setSelectedInvoiceId((current) => current || invoiceItems[0]?.id || null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -327,7 +327,9 @@ export default function InvoiceListWorkspace({
     });
   };
 
-  const selectedPartnerName = partnerMap.get(selectedInvoiceDetail?.invoice.partner_id || '')?.name || t('unknownPartner');
+  const selectedPartnerName = selectedInvoiceDetail?.invoice.partner_name
+    || partnerMap.get(selectedInvoiceDetail?.invoice.partner_id || '')?.name
+    || t('unknownPartner');
   const selectedPartner = partnerMap.get(selectedInvoiceDetail?.invoice.partner_id || '');
 
   return (
@@ -443,7 +445,8 @@ export default function InvoiceListWorkspace({
             ) : (
               filteredInvoices.map((invoice, index) => {
                 const selected = selectedInvoiceId === invoice.id;
-                const partner = partnerMap.get(invoice.partner_id || '');
+                const partnerDisplayName = invoice.partner_name || partnerMap.get(invoice.partner_id || '')?.name || null;
+                const partner = { name: partnerDisplayName };
                 const status = invoiceStatus(invoice, isPurchase);
                 const paidPct = Number(invoice.total || 0) > 0 ? (Number(invoice.paid_amount || 0) / Number(invoice.total || 0)) * 100 : 0;
 
