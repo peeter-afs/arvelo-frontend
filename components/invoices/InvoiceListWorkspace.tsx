@@ -167,7 +167,7 @@ export default function InvoiceListWorkspace({
         const [invoiceItems, creditNoteItems, partnerItems] = await Promise.all([
           invoicesApi.listInvoices({ type: invoiceType, limit: 200 }),
           invoicesApi.listInvoices({ type: creditNoteType, limit: 200 }),
-          accountingApi.listPartners(),
+          accountingApi.listPartners({ is_active: true }),
         ]);
         const allItems = [...invoiceItems, ...creditNoteItems].sort(
           (a, b) => new Date(b.invoice_date).getTime() - new Date(a.invoice_date).getTime()
