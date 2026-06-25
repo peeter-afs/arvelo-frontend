@@ -571,6 +571,20 @@ export default function OpeningBalancesPage() {
                     setGeneralRows(nextRows);
                     invalidatePreview();
                   }}
+                  onCreateAccount={async (payload) => {
+                    const created = await accountingApi.createAccount(payload);
+                    const option: AccountOption = {
+                      id: created.id,
+                      code: created.code,
+                      name: created.name,
+                      type: created.type,
+                      is_active: created.is_active ?? true,
+                    };
+                    setAccounts((current) =>
+                      [...current.filter((a) => a.id !== option.id), option].sort((a, b) => a.code.localeCompare(b.code))
+                    );
+                    return option;
+                  }}
                 />
               ) : (
                 <SubledgerEditor
@@ -677,7 +691,8 @@ function GeneralEditor({
   partners,
   totals,
   onAddRow,
-  onChange
+  onChange,
+  onCreateAccount
 }: {
   rows: GeneralRow[];
   accounts: AccountOption[];
@@ -685,7 +700,12 @@ function GeneralEditor({
   totals: { debit: number; credit: number; difference: number };
   onAddRow: () => void;
   onChange: (rows: GeneralRow[]) => void;
+  onCreateAccount: (payload: { code: string; name: string; type: string }) => Promise<AccountOption>;
 }) {
+  const [createForRowId, setCreateForRowId] = useState<string | null>(null);
+  const [newAccount, setNewAccount] = useState({ code: '', name: '', type: 'asset' });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const balanceSheetSummary = useMemo(() => {
     let totalAssets = 0;
     let totalLiabilities = 0;
@@ -726,7 +746,50 @@ function GeneralEditor({
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   };
 
+  // Selecting an existing account clears any pending account_code suggestion.
+  const selectRowAccount = (id: string, accountId: string) => {
+    onChange(rows.map((row) => (row.id === id ? { ...row, account_id: accountId, account_code: accountId ? '' : row.account_code } : row)));
+  };
+
   const removeRow = (id: string) => onChange(rows.length > 1 ? rows.filter((row) => row.id !== id) : rows);
+
+  // A row is "unresolved" when it has an amount but neither a chosen account nor a
+  // code to create one from — these block preview/commit, so flag them up front.
+  const isRowUnresolved = (row: GeneralRow) =>
+    Number(row.amount || 0) !== 0 && !row.account_id && !row.account_code;
+  const unresolvedCount = rows.filter(isRowUnresolved).length;
+
+  const openCreateAccount = (row: GeneralRow) => {
+    setCreateForRowId(row.id);
+    setCreateError(null);
+    setNewAccount({
+      code: row.account_code || '',
+      name: (row.description || '').replace(/^\d{3,6}\s*/, '').trim(),
+      type: 'asset',
+    });
+  };
+
+  const submitCreateAccount = async (rowId: string) => {
+    if (!newAccount.code.trim() || !newAccount.name.trim()) {
+      setCreateError('Code and name are required');
+      return;
+    }
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const created = await onCreateAccount({
+        code: newAccount.code.trim(),
+        name: newAccount.name.trim(),
+        type: newAccount.type,
+      });
+      selectRowAccount(rowId, created.id);
+      setCreateForRowId(null);
+    } catch (error) {
+      setCreateError(getErrorMessage(error));
+    } finally {
+      setCreating(false);
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -741,12 +804,23 @@ function GeneralEditor({
         </button>
       </div>
 
+      {unresolvedCount > 0 && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <span>
+            {unresolvedCount} row(s) need an account. Pick or create an account for the highlighted rows (or remove them) before previewing.
+          </span>
+        </div>
+      )}
+
       <div className="space-y-3">
-        {rows.map((row, index) => (
-          <div key={row.id} className="grid gap-3 rounded-xl border border-slate-200 p-4 md:grid-cols-12">
+        {rows.map((row, index) => {
+          const unresolved = isRowUnresolved(row);
+          return (
+          <div key={row.id} className={`grid gap-3 rounded-xl border p-4 md:grid-cols-12 ${unresolved ? 'border-amber-300 bg-amber-50/40' : 'border-slate-200'}`}>
             <div className="md:col-span-3">
               <label className="mb-1 block text-xs font-medium text-slate-500">Account</label>
-              <select value={row.account_id} onChange={(e) => updateRow(row.id, 'account_id', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3">
+              <select value={row.account_id} onChange={(e) => selectRowAccount(row.id, e.target.value)} className={`h-10 w-full rounded-lg border px-3 ${unresolved ? 'border-amber-400 ring-2 ring-amber-200' : 'border-slate-200'}`}>
                 <option value="">
                   {row.account_code ? `${row.account_code} · (created on commit)` : 'Select account'}
                 </option>
@@ -754,6 +828,61 @@ function GeneralEditor({
                   <option key={account.id} value={account.id}>{account.code} · {account.name}</option>
                 ))}
               </select>
+              {createForRowId === row.id ? (
+                <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-white p-2">
+                  <input
+                    value={newAccount.code}
+                    onChange={(e) => setNewAccount((c) => ({ ...c, code: e.target.value }))}
+                    placeholder="Code"
+                    className="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
+                  />
+                  <input
+                    value={newAccount.name}
+                    onChange={(e) => setNewAccount((c) => ({ ...c, name: e.target.value }))}
+                    placeholder="Name"
+                    className="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
+                  />
+                  <select
+                    value={newAccount.type}
+                    onChange={(e) => setNewAccount((c) => ({ ...c, type: e.target.value }))}
+                    className="h-9 w-full rounded-md border border-slate-200 px-2 text-sm"
+                  >
+                    <option value="asset">Asset</option>
+                    <option value="liability">Liability</option>
+                    <option value="equity">Equity</option>
+                    <option value="revenue">Revenue</option>
+                    <option value="expense">Expense</option>
+                  </select>
+                  {createError && <div className="text-xs text-red-600">{createError}</div>}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => void submitCreateAccount(row.id)}
+                      disabled={creating}
+                      className="inline-flex h-8 items-center gap-1 rounded-md bg-[var(--primary)] px-3 text-xs font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                    >
+                      {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
+                      <span>Create</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateForRowId(null)}
+                      className="h-8 rounded-md border border-slate-200 px-3 text-xs text-slate-600 hover:bg-slate-50"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => openCreateAccount(row)}
+                  className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] hover:underline"
+                >
+                  <Plus className="h-3 w-3" />
+                  <span>New account</span>
+                </button>
+              )}
             </div>
             <div className="md:col-span-2">
               <label className="mb-1 block text-xs font-medium text-slate-500">Partner</label>
@@ -786,7 +915,8 @@ function GeneralEditor({
             </div>
             <div className="md:col-span-12 text-xs text-slate-400">Row {index + 1}</div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="space-y-2">
