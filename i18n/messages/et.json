@@ -1410,7 +1410,8 @@
     "viewSalesInvoices": "Vaata müügiarveid",
     "viewPurchaseInvoices": "Vaata ostuarveid",
     "noReceiptsThisWeek": "Sel nädalal laekumisi pole",
-    "noPaymentsThisWeek": "Sel nädalal väljaminekuid pole"
+    "noPaymentsThisWeek": "Sel nädalal väljaminekuid pole",
+    "cashflowTitle": "Oodatavad rahavood"
   },
   "auth": {
     "login": "Logi sisse",
@@ -1523,6 +1524,7 @@
     "micStart": "Alusta salvestamist",
     "micStop": "Lõpeta salvestamine",
     "micUnsupported": "Kõnetuvastus ei ole selles brauseris toetatud",
+    "micLanguage": "Keel",
     "previewTitle": "Vaata AI mustand üle",
     "partner": "Partner",
     "partnerSelect": "Vali partner",

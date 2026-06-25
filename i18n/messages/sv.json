@@ -234,7 +234,8 @@
     "viewSalesInvoices": "View sales invoices",
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
-    "noPaymentsThisWeek": "No payments due this week"
+    "noPaymentsThisWeek": "No payments due this week",
+    "cashflowTitle": "Förväntat kassaflöde"
   },
   "auth": {
     "login": "Logga in",
@@ -259,6 +260,7 @@
     "micStart": "Starta inspelning",
     "micStop": "Stoppa inspelning",
     "micUnsupported": "Taligenkänning stöds inte i den här webbläsaren",
+    "micLanguage": "Språk",
     "previewTitle": "Granska AI-utkast",
     "partner": "Partner",
     "partnerSelect": "Välj partner",

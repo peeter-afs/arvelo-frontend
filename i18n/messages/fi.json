@@ -234,7 +234,8 @@
     "viewSalesInvoices": "View sales invoices",
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
-    "noPaymentsThisWeek": "No payments due this week"
+    "noPaymentsThisWeek": "No payments due this week",
+    "cashflowTitle": "Odotettu kassavirta"
   },
   "auth": {
     "login": "Kirjaudu sisään",
@@ -259,6 +260,7 @@
     "micStart": "Aloita tallennus",
     "micStop": "Lopeta tallennus",
     "micUnsupported": "Puheentunnistus ei ole tuettu tässä selaimessa",
+    "micLanguage": "Kieli",
     "previewTitle": "Tarkista AI-luonnos",
     "partner": "Kumppani",
     "partnerSelect": "Valitse kumppani",

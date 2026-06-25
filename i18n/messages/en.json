@@ -1410,7 +1410,8 @@
     "viewSalesInvoices": "View sales invoices",
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
-    "noPaymentsThisWeek": "No payments due this week"
+    "noPaymentsThisWeek": "No payments due this week",
+    "cashflowTitle": "Expected cash flow"
   },
   "auth": {
     "login": "Login",
@@ -1523,6 +1524,7 @@
     "micStart": "Start recording",
     "micStop": "Stop recording",
     "micUnsupported": "Speech recognition is not supported in this browser",
+    "micLanguage": "Language",
     "previewTitle": "Review AI draft",
     "partner": "Partner",
     "partnerSelect": "Select partner",

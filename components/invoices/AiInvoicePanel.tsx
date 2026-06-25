@@ -61,12 +61,15 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
   // Speech recognition
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [speechLang, setSpeechLang] = useState('');
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     setSpeechSupported(Boolean(SR));
-  }, []);
+    // Priority: browser locale → app locale → et-EE
+    setSpeechLang(navigator.language || appLocale || 'et-EE');
+  }, [appLocale]);
 
   useEffect(() => {
     if (!open) {
@@ -99,8 +102,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     if (!SR) return;
 
     const recognition = new SR();
-    // Priority: browser locale → app locale → Estonian fallback
-    recognition.lang = navigator.language || appLocale || 'et-EE';
+    recognition.lang = speechLang;
     recognition.interimResults = true;
     recognition.continuous = true;
 
@@ -306,6 +308,24 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                     </button>
                   )}
                 </div>
+                {speechSupported && (
+                  <div className="flex items-center gap-2">
+                    <label className="shrink-0 text-xs text-[var(--a-text-3)]">{t('micLanguage')}</label>
+                    <select
+                      value={speechLang}
+                      onChange={e => setSpeechLang(e.target.value)}
+                      disabled={isListening}
+                      className="rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-2 py-1 text-xs text-[var(--a-text)] disabled:opacity-50"
+                    >
+                      <option value="et-EE">Eesti (et-EE)</option>
+                      <option value="en-US">English US (en-US)</option>
+                      <option value="en-GB">English UK (en-GB)</option>
+                      <option value="fi-FI">Suomi (fi-FI)</option>
+                      <option value="sv-SE">Svenska (sv-SE)</option>
+                      <option value="ru-RU">Русский (ru-RU)</option>
+                    </select>
+                  </div>
+                )}
               </div>
             )}
 
