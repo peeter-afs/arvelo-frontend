@@ -260,62 +260,62 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        <div className="card card-hover p-4 sm:p-4">
+        <div className="card card-hover p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-2">{t('totalRevenue')}</p>
-              <p className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalRevenue')}</p>
+              <p className="text-xl font-semibold text-[var(--text-primary)]">
                 {formatCurrency(stats?.totalRevenue ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
-              <Euro className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <Euro className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-4">
+        <div className="card card-hover p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-2">{t('totalExpenses')}</p>
-              <p className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalExpenses')}</p>
+              <p className="text-xl font-semibold text-[var(--text-primary)]">
                 {formatCurrency(stats?.totalExpenses ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
-              <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <TrendingUp className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-4">
+        <div className="card card-hover p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-2">{t('netIncome')}</p>
-              <p className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('netIncome')}</p>
+              <p className="text-xl font-semibold text-[var(--text-primary)]">
                 {formatCurrency(stats?.netIncome ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
-              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <Activity className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-4">
+        <div className="card card-hover p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-2">{t('pendingInvoices')}</p>
-              <p className="text-xl sm:text-2xl font-semibold text-[var(--text-primary)]">
+              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('pendingInvoices')}</p>
+              <p className="text-xl font-semibold text-[var(--text-primary)]">
                 {stats?.pendingCount ?? 0}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{t('currentState')}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[var(--text-secondary)]" />
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+              <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
         </div>
@@ -324,7 +324,17 @@ export default function DashboardPage() {
       {/* Expected cash flow (period-aware) */}
       <div className="mt-4 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="micro text-[var(--text-muted)]">{t('cashflowTitle')}</span>
+          <div className="flex items-baseline gap-2">
+            <span className="micro text-[var(--text-muted)]">{t('cashflowTitle')}</span>
+            <span className="text-[11px] text-[var(--text-muted)]">{t('expectedNet')}</span>
+            <span
+              className={`font-mono text-[12px] font-semibold ${
+                netChange >= 0 ? 'text-[var(--a-pos)]' : 'text-[var(--a-neg)]'
+              }`}
+            >
+              {netChange >= 0 ? '+' : ''}{formatCurrency(netChange)}
+            </span>
+          </div>
           <span className="font-mono text-[11px] text-[var(--text-muted)]">{cashflowCaption}</span>
         </div>
 
@@ -333,9 +343,14 @@ export default function DashboardPage() {
           <div className="card p-4 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[var(--text-primary)]">{t('expectedReceipts')}</p>
-              <div className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
+              <Link
+                href="/invoices/sales"
+                title={t('viewSalesInvoices')}
+                aria-label={t('viewSalesInvoices')}
+                className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] hover:bg-[var(--border)] flex items-center justify-center flex-shrink-0 transition-colors"
+              >
                 <ArrowDownLeft className="h-4 w-4 text-[var(--text-secondary)]" />
-              </div>
+              </Link>
             </div>
 
             <p className="font-mono tabular-nums text-lg font-semibold tracking-[-0.02em] text-[var(--a-pos)]">
@@ -376,24 +391,20 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
-
-            <div className={`mt-3 pt-2 ${receiptsDue.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
-              <Link
-                href="/invoices/sales"
-                className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                {t('viewSalesInvoices')} →
-              </Link>
-            </div>
           </div>
 
           {/* Expected Payments */}
           <div className="card p-4 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[var(--text-primary)]">{t('expectedPayments')}</p>
-              <div className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
+              <Link
+                href="/invoices/purchase"
+                title={t('viewPurchaseInvoices')}
+                aria-label={t('viewPurchaseInvoices')}
+                className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] hover:bg-[var(--border)] flex items-center justify-center flex-shrink-0 transition-colors"
+              >
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-secondary)]" />
-              </div>
+              </Link>
             </div>
 
             <p className="font-mono tabular-nums text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
@@ -434,28 +445,7 @@ export default function DashboardPage() {
                 ))}
               </div>
             )}
-
-            <div className={`mt-3 pt-2 ${paymentsDue.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
-              <Link
-                href="/invoices/purchase"
-                className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-              >
-                {t('viewPurchaseInvoices')} →
-              </Link>
-            </div>
           </div>
-        </div>
-
-        {/* Net change */}
-        <div className="flex items-center justify-end gap-2 mt-2">
-          <span className="text-[13px] text-[var(--text-muted)]">{t('expectedNet')}</span>
-          <span
-            className={`font-mono text-[13px] font-semibold ${
-              netChange >= 0 ? 'text-[var(--a-pos)]' : 'text-[var(--a-neg)]'
-            }`}
-          >
-            {netChange >= 0 ? '+' : ''}{formatCurrency(netChange)}
-          </span>
         </div>
       </div>
 
