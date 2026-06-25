@@ -982,6 +982,9 @@ function GeneralEditor({
           <Metric label="Credit total" value={totals.credit} />
           <Metric label="Difference" value={totals.difference} emphasize={Math.abs(totals.difference) <= 0.009 ? 'success' : 'danger'} />
         </div>
+        <p className="px-1 text-xs text-slate-400">
+          Gross debit/credit of the opening entry. Contra accounts (e.g. accumulated depreciation) post on the opposite side, so this is higher than the net balance-sheet total below — only the difference being 0 matters here.
+        </p>
       </div>
 
       {balanceSheetSummary.hasResolvedAccounts && balanceSheetSummary.totalAssets !== 0 && (
