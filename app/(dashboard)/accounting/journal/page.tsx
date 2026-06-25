@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   Copy,
@@ -46,6 +47,7 @@ function entryAmount(entry: JournalEntryWithRows) {
 }
 
 export default function JournalEntriesPage() {
+  const router = useRouter();
   const t = useTranslations('accounting');
   const searchRef = useRef<HTMLInputElement>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -123,7 +125,15 @@ export default function JournalEntriesPage() {
         return;
       }
 
-      if (isEditingText || filtered.length === 0) return;
+      if (isEditingText) return;
+
+      if (event.key.toLowerCase() === 'n') {
+        event.preventDefault();
+        router.push('/accounting/journal/new');
+        return;
+      }
+
+      if (filtered.length === 0) return;
       const currentIndex = Math.max(0, filtered.findIndex((entry) => entry.id === selectedEntry?.id));
 
       if (event.key.toLowerCase() === 'j') {
@@ -134,10 +144,19 @@ export default function JournalEntriesPage() {
         event.preventDefault();
         void handleSelect(filtered[Math.max(0, currentIndex - 1)]);
       }
+      if (event.key.toLowerCase() === 'e' && selectedEntry) {
+        event.preventDefault();
+        router.push(`/accounting/journal/${selectedEntry.id}/edit`);
+      }
+      if (event.key.toLowerCase() === 'd' && selectedEntry && !selectedEntry.is_posted) {
+        event.preventDefault();
+        router.push(`/accounting/journal/new?duplicate=${selectedEntry.id}`);
+      }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, selectedEntry?.id]);
 
   const draftCount = entries.filter((entry) => !entry.is_posted).length;
@@ -173,7 +192,7 @@ export default function JournalEntriesPage() {
             <Download className="h-3.5 w-3.5" />
             {t('export')}
           </Button>
-          <Button variant="primary">
+          <Button variant="primary" onClick={() => router.push('/accounting/journal/new')}>
             <Plus className="h-3.5 w-3.5" />
             {t('newEntry')}
             <Kbd inverse>N</Kbd>
@@ -325,6 +344,8 @@ export default function JournalEntriesPage() {
             accountLabel={accountLabel}
             totalDebit={totalDebit}
             totalCredit={totalCredit}
+            onEdit={() => selectedEntry && router.push(`/accounting/journal/${selectedEntry.id}/edit`)}
+            onDuplicate={() => selectedEntry && router.push(`/accounting/journal/new?duplicate=${selectedEntry.id}`)}
           />
         </SplitPaneDetail>
       </SplitPane>
@@ -339,6 +360,8 @@ function EntryDetailPanel({
   accountLabel,
   totalDebit,
   totalCredit,
+  onEdit,
+  onDuplicate,
 }: {
   entry: JournalEntryWithRows | null;
   rows: JournalLineRecord[];
@@ -346,6 +369,8 @@ function EntryDetailPanel({
   accountLabel: (id?: string | null) => string;
   totalDebit: number;
   totalCredit: number;
+  onEdit?: () => void;
+  onDuplicate?: () => void;
 }) {
   const t = useTranslations('accounting');
 
@@ -441,11 +466,18 @@ function EntryDetailPanel({
       </div>
 
       <div className="flex items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
-        <Button className="h-8 flex-1 text-xs">
+        <Button
+          className="h-8 flex-1 text-xs"
+          disabled={entry?.is_posted}
+          onClick={onEdit}
+        >
           <Pencil className="h-3.5 w-3.5" />
           Edit <Kbd>E</Kbd>
         </Button>
-        <Button className="h-8 flex-1 text-xs">
+        <Button
+          className="h-8 flex-1 text-xs"
+          onClick={onDuplicate}
+        >
           <Copy className="h-3.5 w-3.5" />
           Copy <Kbd>D</Kbd>
         </Button>

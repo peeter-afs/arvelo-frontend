@@ -20,6 +20,7 @@ import {
 } from '@/lib/api/businessRegistry.api';
 import {
   accountingApi,
+  type JournalEntryRecord,
   type PartnerRecord,
   type PartnerRole,
   type PartnerWithBalance,
@@ -540,6 +541,14 @@ function PartnerDetailPanel({
   onUpdateBankAccount: (account: SupplierBankAccount, updates: Partial<BankAccountDraft>) => void;
 }) {
   const t = useTranslations('accounting');
+  const [recentEntries, setRecentEntries] = useState<JournalEntryRecord[]>([]);
+
+  useEffect(() => {
+    if (!partner) return;
+    accountingApi.listJournalEntriesByPartner(partner.id, 5)
+      .then(setRecentEntries)
+      .catch(() => setRecentEntries([]));
+  }, [partner]);
 
   if (!partner) {
     return <div className="p-6 text-sm text-[var(--a-text-3)]">{t('selectPartnerToView')}</div>;
@@ -727,6 +736,33 @@ function PartnerDetailPanel({
             </div>
           )}
         </Section>
+
+        {recentEntries.length > 0 && (
+          <Section label={t('recentTransactions')}>
+            <div className="space-y-1">
+              {recentEntries.map((entry) => {
+                const debit = (entry.rows || []).reduce((sum, row) => sum + Number(row.debit || 0), 0);
+                const credit = (entry.rows || []).reduce((sum, row) => sum + Number(row.credit || 0), 0);
+                const amount = Math.max(debit, credit);
+                return (
+                  <div key={entry.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--a-border)] px-3 py-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[11.5px] font-medium tabular-nums text-[var(--a-text-2)]">{entry.entry_number || entry.id.slice(0, 8)}</span>
+                        <span className={`h-1.5 w-1.5 rounded-full ${entry.is_posted ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-warn)]'}`} />
+                      </div>
+                      <div className="mt-0.5 truncate text-[11.5px] text-[var(--a-text-3)]">{entry.description || entry.entry_type}</div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <div className="font-mono text-[12.5px] font-medium tabular-nums text-[var(--a-text)]">{formatEUR(amount)}</div>
+                      <div className="font-mono text-[10.5px] tabular-nums text-[var(--a-text-3)]">{shortDate(entry.entry_date)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Section>
+        )}
       </div>
     </div>
   );

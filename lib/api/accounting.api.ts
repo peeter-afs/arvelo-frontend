@@ -246,6 +246,52 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  async createJournalEntry(payload: {
+    entry_date: string;
+    entry_type: string;
+    description?: string;
+    reference_number?: string;
+    rows: { account_id: string; partner_id?: string; debit: number; credit: number; description?: string }[];
+  }) {
+    const response = await apiClient.post<ApiResponse<JournalEntryRecord>>('/api/accounting/journal-entries', payload);
+    return response.data.data;
+  },
+
+  async updateJournalEntry(id: string, payload: {
+    entry_date?: string;
+    description?: string;
+    reference_number?: string;
+    rows?: { account_id: string; partner_id?: string; debit: number; credit: number; description?: string }[];
+  }) {
+    const response = await apiClient.put<ApiResponse<JournalEntryRecord>>(`/api/accounting/journal-entries/${id}`, payload);
+    return response.data.data;
+  },
+
+  async postJournalEntry(id: string) {
+    const response = await apiClient.post<ApiResponse<{ success: boolean }>>(`/api/accounting/journal-entries/${id}/post`);
+    return response.data.data;
+  },
+
+  async deleteJournalEntry(id: string) {
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/accounting/journal-entries/${id}`);
+    return response.data.data;
+  },
+
+  async getAccountBalance(accountId: string, asOfDate?: string) {
+    const response = await apiClient.get<ApiResponse<{ debit: number; credit: number; balance: number }>>(
+      `/api/accounting/accounts/${accountId}/balance`,
+      asOfDate ? { params: { as_of_date: asOfDate } } : undefined
+    );
+    return response.data.data;
+  },
+
+  async listJournalEntriesByPartner(partnerId: string, limit = 5) {
+    const response = await apiClient.get<ApiResponse<JournalEntryRecord[]>>('/api/accounting/journal-entries', {
+      params: { partner_id: partnerId, limit }
+    });
+    return response.data.data;
+  },
+
   async getPartners() {
     const response = await apiClient.get<ApiResponse<PartnerOption[]>>('/api/accounting/partners?is_active=true');
     return response.data.data;
