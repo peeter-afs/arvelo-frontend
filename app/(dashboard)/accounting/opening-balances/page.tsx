@@ -91,6 +91,7 @@ export default function OpeningBalancesPage() {
   const [commitResult, setCommitResult] = useState<any | null>(null);
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
   const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
+  const [importSource, setImportSource] = useState<'auto' | 'merit' | 'generic'>('auto');
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImportLoading, setIsImportLoading] = useState(false);
   const [isImported, setIsImported] = useState(false);
@@ -275,7 +276,8 @@ export default function OpeningBalancesPage() {
     try {
       const result = await importApi.parseOpeningBalancePdf(importFile, {
         mode,
-        opening_date: sharedFields.opening_date
+        opening_date: sharedFields.opening_date,
+        source: importSource
       });
       setImportResult(result);
       applyImportedRows(result);
@@ -456,6 +458,18 @@ export default function OpeningBalancesPage() {
               </p>
             </div>
             <div className="space-y-4 p-5">
+              <label className="block">
+                <span className="mb-1 block text-xs font-medium text-slate-500">{t('importSource')}</span>
+                <select
+                  value={importSource}
+                  onChange={(event) => setImportSource(event.target.value as 'auto' | 'merit' | 'generic')}
+                  className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm md:w-72"
+                >
+                  <option value="auto">{t('importSourceAuto')}</option>
+                  <option value="merit">{t('importSourceMerit')}</option>
+                  <option value="generic">{t('importSourceGeneric')}</option>
+                </select>
+              </label>
               <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto]">
                 <input
                   type="file"
@@ -476,7 +490,8 @@ export default function OpeningBalancesPage() {
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                   <div className="font-medium text-slate-900">{importResult.file_name}</div>
                   <div className="mt-1 text-xs text-slate-500">
-                    Model {importResult.model} · document {importResult.document_id}
+                    {importResult.source === 'merit' ? t('sourceMeritUsed') : t('sourceAiUsed', { model: importResult.model })}
+                    {importResult.detected_source === 'merit' && importResult.source !== 'merit' && ` · ${t('sourceMeritDetected')}`}
                   </div>
                   {importResult.warnings && importResult.warnings.length > 0 && (
                     <div className="mt-3 text-xs text-amber-700">

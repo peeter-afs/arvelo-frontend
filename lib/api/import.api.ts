@@ -40,8 +40,12 @@ export type PurchaseInvoiceImportDetail = {
   }>;
 };
 
+export type OpeningBalanceSource = 'merit' | 'generic';
+
 export type OpeningBalanceImportResult = {
   mode: 'general' | 'receivables' | 'payables';
+  source?: OpeningBalanceSource;
+  detected_source?: OpeningBalanceSource;
   document_id: string;
   file_name: string;
   opening_date: string;
@@ -82,11 +86,14 @@ export type AccountImportCommitResult = {
 };
 
 export const importApi = {
-  async parseOpeningBalancePdf(file: File, payload: { mode: 'general' | 'receivables' | 'payables'; opening_date: string }) {
+  async parseOpeningBalancePdf(file: File, payload: { mode: 'general' | 'receivables' | 'payables'; opening_date: string; source?: 'auto' | 'merit' | 'generic' }) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('mode', payload.mode);
     formData.append('opening_date', payload.opening_date);
+    if (payload.source && payload.source !== 'auto') {
+      formData.append('source', payload.source);
+    }
 
     const response = await apiClient.post<ApiResponse<OpeningBalanceImportResult>>('/api/import/opening-balances/parse', formData, {
       headers: {
