@@ -196,7 +196,8 @@
     "taxId": "Y-tunnus",
     "address": "Osoite",
     "baseCurrency": "Perusvaluutta",
-    "saveChanges": "Tallenna muutokset"
+    "saveChanges": "Tallenna muutokset",
+    "openOpeningBalancesPage": "Avaa avaavien saldojen sivu"
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",

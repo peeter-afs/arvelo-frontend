@@ -1372,7 +1372,8 @@
     "bankAccountUpdated": "Bank account updated.",
     "bankAccountSaved": "Bank account saved.",
     "bankAccountActivated": "Bank account activated.",
-    "bankAccountDeactivated": "Bank account deactivated."
+    "bankAccountDeactivated": "Bank account deactivated.",
+    "openOpeningBalancesPage": "Open opening balances"
   },
   "dashboard": {
     "welcomeBack": "Welcome back",

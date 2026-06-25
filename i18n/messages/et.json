@@ -1372,7 +1372,8 @@
     "bankAccountUpdated": "Pangakonto uuendati.",
     "bankAccountSaved": "Pangakonto salvestati.",
     "bankAccountActivated": "Pangakonto aktiveeriti.",
-    "bankAccountDeactivated": "Pangakonto deaktiveeriti."
+    "bankAccountDeactivated": "Pangakonto deaktiveeriti.",
+    "openOpeningBalancesPage": "Ava algsaldode leht"
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",

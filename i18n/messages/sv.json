@@ -196,7 +196,8 @@
     "taxId": "Organisationsnummer",
     "address": "Adress",
     "baseCurrency": "Basvaluta",
-    "saveChanges": "Spara ändringar"
+    "saveChanges": "Spara ändringar",
+    "openOpeningBalancesPage": "Öppna ingående saldon"
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",
