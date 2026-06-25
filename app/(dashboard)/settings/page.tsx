@@ -3,7 +3,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { useSearchParams } from 'next/navigation';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
@@ -2073,6 +2074,16 @@ export default function SettingsPage() {
                             {t('resetWindowExpired', { months: importStatus.reset_window_months ?? 3 })}
                           </p>
                         )
+                      )}
+
+                      {!importStatus?.is_imported && canManageData && (
+                        <Link
+                          href="/accounting/opening-balances"
+                          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] transition-colors"
+                        >
+                          <Upload className="h-4 w-4" />
+                          {t('importOpeningBalances')}
+                        </Link>
                       )}
                     </>
                   )}

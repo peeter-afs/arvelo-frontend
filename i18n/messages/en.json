@@ -1312,6 +1312,7 @@
     "openingBalances": "Opening Balances",
     "openingBalancesImported": "Opening balances have been imported ({count} batch(es)). You can reset (deletes all journal entries) and re-import opening balances. Reset is available for 3 months after the import.",
     "noOpeningBalancesImported": "No opening balances have been imported yet.",
+    "importOpeningBalances": "Import opening balances",
     "committedBatches": "Committed batches",
     "resetOpeningBalances": "Reset Opening Balances",
     "resetHistory": "Reset History",

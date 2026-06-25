@@ -1311,6 +1311,7 @@
     "openingBalances": "Algsaldod",
     "openingBalancesImported": "Algsaldod on imporditud ({count} partiid). Saad andmed lähtestada (kustutab kõik kanded) ja algsaldod uuesti importida. Lähtestamine on võimalik 3 kuu jooksul impordist.",
     "noOpeningBalancesImported": "Algsaldosid pole veel imporditud.",
+    "importOpeningBalances": "Impordi algsaldod",
     "committedBatches": "Kinnitatud partiid",
     "resetOpeningBalances": "Lähtesta algsaldod",
     "resetHistory": "Lähtestamise ajalugu",
