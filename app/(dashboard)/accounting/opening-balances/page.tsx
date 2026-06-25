@@ -711,21 +711,23 @@ function GeneralEditor({
     let totalLiabilities = 0;
     let totalEquity = 0;
     let hasResolvedAccounts = false;
+    let unmatchedCount = 0;
 
     for (const row of rows) {
       const amount = Number(row.amount || 0);
       if (amount === 0) continue;
 
+      // Categorize by the account's code — whether the account is already chosen or
+      // is a pending code that will be created on commit. Only rows with no code at
+      // all are truly "unmatched" and excluded from the summary.
       const account = accounts.find(a => a.id === row.account_id);
-      if (!account) {
-        // Unmatched rows — treat as equity if credit side
-        const signedAmount = row.side === 'debit' ? amount : -amount;
-        totalEquity += -signedAmount;
+      const code = account?.code || row.account_code || '';
+      if (!code) {
+        unmatchedCount += 1;
         continue;
       }
 
       hasResolvedAccounts = true;
-      const code = account.code;
       const signedAmount = row.side === 'debit' ? amount : -amount;
 
       if (code.startsWith('1')) {
@@ -739,7 +741,7 @@ function GeneralEditor({
 
     const isBalanced = Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
 
-    return { totalAssets, totalLiabilities, totalEquity, isBalanced, hasResolvedAccounts };
+    return { totalAssets, totalLiabilities, totalEquity, isBalanced, hasResolvedAccounts, unmatchedCount };
   }, [rows, accounts]);
 
   const updateRow = (id: string, key: keyof GeneralRow, value: string) => {
@@ -941,6 +943,11 @@ function GeneralEditor({
               emphasize={balanceSheetSummary.isBalanced ? 'success' : 'danger'}
             />
           </div>
+          {balanceSheetSummary.unmatchedCount > 0 && (
+            <p className="px-1 text-xs text-amber-700">
+              {balanceSheetSummary.unmatchedCount} row(s) without an account are excluded from this summary.
+            </p>
+          )}
         </div>
       )}
     </div>
