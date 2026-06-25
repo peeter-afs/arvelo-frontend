@@ -15,6 +15,7 @@ type Mode = 'general' | 'receivables' | 'payables';
 type GeneralRow = {
   id: string;
   account_id: string;
+  account_code: string;
   partner_id: string;
   description: string;
   side: 'debit' | 'credit';
@@ -37,6 +38,7 @@ type SubledgerRow = {
 const createGeneralRow = (): GeneralRow => ({
   id: crypto.randomUUID(),
   account_id: '',
+  account_code: '',
   partner_id: '',
   description: '',
   side: 'debit',
@@ -221,6 +223,7 @@ export default function OpeningBalancesPage() {
         result.suggested_payload.lines.map((line) => ({
           id: crypto.randomUUID(),
           account_id: String(line.account_id || ''),
+          account_code: String((line as any).account_code || ''),
           partner_id: String(line.partner_id || ''),
           description: String(line.description || ''),
           side: line.side === 'credit' ? 'credit' : 'debit',
@@ -744,7 +747,9 @@ function GeneralEditor({
             <div className="md:col-span-3">
               <label className="mb-1 block text-xs font-medium text-slate-500">Account</label>
               <select value={row.account_id} onChange={(e) => updateRow(row.id, 'account_id', e.target.value)} className="h-10 w-full rounded-lg border border-slate-200 px-3">
-                <option value="">Select account</option>
+                <option value="">
+                  {row.account_code ? `${row.account_code} · (created on commit)` : 'Select account'}
+                </option>
                 {accounts.map((account) => (
                   <option key={account.id} value={account.id}>{account.code} · {account.name}</option>
                 ))}
@@ -1070,6 +1075,7 @@ function buildPayload(
       ...base,
       lines: state.generalRows.map((row) => ({
         account_id: row.account_id || undefined,
+        account_code: row.account_id ? undefined : (row.account_code || undefined),
         partner_id: row.partner_id || undefined,
         description: row.description || undefined,
         side: row.side,
