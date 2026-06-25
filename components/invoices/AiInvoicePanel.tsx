@@ -63,6 +63,8 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speechLang, setSpeechLang] = useState('');
   const recognitionRef = useRef<any>(null);
+  // Accumulates finalized (isFinal=true) segments so interim results don't duplicate them
+  const finalizedTextRef = useRef('');
 
   useEffect(() => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -80,6 +82,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
       setLoading(false);
       setConfirming(false);
       setKind('regular');
+      finalizedTextRef.current = '';
       stopListening();
     }
   }, [open]);
@@ -106,12 +109,20 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     recognition.interimResults = true;
     recognition.continuous = true;
 
+    finalizedTextRef.current = '';
+
     recognition.onresult = (event: any) => {
-      let transcript = '';
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
+      let interim = '';
+      // Only process results from resultIndex onwards to avoid reprocessing finalized ones
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const segment = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalizedTextRef.current += segment;
+        } else {
+          interim += segment;
+        }
       }
-      setText(transcript);
+      setText(finalizedTextRef.current + interim);
     };
 
     recognition.onerror = () => {
