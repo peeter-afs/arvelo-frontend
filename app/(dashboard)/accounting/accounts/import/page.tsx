@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { ArrowLeft, CheckCircle2, AlertCircle, Loader2, Upload, FileSpreadsheet } from 'lucide-react';
 import Link from 'next/link';
 import { importApi, type AccountImportRow } from '@/lib/api/import.api';
+import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { RoleMappingDialog } from '@/components/accounting/RoleMappingDialog';
 
 export default function AccountImportPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -15,6 +17,7 @@ export default function AccountImportPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [commitResult, setCommitResult] = useState<{ created: number; skipped: number; errors: string[] } | null>(null);
+  const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
 
   const newAccounts = parsedAccounts.filter(a => a.status === 'new');
   const existingAccounts = parsedAccounts.filter(a => a.status === 'existing');
@@ -59,6 +62,9 @@ export default function AccountImportPage() {
             : a
         ));
         setSelected(new Set());
+        // Offer to map system roles to the freshly imported accounts.
+        const accounts = await accountingApi.getAccounts().catch(() => []);
+        setRoleDialogAccounts(accounts);
       }
     } catch (err) {
       setErrorMessage(getErrorMessage(err));
@@ -281,6 +287,13 @@ export default function AccountImportPage() {
           )}
         </>
       )}
+
+      <RoleMappingDialog
+        open={roleDialogAccounts !== null}
+        accounts={roleDialogAccounts || []}
+        onApply={(mapping) => accountingApi.applyImportedSystemRoles(mapping)}
+        onClose={() => setRoleDialogAccounts(null)}
+      />
     </div>
   );
 }

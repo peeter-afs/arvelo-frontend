@@ -11,7 +11,31 @@ export type AccountOption = {
   name: string;
   type: string;
   is_active: boolean;
+  system_code?: string | null;
 };
+
+export type AccountingSettings = {
+  tenant_id: string;
+  accounts_receivable_account_id: string | null;
+  accounts_payable_account_id: string | null;
+  sales_revenue_account_id: string | null;
+  purchase_expense_account_id: string | null;
+  vat_output_account_id: string | null;
+  vat_input_account_id: string | null;
+  bank_account_default_id: string | null;
+  fiscal_year_start_month?: number;
+  fiscal_year_start_day?: number;
+};
+
+export type SystemRoleMapping = Partial<{
+  accounts_receivable_account_id: string;
+  accounts_payable_account_id: string;
+  sales_revenue_account_id: string;
+  purchase_expense_account_id: string;
+  vat_output_account_id: string;
+  vat_input_account_id: string;
+  bank_account_default_id: string;
+}>;
 
 export type PartnerOption = {
   id: string;
@@ -126,6 +150,7 @@ export type AccountRecord = {
   parent_id?: string | null;
   is_active: boolean;
   is_system: boolean;
+  system_code?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -179,6 +204,35 @@ export const accountingApi = {
 
   async deleteAccount(id: string) {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/accounting/accounts/${id}`);
+    return response.data.data;
+  },
+
+  // System role accounts / default chart
+  async getAccountingSettings() {
+    const response = await apiClient.get<ApiResponse<AccountingSettings | null>>('/api/accounting/settings');
+    return response.data.data;
+  },
+
+  async updateAccountingSettings(mapping: SystemRoleMapping) {
+    const response = await apiClient.put<ApiResponse<{ settings: AccountingSettings; warnings: string[] }>>(
+      '/api/accounting/settings',
+      mapping
+    );
+    return response.data.data;
+  },
+
+  async createDefaultChart() {
+    const response = await apiClient.post<ApiResponse<{ created: string[]; reused: string[]; skipped: string[]; settings: AccountingSettings }>>(
+      '/api/accounting/accounts/create-defaults'
+    );
+    return response.data.data;
+  },
+
+  async applyImportedSystemRoles(mapping: Record<string, { account_id: string }>) {
+    const response = await apiClient.post<ApiResponse<{ remapped: string[]; removed: string[]; kept_with_warning: string[] }>>(
+      '/api/accounting/settings/apply-imported-roles',
+      { mapping }
+    );
     return response.data.data;
   },
 

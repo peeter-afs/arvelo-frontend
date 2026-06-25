@@ -8,6 +8,7 @@ import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, ty
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
+import { RoleMappingDialog } from '@/components/accounting/RoleMappingDialog';
 import { getIsoToday } from '@/lib/utils/date';
 
 type Mode = 'general' | 'receivables' | 'payables';
@@ -89,6 +90,7 @@ export default function OpeningBalancesPage() {
   const [previewResult, setPreviewResult] = useState<any | null>(null);
   const [commitResult, setCommitResult] = useState<any | null>(null);
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
+  const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [isImportLoading, setIsImportLoading] = useState(false);
   const [isImported, setIsImported] = useState(false);
@@ -339,10 +341,40 @@ export default function OpeningBalancesPage() {
       setCommitResult(result);
       setIsImported(true);
       await refreshBatches();
+      await maybeOfferRoleMapping();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsCommitLoading(false);
+    }
+  };
+
+  // After committing opening balances, offer to map system roles to the imported
+  // chart — but only while the roles still point at the app's default accounts.
+  const maybeOfferRoleMapping = async () => {
+    try {
+      const [settings, accountList] = await Promise.all([
+        accountingApi.getAccountingSettings().catch(() => null),
+        accountingApi.getAccounts().catch(() => []),
+      ]);
+      if (!settings) return;
+      const byId = new Map(accountList.map((a) => [a.id, a]));
+      const roleIds = [
+        settings.accounts_receivable_account_id,
+        settings.accounts_payable_account_id,
+        settings.sales_revenue_account_id,
+        settings.purchase_expense_account_id,
+        settings.vat_output_account_id,
+        settings.vat_input_account_id,
+        settings.bank_account_default_id,
+      ];
+      const stillOnDefaults = roleIds.some((id) => id && byId.get(id)?.system_code);
+      const hasImportedAccounts = accountList.some((a) => !a.system_code);
+      if (stillOnDefaults && hasImportedAccounts) {
+        setRoleDialogAccounts(accountList);
+      }
+    } catch {
+      /* non-fatal */
     }
   };
 
@@ -681,6 +713,13 @@ export default function OpeningBalancesPage() {
           </div>
         </aside>
       </div>
+
+      <RoleMappingDialog
+        open={roleDialogAccounts !== null}
+        accounts={roleDialogAccounts || []}
+        onApply={(mapping) => accountingApi.applyImportedSystemRoles(mapping)}
+        onClose={() => setRoleDialogAccounts(null)}
+      />
     </div>
   );
 }

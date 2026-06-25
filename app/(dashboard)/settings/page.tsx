@@ -7,7 +7,8 @@ import Link from 'next/link';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
-import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
+import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
+import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
@@ -136,6 +137,10 @@ export default function SettingsPage() {
   const [dataManagementAction, setDataManagementAction] = useState<string | null>(null);
   const [resetDeleteAccounts, setResetDeleteAccounts] = useState(false);
   const [resetDeletePartners, setResetDeletePartners] = useState(false);
+  const [accountingSettings, setAccountingSettings] = useState<AccountingSettings | null>(null);
+  const [roleAccounts, setRoleAccounts] = useState<AccountOption[]>([]);
+  const [rolesSaving, setRolesSaving] = useState(false);
+  const [creatingDefaults, setCreatingDefaults] = useState(false);
 
   const tabs = [
     { id: 'company', label: t('company'), icon: Building, category: 'organization' },
@@ -282,12 +287,16 @@ export default function SettingsPage() {
       setDataManagementLoading(true);
       setSettingsError(null);
       try {
-        const [status, backups] = await Promise.all([
+        const [status, backups, settings, accounts] = await Promise.all([
           accountingApi.getOpeningBalanceImportStatus(),
           accountingApi.listResetBackups().catch(() => []),
+          accountingApi.getAccountingSettings().catch(() => null),
+          accountingApi.getAccounts().catch(() => []),
         ]);
         setImportStatus(status);
         setResetBackups(backups);
+        setAccountingSettings(settings);
+        setRoleAccounts(accounts);
       } catch (error) {
         setSettingsError(getErrorMessage(error));
       } finally {
@@ -297,6 +306,49 @@ export default function SettingsPage() {
 
     void load();
   }, [activeTab, canManageData]);
+
+  const reloadRoleData = async () => {
+    const [settings, accounts] = await Promise.all([
+      accountingApi.getAccountingSettings().catch(() => null),
+      accountingApi.getAccounts().catch(() => []),
+    ]);
+    setAccountingSettings(settings);
+    setRoleAccounts(accounts);
+  };
+
+  const handleSaveSystemRoles = async (mapping: SystemRoleMapping) => {
+    setRolesSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.updateAccountingSettings(mapping);
+      setAccountingSettings(result.settings);
+      setSettingsSuccess(
+        result.warnings?.length
+          ? t('systemRolesSavedWithWarnings', { warnings: result.warnings.join('; ') })
+          : t('systemRolesSaved')
+      );
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setRolesSaving(false);
+    }
+  };
+
+  const handleCreateDefaultChart = async () => {
+    setCreatingDefaults(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.createDefaultChart();
+      setSettingsSuccess(t('defaultChartCreated', { created: result.created.length, reused: result.reused.length }));
+      await reloadRoleData();
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setCreatingDefaults(false);
+    }
+  };
 
   const handleResetOpeningBalances = async () => {
     setDataManagementAction('resetting');
@@ -2088,6 +2140,27 @@ export default function SettingsPage() {
                     </>
                   )}
                 </div>
+
+                {canManageData && (
+                  <SystemRolesPanel
+                    accounts={roleAccounts}
+                    settings={accountingSettings}
+                    saving={rolesSaving}
+                    creatingDefaults={creatingDefaults}
+                    onSave={handleSaveSystemRoles}
+                    onCreateDefaults={handleCreateDefaultChart}
+                    labels={{
+                      title: t('systemRolesTitle'),
+                      description: t('systemRolesDescription'),
+                      save: t('systemRolesSave'),
+                      saving: t('saving'),
+                      createDefaults: t('createDefaultChart'),
+                      creating: t('creating'),
+                      selectAccount: t('selectAccount'),
+                      emptyHint: t('createDefaultChartHint'),
+                    }}
+                  />
+                )}
 
                 {resetBackups.length > 0 && (
                   <div className="rounded-xl border border-slate-200 p-6">

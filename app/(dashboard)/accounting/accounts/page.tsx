@@ -35,6 +35,20 @@ export default function ChartOfAccountsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountRecord | null>(null);
+  const [creatingDefaults, setCreatingDefaults] = useState(false);
+
+  const handleCreateDefaults = async () => {
+    setCreatingDefaults(true);
+    setError(null);
+    try {
+      await accountingApi.createDefaultChart();
+      await loadAccounts();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setCreatingDefaults(false);
+    }
+  };
 
   const loadAccounts = async () => {
     setIsLoading(true);
@@ -174,7 +188,15 @@ export default function ChartOfAccountsPage() {
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
               </div>
             ) : filtered.length === 0 ? (
-              <div className="p-8 text-sm text-[var(--a-text-3)]">{searchQuery ? t('noResults') : t('noAccounts')}</div>
+              <div className="flex flex-col items-center gap-3 p-8 text-sm text-[var(--a-text-3)]">
+                <span>{searchQuery ? t('noResults') : t('noAccounts')}</span>
+                {!searchQuery && accounts.length === 0 && (
+                  <Button onClick={handleCreateDefaults} disabled={creatingDefaults}>
+                    {creatingDefaults ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    {t('createDefaultChart')}
+                  </Button>
+                )}
+              </div>
             ) : (
               grouped.map((group) => (
                 <div key={group.type}>
