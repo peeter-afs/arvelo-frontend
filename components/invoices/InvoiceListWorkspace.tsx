@@ -121,13 +121,14 @@ export default function InvoiceListWorkspace({
     }
 
     return [
-      { id: 'all', label: 'All', count: invoices.length },
-      { id: 'overdue', label: 'Overdue', count: invoices.filter((invoice) => isOverdue(invoice)).length },
-      { id: 'open', label: 'Open', count: invoices.filter((invoice) => isOpenInvoice(invoice)).length },
-      { id: 'paid', label: 'Paid', count: invoices.filter((invoice) => invoice.status === 'paid').length },
-      { id: 'draft', label: 'Draft', count: invoices.filter((invoice) => invoice.status === 'draft').length },
+      { id: 'all', label: t('all'), count: invoices.length },
+      { id: 'draft', label: t('draft'), count: invoices.filter((invoice) => invoice.status === 'draft').length },
+      { id: 'sent', label: t('sent'), count: invoices.filter((invoice) => ['sent', 'partially_paid'].includes(invoice.status)).length },
+      { id: 'paid', label: t('paid'), count: invoices.filter((invoice) => invoice.status === 'paid').length },
+      { id: 'overdue', label: t('overdue'), count: invoices.filter((invoice) => isOverdue(invoice)).length },
+      { id: 'cancelled', label: t('cancelled'), count: invoices.filter((invoice) => invoice.status === 'cancelled').length },
     ];
-  }, [invoices, isPurchase]);
+  }, [invoices, isPurchase, t, tAccounting]);
 
   const filteredInvoices = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -150,7 +151,17 @@ export default function InvoiceListWorkspace({
     const openTotal = invoices.reduce((sum, invoice) => sum + Number(invoice.open_amount || 0), 0);
     const overdue = invoices.filter((invoice) => isOverdue(invoice)).length;
     const open = invoices.filter((invoice) => isOpenInvoice(invoice)).length;
-    return { draft, approved, payable, paid, openTotal, overdue, open };
+
+    // Spec §6.5 sales stat strip: Total outstanding · Overdue · (receivables age) · Drafts.
+    const openInvoices = invoices.filter((invoice) => isOpenInvoice(invoice));
+    const overdueInvoices = invoices.filter((invoice) => isOverdue(invoice));
+    const outstandingTotal = openInvoices.reduce((sum, invoice) => sum + Number(invoice.open_amount || 0), 0);
+    const overdueTotal = overdueInvoices.reduce((sum, invoice) => sum + Number(invoice.open_amount || 0), 0);
+    // True DSO needs a payment date the list API does not expose; this is the average
+    // age of currently-open receivables (today − invoice_date), an honest derivable proxy.
+    const avgDaysOutstanding = averageReceivablesAge(openInvoices);
+
+    return { draft, approved, payable, paid, openTotal, overdue, open, outstandingTotal, overdueTotal, avgDaysOutstanding };
   }, [invoices]);
 
   useEffect(() => {
@@ -375,20 +386,21 @@ export default function InvoiceListWorkspace({
       {successMessage && <Notice tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>{successMessage}</Notice>}
 
       <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
-        <Stat label={t('draft')} value={summary.draft} subtle="not posted" />
-        <Stat
-          label={isPurchase ? t('approved') : t('overdue')}
-          value={isPurchase ? summary.approved : summary.overdue}
-          subtle={isPurchase ? 'ready for payable' : 'needs attention'}
-          tone={isPurchase ? 'positive' : 'danger'}
-        />
-        <Stat
-          label={isPurchase ? t('payable') : t('open')}
-          value={isPurchase ? summary.payable : summary.open}
-          subtle={isPurchase ? 'awaiting payment' : 'awaiting payment'}
-          tone="warning"
-        />
-        <Stat label={t('openTotal')} value={formatMoney(summary.openTotal)} subtle={`${summary.paid} paid`} />
+        {isPurchase ? (
+          <>
+            <Stat label={t('draft')} value={summary.draft} subtle="not posted" />
+            <Stat label={t('approved')} value={summary.approved} subtle="ready for payable" tone="positive" />
+            <Stat label={t('payable')} value={summary.payable} subtle="awaiting payment" tone="warning" />
+            <Stat label={t('openTotal')} value={formatMoney(summary.openTotal)} subtle={`${summary.paid} paid`} />
+          </>
+        ) : (
+          <>
+            <Stat label={t('totalOutstanding')} value={formatMoney(summary.outstandingTotal)} subtle={`${summary.open} ${t('openLower')}`} />
+            <Stat label={t('overdue')} value={formatMoney(summary.overdueTotal)} subtle={`${summary.overdue} ${t('invoicesLower')}`} tone="danger" />
+            <Stat label={t('avgDso')} value={`${summary.avgDaysOutstanding}d`} subtle={t('receivablesAge')} />
+            <Stat label={t('draft')} value={summary.draft} subtle={t('notSent')} tone="warning" />
+          </>
+        )}
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -480,14 +492,14 @@ export default function InvoiceListWorkspace({
                         </span>
                       </span>
                     </span>
-                    <span className="text-right font-mono text-[13px] font-medium text-[var(--a-text)]">{formatMoney(invoice.total, invoice.currency)}</span>
-                    <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(invoice.invoice_date)}</span>
+                    <span className="text-right font-mono text-[13px] font-medium tabular-nums text-[var(--a-text)]">{formatMoney(invoice.total, invoice.currency)}</span>
+                    <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(invoice.invoice_date)}</span>
                     <span>
-                      <span className="block font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(invoice.due_date)}</span>
+                      <span className="block font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(invoice.due_date)}</span>
                       <span className="text-[10.5px] font-medium text-[var(--a-text-3)]">{status.label}</span>
                     </span>
                     <span className="flex items-center justify-end gap-1.5">
-                      <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                      <StatusPill tone={status.tone} meta={status.meta}>{status.label}</StatusPill>
                       {invoice.source === 'bank_missing_receipt' && invoice.receipt_reminder_state === 'active' && (
                         <StatusPill tone="warning">{tAccounting('missingReceiptDraft')}</StatusPill>
                       )}
@@ -833,6 +845,7 @@ function matchesInvoiceTab(invoice: InvoiceListItem, activeTab: string, isPurcha
   if (isPurchase) return invoice.status === activeTab;
   if (activeTab === 'overdue') return isOverdue(invoice);
   if (activeTab === 'open') return isOpenInvoice(invoice);
+  if (activeTab === 'sent') return ['sent', 'partially_paid'].includes(invoice.status);
   return invoice.status === activeTab;
 }
 
@@ -850,7 +863,28 @@ function isOverdue(invoice: InvoiceListItem) {
   return due < today;
 }
 
-function invoiceStatus(invoice: InvoiceListItem, isPurchase: boolean): { label: string; tone: 'posted' | 'draft' | 'open' | 'paid' | 'overdue' | 'neutral' | 'danger' | 'warning' | 'success' } {
+function averageReceivablesAge(openInvoices: InvoiceListItem[]) {
+  if (!openInvoices.length) return 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const totalDays = openInvoices.reduce((sum, invoice) => {
+    const issued = new Date(invoice.invoice_date);
+    issued.setHours(0, 0, 0, 0);
+    return sum + Math.max(0, (today.getTime() - issued.getTime()) / 86400000);
+  }, 0);
+  return Math.round(totalDays / openInvoices.length);
+}
+
+function daysPastDue(invoice: InvoiceListItem) {
+  if (!invoice.due_date) return 0;
+  const due = new Date(invoice.due_date);
+  const today = new Date();
+  due.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.max(0, Math.round((today.getTime() - due.getTime()) / 86400000));
+}
+
+function invoiceStatus(invoice: InvoiceListItem, isPurchase: boolean): { label: string; tone: 'posted' | 'draft' | 'open' | 'paid' | 'overdue' | 'neutral' | 'danger' | 'warning' | 'success'; meta?: string } {
   if (isPurchase) {
     if (invoice.status === 'approved' || invoice.status === 'paid') return { label: humanizeStatus(invoice.status), tone: 'success' };
     if (invoice.status === 'rejected') return { label: humanizeStatus(invoice.status), tone: 'danger' };
@@ -860,7 +894,7 @@ function invoiceStatus(invoice: InvoiceListItem, isPurchase: boolean): { label: 
 
   if (invoice.status === 'draft') return { label: 'Draft', tone: 'draft' };
   if (invoice.status === 'paid') return { label: 'Paid', tone: 'paid' };
-  if (isOverdue(invoice)) return { label: 'Overdue', tone: 'overdue' };
+  if (isOverdue(invoice)) return { label: 'Overdue', tone: 'overdue', meta: `${daysPastDue(invoice)}d` };
   if (isOpenInvoice(invoice)) return { label: 'Open', tone: 'open' };
   return { label: humanizeStatus(invoice.status), tone: 'neutral' };
 }

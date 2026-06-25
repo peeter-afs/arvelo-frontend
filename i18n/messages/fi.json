@@ -170,7 +170,17 @@
     "createDraftPurchaseInvoice": "Luo ostolaskuluonnos",
     "draftCreated": "Luonnos luotu",
     "draftCreatedLinked": "Laskun ID {invoiceId} linkitetty tuontiin {importId}.",
-    "purchaseInvoiceImport": "Ostolaskun tuonti"
+    "purchaseInvoiceImport": "Ostolaskun tuonti",
+    "all": "Kaikki",
+    "draft": "Luonnos",
+    "sent": "Lähetetty",
+    "cancelled": "Peruutettu",
+    "totalOutstanding": "Avoinna yhteensä",
+    "openLower": "avoinna",
+    "invoicesLower": "laskua",
+    "avgDso": "Keskim. DSO",
+    "receivablesAge": "saatavien ikä",
+    "notSent": "lähettämättä"
   },
   "settings": {
     "title": "Asetukset",

@@ -36,6 +36,16 @@ export default function ChartOfAccountsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountRecord | null>(null);
   const [creatingDefaults, setCreatingDefaults] = useState(false);
+  const [collapsedTypes, setCollapsedTypes] = useState<Set<string>>(new Set());
+
+  const toggleGroup = (type: string) => {
+    setCollapsedTypes((current) => {
+      const next = new Set(current);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      return next;
+    });
+  };
 
   const handleCreateDefaults = async () => {
     setCreatingDefaults(true);
@@ -198,17 +208,24 @@ export default function ChartOfAccountsPage() {
                 )}
               </div>
             ) : (
-              grouped.map((group) => (
+              grouped.map((group) => {
+                const collapsed = collapsedTypes.has(group.type);
+                return (
                 <div key={group.type}>
-                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.type)}
+                    aria-expanded={!collapsed}
+                    className="sticky top-0 z-10 flex w-full items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--a-surface-3,var(--a-surface-2))]"
+                  >
                     <div className="flex items-center gap-2">
-                      <ChevronDown className="h-3.5 w-3.5 text-[var(--a-text-2)]" />
+                      <ChevronDown className={`h-3.5 w-3.5 text-[var(--a-text-2)] transition-transform ${collapsed ? '-rotate-90' : ''}`} />
                       <TypeBadge type={group.type} label={labelOfType(group.type)} />
                       <span className="text-[11.5px] text-[var(--a-text-3)]">· {group.rows.length} accounts</span>
                     </div>
-                    <span className="font-mono text-[11.5px] text-[var(--a-text-3)]">{group.total} total</span>
-                  </div>
-                  {group.rows.map((account) => {
+                    <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-3)]">{group.total} total</span>
+                  </button>
+                  {!collapsed && group.rows.map((account) => {
                     const selected = selectedAccount?.id === account.id;
 
                     return (
@@ -220,26 +237,27 @@ export default function ChartOfAccountsPage() {
                         }`}
                       >
                         <span className={`h-2 w-2 rounded-full ${account.is_active ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-text-3)]'}`} />
-                        <span className="font-mono text-[13px] text-[var(--a-text-2)]">{account.code}</span>
+                        <span className="font-mono text-[13px] tabular-nums text-[var(--a-text-2)]">{account.code}</span>
                         <span className="min-w-0">
                           <span className="block truncate font-medium text-[var(--a-text)]">{account.name}</span>
                           <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">{account.parent_id ? `Parent ${account.parent_id.slice(0, 8)}` : 'Top level'}</span>
                         </span>
                         <TypeBadge type={account.type} label={t(account.type)} />
                         <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
-                        <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(account.updated_at)}</span>
+                        <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(account.updated_at)}</span>
                         <span className="text-right text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? 'System' : 'Editable'}</span>
                       </button>
                     );
                   })}
                 </div>
-              ))
+                );
+              })
             )}
           </div>
 
           <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
             <span>Showing <span className="text-[var(--a-text)]">{filtered.length}</span></span>
-            <span><span className="text-[var(--a-text)]">{ACCOUNT_TYPES.length}</span> types</span>
+            <span><span className="text-[var(--a-text)]">{grouped.filter((group) => group.rows.length > 0).length}</span> types</span>
             <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               balanced

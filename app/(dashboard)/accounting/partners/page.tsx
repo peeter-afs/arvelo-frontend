@@ -560,7 +560,7 @@ function PartnerDetailPanel({
     <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
       <div className="border-b border-[var(--a-border)] bg-[linear-gradient(180deg,var(--a-accent-soft-2),var(--a-surface))] px-5 py-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-lg bg-[var(--a-surface-2)] text-sm font-semibold text-[var(--a-text-2)]">
+          <span className="grid h-14 w-14 place-items-center rounded-lg bg-[var(--a-surface-2)] text-base font-semibold text-[var(--a-text-2)]">
             {initials(partner.name)}
           </span>
           <div className="min-w-0 flex-1">

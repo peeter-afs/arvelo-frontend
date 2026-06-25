@@ -170,7 +170,17 @@
     "createDraftPurchaseInvoice": "Skapa leverantörsfakturautkast",
     "draftCreated": "Utkast skapat",
     "draftCreatedLinked": "Faktura-ID {invoiceId} kopplades till import {importId}.",
-    "purchaseInvoiceImport": "Import av leverantörsfaktura"
+    "purchaseInvoiceImport": "Import av leverantörsfaktura",
+    "all": "Alla",
+    "draft": "Utkast",
+    "sent": "Skickad",
+    "cancelled": "Annullerad",
+    "totalOutstanding": "Utestående totalt",
+    "openLower": "öppna",
+    "invoicesLower": "fakturor",
+    "avgDso": "Snitt DSO",
+    "receivablesAge": "fordringsålder",
+    "notSent": "ej skickad"
   },
   "settings": {
     "title": "Inställningar",
