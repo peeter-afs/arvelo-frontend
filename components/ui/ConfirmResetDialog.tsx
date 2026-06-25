@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { useTranslations } from 'next-intl';
 import { AlertTriangle } from 'lucide-react';
@@ -13,6 +13,7 @@ type ConfirmResetDialogProps = {
   requiredText: string;
   confirmLabel?: string;
   onConfirm: () => void | Promise<void>;
+  children?: ReactNode;
 };
 
 export function ConfirmResetDialog({
@@ -23,6 +24,7 @@ export function ConfirmResetDialog({
   requiredText,
   confirmLabel,
   onConfirm,
+  children,
 }: ConfirmResetDialogProps) {
   const t = useTranslations('common');
   const [inputValue, setInputValue] = useState('');
@@ -62,6 +64,7 @@ export function ConfirmResetDialog({
               <AlertDialog.Description className="mt-2 text-sm text-[var(--text-secondary)]">
                 {description}
               </AlertDialog.Description>
+              {children && <div className="mt-4">{children}</div>}
               <div className="mt-4">
                 <label className="block text-sm font-medium text-[var(--text-primary)] mb-1">
                   {t('typeToConfirm')} <span className="font-mono font-bold text-[var(--danger)]">{requiredText}</span>:

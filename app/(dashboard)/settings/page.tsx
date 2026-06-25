@@ -128,11 +128,13 @@ export default function SettingsPage() {
 
   // Data Management tab state
   const [dataManagementLoading, setDataManagementLoading] = useState(false);
-  const [importStatus, setImportStatus] = useState<{ is_imported: boolean; committed_batches: any[] } | null>(null);
+  const [importStatus, setImportStatus] = useState<{ is_imported: boolean; can_reset?: boolean; reset_reference_date?: string | null; reset_window_months?: number; committed_batches: any[] } | null>(null);
   const [resetBackups, setResetBackups] = useState<any[]>([]);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState<string | null>(null);
   const [dataManagementAction, setDataManagementAction] = useState<string | null>(null);
+  const [resetDeleteAccounts, setResetDeleteAccounts] = useState(false);
+  const [resetDeletePartners, setResetDeletePartners] = useState(false);
 
   const tabs = [
     { id: 'company', label: t('company'), icon: Building, category: 'organization' },
@@ -300,8 +302,19 @@ export default function SettingsPage() {
     setSettingsError(null);
     setSettingsSuccess(null);
     try {
-      const result = await accountingApi.resetOpeningBalances('Reset all');
-      setSettingsSuccess(t('openingBalancesResetSuccess', { count: result.reversed_count }));
+      const result = await accountingApi.resetOpeningBalances('Reset all', {
+        deleteAccounts: resetDeleteAccounts,
+        deletePartners: resetDeletePartners,
+      });
+      setSettingsSuccess(t('openingBalancesResetSuccess', {
+        count: result.reversed_count,
+        entries: result.deleted_entries,
+        invoices: result.deleted_invoices,
+        accounts: result.deleted_accounts,
+        partners: result.deleted_partners,
+      }));
+      setResetDeleteAccounts(false);
+      setResetDeletePartners(false);
       const [status, backups] = await Promise.all([
         accountingApi.getOpeningBalanceImportStatus(),
         accountingApi.listResetBackups().catch(() => []),
@@ -2046,14 +2059,20 @@ export default function SettingsPage() {
                       )}
 
                       {importStatus?.is_imported && canManageData && (
-                        <button
-                          onClick={() => setResetDialogOpen(true)}
-                          disabled={!!dataManagementAction}
-                          className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--danger)] px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                          {t('resetOpeningBalances')}
-                        </button>
+                        importStatus.can_reset ? (
+                          <button
+                            onClick={() => setResetDialogOpen(true)}
+                            disabled={!!dataManagementAction}
+                            className="mt-4 inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--danger)] px-4 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                            {t('resetOpeningBalances')}
+                          </button>
+                        ) : (
+                          <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                            {t('resetWindowExpired', { months: importStatus.reset_window_months ?? 3 })}
+                          </p>
+                        )
                       )}
                     </>
                   )}
@@ -2097,13 +2116,39 @@ export default function SettingsPage() {
 
                 <ConfirmResetDialog
                   open={resetDialogOpen}
-                  onOpenChange={setResetDialogOpen}
+                  onOpenChange={(open) => {
+                    setResetDialogOpen(open);
+                    if (!open) {
+                      setResetDeleteAccounts(false);
+                      setResetDeletePartners(false);
+                    }
+                  }}
                   title={t('resetOpeningBalances')}
                   description={t('resetOpeningBalancesDescription')}
                   requiredText={t('resetAll')}
                   confirmLabel={t('resetOpeningBalances')}
                   onConfirm={handleResetOpeningBalances}
-                />
+                >
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wider text-slate-500">{t('resetExtraOptions')}</div>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={resetDeleteAccounts}
+                        onChange={(event) => setResetDeleteAccounts(event.target.checked)}
+                      />
+                      <span>{t('resetDeleteAccounts')}</span>
+                    </label>
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={resetDeletePartners}
+                        onChange={(event) => setResetDeletePartners(event.target.checked)}
+                      />
+                      <span>{t('resetDeletePartners')}</span>
+                    </label>
+                  </div>
+                </ConfirmResetDialog>
 
                 {restoreDialogOpen && (
                   <ConfirmDialog

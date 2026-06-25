@@ -313,15 +313,32 @@ export const accountingApi = {
   async getOpeningBalanceImportStatus() {
     const response = await apiClient.get<ApiResponse<{
       is_imported: boolean;
+      can_reset: boolean;
+      reset_reference_date: string | null;
+      reset_window_months: number;
       committed_batches: Array<{ id: string; batch_type: string; opening_date: string; committed_at: string }>;
     }>>('/api/accounting/opening-balances/import-status');
     return response.data.data;
   },
 
-  async resetOpeningBalances(confirmText: string) {
-    const response = await apiClient.post<ApiResponse<{ backup_id: string; reversed_count: number }>>(
+  async resetOpeningBalances(
+    confirmText: string,
+    options?: { deleteAccounts?: boolean; deletePartners?: boolean }
+  ) {
+    const response = await apiClient.post<ApiResponse<{
+      backup_id: string;
+      reversed_count: number;
+      deleted_entries: number;
+      deleted_invoices: number;
+      deleted_accounts: number;
+      deleted_partners: number;
+    }>>(
       '/api/accounting/opening-balances/reset',
-      { confirm_text: confirmText }
+      {
+        confirm_text: confirmText,
+        delete_accounts: options?.deleteAccounts ?? false,
+        delete_partners: options?.deletePartners ?? false,
+      }
     );
     return response.data.data;
   },
