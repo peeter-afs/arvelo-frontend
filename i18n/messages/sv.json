@@ -235,7 +235,10 @@
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
     "noPaymentsThisWeek": "No payments due this week",
-    "cashflowTitle": "Förväntat kassaflöde"
+    "cashflowTitle": "Förväntat kassaflöde",
+    "openingBalancesTitle": "Importera ingående saldon",
+    "openingBalancesDesc": "Börja med korrekta böcker genom att importera ingående saldon från ett tidigare system.",
+    "openingBalancesAction": "Importera"
   },
   "auth": {
     "login": "Logga in",

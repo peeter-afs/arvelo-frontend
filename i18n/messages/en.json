@@ -1411,7 +1411,10 @@
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
     "noPaymentsThisWeek": "No payments due this week",
-    "cashflowTitle": "Expected cash flow"
+    "cashflowTitle": "Expected cash flow",
+    "openingBalancesTitle": "Import opening balances",
+    "openingBalancesDesc": "Start with accurate books by importing your opening balances from a prior system.",
+    "openingBalancesAction": "Import now"
   },
   "auth": {
     "login": "Login",

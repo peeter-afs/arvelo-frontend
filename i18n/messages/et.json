@@ -1411,7 +1411,10 @@
     "viewPurchaseInvoices": "Vaata ostuarveid",
     "noReceiptsThisWeek": "Sel nädalal laekumisi pole",
     "noPaymentsThisWeek": "Sel nädalal väljaminekuid pole",
-    "cashflowTitle": "Oodatavad rahavood"
+    "cashflowTitle": "Oodatavad rahavood",
+    "openingBalancesTitle": "Impordi algsaldod",
+    "openingBalancesDesc": "Alusta täpsete raamatupidamisandmetega, importides algsaldod eelmisest süsteemist.",
+    "openingBalancesAction": "Impordi"
   },
   "auth": {
     "login": "Logi sisse",

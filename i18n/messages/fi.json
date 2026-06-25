@@ -235,7 +235,10 @@
     "viewPurchaseInvoices": "View purchase invoices",
     "noReceiptsThisWeek": "No receipts expected this week",
     "noPaymentsThisWeek": "No payments due this week",
-    "cashflowTitle": "Odotettu kassavirta"
+    "cashflowTitle": "Odotettu kassavirta",
+    "openingBalancesTitle": "Tuo avaavat saldot",
+    "openingBalancesDesc": "Aloita tarkoilla kirjanpitotiedoilla tuomalla avaavat saldot aiemmasta järjestelmästä.",
+    "openingBalancesAction": "Tuo nyt"
   },
   "auth": {
     "login": "Kirjaudu sisään",

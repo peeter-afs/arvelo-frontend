@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { useTranslations } from 'next-intl';
-import { reportsApi } from '@/lib/api/reports.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { accountingApi } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
@@ -47,45 +46,63 @@ function periodRange(period: Period) {
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const openAmt = (inv: InvoiceListItem) => num(inv.open_amount ?? inv.total);
 const isUnpaid = (inv: InvoiceListItem) => inv.status !== 'draft' && openAmt(inv) > 0.005;
+function daysSince(isoDate: string) {
+  return (new Date().getTime() - new Date(isoDate).getTime()) / 86400000;
+}
 
 export default function DashboardPage() {
-  const { user } = useAuthStore();
+  const { user, tenant } = useAuthStore();
   const t = useTranslations('dashboard');
 
   const [period, setPeriod] = useState<Period>('year');
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [partnerNames, setPartnerNames] = useState<Map<string, string>>(new Map());
+  const [importedBalances, setImportedBalances] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
     const { start, end } = periodRange(period);
     try {
-      const [plData, invoiceData, partnerData] = await Promise.allSettled([
-        reportsApi.getProfitLoss(start, end),
+      const [invoiceData, partnerData, importStatusData] = await Promise.allSettled([
         invoicesApi.listInvoices({ limit: 500 }),
         accountingApi.getPartners(),
+        accountingApi.getOpeningBalanceImportStatus(),
       ]);
 
-      const pl = plData.status === 'fulfilled' ? plData.value : null;
       const invList = invoiceData.status === 'fulfilled' ? (invoiceData.value ?? []) : [];
       const partners = partnerData.status === 'fulfilled' ? (partnerData.value ?? []) : [];
+      const importStatus = importStatusData.status === 'fulfilled' ? importStatusData.value : null;
 
       const nameMap = new Map<string, string>();
       partners.forEach((p) => nameMap.set(p.id, p.name));
 
+      // Compute P&L from invoice totals (accrual basis, by invoice_date within period).
+      // Excludes draft and cancelled invoices.
+      const EXCLUDED = new Set(['draft', 'cancelled']);
+      const inPeriod = (inv: InvoiceListItem) =>
+        !!inv.invoice_date && inv.invoice_date >= start && inv.invoice_date <= end;
+      const totalRevenue = invList
+        .filter((i) => i.type === 'sales_invoice' && !EXCLUDED.has(i.status) && inPeriod(i))
+        .reduce((s, i) => s + num(i.total), 0);
+      const totalExpenses = invList
+        .filter((i) => i.type === 'purchase_invoice' && !EXCLUDED.has(i.status) && inPeriod(i))
+        .reduce((s, i) => s + num(i.total), 0);
+
       const pendingCount = invList.filter(isUnpaid).length;
 
       setStats({
-        totalRevenue: pl?.totalRevenue ?? 0,
-        totalExpenses: pl?.totalExpenses ?? 0,
-        netIncome: pl?.netIncome ?? 0,
+        totalRevenue,
+        totalExpenses,
+        netIncome: totalRevenue - totalExpenses,
         pendingCount,
       });
       setInvoices(invList);
       setPartnerNames(nameMap);
+      setImportedBalances(importStatus?.is_imported ?? null);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -149,6 +166,10 @@ export default function DashboardPage() {
     inv.invoice_number ||
     inv.id.slice(0, 8);
 
+  // Show "import opening balances" CTA only for new companies that haven't imported yet.
+  const tenantAgeDays = tenant?.created_at ? daysSince(tenant.created_at) : Infinity;
+  const showOpeningBalancesCTA = importedBalances === false && tenantAgeDays < 90;
+
   if (loading) {
     return <PageSkeleton hasStats />;
   }
@@ -194,6 +215,25 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Opening balances CTA — shown only for new companies that haven't imported yet */}
+      {showOpeningBalancesCTA && (
+        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-[var(--a-accent-soft)] bg-[var(--a-accent-soft-2)] px-4 py-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="text-[var(--primary)] shrink-0">📂</span>
+            <div className="min-w-0">
+              <p className="text-[13.5px] font-medium text-[var(--text-primary)]">{t('openingBalancesTitle')}</p>
+              <p className="text-[12px] text-[var(--text-secondary)] mt-0.5">{t('openingBalancesDesc')}</p>
+            </div>
+          </div>
+          <Link
+            href="/accounting/opening-balances"
+            className="shrink-0 h-8 px-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-[12.5px] font-medium transition-colors flex items-center gap-1.5"
+          >
+            {t('openingBalancesAction')}
+          </Link>
+        </div>
+      )}
 
       {/* Period selector */}
       <div className="flex items-center justify-between mb-3">
