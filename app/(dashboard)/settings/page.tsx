@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
-import { useTranslations } from 'next-intl';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -21,8 +22,30 @@ export default function SettingsPage() {
   const t = useTranslations('settings');
   const { user, tenant, role } = useAuthStore();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const currentLocale = useLocale() as Locale;
+  const [localizationLanguage, setLocalizationLanguage] = useState<Locale>(currentLocale);
+  const [, startLocaleTransition] = useTransition();
   const initialTab = searchParams.get('tab') || 'company';
   const [activeTab, setActiveTab] = useState(initialTab);
+
+  // Keep the localization select in sync if the active locale changes elsewhere.
+  useEffect(() => {
+    setLocalizationLanguage(currentLocale);
+  }, [currentLocale]);
+
+  const handleSavePreferences = (e: React.FormEvent) => {
+    e.preventDefault();
+    startLocaleTransition(() => {
+      if (locales.includes(localizationLanguage)) {
+        localStorage.setItem(localeCookieName, localizationLanguage);
+        document.cookie = `${localeCookieName}=${localizationLanguage}; path=/; max-age=31536000; samesite=lax`;
+        router.replace(pathname || '/');
+        router.refresh();
+      }
+    });
+  };
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
   const [registrySettings, setRegistrySettings] = useState<BusinessRegistrySettings | null>(null);
@@ -1916,12 +1939,14 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('localization')}</h2>
                 <p className="text-sm text-slate-500 mb-6">{t('localizationDescription')}</p>
-                <form className="space-y-5">
+                <form className="space-y-5" onSubmit={handleSavePreferences}>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
                       {t('language')}
                     </label>
                     <select
+                      value={localizationLanguage}
+                      onChange={(e) => setLocalizationLanguage(e.target.value as Locale)}
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
                       style={{ fontSize: '16px' }}
                     >

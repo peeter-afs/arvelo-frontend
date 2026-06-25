@@ -30,15 +30,18 @@ type DashboardStats = {
 
 type Period = 'month' | 'quarter' | 'year';
 
+const pad = (n: number) => String(n).padStart(2, '0');
+const toLocalISO = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
 function periodRange(period: Period) {
   const now = new Date();
-  const y = now.getFullYear();
-  const start =
-    period === 'month'   ? new Date(y, now.getMonth(), 1) :
-    period === 'quarter' ? new Date(y, Math.floor(now.getMonth() / 3) * 3, 1) :
-                           new Date(y, 0, 1);
-  const iso = (d: Date) => d.toISOString().slice(0, 10);
-  return { start: iso(start), end: iso(now) };
+  const y = now.getFullYear(), m = now.getMonth();
+  let start: Date, periodEnd: Date;
+  if (period === 'month')        { start = new Date(y, m, 1);     periodEnd = new Date(y, m + 1, 0); }
+  else if (period === 'quarter') { const q = Math.floor(m / 3) * 3;
+                                   start = new Date(y, q, 1);     periodEnd = new Date(y, q + 3, 0); }
+  else                           { start = new Date(y, 0, 1);     periodEnd = new Date(y, 11, 31); }
+  return { start: toLocalISO(start), end: toLocalISO(now), periodEnd: toLocalISO(periodEnd) };
 }
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
@@ -73,7 +76,7 @@ export default function DashboardPage() {
       const nameMap = new Map<string, string>();
       partners.forEach((p) => nameMap.set(p.id, p.name));
 
-      const pendingCount = invList.filter((i) => i.status === 'confirmed').length;
+      const pendingCount = invList.filter(isUnpaid).length;
 
       setStats({
         totalRevenue: pl?.totalRevenue ?? 0,
@@ -91,6 +94,7 @@ export default function DashboardPage() {
   }, [period]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchDashboard();
   }, [fetchDashboard]);
 
@@ -100,8 +104,9 @@ export default function DashboardPage() {
   const formatDateShort = (iso: string) =>
     new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(iso));
 
-  const { start: rangeStart, end: rangeEnd } = periodRange(period);
+  const { start: rangeStart, end: rangeEnd, periodEnd } = periodRange(period);
   const rangeCaption = `${formatDateShort(rangeStart)} – ${formatDateShort(rangeEnd)}`;
+  const cashflowCaption = `${formatDateShort(rangeStart)} – ${formatDateShort(periodEnd)}`;
 
   const periodCaption =
     period === 'month'   ? t('periodCaptionMonth') :
@@ -113,28 +118,31 @@ export default function DashboardPage() {
     p === 'quarter' ? t('periodQuarter') :
                       t('periodYear');
 
-  // Cashflow computations — no new API calls, derived from invoice list
+  // Cashflow computations — no new API calls, derived from invoice list.
+  // Driven by the selected period: collectible = open invoices due by the period end
+  // (which includes overdue, since overdue due-dates are <= period end).
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const weekEnd = new Date(+today + 7 * 864e5);
+  const cashflowEnd = new Date(`${periodEnd}T23:59:59`);
 
-  const dueIn7 = (inv: InvoiceListItem) =>
-    !!inv.due_date && new Date(inv.due_date) >= today && new Date(inv.due_date) <= weekEnd;
   const isOverdue = (inv: InvoiceListItem) =>
     !!inv.due_date && new Date(inv.due_date) < today;
+  const isDueByPeriodEnd = (inv: InvoiceListItem) =>
+    !!inv.due_date && new Date(inv.due_date) <= cashflowEnd;
+  const byDueDate = (a: InvoiceListItem, b: InvoiceListItem) =>
+    (a.due_date ?? '').localeCompare(b.due_date ?? '');
 
   const receipts = invoices.filter((i) => i.type === 'sales_invoice'    && isUnpaid(i));
   const payments = invoices.filter((i) => i.type === 'purchase_invoice' && isUnpaid(i));
-  const receiptsWeek    = receipts.filter(dueIn7);
-  const paymentsWeek    = payments.filter(dueIn7);
+  const receiptsDue     = receipts.filter(isDueByPeriodEnd).sort(byDueDate);
+  const paymentsDue     = payments.filter(isDueByPeriodEnd).sort(byDueDate);
   const receiptsOverdue = receipts.filter(isOverdue);
   const paymentsOverdue = payments.filter(isOverdue);
 
-  const receiptsWeekSum = receiptsWeek.reduce((s, i) => s + openAmt(i), 0);
-  const paymentsWeekSum = paymentsWeek.reduce((s, i) => s + openAmt(i), 0);
-  const netChange = receiptsWeekSum - paymentsWeekSum;
-
-  const weekStartStr = formatDateShort(today.toISOString().slice(0, 10));
-  const weekEndStr   = formatDateShort(weekEnd.toISOString().slice(0, 10));
+  const receiptsSum        = receiptsDue.reduce((s, i) => s + openAmt(i), 0);
+  const paymentsSum        = paymentsDue.reduce((s, i) => s + openAmt(i), 0);
+  const receiptsOverdueSum = receiptsOverdue.reduce((s, i) => s + openAmt(i), 0);
+  const paymentsOverdueSum = paymentsOverdue.reduce((s, i) => s + openAmt(i), 0);
+  const netChange = receiptsSum - paymentsSum;
 
   const partnerLabel = (inv: InvoiceListItem) =>
     (inv.partner_id && partnerNames.get(inv.partner_id)) ||
@@ -211,8 +219,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-5">
-        <div className="card card-hover p-4 sm:p-5">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
+        <div className="card card-hover p-4 sm:p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-2">{t('totalRevenue')}</p>
@@ -227,7 +235,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-5">
+        <div className="card card-hover p-4 sm:p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-2">{t('totalExpenses')}</p>
@@ -242,7 +250,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-5">
+        <div className="card card-hover p-4 sm:p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-2">{t('netIncome')}</p>
@@ -257,7 +265,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-4 sm:p-5">
+        <div className="card card-hover p-4 sm:p-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-2">{t('pendingInvoices')}</p>
@@ -273,50 +281,50 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* This Week Cashflow */}
-      <div className="mt-5 mb-5">
+      {/* Expected cash flow (period-aware) */}
+      <div className="mt-4 mb-4">
         <div className="flex items-center justify-between mb-3">
-          <span className="micro text-[var(--text-muted)]">{t('thisWeek')}</span>
-          <span className="font-mono text-[11px] text-[var(--text-muted)]">{weekStartStr} – {weekEndStr}</span>
+          <span className="micro text-[var(--text-muted)]">{t('cashflowTitle')}</span>
+          <span className="font-mono text-[11px] text-[var(--text-muted)]">{cashflowCaption}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Expected Receipts */}
-          <div className="card p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="card p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[var(--text-primary)]">{t('expectedReceipts')}</p>
               <div className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
                 <ArrowDownLeft className="h-4 w-4 text-[var(--text-secondary)]" />
               </div>
             </div>
 
-            <p className="font-mono tabular-nums text-xl font-semibold tracking-[-0.02em] text-[var(--a-pos)]">
-              {formatCurrency(receiptsWeekSum)}
+            <p className="font-mono tabular-nums text-lg font-semibold tracking-[-0.02em] text-[var(--a-pos)]">
+              {formatCurrency(receiptsSum)}
             </p>
 
-            <div className="flex items-center gap-2 mt-1 mb-3">
+            <div className="flex items-center gap-2 mt-1 mb-2">
               <span className="text-sm text-[var(--text-secondary)]">
-                {receiptsWeek.length} {t('invoicesWord')}
+                {receiptsDue.length} {t('invoicesWord')}
               </span>
               {receiptsOverdue.length > 0 && (
                 <span className="bg-[var(--a-neg-soft)] text-[var(--a-neg)] rounded px-1.5 py-0.5 text-[11px]">
-                  {receiptsOverdue.length} {t('overdueWord')}
+                  {receiptsOverdue.length} {t('overdueWord')} · {formatCurrency(receiptsOverdueSum)}
                 </span>
               )}
             </div>
 
-            {receiptsWeek.length === 0 ? (
+            {receiptsDue.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)]">{t('noReceiptsThisWeek')}</p>
             ) : (
-              <div className="space-y-1.5">
-                {receiptsWeek.slice(0, 3).map((inv) => (
+              <div className="space-y-1">
+                {receiptsDue.slice(0, 2).map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between text-[13px]">
                     <span className="truncate text-[var(--text-secondary)] min-w-0 mr-2">
                       {partnerLabel(inv)}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
                       {inv.due_date && (
-                        <span className="font-mono text-[12px] text-[var(--text-muted)]">
+                        <span className={`font-mono text-[12px] ${isOverdue(inv) ? 'text-[var(--a-neg)]' : 'text-[var(--text-muted)]'}`}>
                           {formatDateShort(inv.due_date)}
                         </span>
                       )}
@@ -329,7 +337,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className={`mt-4 pt-3 ${receiptsWeek.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
+            <div className={`mt-3 pt-2 ${receiptsDue.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
               <Link
                 href="/invoices/sales"
                 className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -340,41 +348,41 @@ export default function DashboardPage() {
           </div>
 
           {/* Expected Payments */}
-          <div className="card p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-3">
+          <div className="card p-4 flex flex-col">
+            <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium text-[var(--text-primary)]">{t('expectedPayments')}</p>
               <div className="w-9 h-9 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
                 <ArrowUpRight className="h-4 w-4 text-[var(--text-secondary)]" />
               </div>
             </div>
 
-            <p className="font-mono tabular-nums text-xl font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
-              {formatCurrency(paymentsWeekSum)}
+            <p className="font-mono tabular-nums text-lg font-semibold tracking-[-0.02em] text-[var(--text-primary)]">
+              {formatCurrency(paymentsSum)}
             </p>
 
-            <div className="flex items-center gap-2 mt-1 mb-3">
+            <div className="flex items-center gap-2 mt-1 mb-2">
               <span className="text-sm text-[var(--text-secondary)]">
-                {paymentsWeek.length} {t('invoicesWord')}
+                {paymentsDue.length} {t('invoicesWord')}
               </span>
               {paymentsOverdue.length > 0 && (
                 <span className="bg-[var(--a-neg-soft)] text-[var(--a-neg)] rounded px-1.5 py-0.5 text-[11px]">
-                  {paymentsOverdue.length} {t('overdueWord')}
+                  {paymentsOverdue.length} {t('overdueWord')} · {formatCurrency(paymentsOverdueSum)}
                 </span>
               )}
             </div>
 
-            {paymentsWeek.length === 0 ? (
+            {paymentsDue.length === 0 ? (
               <p className="text-sm text-[var(--text-muted)]">{t('noPaymentsThisWeek')}</p>
             ) : (
-              <div className="space-y-1.5">
-                {paymentsWeek.slice(0, 3).map((inv) => (
+              <div className="space-y-1">
+                {paymentsDue.slice(0, 2).map((inv) => (
                   <div key={inv.id} className="flex items-center justify-between text-[13px]">
                     <span className="truncate text-[var(--text-secondary)] min-w-0 mr-2">
                       {partnerLabel(inv)}
                     </span>
                     <div className="flex items-center gap-2 shrink-0">
                       {inv.due_date && (
-                        <span className="font-mono text-[12px] text-[var(--text-muted)]">
+                        <span className={`font-mono text-[12px] ${isOverdue(inv) ? 'text-[var(--a-neg)]' : 'text-[var(--text-muted)]'}`}>
                           {formatDateShort(inv.due_date)}
                         </span>
                       )}
@@ -387,7 +395,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className={`mt-4 pt-3 ${paymentsWeek.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
+            <div className={`mt-3 pt-2 ${paymentsDue.length > 0 ? 'border-t border-[var(--border)]' : ''}`}>
               <Link
                 href="/invoices/purchase"
                 className="text-[12px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
@@ -399,7 +407,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Net change */}
-        <div className="flex items-center justify-end gap-2 mt-3">
+        <div className="flex items-center justify-end gap-2 mt-2">
           <span className="text-[13px] text-[var(--text-muted)]">{t('expectedNet')}</span>
           <span
             className={`font-mono text-[13px] font-semibold ${
