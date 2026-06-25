@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import * as Dialog from '@radix-ui/react-dialog';
+import { useLocale } from 'next-intl';
 import {
   AlertCircle,
   AlertTriangle,
@@ -39,6 +40,7 @@ type Props = {
 export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, partners }: Props) {
   const t = useTranslations('aiInvoice');
   const router = useRouter();
+  const appLocale = useLocale();
 
   const [step, setStep] = useState<Step>('capture');
   const [text, setText] = useState('');
@@ -97,7 +99,8 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     if (!SR) return;
 
     const recognition = new SR();
-    recognition.lang = 'et-EE';
+    // Priority: browser locale → app locale → Estonian fallback
+    recognition.lang = navigator.language || appLocale || 'et-EE';
     recognition.interimResults = true;
     recognition.continuous = true;
 
