@@ -22,6 +22,8 @@ These were open in earlier drafts. They are now **decided** — implement to the
 | D5 | Sidebar IA | **Restyle the existing nav, do not replace it.** The real `Sidebar.tsx` has the full route tree (Accounting, Invoices, Reports, Fixed Assets, Settings) with i18n labels, a collapse store and expandable sections. Keep all of that; only change chrome (colours, active treatment, search/⌘K row, brand mark). The prototype's shorter nav list is illustrative of *styling*, not the IA. See §5.1. |
 | D6 | Tenant switcher | Use the existing `useAuthStore().tenant`. Render the current tenant name + FY chip as a non-functional display row for now (matches today's behaviour — there is no multi-tenant switcher in the codebase yet). Don't build switching UI. |
 | D7 | Format | One README (this file), refined in place, with per-screen acceptance checklists in §6 and a primitives spec in §7. |
+| D8 | Numerals font | **Do NOT use a monospace font for amounts on customer-facing documents.** Every coding mono marks the zero to disambiguate `0`/`O` — Geist/PT/Ubuntu **slash** it, Roboto/Spline/Menlo **dot** it — and on an invoice (where there's no O-vs-0 ambiguity) that mark is just eye-straining noise users flagged. Use **Inter with `font-variant-numeric: tabular-nums`** instead: Inter's default zero is a clean plain oval, and tabular figures keep amounts column-aligned. This applies to the **Invoice PDF (§6.10)** and any other printed/exported document. In-app *screens* still use Geist Mono for numerals (§4.6) — there the mono rhythm is wanted and the slashed zero is fine in a dense data UI. |
+| D9 | Invoice language | **Single language per document, switchable — NOT bilingual.** One invoice renders entirely in Estonian *or* English (default ET). Earlier bilingual ET/EN drafts were wrong. Amount formatting follows the locale: ET = comma decimal, EN = dot decimal, **no thousands separator** in either (e.g. `€4284,00` / `€4284.00`). See §6.10. |
 
 ---
 
@@ -391,6 +393,74 @@ Target route: `app/(dashboard)/accounting/partners/page.tsx`.
 - [ ] Tabs filter by partner type; type badges correct.
 - [ ] Detail contact rows + recent-transactions list render from real partner data.
 
+### 6.7 Opening balances — `src/screen-opening-balances.jsx`
+
+Target route: an import flow under `app/(dashboard)/accounting/` (new page, e.g. `accounting/opening-balances`). Redesigned from a "chaotic" original into a clear **Upload → Review → Confirm** stepper.
+
+- **Stepper** across the top (3 steps) shows where you are.
+- **Step 1 · Upload:** drag/choose a balance PDF. **Parsing starts automatically on file select** — no separate "parse" button (spinner state while parsing).
+- **Step 2 · Review:** dense table, one row per parsed GL line. Each row has a **full-width account picker** (`code · name`, ≥300px). Three row states: resolved, `new · created on confirm` (warn), and **missing account** (`--danger-soft` row + 2px inset coral bar + inline "Select account…"). The "N new accounts will be created" wall is collapsed into **one quiet expandable notice** (not a stack of cards). A balance-sheet summary strip (assets / liabilities / equity / balance-check) sits below.
+- **Step 3 · Preview:** "exactly what will be posted" — normalized lines with resolved accounts, D/C per line, balanced status.
+- **Sticky action bar** pinned to the bottom, always visible (no scrolling to reach actions): live Debit / Credit / **Difference**, the blocking reason repeated inline next to the buttons, and Preview → Confirm. **Confirm disabled until balanced AND every row has an account.**
+- **History** (previously a permanent right column of "recent batches") is demoted to an **on-demand drawer** opened from the command bar — it's not important by default.
+
+**✅ Acceptance**
+- [ ] File select auto-parses; no manual parse step.
+- [ ] Missing-account rows are visually flagged and excluded from the balance until resolved.
+- [ ] "Will be created" accounts are summarized in ONE collapsed notice, not a wall.
+- [ ] Action bar (Preview/Confirm + difference) is always visible without scrolling.
+- [ ] Confirm gated on balanced + all rows mapped; History is a drawer, not a column.
+
+### 6.8 Bank reconciliation — `src/screen-bank.jsx` ⭐
+
+Target route: `app/(dashboard)/accounting/bank` (or wherever bank import lives). The reconcile **workbench** — statement feed left, per-line reconcile panel right.
+
+- **Statement summary:** opening / money-in / money-out / closing balances + a live **reconciliation progress bar** (`matched/total · %`).
+- **Feed + tabs:** To review / Suggested / Matched / All. Each row: date · narrative+detail · suggestion summary · amount (in = `--success`). Status dot per line (matched / suggested / review).
+- **Reconcile panel** with four modes (default chosen from the line's suggestion):
+  - **Match** — best-match document card (confidence %, posting account) + other candidates.
+  - **Categorize** — account + VAT + partner, live net/VAT/gross breakdown, and a **"create a rule"** toggle to auto-categorize future matches.
+  - **Split** — allocate one bank line across multiple accounts; live remainder must reach €0.00.
+  - **Transfer** — bank-to-bank move, no P&L impact.
+- **Confirm** marks the line reconciled, advances to the next unmatched line, and moves the progress bar. Matched lines show a reconciled state (posting + activity) with Unmatch / View entry.
+
+**✅ Acceptance**
+- [ ] Selecting a line opens the right default mode from its suggestion.
+- [ ] Confirm → line matched, progress bar advances, selection moves to next unmatched.
+- [ ] Split remainder math is live and blocks confirm until €0.00.
+- [ ] Categorize rule toggle present; VAT breakdown computed; amounts mono tabular.
+
+### 6.9 Recurring invoices — `src/screen-recurring.jsx`
+
+Target route: `app/(dashboard)/invoices/recurring`. Invoice templates that auto-generate on a cadence. Split-pane: schedule list left, schedule detail right.
+
+- **Summary strip:** recurring revenue (**MRR**, each cadence normalized to monthly), due-next-30-days, auto-send ratio, paused count.
+- **List:** customer + template · cadence chip (auto-send/draft) · next-issue date with countdown · per-cycle amount. Paused rows dimmed.
+- **Detail pane:** customer, per-cycle amount with net/VAT split, meta grid (cadence/delivery/started/ends), an **upcoming-runs timeline** (next 3 dates computed from cadence), and **generated history** (past invoices + paid/open status).
+- **Interactive:** select updates pane; **Pause/Resume** flips status, clears/restores next-issue date, dims the row, and recomputes MRR + due-soon live. Tabs: Active / Paused / All.
+
+**✅ Acceptance**
+- [ ] MRR + due-soon recompute when a schedule is paused/resumed.
+- [ ] Upcoming-runs dates derive from the cadence; generated history renders.
+- [ ] Cadence/delivery chips correct; paused rows dimmed and excluded from MRR.
+
+### 6.10 Invoice PDF (customer-facing document) — `prototype/Invoice.html` ⭐
+
+**Not a screen — a print/export document.** A single self-contained HTML file that renders one **A4** page and prints to PDF (`@page { size: A4; margin: 0 }`, `window.print()`). In the app this maps to invoice PDF generation (server-side renderer or print route), **not** the in-app invoice list (§6.5). Read `prototype/Invoice.html` for exact values; key rules:
+
+- **Single language per document (D9).** A toolbar **ET/EN segmented control** swaps every label (via `data-et` / `data-en` on `.i18n` nodes) and reformats amounts to the locale. Default ET. The exported PDF is whatever language is selected; `<html lang>` updates too.
+- **Numerals = Inter tabular figures, NOT a mono (D8).** `.mono { font-family: Inter; font-variant-numeric: tabular-nums }`. Clean plain zero, column-aligned. **No thousands separator** — `€4284,00` (ET) / `€4284.00` (EN). The `.money` helper has `white-space: nowrap` so amounts never wrap.
+- **Palette:** blue accent `#2563eb` on white paper with slate-gray neutrals (`--ink #0f172a`, `--ink2 #475569`, `--ink3 #94a3b8`, `--line #e2e8f0`, `--panel #f8fafc`). This is the **document** palette — deliberately calmer/more neutral than the in-app Halo Pro coral chrome (a customer-facing PDF ≠ the app UI).
+- **Blocks (Estonian legal invoice):** logo/brand mark · ARVE/Invoice title + number + status pill · Seller and Buyer (each with reg code + VAT no + address + email) · meta row (date, due date, **reference number**, terms) · line-item table (services: description, qty, unit price, VAT %, amount) · totals (subtotal, VAT, total due) · **earlier-unpaid-invoices** block (invoice no, date, due date with overdue flag, due sum, and a total-outstanding line noting it is *not* included in this invoice) · **optional payment block** (beneficiary, bank, IBAN, BIC, reference, amount + SEPA QR) · notes · fine-print footer (0.15%/day late interest, "valid without signature").
+- **Payment block is optional** — a toolbar toggle shows/hides it (`body.no-pay .pay { display: none }`) and the state carries into the PDF.
+- **Fits one A4 page** with the payment block visible *and* hidden — verify rendered `.page` height ≤ 1123px after any edit. The QR is a **decorative placeholder**, not an encoded SEPA string — wire a real payment QR when productionizing. Seller details / IBAN / reg numbers are realistic placeholders.
+
+**✅ Acceptance**
+- [ ] ET/EN switch changes ALL text and amount formatting; never both languages at once.
+- [ ] Zeros are plain (no slash, no dot); amounts tabular-aligned; no thousands separator.
+- [ ] One A4 page with payment block on and off; "Page 1/1" accurate.
+- [ ] Earlier-unpaid-invoices block present with outstanding total flagged as not included.
+
 ---
 
 ## 7. Components / primitives inventory
@@ -511,7 +581,7 @@ No new state shapes beyond the existing codebase. Selection state for split-pane
 
 ## 11. Assets
 
-- **Fonts:** Inter, Geist Mono via `next/font` (§4.2). Plus Jakarta stays loaded but is **not** used on Halo Pro screens.
+- **Fonts:** Inter, Geist Mono via `next/font` (§4.2). Plus Jakarta stays loaded but is **not** used on Halo Pro screens. **Customer-facing documents (Invoice PDF) use Inter only** — numerals are Inter tabular figures, no mono (D8).
 - **Icons:** `lucide-react` (existing). §7.4 has the map.
 - **No images** in chrome. Avatars are letter-initials over `--surface-2` (or coral square for the user/brand).
 - **No logo file:** wordmark "Arvelo" in Inter 600 + a coral 28×28 square with a white "A".
@@ -523,6 +593,7 @@ design_handoff_halo_pro/
 ├── README.md                          ← this file
 └── prototype/
     ├── Redesign Explorations.html     ← open to see all screens on the canvas
+    ├── Invoice.html                   ← customer-facing invoice PDF (§6.10) ⭐ ET/EN, A4
     └── src/
         ├── app.jsx                    ← mounts the design canvas + tweaks
         ├── data.jsx                   ← sample Estonian SME data
@@ -534,6 +605,9 @@ design_handoff_halo_pro/
         ├── screen-transaction-edit.jsx
         ├── screen-accounts.jsx
         ├── screen-invoices.jsx
+        ├── screen-opening-balances.jsx ← Upload→Review→Confirm import (§6.7)
+        ├── screen-bank.jsx            ← reconcile workbench (§6.8)  ⭐
+        ├── screen-recurring.jsx       ← recurring-invoice schedules (§6.9)
         ├── screen-partners.jsx
         ├── screen-transactions.jsx / screens-c.jsx  ← REJECTED alt directions (B/C), reference only
         ├── design-canvas.jsx / tweaks-panel.jsx     ← viewer plumbing, no production value
@@ -549,14 +623,17 @@ design_handoff_halo_pro/
 4. **Transactions list** (§6.2) — the hero. Get it right first.
 5. **Command palette** (§8.1).
 6. **Transaction edit, Accounts, Invoices, Partners** (§6.3–6.6) — same patterns.
-7. **Keyboard shortcuts** (§8) across list screens + composer.
-8. *(optional)* Density mode (§9).
+7. **Opening balances, Bank reconcile, Recurring invoices** (§6.7–6.9) — Bank is the heaviest; lean on the prototype.
+8. **Invoice PDF** (§6.10) — separate print/export track; Inter tabular numerals (D8), single language (D9).
+9. **Keyboard shortcuts** (§8) across list screens + composer.
+10. *(optional)* Density mode (§9).
 
 ## 14. Pre-ship checks
 
 - [ ] Coral `#ff4e2c` appears only as non-text UI (D4) — grep for it as a `color:` on text and remove.
 - [ ] No `box-shadow` on chrome surfaces (only the command-palette overlay is allowed one).
-- [ ] All amounts/codes/dates are Geist Mono tabular and right-aligned where numeric.
+- [ ] All amounts/codes/dates are Geist Mono tabular and right-aligned where numeric **on in-app screens**. On customer-facing documents (Invoice PDF) numerals are **Inter tabular-nums, not a mono** (D8 / §6.10).
+- [ ] Invoice PDF renders in a single language at a time (D9), fits one A4 page with payment on/off, plain zeros, no thousands separator.
 - [ ] Status-footer values are derived from live data, not hardcoded (D3 / §5.3).
 - [ ] Existing routes, i18n labels, auth/sidebar stores and API calls are unchanged.
 - [ ] `MobileNav` still works and inherits the new tokens (D2) — no new mobile layouts shipped.

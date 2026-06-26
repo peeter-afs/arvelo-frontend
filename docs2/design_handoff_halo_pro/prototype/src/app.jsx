@@ -42,15 +42,45 @@ function App() {
         </DCArtboard>
       </DCSection>
 
+      <DCSection
+        id="hp-opening"
+        title="Opening balances · redesigned"
+        subtitle="Clear Upload → Review → Confirm flow. Auto-parse on file select, full-width account pickers, the 'will be created' wall collapsed into one notice, a sticky always-visible action bar surfacing the blocking issue, and recent batches moved to an on-demand History drawer. Interactive — click 'Choose file' to walk the flow."
+      >
+        <DCArtboard id="hp-ob" label="Opening balances" width={SCREEN_W} height={TALL_H}>
+          {window.OpeningBalancesA && <OpeningBalancesA />}
+        </DCArtboard>
+      </DCSection>
+
       <DCSection id="hp-invoices" title="Invoices" subtitle="Sales invoices with status pipeline">
         <DCArtboard id="hp-inv" label="Invoices" width={SCREEN_W} height={SCREEN_H}>
           {window.InvoicesA && <InvoicesA />}
         </DCArtboard>
       </DCSection>
 
+      <DCSection
+        id="hp-recurring"
+        title="Recurring invoices · schedules"
+        subtitle="Invoice templates that auto-generate on a cadence. Split-pane: schedule list left, schedule detail right with an upcoming-runs timeline and generated history. Summary strip shows recurring revenue (MRR) and what's due in the next 30 days. Interactive — select a schedule, Pause/Resume it, and watch the summary recompute."
+      >
+        <DCArtboard id="hp-rec-ab" label="Recurring invoices" width={SCREEN_W} height={TALL_H}>
+          {window.RecurringInvoicesA && <RecurringInvoicesA />}
+        </DCArtboard>
+      </DCSection>
+
       <DCSection id="hp-partners" title="Partners" subtitle="Customers, suppliers and employees, with detail pane on right">
         <DCArtboard id="hp-part" label="Partners" width={SCREEN_W} height={SCREEN_H}>
           {window.PartnersA && <PartnersA />}
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection
+        id="hp-bank"
+        title="Bank reconciliation · the workbench"
+        subtitle="Statement feed on the left, a per-line reconcile panel on the right. Full workflow: confirm a suggested match, categorize to an account (+ create a rule), split one line across accounts, or record a transfer. Interactive — click a line, switch tabs, hit Confirm to watch the progress bar move."
+      >
+        <DCArtboard id="hp-bank-ab" label="Bank reconciliation" width={SCREEN_W} height={TALL_H}>
+          {window.BankReconcileA && <BankReconcileA />}
         </DCArtboard>
       </DCSection>
 
@@ -107,7 +137,8 @@ function Stub({ title }) {
  'InvoicesA','InvoicesB','InvoicesC',
  'PartnersA','PartnersB','PartnersC',
  'FoundationsA','FoundationsB','FoundationsC',
- 'TransactionsA','TransactionsB','TransactionsC','TransactionsAP']
+ 'TransactionsA','TransactionsB','TransactionsC','TransactionsAP',
+ 'OpeningBalancesA','BankReconcileA','RecurringInvoicesA']
   .forEach((name) => {
     if (!window[name]) window[name] = () => <Stub title={name} />;
   });

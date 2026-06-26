@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Arve · Invoice 2026-0091</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink:    #0f172a;
+    --ink2:   #475569;
+    --ink3:   #94a3b8;
+    --line:   #e2e8f0;
+    --line2:  #eef2f6;
+    --panel:  #f8fafc;
+    --paper:  #ffffff;
+    --accent: #2563eb;
+    --accent-soft: #eef3ff;
+    --neg:    #b91c1c;
+    --mono: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #e7ebf0;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+  }
+  .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; letter-spacing: -0.01em; }
+  .money { white-space: nowrap; }
+
+  /* screen-only toolbar */
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0; height: 52px; z-index: 50;
+    background: #0f172a; display: flex; align-items: center; gap: 14px; padding: 0 20px; color: #e2e8f0;
+  }
+  .toolbar .brand { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 600; }
+  .toolbar .brand .sq { width: 22px; height: 22px; border-radius: 5px; background: var(--accent); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 13px; }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .hint { font-size: 12px; color: #7c8aa0; }
+  /* segmented language control */
+  .seg { display: inline-flex; background: #1e293b; border-radius: 7px; padding: 2px; }
+  .seg button { font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: #94a3b8; padding: 5px 12px; border-radius: 5px; }
+  .seg button.on { background: var(--accent); color: #fff; }
+  .toolbar .toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 12.5px; color: #cbd5e1; user-select: none; }
+  .toolbar .toggle .sw { width: 32px; height: 18px; border-radius: 999px; background: #334155; position: relative; transition: background .15s; }
+  .toolbar .toggle .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .toolbar .toggle.on .sw { background: var(--accent); }
+  .toolbar .toggle.on .sw::after { transform: translateX(14px); }
+  .toolbar .pdf {
+    font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    padding: 8px 14px; border-radius: 7px; border: none;
+    background: var(--accent); color: #fff; display: inline-flex; align-items: center; gap: 7px;
+  }
+
+  .sheet { padding: 76px 24px 48px; display: flex; justify-content: center; }
+  .page {
+    width: 794px; min-height: 1123px; background: var(--paper);
+    box-shadow: 0 8px 40px rgba(15,23,42,0.14);
+    padding: 30px 56px 22px; display: flex; flex-direction: column;
+  }
+
+  .eyebrow { font-size: 9.5px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink3); }
+
+  /* header */
+  .head { display: flex; justify-content: space-between; align-items: flex-start; }
+  .logo { display: flex; align-items: center; gap: 11px; }
+  .logo .sq { width: 36px; height: 36px; border-radius: 9px; background: var(--accent); display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 20px; }
+  .logo .name { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; white-space: nowrap; }
+  .logo .tag { font-size: 10.5px; color: var(--ink3); margin-top: 1px; }
+  .doctitle { text-align: right; }
+  .doctitle h1 { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; line-height: 1; text-transform: uppercase; }
+  .doctitle .num { margin-top: 8px; font-size: 13.5px; color: var(--ink2); }
+  .doctitle .num b { font-weight: 600; color: var(--ink); }
+  .pill { display: inline-flex; align-items: center; gap: 6px; margin-top: 9px; padding: 3px 11px; border-radius: 999px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; background: var(--accent-soft); color: var(--accent); }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .rule { height: 1px; background: var(--line); margin: 14px 0; }
+
+  /* parties */
+  .parties { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+  .party .eyebrow { margin-bottom: 8px; }
+  .party .pname { font-size: 14.5px; font-weight: 600; letter-spacing: -0.01em; }
+  .party .prow { font-size: 11.5px; color: var(--ink2); margin-top: 2px; line-height: 1.45; }
+  .party .prow .k { color: var(--ink3); display: inline-block; min-width: 70px; }
+
+  /* meta */
+  .meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px; margin-top: 4px; }
+  .meta .lab { font-size: 9px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); }
+  .meta .val { font-size: 14px; margin-top: 5px; color: var(--ink); }
+  .meta .val.accent { color: var(--accent); font-weight: 600; }
+
+  /* line items */
+  table { width: 100%; border-collapse: collapse; }
+  .items thead th {
+    font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3);
+    text-align: right; padding: 0 0 9px; border-bottom: 1px solid var(--ink);
+  }
+  .items thead th.l { text-align: left; }
+  .items tbody td { padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; text-align: right; vertical-align: top; }
+  .items tbody td.l { text-align: left; }
+  .items .desc { font-weight: 500; color: var(--ink); }
+  .items .sub { font-size: 10.5px; color: var(--ink3); margin-top: 2px; }
+  .items .idx { color: var(--ink3); font-size: 11px; }
+
+  /* totals */
+  .totwrap { display: flex; justify-content: flex-end; margin-top: 14px; }
+  .totals { width: 320px; }
+  .totals .trow { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; color: var(--ink2); }
+  .totals .trow .v { color: var(--ink); }
+  .totals .grand { margin-top: 8px; padding: 13px 0 4px; border-top: 2px solid var(--ink); display: flex; justify-content: space-between; align-items: baseline; }
+  .totals .grand .lab { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .totals .grand .amt { font-size: 23px; font-weight: 600; letter-spacing: -0.02em; color: var(--accent); }
+
+  /* unpaid invoices */
+  .unpaid-block { margin-top: 18px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .unpaid-block .uh { display: flex; align-items: center; gap: 9px; padding: 8px 16px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  .unpaid-block .uh .t { font-size: 11.5px; font-weight: 600; color: var(--ink); }
+  .unpaid-block .ico { width: 16px; height: 16px; color: var(--ink3); }
+  .unpaid-block td, .unpaid-block th { font-size: 11.5px; padding: 7px 16px; text-align: right; }
+  .unpaid-block thead th { font-size: 8.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); }
+  .unpaid-block th.l, .unpaid-block td.l { text-align: left; }
+  .unpaid-block tbody tr { border-top: 1px solid var(--line2); }
+  .unpaid-block .overdue { color: var(--neg); font-weight: 500; }
+  .unpaid-block .ufoot { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-top: 1.5px solid var(--line); }
+  .unpaid-block .ufoot .l { font-size: 11px; color: var(--ink2); }
+  .unpaid-block .ufoot .v { font-size: 15px; font-weight: 600; color: var(--ink); }
+
+  /* payment (optional) */
+  .pay { display: grid; grid-template-columns: 1fr 142px; gap: 28px; margin-top: 14px; padding: 10px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; align-items: center; }
+  .pay .eyebrow { margin-bottom: 10px; }
+  .pay .prow { display: flex; justify-content: space-between; font-size: 11.5px; padding: 2px 0; }
+  .pay .prow .k { color: var(--ink3); }
+  .pay .prow .v { color: var(--ink); font-weight: 500; text-align: right; }
+  .pay .prow.big .v { font-size: 14px; font-weight: 600; color: var(--accent); }
+  .qr { text-align: center; }
+  .qr .grid { width: 118px; height: 118px; margin: 0 auto; background: #fff; padding: 7px; border-radius: 8px; border: 1px solid var(--line); display: grid; }
+  .qr .cap { font-size: 9.5px; color: var(--ink3); margin-top: 7px; line-height: 1.4; }
+  .qr .cap .et { display: block; color: var(--ink2); font-weight: 500; }
+
+  /* footer */
+  .note { margin-top: 12px; font-size: 11.5px; color: var(--ink2); line-height: 1.5; }
+  .note b { color: var(--ink); font-weight: 600; }
+  .footer { margin-top: auto; padding-top: 10px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; gap: 24px; }
+  .footer .fine { font-size: 9.5px; color: var(--ink3); line-height: 1.5; max-width: 70%; }
+  .footer .fine b { color: var(--ink2); font-weight: 600; }
+  .footer .page-no { font-size: 9.5px; color: var(--ink3); text-align: right; white-space: nowrap; }
+
+  body.no-pay .pay { display: none; }
+
+  @media print {
+    @page { size: A4; margin: 0; }
+    html, body { background: #fff; }
+    .toolbar { display: none; }
+    .sheet { padding: 0; }
+    .page { box-shadow: none; width: 210mm; min-height: 297mm; }
+  }
+</style>
+</head>
+<body data-lang="et">
+  <div class="toolbar">
+    <div class="brand"><span class="sq">A</span> Arvelo</div>
+    <span class="hint">Arve 2026-0091 · A4</span>
+    <div class="spacer"></div>
+    <div class="seg" id="langSeg">
+      <button data-lang="et" class="on">ET</button>
+      <button data-lang="en">EN</button>
+    </div>
+    <div class="toggle on" id="payToggle"><span class="sw"></span> <span class="i18n" data-et="Makseinfo" data-en="Payment block"></span></div>
+    <button class="pdf" onclick="window.print()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2V11a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+      <span class="i18n" data-et="Salvesta PDF" data-en="Save as PDF"></span>
+    </button>
+  </div>
+
+  <div class="sheet">
+    <div class="page">
+
+      <!-- HEADER -->
+      <div class="head">
+        <div class="logo">
+          <span class="sq">S</span>
+          <div>
+            <div class="name">Stuudio Lillemets OÜ</div>
+            <div class="tag i18n" data-et="Disain & arendus · Tallinn" data-en="Design & development · Tallinn"></div>
+          </div>
+        </div>
+        <div class="doctitle">
+          <h1 class="i18n" data-et="Arve" data-en="Invoice"></h1>
+          <div class="num"><span class="i18n" data-et="Nr" data-en="No."></span> <b>2026-0091</b></div>
+          <span class="pill"><span class="dot"></span> <span class="i18n" data-et="Tasumata" data-en="Unpaid"></span></span>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <!-- PARTIES -->
+      <div class="parties">
+        <div class="party">
+          <div class="eyebrow i18n" data-et="Müüja" data-en="Seller"></div>
+          <div class="pname">Stuudio Lillemets OÜ</div>
+          <div class="prow"><span class="k i18n" data-et="Reg. kood" data-en="Reg. no"></span><span class="mono">14582931</span></div>
+          <div class="prow"><span class="k i18n" data-et="KMKR" data-en="VAT no"></span><span class="mono">EE102938475</span></div>
+          <div class="prow"><span class="k i18n" data-et="Aadress" data-en="Address"></span><span class="i18n" data-et="Pärnu mnt 141, 11314 Tallinn, Eesti" data-en="Pärnu mnt 141, 11314 Tallinn, Estonia"></span></div>
+          <div class="prow"><span class="k i18n" data-et="E-post" data-en="Email"></span>arved@lillemets.ee</div>
+        </div>
+        <div class="party">
+          <div class="eyebrow i18n" data-et="Ostja" data-en="Buyer"></div>
+          <div class="pname">Stuudio Veski OÜ</div>
+          <div class="prow"><span class="k i18n" data-et="Reg. kood" data-en="Reg. no"></span><span class="mono">12345678</span></div>
+          <div class="prow"><span class="k i18n" data-et="KMKR" data-en="VAT no"></span><span class="mono">EE101234567</span></div>
+          <div class="prow"><span class="k i18n" data-et="Aadress" data-en="Address"></span><span class="i18n" data-et="Veski 12, 51005 Tartu, Eesti" data-en="Veski 12, 51005 Tartu, Estonia"></span></div>
+          <div class="prow"><span class="k i18n" data-et="E-post" data-en="Email"></span>arved@stuudioveski.ee</div>
+        </div>
+      </div>
+
+      <div class="rule"></div>
+
+      <!-- META -->
+      <div class="meta">
+        <div>
+          <div class="lab i18n" data-et="Kuupäev" data-en="Date"></div>
+          <div class="val mono">20.05.2026</div>
+        </div>
+        <div>
+          <div class="lab i18n" data-et="Maksetähtaeg" data-en="Due date"></div>
+          <div class="val mono accent">03.06.2026</div>
+        </div>
+        <div>
+          <div class="lab i18n" data-et="Viitenumber" data-en="Reference"></div>
+          <div class="val mono">9914 2026 0091</div>
+        </div>
+        <div>
+          <div class="lab i18n" data-et="Tingimused" data-en="Terms"></div>
+          <div class="val i18n" data-et="14 päeva" data-en="14 days"></div>
+        </div>
+      </div>
+
+      <!-- LINE ITEMS -->
+      <table class="items" style="margin-top:18px">
+        <thead>
+          <tr>
+            <th class="l" style="width:26px">#</th>
+            <th class="l i18n" data-et="Kirjeldus" data-en="Description"></th>
+            <th style="width:54px" class="i18n" data-et="Kogus" data-en="Qty"></th>
+            <th style="width:96px" class="i18n" data-et="Ühiku hind" data-en="Unit price"></th>
+            <th style="width:54px" class="i18n" data-et="KM" data-en="VAT"></th>
+            <th style="width:104px" class="i18n" data-et="Summa" data-en="Amount"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="l idx">1</td>
+            <td class="l"><div class="desc i18n" data-et="Brändi disain · faas 1" data-en="Brand identity design · phase 1"></div><div class="sub i18n" data-et="Logo, värvisüsteem, tüpograafia" data-en="Logo, color system, typography"></div></td>
+            <td class="mono">1</td>
+            <td class="mono money" data-val="2400"></td>
+            <td class="mono">20%</td>
+            <td class="mono money" data-val="2400"></td>
+          </tr>
+          <tr>
+            <td class="l idx">2</td>
+            <td class="l"><div class="desc i18n" data-et="UI kujundus" data-en="UI design"></div><div class="sub i18n" data-et="Veebirakenduse ekraanid (12 h)" data-en="Web app screens (12 h)"></div></td>
+            <td class="mono">12</td>
+            <td class="mono money" data-val="85"></td>
+            <td class="mono">20%</td>
+            <td class="mono money" data-val="1020"></td>
+          </tr>
+          <tr>
+            <td class="l idx">3</td>
+            <td class="l"><div class="desc i18n" data-et="Konsultatsioon" data-en="Consultation"></div><div class="sub i18n" data-et="Projekti planeerimine" data-en="Project planning"></div></td>
+            <td class="mono">1</td>
+            <td class="mono money" data-val="150"></td>
+            <td class="mono">20%</td>
+            <td class="mono money" data-val="150"></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- TOTALS -->
+      <div class="totwrap">
+        <div class="totals">
+          <div class="trow"><span class="i18n" data-et="Summa ilma KM-ta" data-en="Subtotal"></span><span class="v mono money" data-val="3570"></span></div>
+          <div class="trow"><span class="i18n" data-et="Käibemaks 20%" data-en="VAT 20%"></span><span class="v mono money" data-val="714"></span></div>
+          <div class="grand">
+            <div class="lab i18n" data-et="Tasumisele kuulub" data-en="Total due"></div>
+            <div class="amt mono money" data-val="4284"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EARLIER UNPAID INVOICES -->
+      <div class="unpaid-block">
+        <div class="uh">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16h.01"/><circle cx="12" cy="12" r="9"/></svg>
+          <div class="t i18n" data-et="Varasemad tasumata arved" data-en="Earlier unpaid invoices"></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="l i18n" data-et="Arve nr" data-en="Invoice"></th>
+              <th class="i18n" data-et="Kuupäev" data-en="Date"></th>
+              <th class="i18n" data-et="Maksetähtaeg" data-en="Due date"></th>
+              <th class="i18n" data-et="Tasumata summa" data-en="Due sum"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="l mono" style="color:var(--ink)">2026-0089</td>
+              <td class="mono">13.05.2026</td>
+              <td class="mono">27.05.2026</td>
+              <td class="mono money" data-val="6420"></td>
+            </tr>
+            <tr>
+              <td class="l mono" style="color:var(--ink)">2026-0082</td>
+              <td class="mono">28.04.2026</td>
+              <td class="mono overdue"><span>12.05.2026 · 13</span><span class="i18n" data-et=" p" data-en=" d"></span></td>
+              <td class="mono money" data-val="1840"></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="ufoot">
+          <span class="l i18n" data-et="Tasumata kokku (ei sisaldu käesoleva arve summas)" data-en="Total outstanding (not included in this invoice)"></span>
+          <span class="v mono money" data-val="8260"></span>
+        </div>
+      </div>
+
+      <!-- PAYMENT (optional) -->
+      <div class="pay">
+        <div>
+          <div class="eyebrow i18n" data-et="Makse" data-en="Payment"></div>
+          <div class="prow"><span class="k i18n" data-et="Saaja" data-en="Beneficiary"></span><span class="v">Stuudio Lillemets OÜ</span></div>
+          <div class="prow"><span class="k i18n" data-et="Pank" data-en="Bank"></span><span class="v">Swedbank AS</span></div>
+          <div class="prow"><span class="k">IBAN</span><span class="v mono">EE38 2200 2210 1234 5678</span></div>
+          <div class="prow"><span class="k">BIC / SWIFT</span><span class="v mono">HABAEE2X</span></div>
+          <div class="prow"><span class="k i18n" data-et="Viitenumber" data-en="Reference"></span><span class="v mono">9914 2026 0091</span></div>
+          <div class="prow big"><span class="k i18n" data-et="Summa" data-en="Amount"></span><span class="v mono money" data-val="4284"></span></div>
+        </div>
+        <div class="qr">
+          <div class="grid" id="qr"></div>
+          <div class="cap"><span class="et i18n" data-et="Skanni maksmiseks" data-en="Scan to pay"></span>SEPA</div>
+        </div>
+      </div>
+
+      <!-- NOTE -->
+      <div class="note i18n" data-et="Täname tellimuse eest! Maksmisel palume kasutada viitenumbrit." data-en="Thank you for your business. Please use the reference number when paying."></div>
+
+      <!-- FOOTER -->
+      <div class="footer">
+        <div class="fine i18n" data-et="Viivis: tasumata summalt arvestatakse viivist 0,15% päevas. Arve on koostatud elektrooniliselt ja kehtib allkirjata." data-en="Late payment: an interest of 0.15% per day applies to overdue amounts. This invoice is generated electronically and is valid without a signature."></div>
+        <div class="page-no i18n" data-et="Lk 1 / 1 · Arvelo" data-en="Page 1 / 1 · Arvelo"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <template id="__bundler_thumbnail">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" fill="#2563eb"/>
+      <rect x="30" y="22" width="40" height="56" rx="4" fill="#ffffff"/>
+      <rect x="37" y="32" width="26" height="3" rx="1.5" fill="#0f172a"/>
+      <rect x="37" y="40" width="18" height="2.5" rx="1.25" fill="#94a3b8"/>
+      <rect x="37" y="46" width="22" height="2.5" rx="1.25" fill="#94a3b8"/>
+      <rect x="37" y="62" width="26" height="8" rx="2" fill="#2563eb"/>
+    </svg>
+  </template>
+
+  <script>
+    // ── i18n + locale-aware money formatting ──────────────────────────────────
+    function money(val, lang) {
+      const fixed = Number(val).toFixed(2);
+      const intPart = fixed.slice(0, -3), dec = fixed.slice(-2);
+      return lang === 'et' ? '€' + intPart + ',' + dec : '€' + intPart + '.' + dec;
+    }
+    function applyLang(lang) {
+      document.body.setAttribute('data-lang', lang);
+      document.documentElement.setAttribute('lang', lang);
+      document.querySelectorAll('.i18n').forEach((el) => {
+        const t = el.getAttribute('data-' + lang);
+        if (t !== null) el.textContent = t;
+      });
+      document.querySelectorAll('.money').forEach((el) => {
+        el.textContent = money(el.getAttribute('data-val'), lang);
+      });
+    }
+    document.getElementById('langSeg').addEventListener('click', (e) => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      document.querySelectorAll('#langSeg button').forEach((b) => b.classList.toggle('on', b === btn));
+      applyLang(btn.getAttribute('data-lang'));
+    });
+
+    // payment block toggle
+    (function () {
+      const t = document.getElementById('payToggle');
+      t.addEventListener('click', () => {
+        t.classList.toggle('on');
+        document.body.classList.toggle('no-pay', !t.classList.contains('on'));
+      });
+    })();
+
+    // QR-looking module grid (decorative payment-code placeholder)
+    (function () {
+      const N = 25, el = document.getElementById('qr');
+      el.style.gridTemplateColumns = `repeat(${N}, 1fr)`;
+      el.style.gridTemplateRows = `repeat(${N}, 1fr)`;
+      let seed = 0x9e3779b9;
+      const rnd = () => { seed ^= seed << 13; seed ^= seed >>> 17; seed ^= seed << 5; return ((seed >>> 0) % 1000) / 1000; };
+      const cells = Array.from({ length: N * N }, () => null);
+      const set = (r, c, v) => { if (r >= 0 && r < N && c >= 0 && c < N) cells[r * N + c] = v; };
+      const finder = (r, c) => { for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) { const edge = i===0||i===6||j===0||j===6, core = i>=2&&i<=4&&j>=2&&j<=4; set(r+i, c+j, edge||core); } };
+      for (let i = 0; i < N * N; i++) if (cells[i] === null) cells[i] = rnd() > 0.55;
+      finder(0,0); finder(0,N-7); finder(N-7,0);
+      const clearBox = (r, c) => { for (let i = -1; i <= 7; i++) { set(r+i,c-1,false); set(r+i,c+7,false); set(r-1,c+i,false); set(r+7,c+i,false); } };
+      clearBox(0,0); clearBox(0,N-7); clearBox(N-7,0);
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < N * N; i++) { const d = document.createElement('div'); d.style.background = cells[i] ? '#0f172a' : 'transparent'; frag.appendChild(d); }
+      el.appendChild(frag);
+    })();
+
+    applyLang('et');
+  </script>
+</body>
+</html>

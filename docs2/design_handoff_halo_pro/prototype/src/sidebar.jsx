@@ -6,6 +6,7 @@ const NAV_A = [
   { kind: 'head', label: 'Accounting' },
   { kind: 'item', id: 'tx',    label: 'Transactions',       icon: 'ledger', badge: '142' },
   { kind: 'item', id: 'acc',   label: 'Chart of accounts',  icon: 'scale' },
+  { kind: 'item', id: 'open',  label: 'Opening balances',   icon: 'download' },
   { kind: 'item', id: 'part',  label: 'Partners',           icon: 'building' },
   { kind: 'item', id: 'bank',  label: 'Bank import',        icon: 'bank' },
   { kind: 'head', label: 'Invoicing' },
