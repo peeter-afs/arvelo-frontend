@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
@@ -17,6 +17,8 @@ import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/bu
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
+import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
+import type { UserRole } from '@/lib/types/auth.types';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -175,6 +177,7 @@ export default function SettingsPage() {
     { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
     { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
     ...(canManageBilling ? [{ id: 'ai', label: t('ai'), icon: Sparkles, category: 'organization' as const }] : []),
+    ...(canManageData ? [{ id: 'team', label: t('team'), icon: Users, category: 'organization' as const }] : []),
   ];
 
   useEffect(() => {
@@ -2289,9 +2292,314 @@ export default function SettingsPage() {
             {activeTab === 'ai' && canManageBilling && (
               <AiInvoiceSettingsTab />
             )}
+
+            {activeTab === 'team' && canManageData && tenant && (
+              <TeamTab tenantId={tenant.id} currentUserId={user?.id ?? ''} currentRole={role ?? 'viewer'} />
+            )}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Team tab ─────────────────────────────────────────────────────────────────
+
+type AddMode = 'invite' | 'create' | null;
+
+function TeamTab({
+  tenantId,
+  currentUserId,
+  currentRole,
+}: {
+  tenantId: string;
+  currentUserId: string;
+  currentRole: UserRole;
+}) {
+  const t = useTranslations('settings');
+  const [members, setMembers] = useState<TenantMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [addMode, setAddMode] = useState<AddMode>(null);
+  const [formEmail, setFormEmail] = useState('');
+  const [formName, setFormName] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formRole, setFormRole] = useState<UserRole>('accountant');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<TenantMember | null>(null);
+
+  const canManage = currentRole === 'owner' || currentRole === 'admin';
+
+  const load = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await tenantsApi.getMembers(tenantId);
+      setMembers(data);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    void load();
+  }, [tenantId]);
+
+  const resetForm = () => {
+    setFormEmail('');
+    setFormName('');
+    setFormPassword('');
+    setFormRole('accountant');
+    setFormError(null);
+    setAddMode(null);
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setFormError(null);
+    try {
+      await tenantsApi.inviteMember(tenantId, { email: formEmail, role: formRole });
+      await load();
+      resetForm();
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setFormError(null);
+    try {
+      await tenantsApi.createMember(tenantId, { email: formEmail, name: formName || undefined, password: formPassword, role: formRole });
+      await load();
+      resetForm();
+    } catch (err) {
+      setFormError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRoleChange = async (member: TenantMember, newRole: UserRole) => {
+    try {
+      await tenantsApi.updateMemberRole(tenantId, member.user.id, newRole);
+      setMembers((prev) => prev.map((m) => m.user.id === member.user.id ? { ...m, role: newRole } : m));
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
+  const handleRemove = async (member: TenantMember) => {
+    try {
+      await tenantsApi.removeMember(tenantId, member.user.id);
+      setMembers((prev) => prev.filter((m) => m.user.id !== member.user.id));
+      setRemoveTarget(null);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
+  };
+
+  const roles: UserRole[] = ['owner', 'admin', 'accountant', 'viewer'];
+  const roleLabel = (r: UserRole) => ({ owner: t('roleOwner'), admin: t('roleAdmin'), accountant: t('roleAccountant'), viewer: t('roleViewer') }[r] ?? r);
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-slate-900">{t('team')}</h2>
+        {canManage && !addMode && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setAddMode('invite')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors"
+            >
+              <UserPlus className="h-3.5 w-3.5" /> {t('inviteExisting')}
+            </button>
+            <button
+              onClick={() => setAddMode('create')}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[13px] font-medium text-white hover:bg-[var(--primary-hover)] transition-colors"
+            >
+              <KeyRound className="h-3.5 w-3.5" /> {t('createUser')}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-4 py-3 text-[13px] text-[var(--a-neg)]">{error}</div>
+      )}
+
+      {addMode && (
+        <div className="rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[var(--a-text)]">
+              {addMode === 'invite' ? t('inviteExisting') : t('createUser')}
+            </h3>
+            <button onClick={resetForm} className="text-[var(--a-text-3)] hover:text-[var(--a-text)]">✕</button>
+          </div>
+
+          {addMode === 'invite' ? (
+            <p className="mb-4 text-[12.5px] text-[var(--a-text-2)]">{t('inviteExistingHint')}</p>
+          ) : (
+            <p className="mb-4 text-[12.5px] text-[var(--a-text-2)]">{t('createUserHint')}</p>
+          )}
+
+          <form onSubmit={addMode === 'invite' ? handleInvite : handleCreate} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('email')}</label>
+                <input
+                  type="email"
+                  required
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+                  placeholder="user@company.ee"
+                />
+              </div>
+              {addMode === 'create' && (
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('name')}</label>
+                  <input
+                    type="text"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                    className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+                    placeholder={t('namePlaceholder')}
+                  />
+                </div>
+              )}
+              {addMode === 'create' && (
+                <div>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('password')}</label>
+                  <input
+                    type="password"
+                    required
+                    value={formPassword}
+                    onChange={(e) => setFormPassword(e.target.value)}
+                    className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+                    placeholder="Min. 8 chars, upper + lower + number"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('role')}</label>
+                <select
+                  value={formRole}
+                  onChange={(e) => setFormRole(e.target.value as UserRole)}
+                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+                >
+                  {roles.filter((r) => currentRole === 'owner' || r !== 'owner').map((r) => (
+                    <option key={r} value={r}>{roleLabel(r)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {formError && (
+              <div className="rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-3 py-2 text-[12.5px] text-[var(--a-neg)]">{formError}</div>
+            )}
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex h-[34px] items-center gap-1.5 rounded-lg bg-[var(--primary)] px-4 text-[13px] font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50 transition-colors"
+              >
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <UserPlus className="h-3.5 w-3.5" />}
+                {addMode === 'invite' ? t('inviteButton') : t('createButton')}
+              </button>
+              <button type="button" onClick={resetForm} className="h-[34px] rounded-lg border border-[var(--a-border)] px-4 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors">
+                {t('cancel')}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" /></div>
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-[var(--a-border)]">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
+                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('member')}</th>
+                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('role')}</th>
+                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('status')}</th>
+                <th className="w-10 px-4 py-2.5" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--a-border)] bg-[var(--a-surface)]">
+              {members.map((m) => (
+                <tr key={m.user.id}>
+                  <td className="px-4 py-3">
+                    <div className="font-medium text-[var(--a-text)]">{m.user.name || m.user.email}</div>
+                    {m.user.name && <div className="text-[11.5px] text-[var(--a-text-3)]">{m.user.email}</div>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {canManage && m.user.id !== currentUserId ? (
+                      <select
+                        value={m.role}
+                        onChange={(e) => void handleRoleChange(m, e.target.value as UserRole)}
+                        className="h-[28px] rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
+                      >
+                        {roles.filter((r) => currentRole === 'owner' || r !== 'owner').map((r) => (
+                          <option key={r} value={r}>{roleLabel(r)}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <span className="text-[var(--a-text-2)]">{roleLabel(m.role)}</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-medium ${m.user.email_verified ? 'text-[var(--a-pos)]' : 'text-[var(--a-warn)]'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${m.user.email_verified ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-warn)]'}`} />
+                      {m.user.email_verified ? t('verified') : t('unverified')}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    {canManage && m.user.id !== currentUserId && (
+                      <button
+                        onClick={() => setRemoveTarget(m)}
+                        className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {removeTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setRemoveTarget(null)}>
+          <div className="w-[380px] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-[var(--a-text)]">{t('removeMember')}</h3>
+            <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
+              {t('removeMemberConfirm', { name: removeTarget.user.name || removeTarget.user.email })}
+            </p>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button onClick={() => setRemoveTarget(null)} className="rounded-lg border border-[var(--a-border)] px-4 py-1.5 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
+                {t('cancel')}
+              </button>
+              <button onClick={() => void handleRemove(removeTarget)} className="rounded-lg bg-[var(--danger)] px-4 py-1.5 text-[13px] font-medium text-white hover:opacity-90">
+                {t('remove')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
