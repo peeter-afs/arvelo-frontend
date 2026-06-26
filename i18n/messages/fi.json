@@ -305,7 +305,15 @@
     "roleAdmin": "Admin",
     "roleAccountant": "Kirjanpitäjä",
     "roleViewer": "Katsoja",
-    "namePlaceholder": "Koko nimi"
+    "namePlaceholder": "Koko nimi",
+    "memberName": "Nimi",
+    "memberRole": "Rooli",
+    "cancel": "Peruuta",
+    "email": "Sähköposti",
+    "password": "Salasana",
+    "teamCancel": "Peruuta",
+    "memberStatus": "Tila",
+    "remove": "Poista"
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",

@@ -1500,7 +1500,13 @@
     "roleAdmin": "Admin",
     "roleAccountant": "Raamatupidaja",
     "roleViewer": "Vaataja",
-    "namePlaceholder": "Täisnimi"
+    "namePlaceholder": "Täisnimi",
+    "memberName": "Nimi",
+    "memberRole": "Roll",
+    "cancel": "Tühista",
+    "teamCancel": "Tühista",
+    "memberStatus": "Staatus",
+    "remove": "Eemalda"
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",

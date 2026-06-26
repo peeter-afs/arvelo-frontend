@@ -1500,7 +1500,13 @@
     "roleAdmin": "Admin",
     "roleAccountant": "Accountant",
     "roleViewer": "Viewer",
-    "namePlaceholder": "Full name"
+    "namePlaceholder": "Full name",
+    "memberName": "Name",
+    "memberRole": "Role",
+    "cancel": "Cancel",
+    "teamCancel": "Cancel",
+    "memberStatus": "Status",
+    "remove": "Remove"
   },
   "dashboard": {
     "welcomeBack": "Welcome back",

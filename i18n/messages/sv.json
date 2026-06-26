@@ -305,7 +305,15 @@
     "roleAdmin": "Admin",
     "roleAccountant": "Redovisare",
     "roleViewer": "Betraktare",
-    "namePlaceholder": "Fullständigt namn"
+    "namePlaceholder": "Fullständigt namn",
+    "memberName": "Namn",
+    "memberRole": "Roll",
+    "cancel": "Avbryt",
+    "email": "E-post",
+    "password": "Lösenord",
+    "teamCancel": "Avbryt",
+    "memberStatus": "Status",
+    "remove": "Ta bort"
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",

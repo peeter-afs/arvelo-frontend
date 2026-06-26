@@ -2466,7 +2466,7 @@ function TeamTab({
               </div>
               {addMode === 'create' && (
                 <div>
-                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('name')}</label>
+                  <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberName')}</label>
                   <input
                     type="text"
                     value={formName}
@@ -2490,7 +2490,7 @@ function TeamTab({
                 </div>
               )}
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('role')}</label>
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</label>
                 <select
                   value={formRole}
                   onChange={(e) => setFormRole(e.target.value as UserRole)}
@@ -2517,7 +2517,7 @@ function TeamTab({
                 {addMode === 'invite' ? t('inviteButton') : t('createButton')}
               </button>
               <button type="button" onClick={resetForm} className="h-[34px] rounded-lg border border-[var(--a-border)] px-4 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors">
-                {t('cancel')}
+                {t('teamCancel')}
               </button>
             </div>
           </form>
@@ -2532,8 +2532,8 @@ function TeamTab({
             <thead>
               <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
                 <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('member')}</th>
-                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('role')}</th>
-                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('status')}</th>
+                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
+                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberStatus')}</th>
                 <th className="w-10 px-4 py-2.5" />
               </tr>
             </thead>
@@ -2591,7 +2591,7 @@ function TeamTab({
             </p>
             <div className="mt-5 flex gap-2 justify-end">
               <button onClick={() => setRemoveTarget(null)} className="rounded-lg border border-[var(--a-border)] px-4 py-1.5 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
-                {t('cancel')}
+                {t('teamCancel')}
               </button>
               <button onClick={() => void handleRemove(removeTarget)} className="rounded-lg bg-[var(--danger)] px-4 py-1.5 text-[13px] font-medium text-white hover:opacity-90">
                 {t('remove')}
