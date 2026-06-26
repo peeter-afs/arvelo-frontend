@@ -1506,7 +1506,10 @@
     "cancel": "Tühista",
     "teamCancel": "Tühista",
     "memberStatus": "Staatus",
-    "remove": "Eemalda"
+    "remove": "Eemalda",
+    "editMember": "Muuda kasutajat",
+    "newPassword": "Uus parool",
+    "newPasswordHint": "Jäta tühjaks, et parool muutumatuks jääda"
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",

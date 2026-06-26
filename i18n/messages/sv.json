@@ -313,7 +313,10 @@
     "password": "Lösenord",
     "teamCancel": "Avbryt",
     "memberStatus": "Status",
-    "remove": "Ta bort"
+    "remove": "Ta bort",
+    "editMember": "Redigera medlem",
+    "newPassword": "Nytt lösenord",
+    "newPasswordHint": "Lämna tomt för att behålla nuvarande"
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",

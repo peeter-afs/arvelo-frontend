@@ -313,7 +313,10 @@
     "password": "Salasana",
     "teamCancel": "Peruuta",
     "memberStatus": "Tila",
-    "remove": "Poista"
+    "remove": "Poista",
+    "editMember": "Muokkaa jäsentä",
+    "newPassword": "Uusi salasana",
+    "newPasswordHint": "Jätä tyhjäksi pitääksesi nykyisen"
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",

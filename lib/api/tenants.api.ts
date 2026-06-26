@@ -47,6 +47,11 @@ export const tenantsApi = {
     return response.data;
   },
 
+  async updateMemberProfile(tenantId: string, userId: string, payload: { name?: string; email?: string; password?: string }) {
+    const response = await apiClient.put<ApiResponse<void>>(`/api/tenants/${tenantId}/members/${userId}/profile`, payload);
+    return response.data;
+  },
+
   async removeMember(tenantId: string, userId: string) {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/tenants/${tenantId}/members/${userId}`);
     return response.data;

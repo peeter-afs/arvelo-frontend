@@ -1175,7 +1175,7 @@
     "address": "Address",
     "enterCompanyAddress": "Enter company address",
     "baseCurrency": "Base Currency",
-    "saveChanges": "Save Changes",
+    "saveChanges": "Save changes",
     "bankAccounts": "Bank accounts",
     "bankAccountsDescription": "These accounts are used by bank import, payment batches, and PAIN.001 export.",
     "loadingBankAccounts": "Loading bank accounts…",
@@ -1506,7 +1506,10 @@
     "cancel": "Cancel",
     "teamCancel": "Cancel",
     "memberStatus": "Status",
-    "remove": "Remove"
+    "remove": "Remove",
+    "editMember": "Edit member",
+    "newPassword": "New password",
+    "newPasswordHint": "Leave blank to keep current"
   },
   "dashboard": {
     "welcomeBack": "Welcome back",
