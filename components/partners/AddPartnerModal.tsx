@@ -277,6 +277,11 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
   );
 }
 
+function countryFlag(country: string): string {
+  const flags: Record<string, string> = { EE: '🇪🇪', FI: '🇫🇮' };
+  return flags[country.toUpperCase()] || '🏳️';
+}
+
 function StepOne({
   registryQuery,
   setRegistryQuery,
@@ -328,7 +333,14 @@ function StepOne({
               className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 text-left transition hover:border-[var(--primary)] hover:bg-blue-50/50 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <div className="min-w-0">
-                <div className="text-sm font-medium text-slate-900">{item.name || t('unnamedCompany')}</div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-slate-900">{item.name || t('unnamedCompany')}</span>
+                  {item.country && (
+                    <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+                      {countryFlag(item.country)} {item.country}
+                    </span>
+                  )}
+                </div>
                 <div className="mt-1 text-xs text-slate-500">
                   {item.registryCode || t('noRegistryCode')} · {item.vatNumber || t('noVat')} · {item.registryStatus || t('noStatus')}
                 </div>

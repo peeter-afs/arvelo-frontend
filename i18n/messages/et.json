@@ -409,7 +409,7 @@
     "addNewPartner": "Lisa uus partner",
     "createPartner": "Loo partner",
     "createPartnerManually": "Loo partner käsitsi",
-    "addPartnerStepOneDescription": "Otsi Eesti äriregistrist, et ettevõtte andmed automaatselt täita, või loo partner käsitsi.",
+    "addPartnerStepOneDescription": "Otsi Eesti äriregistrist (kui vastet pole, otsitakse ka Soome registrist), et ettevõtte andmed automaatselt täita, või loo partner käsitsi.",
     "prefilledFromCompany": "Eeltäidetud ettevõttest {company}. Vaata üle ja kohanda.",
     "fillPartnerDetailsBelow": "Täida allpool partneri andmed.",
     "companyNameOrRegistryCode": "Ettevõtte nimi või registrikood",

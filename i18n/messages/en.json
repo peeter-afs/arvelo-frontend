@@ -409,7 +409,7 @@
     "addNewPartner": "Add New Partner",
     "createPartner": "Create Partner",
     "createPartnerManually": "Create Partner Manually",
-    "addPartnerStepOneDescription": "Search the Estonian Business Registry to auto-fill company details, or create a partner manually.",
+    "addPartnerStepOneDescription": "Search the Estonian Business Registry (with a Finnish registry fallback when there is no match) to auto-fill company details, or create a partner manually.",
     "prefilledFromCompany": "Pre-filled from {company}. Review and adjust.",
     "fillPartnerDetailsBelow": "Fill in the partner details below.",
     "companyNameOrRegistryCode": "Company name or registry code",

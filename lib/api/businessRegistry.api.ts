@@ -26,6 +26,7 @@ export type BusinessRegistrySearchItem = {
   name: string | null;
   vatNumber?: string | null;
   registryStatus?: string | null;
+  country?: string;
   source: 'business_registry';
 };
 
@@ -38,6 +39,7 @@ export type BusinessRegistryCompany = {
   postalCode?: string | null;
   city?: string | null;
   countryCode?: string | null;
+  country?: string;
   source: 'business_registry';
   sourceTimestamp: string;
 };
