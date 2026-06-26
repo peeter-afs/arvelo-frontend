@@ -119,9 +119,9 @@ export default function ChartOfAccountsPage() {
     <div className="flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div className="micro text-[var(--a-text-3)]">Master register</div>
+          <div className="micro text-[var(--a-text-3)]">{t('masterRegister')}</div>
           <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('chartOfAccounts')}</h1>
-          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{accounts.length} accounts · {activeCount} active · {systemCount} system locked</p>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('accountsActiveSystem', { total: accounts.length, active: activeCount, system: systemCount })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
@@ -140,10 +140,10 @@ export default function ChartOfAccountsPage() {
       </div>
 
       <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
-        <Stat label="Accounts" value={accounts.length} subtle={`${activeCount} active`} />
-        <Stat label="Assets" value={accounts.filter((account) => account.type === 'asset').length} subtle="balance sheet" />
-        <Stat label="Revenue" value={accounts.filter((account) => account.type === 'revenue').length} subtle="income statement" tone="positive" />
-        <Stat label="Expenses" value={accounts.filter((account) => account.type === 'expense').length} subtle="income statement" tone="danger" />
+        <Stat label={t('accountsLabel')} value={accounts.length} subtle={`${activeCount} ${t('active')}`} />
+        <Stat label={t('assetsLabel')} value={accounts.filter((account) => account.type === 'asset').length} subtle={t('balanceSheet')} />
+        <Stat label={t('revenueLabel')} value={accounts.filter((account) => account.type === 'revenue').length} subtle={t('incomeStatement')} tone="positive" />
+        <Stat label={t('expensesLabel')} value={accounts.filter((account) => account.type === 'expense').length} subtle={t('incomeStatement')} tone="danger" />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -160,20 +160,20 @@ export default function ChartOfAccountsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Button>
             <Filter className="h-3.5 w-3.5" />
-            Type: All
+            {t('type')}: {t('all')}
             <ChevronDown className="h-3 w-3" />
           </Button>
           <Button>
-            Status: Active
+            {t('status')}: {t('active')}
             <ChevronDown className="h-3 w-3" />
           </Button>
           <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex">
             <Kbd>J</Kbd>
             <Kbd>K</Kbd>
-            <span>navigate</span>
+            <span>{t('navigateHint')}</span>
             <span>·</span>
             <Kbd>↵</Kbd>
-            <span>open ledger</span>
+            <span>{t('openLedgerHint')}</span>
           </div>
         </div>
       </div>
@@ -187,9 +187,9 @@ export default function ChartOfAccountsPage() {
             <div>{t('code')}</div>
             <div>{t('accountName')}</div>
             <div>{t('type')}</div>
-            <div>Status</div>
-            <div>Updated</div>
-            <div className="text-right">Locked</div>
+            <div>{t('status')}</div>
+            <div>{t('updated')}</div>
+            <div className="text-right">{t('locked')}</div>
           </div>
 
           <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
@@ -221,9 +221,9 @@ export default function ChartOfAccountsPage() {
                     <div className="flex items-center gap-2">
                       <ChevronDown className={`h-3.5 w-3.5 text-[var(--a-text-2)] transition-transform ${collapsed ? '-rotate-90' : ''}`} />
                       <TypeBadge type={group.type} label={labelOfType(group.type)} />
-                      <span className="text-[11.5px] text-[var(--a-text-3)]">· {group.rows.length} accounts</span>
+                      <span className="text-[11.5px] text-[var(--a-text-3)]">· {t('accountsCount', { count: group.rows.length })}</span>
                     </div>
-                    <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-3)]">{group.total} total</span>
+                    <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-3)]">{group.total} {t('totalSuffix')}</span>
                   </button>
                   {!collapsed && group.rows.map((account) => {
                     const selected = selectedAccount?.id === account.id;
@@ -240,12 +240,12 @@ export default function ChartOfAccountsPage() {
                         <span className="font-mono text-[13px] tabular-nums text-[var(--a-text-2)]">{account.code}</span>
                         <span className="min-w-0">
                           <span className="block truncate font-medium text-[var(--a-text)]">{account.name}</span>
-                          <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">{account.parent_id ? `Parent ${account.parent_id.slice(0, 8)}` : 'Top level'}</span>
+                          <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">{account.parent_id ? `${t('parentLabel')} ${account.parent_id.slice(0, 8)}` : t('topLevel')}</span>
                         </span>
                         <TypeBadge type={account.type} label={t(account.type)} />
                         <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
                         <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(account.updated_at)}</span>
-                        <span className="text-right text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? 'System' : 'Editable'}</span>
+                        <span className="text-right text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? t('systemLabel') : t('editable')}</span>
                       </button>
                     );
                   })}
@@ -256,14 +256,14 @@ export default function ChartOfAccountsPage() {
           </div>
 
           <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
-            <span>Showing <span className="text-[var(--a-text)]">{filtered.length}</span></span>
+            <span>{t('showing')} <span className="text-[var(--a-text)]">{filtered.length}</span></span>
             <span><span className="text-[var(--a-text)]">{grouped.filter((group) => group.rows.length > 0).length}</span> types</span>
             <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              balanced
+              {t('balanced')}
             </span>
             <span className="flex-1" />
-            <span>Press J K navigate</span>
+            <span>{t('pressJkNavigate')}</span>
           </div>
         </section>
 
@@ -326,7 +326,7 @@ function AccountDetailPanel({
   };
 
   if (!account) {
-    return <div className="p-6 text-sm text-[var(--a-text-3)]">Select an account to inspect its setup.</div>;
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">{t('selectAccountToInspect')}</div>;
   }
 
   return (
@@ -384,10 +384,10 @@ function AccountDetailPanel({
               <TypeBadge type={account.type} label={t(account.type)} />
             )}
           </div>
-          <DetailRow label="System account" value={account.is_system ? 'Yes' : 'No'} />
-          <DetailRow label="Created" value={<span className="font-mono">{formatDate(account.created_at)}</span>} />
-          <DetailRow label="Updated" value={<span className="font-mono">{formatDate(account.updated_at)}</span>} />
-          <DetailRow label="ID" value={<span className="break-all font-mono text-[11px] text-[var(--a-text-3)]">{account.id}</span>} />
+          <DetailRow label={t('systemAccount')} value={account.is_system ? t('yes') : t('no')} />
+          <DetailRow label={t('created')} value={<span className="font-mono">{formatDate(account.created_at)}</span>} />
+          <DetailRow label={t('updated')} value={<span className="font-mono">{formatDate(account.updated_at)}</span>} />
+          <DetailRow label={t('idLabel')} value={<span className="break-all font-mono text-[11px] text-[var(--a-text-3)]">{account.id}</span>} />
         </div>
       </div>
 
@@ -459,7 +459,7 @@ function CreateAccountModal({
       >
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <div className="micro text-[var(--a-text-3)]">Chart of accounts</div>
+            <div className="micro text-[var(--a-text-3)]">{t('chartOfAccounts')}</div>
             <h2 className="mt-1 text-lg font-semibold text-[var(--a-text)]">{t('newAccount')}</h2>
           </div>
           <button type="button" onClick={onClose} className="rounded-md p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]">

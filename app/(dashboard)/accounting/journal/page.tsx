@@ -179,14 +179,14 @@ export default function JournalEntriesPage() {
     <div className="flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div className="micro text-[var(--a-text-3)]">Journal workspace</div>
+          <div className="micro text-[var(--a-text-3)]">{t('journalWorkspace')}</div>
           <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('journalEntries')}</h1>
-          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{filtered.length} entries in the current view</p>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('entriesInView', { count: filtered.length })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button>
             <Upload className="h-3.5 w-3.5" />
-            Import
+            {t('import')}
           </Button>
           <Button>
             <Download className="h-3.5 w-3.5" />
@@ -201,22 +201,22 @@ export default function JournalEntriesPage() {
       </div>
 
       <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
-        <Stat label="Posted entries" value={postedCount} subtle="current ledger" delta="+8.4%" />
-        <Stat label="Drafts to review" value={draftCount} subtle="oldest draft first" tone="warning" />
-        <Stat label="Visible movement" value={formatEUR(visibleAmount)} subtle={`${filtered.length} rows`} />
-        <Stat label="Book balance" value={Math.abs(totalDebit - totalCredit) < 0.01 ? 'Balanced' : 'Open'} subtle="selected entry" tone="positive" check />
+        <Stat label={t('postedEntries')} value={postedCount} subtle={t('currentLedger')} delta="+8.4%" />
+        <Stat label={t('draftsToReview')} value={draftCount} subtle={t('oldestDraftFirst')} tone="warning" />
+        <Stat label={t('visibleMovement')} value={formatEUR(visibleAmount)} subtle={t('rowsCount', { count: filtered.length })} />
+        <Stat label={t('bookBalance')} value={Math.abs(totalDebit - totalCredit) < 0.01 ? t('balanced') : t('openState')} subtle={t('selectedEntryLabel')} tone="positive" check />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-1">
           {[
-            ['All', entries.length, true],
-            ['Posted', postedCount, false],
-            ['Drafts', draftCount, false],
-            ['Manual', entries.filter((entry) => entry.entry_type === 'manual').length, false],
-          ].map(([label, count, active]) => (
+            ['all', t('all'), entries.length, true],
+            ['posted', t('posted'), postedCount, false],
+            ['drafts', t('drafts'), draftCount, false],
+            ['manual', t('manual'), entries.filter((entry) => entry.entry_type === 'manual').length, false],
+          ].map(([id, label, count, active]) => (
             <button
-              key={label as string}
+              key={id as string}
               className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
                 active
                   ? 'bg-[var(--a-text)] text-white'
@@ -224,7 +224,7 @@ export default function JournalEntriesPage() {
               }`}
             >
               {label}
-              <span className={active ? 'text-white/60' : label === 'Drafts' ? 'text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}>
+              <span className={active ? 'text-white/60' : id === 'drafts' ? 'text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}>
                 {count}
               </span>
             </button>
@@ -248,13 +248,13 @@ export default function JournalEntriesPage() {
           <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex">
             <Kbd>J</Kbd>
             <Kbd>K</Kbd>
-            <span>navigate</span>
+            <span>{t('navigateHint')}</span>
             <span>·</span>
             <Kbd>E</Kbd>
-            <span>edit</span>
+            <span>{t('editHint')}</span>
             <span>·</span>
             <Kbd>D</Kbd>
-            <span>duplicate</span>
+            <span>{t('duplicateHint')}</span>
           </div>
         </div>
       </div>
@@ -265,11 +265,11 @@ export default function JournalEntriesPage() {
         <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
           <div className="grid grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
-            <div>JE code</div>
+            <div>{t('jeCode')}</div>
             <div>{t('date')}</div>
             <div>{t('description')}</div>
-            <div>Debit</div>
-            <div>Credit</div>
+            <div>{t('debit')}</div>
+            <div>{t('credit')}</div>
             <div className="text-right">{t('total')}</div>
             <div className="text-right">{t('status')}</div>
           </div>
@@ -324,15 +324,15 @@ export default function JournalEntriesPage() {
           </div>
 
           <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
-            <span><span className="text-[var(--a-text)]">{filtered.length}</span> shown</span>
+            <span><span className="text-[var(--a-text)]">{filtered.length}</span> {t('shown')}</span>
             <span>Σ Dr <span className="text-[var(--a-text)]">{formatEUR(totalDebit)}</span></span>
             <span>Σ Cr <span className="text-[var(--a-text)]">{formatEUR(totalCredit)}</span></span>
             <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
-              balanced
+              {t('balanced')}
             </span>
             <span className="flex-1" />
-            <span>Synced now</span>
+            <span>{t('syncedNow')}</span>
           </div>
         </section>
 
@@ -375,7 +375,7 @@ function EntryDetailPanel({
   const t = useTranslations('accounting');
 
   if (!entry) {
-    return <div className="p-6 text-sm text-[var(--a-text-3)]">Select a journal entry to inspect its posting.</div>;
+    return <div className="p-6 text-sm text-[var(--a-text-3)]">{t('selectEntryToInspect')}</div>;
   }
 
   return (
@@ -401,7 +401,7 @@ function EntryDetailPanel({
           {formatEUR(Math.max(totalDebit, totalCredit))}
         </div>
         <div className="mt-2 text-[12px] text-[var(--a-text-3)]">
-          Difference <span className={Math.abs(totalDebit - totalCredit) < 0.01 ? 'font-mono text-[var(--a-pos)]' : 'font-mono text-[var(--a-neg)]'}>
+          {t('difference')} <span className={Math.abs(totalDebit - totalCredit) < 0.01 ? 'font-mono text-[var(--a-pos)]' : 'font-mono text-[var(--a-neg)]'}>
             {formatEUR(totalDebit - totalCredit)}
           </span>
         </div>
@@ -433,8 +433,8 @@ function EntryDetailPanel({
               );
             })}
             <div className="mt-3 grid grid-cols-2 gap-3 border-t border-[var(--a-border)] pt-3">
-              <TotalBox label="Debit" value={totalDebit} />
-              <TotalBox label="Credit" value={totalCredit} />
+              <TotalBox label={t('debit')} value={totalDebit} />
+              <TotalBox label={t('credit')} value={totalCredit} />
             </div>
           </div>
         )}
@@ -447,18 +447,18 @@ function EntryDetailPanel({
         )}
 
         <div className="mt-5">
-          <div className="micro mb-3 text-[var(--a-text-3)]">Activity</div>
+          <div className="micro mb-3 text-[var(--a-text-3)]">{t('activity')}</div>
           <div className="space-y-3 text-[12px] text-[var(--a-text-2)]">
             <div className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--a-pos)]" />
               <span>
-                {entry.is_posted ? 'Posted to ledger' : 'Saved as draft'} · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.updated_at)}</span>
+                {entry.is_posted ? t('postedToLedger') : t('savedAsDraft')} · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.updated_at)}</span>
               </span>
             </div>
             <div className="flex gap-2">
               <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--a-text-3)]" />
               <span>
-                Created · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.created_at)}</span>
+                {t('created')} · <span className="font-mono text-[var(--a-text-3)]">{formatDate(entry.created_at)}</span>
               </span>
             </div>
           </div>
@@ -472,14 +472,14 @@ function EntryDetailPanel({
           onClick={onEdit}
         >
           <Pencil className="h-3.5 w-3.5" />
-          Edit <Kbd>E</Kbd>
+          {t('edit')} <Kbd>E</Kbd>
         </Button>
         <Button
           className="h-8 flex-1 text-xs"
           onClick={onDuplicate}
         >
           <Copy className="h-3.5 w-3.5" />
-          Copy <Kbd>D</Kbd>
+          {t('copy')} <Kbd>D</Kbd>
         </Button>
         <Button className="h-8 w-8 px-0">
           <MoreHorizontal className="h-3.5 w-3.5" />

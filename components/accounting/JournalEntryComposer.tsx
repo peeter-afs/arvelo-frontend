@@ -82,6 +82,7 @@ function AccountCombo({
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('accounting');
 
   const selected = accounts.find((a) => a.id === value);
 
@@ -118,7 +119,7 @@ function AccountCombo({
           setOpen(true);
         }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Search account…"
+        placeholder={t('searchAccount')}
         className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[11.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
       />
       {open && filtered.length > 0 && (
@@ -156,6 +157,7 @@ function PartnerCombo({
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('accounting');
 
   const selected = partners.find((p) => p.id === value);
 
@@ -188,7 +190,7 @@ function PartnerCombo({
           setOpen(true);
         }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="No partner"
+        placeholder={t('noPartner')}
         className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
       />
       {open && (
@@ -202,7 +204,7 @@ function PartnerCombo({
             }}
             className="flex w-full items-center px-3 py-1.5 text-left text-[12px] text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]"
           >
-            — None
+            — {t('noPartner')}
           </button>
           {filtered.map((p) => (
             <button
@@ -355,7 +357,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
         // Navigate to edit URL so back/refresh works correctly
         router.replace(`/accounting/journal/${saved.id}/edit`);
       }
-      setSuccessMessage('Draft saved.');
+      setSuccessMessage(t('draftSavedMsg'));
       setTimeout(() => setSuccessMessage(null), 3000);
       return saved;
     } catch (err) {
@@ -371,9 +373,9 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
     const activeLines = lines.filter((l) => l.account_id);
     const validationError: string | null =
       activeLines.length < 2
-        ? 'At least two lines with accounts are required.'
+        ? t('minTwoLinesMsg')
         : !isBalanced
-          ? `Entry is not balanced. Difference: ${difference.toFixed(2)}`
+          ? t('notBalancedMsg', { diff: difference.toFixed(2) })
           : null;
     if (validationError) {
       setErrorMessage(validationError);
@@ -454,7 +456,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
   // ── Render ────────────────────────────────────────────────────────────────────
 
   const isWorking = isSaving || isPosting;
-  const modeLabel = mode === 'create' ? 'New entry' : (entryNumber || 'Edit entry');
+  const modeLabel = mode === 'create' ? t('newEntry') : (entryNumber || t('editEntry'));
 
   const commandBarActions = (
     <>
@@ -463,7 +465,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
         disabled={isWorking}
       >
         {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Save draft
+        {t('saveDraft')}
         <Kbd>⌘S</Kbd>
       </Button>
       <Button
@@ -472,7 +474,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
         disabled={isWorking || !isBalanced}
       >
         {isPosting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-        Post entry
+        {t('postEntry')}
         <Kbd inverse>⌘⏎</Kbd>
       </Button>
     </>
@@ -481,7 +483,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
   if (isLoading) {
     return (
       <div className="flex min-h-full flex-col">
-        <CommandBar crumbs={['Journal', modeLabel]} actions={commandBarActions} />
+        <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} />
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-[var(--a-text-3)]" />
         </div>
@@ -491,19 +493,19 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
 
   return (
     <div className="flex min-h-full flex-col bg-[var(--a-surface)]">
-      <CommandBar crumbs={['Journal', modeLabel]} actions={commandBarActions} />
+      <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} />
 
       <div className="flex flex-1 gap-6 px-4 pb-8 pt-4 sm:px-6 lg:px-7">
         {/* ── Left sticky card ─────────────────────────────────────────────── */}
         <aside className="w-72 shrink-0">
           <div className="sticky top-4 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
-            <div className="micro mb-4 text-[var(--a-text-3)]">{t('entryDetails') as string || 'Entry details'}</div>
+            <div className="micro mb-4 text-[var(--a-text-3)]">{t('entryDetails')}</div>
 
             <div className="space-y-3.5">
               {/* Date */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-                  {t('date') as string || 'Date'}
+                  {t('date')}
                 </label>
                 <input
                   type="text"
@@ -530,11 +532,11 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               {/* JE number */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-                  JE Number
+                  {t('jeNumber')}
                 </label>
                 <input
                   type="text"
-                  value={entryNumber || (mode === 'create' ? 'Auto-assigned' : '—')}
+                  value={entryNumber || (mode === 'create' ? t('autoAssigned') : '—')}
                   readOnly
                   className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 font-mono text-[13px] text-[var(--a-text-3)] outline-none"
                 />
@@ -543,7 +545,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               {/* Type */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-                  {t('type') as string || 'Type'}
+                  {t('type')}
                 </label>
                 <select
                   value={entryType}
@@ -552,17 +554,17 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                   }
                   className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] text-[var(--a-text)] outline-none focus:border-[var(--a-accent)]"
                 >
-                  <option value="manual">Manual</option>
-                  <option value="invoice">Invoice</option>
-                  <option value="payment">Payment</option>
-                  <option value="adjustment">Adjustment</option>
+                  <option value="manual">{t('manual')}</option>
+                  <option value="invoice">{t('invoice')}</option>
+                  <option value="payment">{t('payment')}</option>
+                  <option value="adjustment">{t('adjustment')}</option>
                 </select>
               </div>
 
               {/* Reference */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-                  {t('reference') as string || 'Reference'}
+                  {t('reference')}
                 </label>
                 <input
                   type="text"
@@ -576,7 +578,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               {/* Partner */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-                  {t('partner') as string || 'Partner'}
+                  {t('partner')}
                 </label>
                 <PartnerCombo
                   value={partnerId}
@@ -594,7 +596,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                 disabled={isWorking}
               >
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Save draft
+                {t('saveDraft')}
               </Button>
               <Button
                 variant="primary"
@@ -603,7 +605,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                 disabled={isWorking || !isBalanced}
               >
                 {isPosting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                Post entry
+                {t('postEntry')}
               </Button>
             </div>
           </div>
@@ -627,10 +629,10 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
             {/* Header */}
             <div className="grid grid-cols-[1fr_180px_96px_96px_32px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
-              <div>Account</div>
-              <div>Description</div>
-              <div className="text-right">Debit</div>
-              <div className="text-right">Credit</div>
+              <div>{t('account')}</div>
+              <div>{t('description')}</div>
+              <div className="text-right">{t('debit')}</div>
+              <div className="text-right">{t('credit')}</div>
               <div />
             </div>
 
@@ -656,7 +658,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       updateLine(index, { description: e.target.value })
                     }
-                    placeholder="Description"
+                    placeholder={t('description')}
                     className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
 
@@ -704,13 +706,13 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                 className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
               >
                 <Plus className="h-3.5 w-3.5" />
-                Add line
+                {t('addLine')}
               </button>
             </div>
 
             {/* Totals row */}
             <div className="grid grid-cols-[1fr_180px_96px_96px_32px] items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
-              <div className="text-[11.5px] font-medium text-[var(--a-text-2)]">Totals</div>
+              <div className="text-[11.5px] font-medium text-[var(--a-text-2)]">{t('totals')}</div>
               <div />
               <div className="text-right font-mono text-[12.5px] font-semibold tabular-nums text-[var(--a-text)]">
                 {totalDebit.toFixed(2)}
@@ -723,7 +725,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
 
             {/* Difference row */}
             <div className="flex items-center justify-end gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 text-[11.5px]">
-              <span className="text-[var(--a-text-3)]">Difference</span>
+              <span className="text-[var(--a-text-3)]">{t('difference')}</span>
               <span
                 className={`font-mono font-semibold tabular-nums ${
                   isBalanced ? 'text-[var(--a-pos)]' : 'text-[var(--a-neg)]'
@@ -737,13 +739,13 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           {/* Description textarea */}
           <div className="mt-5">
             <label className="micro mb-1.5 block text-[var(--a-text-3)]">
-              {t('description') as string || 'Description'}
+              {t('description')}
             </label>
             <textarea
               value={description}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
               rows={3}
-              placeholder="Optional memo or narrative for this entry…"
+              placeholder={t('entryMemoPlaceholder')}
               className="w-full resize-y rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2.5 text-[13px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
             />
           </div>
@@ -752,22 +754,22 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           <div className="mt-4 flex items-center gap-3 font-mono text-[11px] text-[var(--a-text-3)]">
             <span>
               <Kbd>⌘⏎</Kbd>
-              {' '}post
+              {' '}{t('postHint')}
             </span>
             <span>·</span>
             <span>
               <Kbd>⌘S</Kbd>
-              {' '}save draft
+              {' '}{t('saveDraftHint')}
             </span>
             <span>·</span>
             <span>
               <Kbd>⌘D</Kbd>
-              {' '}duplicate line
+              {' '}{t('duplicateLineHint')}
             </span>
             <span>·</span>
             <span>
               <Kbd>Esc</Kbd>
-              {' '}back
+              {' '}{t('backHint')}
             </span>
           </div>
         </div>
