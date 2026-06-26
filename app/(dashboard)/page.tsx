@@ -260,7 +260,7 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
-        <div className="card card-hover p-3">
+        <div className="card p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalRevenue')}</p>
@@ -275,7 +275,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-3">
+        <div className="card p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalExpenses')}</p>
@@ -290,7 +290,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-3">
+        <div className="card p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-1">{t('netIncome')}</p>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="card card-hover p-3">
+        <Link href="/invoices" className="card card-hover p-3 block">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <p className="text-sm text-[var(--text-secondary)] mb-1">{t('pendingInvoices')}</p>
@@ -318,7 +318,7 @@ export default function DashboardPage() {
               <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       {/* Expected cash flow (period-aware) */}
