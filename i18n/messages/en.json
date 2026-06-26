@@ -1616,6 +1616,7 @@
     "micStop": "Stop recording",
     "micUnsupported": "Speech recognition is not supported in this browser",
     "micLanguage": "Language",
+    "clear": "Clear",
     "previewTitle": "Review AI draft",
     "partner": "Partner",
     "partnerSelect": "Select partner",

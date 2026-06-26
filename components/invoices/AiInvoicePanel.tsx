@@ -319,19 +319,34 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                       }
                     }}
                   />
-                  {speechSupported && (
-                    <button
-                      onClick={toggleListening}
-                      className={`absolute bottom-3 right-3 rounded-full p-2 transition-colors ${
-                        isListening
-                          ? 'bg-[var(--a-neg)] text-white'
-                          : 'bg-[var(--a-surface-2)] text-[var(--a-text-2)] hover:bg-[var(--a-surface-3)]'
-                      }`}
-                      title={isListening ? t('micStop') : t('micStart')}
-                    >
-                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                    </button>
-                  )}
+                  <div className="absolute bottom-3 right-3 flex flex-col items-center gap-1">
+                    {speechSupported && (
+                      <button
+                        onClick={toggleListening}
+                        className={`rounded-full p-2 transition-colors ${
+                          isListening
+                            ? 'bg-[var(--a-neg)] text-white'
+                            : 'bg-[var(--a-surface-2)] text-[var(--a-text-2)] hover:bg-[var(--a-surface-3)]'
+                        }`}
+                        title={isListening ? t('micStop') : t('micStart')}
+                      >
+                        {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                      </button>
+                    )}
+                    {text && (
+                      <button
+                        onClick={() => {
+                          stopListening();
+                          finalizedTextRef.current = '';
+                          setText('');
+                        }}
+                        className="rounded-full p-2 bg-[var(--a-surface-2)] text-[var(--a-text-3)] hover:bg-[var(--a-surface-3)] hover:text-[var(--a-neg)]"
+                        title={t('clear')}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 {speechSupported && (
                   <div className="flex items-center gap-2">
