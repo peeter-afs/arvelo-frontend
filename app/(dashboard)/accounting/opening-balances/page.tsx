@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   ChevronDown,
   Eye,
-  FileText,
   History,
   Loader2,
   Lock,
@@ -1041,16 +1040,6 @@ function OBReview(props: {
           </label>
         )}
 
-        {sharedFields.source_document_id && (
-          <span
-            title={`${t('sourceDocumentId')}: ${sharedFields.source_document_id}`}
-            className="inline-flex h-[30px] items-center gap-1.5 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-2.5 font-mono text-[11.5px] text-[var(--a-text-3)]"
-          >
-            <FileText className="h-3 w-3 shrink-0" />
-            {sharedFields.source_document_id.slice(0, 8)}…{sharedFields.source_document_id.slice(-4)}
-          </span>
-        )}
-
         <input
           type="text"
           value={sharedFields.notes}
@@ -1277,6 +1266,7 @@ function GeneralTable({
                     <select
                       value={row.account_id}
                       onChange={(e) => selectRowAccount(row.id, e.target.value)}
+                      title={willCreate ? t('obCreatedOnConfirmHint') : undefined}
                       className="h-[34px] min-w-0 flex-1 rounded-[7px] px-2.5 text-[13px]"
                       style={{
                         border: missing ? '1px solid var(--a-neg)' : '1px solid var(--a-border)',
@@ -1307,7 +1297,7 @@ function GeneralTable({
                     )}
                     {willCreate && (
                       <span
-                        title={t('obCreatedOnConfirm')}
+                        title={t('obCreatedOnConfirmHint')}
                         className="shrink-0 rounded-[5px] border px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--a-warn)]"
                         style={{ background: 'var(--a-warn-soft)', borderColor: '#e8d3a8' }}
                       >
