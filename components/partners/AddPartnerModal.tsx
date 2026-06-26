@@ -84,18 +84,26 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
-    if (open) {
-      if (!dialog.open) dialog.showModal();
-    } else {
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
       dialog.close();
-      setStep(1);
-      setRegistryQuery('');
-      setRegistryResults([]);
-      setSelectedCompany(null);
-      setForm(emptyForm());
-      setDuplicateWarnings([]);
-      setErrorMessage(null);
     }
+  }, [open]);
+
+  // Reset to a clean form every time the modal opens, so the previously
+  // created partner's data never carries over to the next one. (The close
+  // branch above can't do this: the component returns null while closed, so
+  // the dialog ref is gone and the effect would never run.)
+  useEffect(() => {
+    if (!open) return;
+    setStep(1);
+    setRegistryQuery('');
+    setRegistryResults([]);
+    setSelectedCompany(null);
+    setForm(emptyForm());
+    setDuplicateWarnings([]);
+    setErrorMessage(null);
   }, [open]);
 
   const handleBackdropClick = useCallback(
@@ -156,22 +164,35 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
     setStep(2);
   };
 
-  const handleCheckDuplicates = async () => {
-    setLoading('check-duplicates');
-    setErrorMessage(null);
-    try {
-      const duplicates = await accountingApi.checkPartnerDuplicates({
-        registry_code: form.reg_code || undefined,
-        vat_number: form.vat_number || undefined,
-        intended_role: form.type === 'both' ? 'supplier' : form.type,
-      });
-      setDuplicateWarnings(duplicates);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setLoading(null);
-    }
-  };
+  const runDuplicateCheck = useCallback(
+    async (regCode: string, vat: string, type: PartnerFormState['type']) => {
+      if (!regCode && !vat) {
+        setDuplicateWarnings([]);
+        return;
+      }
+      try {
+        const duplicates = await accountingApi.checkPartnerDuplicates({
+          registry_code: regCode || undefined,
+          vat_number: vat || undefined,
+          intended_role: type === 'both' ? 'supplier' : type,
+        });
+        setDuplicateWarnings(duplicates);
+      } catch {
+        // Duplicate check is advisory — never block partner creation on its failure.
+      }
+    },
+    [],
+  );
+
+  // Check for duplicates automatically (debounced) once on step 2 whenever the
+  // registry code / VAT / role changes — no separate button needed.
+  useEffect(() => {
+    if (!open || step !== 2) return;
+    const handle = setTimeout(() => {
+      runDuplicateCheck(form.reg_code.trim(), form.vat_number.trim(), form.type);
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [open, step, form.reg_code, form.vat_number, form.type, runDuplicateCheck]);
 
   const handleCreate = async () => {
     setLoading('create');
@@ -267,7 +288,6 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
               duplicateWarnings={duplicateWarnings}
               loading={loading}
               onBack={() => setStep(1)}
-              onCheckDuplicates={handleCheckDuplicates}
               onCreate={handleCreate}
             />
           )}
@@ -375,7 +395,6 @@ function StepTwo({
   duplicateWarnings,
   loading,
   onBack,
-  onCheckDuplicates,
   onCreate,
 }: {
   form: PartnerFormState;
@@ -383,7 +402,6 @@ function StepTwo({
   duplicateWarnings: Array<{ partner: PartnerRecord; roles: string[]; match_type: string; severity: string }>;
   loading: string | null;
   onBack: () => void;
-  onCheckDuplicates: () => void;
   onCreate: () => void;
 }) {
   const t = useTranslations('accounting');
@@ -479,24 +497,14 @@ function StepTwo({
           <span>{t('back')}</span>
         </button>
 
-        <div className="flex gap-3">
-          <button
-            onClick={onCheckDuplicates}
-            disabled={!!loading}
-            className="inline-flex h-11 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading === 'check-duplicates' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldAlert className="h-4 w-4" />}
-            <span>{t('checkDuplicates')}</span>
-          </button>
-          <button
-            onClick={onCreate}
-            disabled={!form.name || !!loading}
-            className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            <span>{t('createPartnerButton')}</span>
-          </button>
-        </div>
+        <button
+          onClick={onCreate}
+          disabled={!form.name || !!loading}
+          className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {loading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+          <span>{t('createPartnerButton')}</span>
+        </button>
       </div>
     </div>
   );
