@@ -614,7 +614,8 @@
     "currentLiability": "Current Liability",
     "fixedAsset": "Fixed Asset",
     "operatingRevenue": "Operating Revenue",
-    "operatingExpense": "Operating Expense"
+    "operatingExpense": "Operating Expense",
+    "obPartnerColumn": "Partner column"
   },
   "exchangeRates": {
     "title": "Exchange Rates",

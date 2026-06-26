@@ -155,7 +155,8 @@
     "accountType": "Kontotyp",
     "balance": "Saldo",
     "debit": "Debet",
-    "credit": "Kredit"
+    "credit": "Kredit",
+    "obPartnerColumn": "Partnerkolumn"
   },
   "reports": {
     "balanceSheet": "Balansräkning",

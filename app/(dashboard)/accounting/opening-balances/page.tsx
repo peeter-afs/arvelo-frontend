@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Eye,
+  FileText,
   History,
   Loader2,
   Lock,
@@ -531,8 +532,8 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Step body */}
-      <div className="mt-2 min-h-0 flex-1">
-        <div className="mx-auto max-w-[1020px]">
+      <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-[1320px] pb-4">
           {(step === 'upload' || step === 'parsing') && (
             <OBUpload
               step={step}
@@ -608,7 +609,7 @@ export default function OpeningBalancesPage() {
 
       {/* Sticky action bar */}
       {showActionBar && (
-        <div className="sticky bottom-0 -mx-4 mt-4 flex items-center gap-5 border-t border-[var(--a-border)] bg-[var(--a-surface)] px-7 py-3 sm:-mx-6 lg:-mx-7">
+        <div className="-mx-4 -mb-6 flex shrink-0 items-center gap-5 border-t border-[var(--a-border)] bg-[var(--a-surface)] px-7 py-3 sm:-mx-6 lg:-mx-7">
           <div className="flex items-center gap-[18px]">
             <OBTotal label={t('obDebit')} value={liveDebit} />
             <OBTotal label={t('obCredit')} value={liveCredit} />
@@ -985,9 +986,19 @@ function OBReview(props: {
         </div>
       )}
 
-      {/* meta strip */}
-      <div className="mt-4 flex flex-wrap items-end gap-3">
-        <OBMetaField label={t('openingDate')} grow={false}>
+      {/* meta strip — compact; auto-detected detail surfaces on hover */}
+      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+        <label
+          className="flex items-center gap-1.5"
+          title={
+            !isDateLocked && detectedDate
+              ? t('detectedDateFromPdf', { date: detectedDate })
+              : isDateLocked && glOpeningDate
+                ? t('lockedToGlOpeningDate')
+                : t('openingDate')
+          }
+        >
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('openingDate')}</span>
           <input
             type="date"
             value={sharedFields.opening_date}
@@ -996,32 +1007,29 @@ function OBReview(props: {
               if (isDateLocked) return;
               onSharedFieldChange({ opening_date: event.target.value });
             }}
-            className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[13px] text-[var(--a-text)]"
+            className="h-[30px] w-[140px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
             style={isDateLocked ? { background: 'var(--a-surface-2)', color: 'var(--a-text-3)' } : undefined}
           />
-          {isDateLocked && glOpeningDate && (
-            <p className="mt-1 text-[11px] text-[var(--a-text-3)]">{t('lockedToGlOpeningDate')}</p>
-          )}
-          {!isDateLocked && detectedDate && (
-            <p className="mt-1 text-[11px] text-[var(--a-pos)]">{t('detectedDateFromPdf', { date: detectedDate })}</p>
-          )}
-        </OBMetaField>
+          {!isDateLocked && detectedDate && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--a-pos)]" />}
+        </label>
 
-        <OBMetaField label={t('currency')} grow={false}>
+        <label className="flex items-center gap-1.5" title={t('currency')}>
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('currency')}</span>
           <input
             type="text"
             value={sharedFields.currency}
             onChange={(event) => onSharedFieldChange({ currency: event.target.value.toUpperCase() })}
-            className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[13px] text-[var(--a-text)]"
+            className="h-[30px] w-[68px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
           />
-        </OBMetaField>
+        </label>
 
         {(mode === 'receivables' || mode === 'payables') && (
-          <OBMetaField label={t('obOffsetAccount')} grow>
+          <label className="flex min-w-[220px] flex-1 items-center gap-1.5">
+            <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obOffsetAccount')}</span>
             <select
               value={mode === 'receivables' ? receivablesOffsetAccountId : payablesOffsetAccountId}
               onChange={(event) => onOffsetChange(event.target.value)}
-              className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+              className="h-[30px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
             >
               <option value="">{t('selectOffsetAccount')}</option>
               {accounts.map((account) => (
@@ -1030,28 +1038,27 @@ function OBReview(props: {
                 </option>
               ))}
             </select>
-          </OBMetaField>
+          </label>
         )}
 
-        <OBMetaField label={t('sourceDocumentId')} grow>
-          <input
-            type="text"
-            value={sharedFields.source_document_id}
-            onChange={(event) => onSharedFieldChange({ source_document_id: event.target.value })}
-            placeholder={t('optionalFilesDocumentId')}
-            className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[13px] text-[var(--a-text)]"
-          />
-        </OBMetaField>
+        {sharedFields.source_document_id && (
+          <span
+            title={`${t('sourceDocumentId')}: ${sharedFields.source_document_id}`}
+            className="inline-flex h-[30px] items-center gap-1.5 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-2.5 font-mono text-[11.5px] text-[var(--a-text-3)]"
+          >
+            <FileText className="h-3 w-3 shrink-0" />
+            {sharedFields.source_document_id.slice(0, 8)}…{sharedFields.source_document_id.slice(-4)}
+          </span>
+        )}
 
-        <OBMetaField label={t('notes')} grow>
-          <input
-            type="text"
-            value={sharedFields.notes}
-            onChange={(event) => onSharedFieldChange({ notes: event.target.value })}
-            placeholder={t('optionalOnboardingNote')}
-            className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
-          />
-        </OBMetaField>
+        <input
+          type="text"
+          value={sharedFields.notes}
+          onChange={(event) => onSharedFieldChange({ notes: event.target.value })}
+          placeholder={t('optionalOnboardingNote')}
+          title={t('notes')}
+          className="h-[30px] min-w-[160px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text)]"
+        />
       </div>
 
       {mode === 'general' ? (
@@ -1081,15 +1088,6 @@ function OBReview(props: {
   );
 }
 
-function OBMetaField({ label, grow, children }: { label: string; grow: boolean; children: React.ReactNode }) {
-  return (
-    <div className={grow ? 'min-w-[150px] flex-1' : 'w-[170px]'}>
-      <div className="mb-1.5 text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{label}</div>
-      {children}
-    </div>
-  );
-}
-
 function OBTotal({ label, value }: { label: string; value: number }) {
   return (
     <div>
@@ -1099,7 +1097,11 @@ function OBTotal({ label, value }: { label: string; value: number }) {
   );
 }
 
-const GENERAL_GRID = '32px minmax(300px,1.4fr) 150px 1fr 64px 132px 36px';
+// Shared grid template so header + rows line up; partner column is optional.
+const OB_COLS = (showPartner: boolean) =>
+  showPartner
+    ? '34px minmax(320px,2fr) 160px minmax(220px,1.3fr) 70px 150px 36px'
+    : '34px minmax(360px,2.2fr) minmax(240px,1.4fr) 70px 150px 36px';
 
 // ─── General ledger table ─────────────────────────────────────────────────────
 function GeneralTable({
@@ -1127,6 +1129,7 @@ function GeneralTable({
   const [newAccount, setNewAccount] = useState({ code: '', name: '', type: 'asset' });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [showPartner, setShowPartner] = useState(false);
 
   const balanceSheetSummary = useMemo(() => {
     let totalAssets = 0;
@@ -1209,22 +1212,44 @@ function GeneralTable({
       <div className="mt-4 overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
         <div className="flex items-center justify-between border-b border-[var(--a-border)] px-4 py-3">
           <div className="text-[13.5px] font-semibold text-[var(--a-text)]">{t('obGeneralLedgerRows')}</div>
-          <button
-            type="button"
-            onClick={onAddRow}
-            className="inline-flex items-center gap-1.5 rounded-[6px] border border-dashed border-[var(--a-border-strong)] bg-transparent px-2.5 py-[5px] text-[12.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
-          >
-            <Plus className="h-3 w-3" /> {t('obAddRow')}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPartner((v) => !v)}
+              className="inline-flex items-center gap-[7px] rounded-[6px] border border-[var(--a-border)] px-2.5 py-[5px] text-[12.5px]"
+              style={{
+                background: showPartner ? 'var(--a-accent-soft-2)' : 'transparent',
+                color: showPartner ? 'var(--a-accent)' : 'var(--a-text-2)',
+              }}
+            >
+              <span
+                className="relative inline-block h-[15px] w-[26px] shrink-0 rounded-full transition-colors"
+                style={{ background: showPartner ? 'var(--a-accent)' : 'var(--a-border-strong)' }}
+              >
+                <span
+                  className="absolute top-[2px] h-[11px] w-[11px] rounded-full bg-white transition-all"
+                  style={{ left: showPartner ? 13 : 2 }}
+                />
+              </span>
+              {t('obPartnerColumn')}
+            </button>
+            <button
+              type="button"
+              onClick={onAddRow}
+              className="inline-flex items-center gap-1.5 rounded-[6px] border border-dashed border-[var(--a-border-strong)] bg-transparent px-2.5 py-[5px] text-[12.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+            >
+              <Plus className="h-3 w-3" /> {t('obAddRow')}
+            </button>
+          </div>
         </div>
 
         <div
-          className="grid gap-3 bg-[var(--a-surface-2)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
-          style={{ gridTemplateColumns: GENERAL_GRID }}
+          className="grid gap-3.5 bg-[var(--a-surface-2)] px-[18px] py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
+          style={{ gridTemplateColumns: OB_COLS(showPartner) }}
         >
           <div />
           <div>{t('obColAccount')}</div>
-          <div>{t('obColPartner')}</div>
+          {showPartner && <div>{t('obColPartner')}</div>}
           <div>{t('obColDescription')}</div>
           <div>{t('obColSide')}</div>
           <div className="text-right">{t('obColAmount')}</div>
@@ -1238,50 +1263,58 @@ function GeneralTable({
           return (
             <div key={row.id}>
               <div
-                className="grid items-center gap-3 border-b border-[var(--a-border)] px-4 py-2.5"
+                className="grid items-center gap-3.5 border-b border-[var(--a-border)] px-[18px] py-2.5"
                 style={{
-                  gridTemplateColumns: GENERAL_GRID,
+                  gridTemplateColumns: OB_COLS(showPartner),
                   background: missing ? 'var(--a-neg-soft)' : 'transparent',
                   boxShadow: missing ? 'inset 2px 0 0 var(--a-neg)' : 'none',
                 }}
               >
                 <div className="font-mono text-[11px] text-[var(--a-text-3)]">{index + 1}</div>
 
-                <div>
-                  <select
-                    value={row.account_id}
-                    onChange={(e) => selectRowAccount(row.id, e.target.value)}
-                    className="h-[34px] w-full rounded-[7px] px-2.5 text-[13px]"
-                    style={{
-                      border: missing ? '1px solid var(--a-neg)' : '1px solid var(--a-border)',
-                      background: 'var(--a-surface)',
-                      color: missing ? 'var(--a-neg)' : 'var(--a-text)',
-                    }}
-                  >
-                    <option value="">
-                      {row.account_code
-                        ? t('obCreatedOnCommitOption', { code: row.account_code })
-                        : t('obSelectAccount')}
-                    </option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.code} · {account.name}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={row.account_id}
+                      onChange={(e) => selectRowAccount(row.id, e.target.value)}
+                      className="h-[34px] min-w-0 flex-1 rounded-[7px] px-2.5 text-[13px]"
+                      style={{
+                        border: missing ? '1px solid var(--a-neg)' : '1px solid var(--a-border)',
+                        background: 'var(--a-surface)',
+                        color: missing ? 'var(--a-neg)' : 'var(--a-text)',
+                      }}
+                    >
+                      <option value="">
+                        {row.account_code
+                          ? t('obCreatedOnCommitOption', { code: row.account_code })
+                          : t('obSelectAccount')}
                       </option>
-                    ))}
-                  </select>
+                      {accounts.map((account) => (
+                        <option key={account.id} value={account.id}>
+                          {account.code} · {account.name}
+                        </option>
+                      ))}
+                    </select>
 
-                  {(missing || willCreate) && createForRowId !== row.id && (
-                    <div className="mt-[3px] flex gap-2.5 text-[11px]">
+                    {missing && createForRowId !== row.id && (
                       <button
                         type="button"
                         onClick={() => openCreateAccount(row)}
-                        className="font-medium text-[var(--a-accent)] hover:underline"
+                        className="shrink-0 whitespace-nowrap text-[11.5px] font-medium text-[var(--a-accent)] hover:underline"
                       >
                         + {t('obNewAccount')}
                       </button>
-                      {willCreate && <span className="text-[var(--a-warn)]">{t('obCreatedOnConfirm')}</span>}
-                    </div>
-                  )}
+                    )}
+                    {willCreate && (
+                      <span
+                        title={t('obCreatedOnConfirm')}
+                        className="shrink-0 rounded-[5px] border px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.04em] text-[var(--a-warn)]"
+                        style={{ background: 'var(--a-warn-soft)', borderColor: '#e8d3a8' }}
+                      >
+                        {t('obNew')}
+                      </span>
+                    )}
+                  </div>
 
                   {createForRowId === row.id && (
                     <div className="mt-2 space-y-2 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] p-2">
@@ -1327,16 +1360,18 @@ function GeneralTable({
                   )}
                 </div>
 
-                <select
-                  value={row.partner_id}
-                  onChange={(e) => updateRow(row.id, 'partner_id', e.target.value)}
-                  className="h-[34px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text-2)]"
-                >
-                  <option value="">{t('obOptional')}</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>{partner.name}</option>
-                  ))}
-                </select>
+                {showPartner && (
+                  <select
+                    value={row.partner_id}
+                    onChange={(e) => updateRow(row.id, 'partner_id', e.target.value)}
+                    className="h-[34px] min-w-0 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text-2)]"
+                  >
+                    <option value="">{t('obOptional')}</option>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>{partner.name}</option>
+                    ))}
+                  </select>
+                )}
 
                 <input
                   value={row.description}
