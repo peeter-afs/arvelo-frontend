@@ -89,8 +89,10 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      // Null the ref FIRST so onend knows not to auto-restart
+      const r = recognitionRef.current;
       recognitionRef.current = null;
+      try { r.stop(); } catch { /* already stopped */ }
     }
     setIsListening(false);
   }, []);
@@ -107,30 +109,42 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     const recognition = new SR();
     recognition.lang = speechLang;
     recognition.interimResults = true;
-    recognition.continuous = true;
+    // continuous=true is unreliable on Android Chrome — we restart manually on onend instead
+    recognition.continuous = false;
 
     finalizedTextRef.current = '';
 
     recognition.onresult = (event: any) => {
-      let interim = '';
-      // Only process results from resultIndex onwards to avoid reprocessing finalized ones
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const segment = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          finalizedTextRef.current += segment;
-        } else {
-          interim += segment;
-        }
+      // Always read only the very last result to avoid re-processing old ones
+      const latest = event.results[event.results.length - 1];
+      const segment = latest[0].transcript.trim();
+      if (!segment) return;
+
+      if (latest.isFinal) {
+        // Add a space separator between utterances
+        const gap = finalizedTextRef.current.length > 0 ? ' ' : '';
+        finalizedTextRef.current += gap + segment;
+        setText(finalizedTextRef.current);
+      } else {
+        // Show interim on top of finalized text
+        const gap = finalizedTextRef.current.length > 0 ? ' ' : '';
+        setText(finalizedTextRef.current + gap + segment);
       }
-      setText(finalizedTextRef.current + interim);
     };
 
-    recognition.onerror = () => {
+    recognition.onerror = (event: any) => {
+      // 'no-speech' is normal on mobile — just restart rather than stopping
+      if (event.error === 'no-speech') return;
       stopListening();
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      // Auto-restart as long as the user hasn't stopped recording
+      if (recognitionRef.current) {
+        try { recognition.start(); } catch { stopListening(); }
+      } else {
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current = recognition;
