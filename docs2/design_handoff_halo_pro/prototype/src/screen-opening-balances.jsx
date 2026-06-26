@@ -35,6 +35,7 @@ function OpeningBalancesA() {
   const [rows, setRows] = React.useState([]);
   const [showCreate, setShowCreate] = React.useState(false);
   const [showHistory, setShowHistory] = React.useState(false);
+  const [showPartner, setShowPartner] = React.useState(false);
 
   // assign an account code to a row
   const assign = (id, code) => setRows((rs) => rs.map((r) => r.id === id ? { ...r, code, name: obAcctName(code) || r.name } : r));
@@ -71,7 +72,7 @@ function OpeningBalancesA() {
 
       {/* Scroll body */}
       <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', padding: '4px 28px 24px 28px' }}>
-        <div style={{ maxWidth: 1020, margin: '0 auto' }}>
+        <div style={{ maxWidth: 1320, margin: '0 auto' }}>
 
           {/* Mode segmented control — was 3 big cards, now one compact row */}
           <OBModeRow />
@@ -147,20 +148,31 @@ function OpeningBalancesA() {
               <div style={{ marginTop: 16, background: 'var(--a-surface)', border: '1px solid var(--a-border)', borderRadius: 10, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', borderBottom: '1px solid var(--a-border)' }}>
                   <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--a-text)' }}>General ledger rows</div>
-                  <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: '1px dashed var(--a-border-strong)', borderRadius: 6, background: 'transparent', color: 'var(--a-text-2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit' }}>
-                    <I.plus size={12} /> Add row
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button onClick={() => setShowPartner((v) => !v)} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 10px', borderRadius: 6, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5,
+                      border: '1px solid var(--a-border)', background: showPartner ? 'var(--a-accent-soft-2)' : 'transparent', color: showPartner ? 'var(--a-accent)' : 'var(--a-text-2)',
+                    }}>
+                      <span style={{ width: 26, height: 15, borderRadius: 99, background: showPartner ? 'var(--a-accent)' : 'var(--a-border-strong)', position: 'relative', transition: 'background 120ms', flexShrink: 0 }}>
+                        <span style={{ position: 'absolute', top: 2, left: showPartner ? 13 : 2, width: 11, height: 11, borderRadius: '50%', background: '#fff', transition: 'left 120ms' }} />
+                      </span>
+                      Partner column
+                    </button>
+                    <button style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', border: '1px dashed var(--a-border-strong)', borderRadius: 6, background: 'transparent', color: 'var(--a-text-2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'inherit' }}>
+                      <I.plus size={12} /> Add row
+                    </button>
+                  </div>
                 </div>
                 {/* column headers */}
                 <div style={{
-                  display: 'grid', gridTemplateColumns: '32px minmax(300px,1.4fr) 150px 1fr 64px 132px 36px',
-                  gap: 12, padding: '8px 16px', background: 'var(--a-surface-2)',
+                  display: 'grid', gridTemplateColumns: OB_COLS(showPartner),
+                  gap: 14, padding: '8px 18px', background: 'var(--a-surface-2)',
                   fontSize: 10.5, fontWeight: 600, color: 'var(--a-text-3)', letterSpacing: '0.05em', textTransform: 'uppercase',
                 }}>
-                  <div></div><div>Account</div><div>Partner</div><div>Description</div><div>Side</div><div style={{ textAlign: 'right' }}>Amount</div><div></div>
+                  <div></div><div>Account</div>{showPartner && <div>Partner</div>}<div>Description</div><div>Side</div><div style={{ textAlign: 'right' }}>Amount</div><div></div>
                 </div>
                 {rows.map((r, i) => (
-                  <OBRow key={r.id} r={r} idx={i + 1} onAssign={assign} onRemove={remove} />
+                  <OBRow key={r.id} r={r} idx={i + 1} showPartner={showPartner} onAssign={assign} onRemove={remove} />
                 ))}
               </div>
 
@@ -335,47 +347,59 @@ function OBUpload({ step, onPick }) {
   );
 }
 
+// shared grid template so header + rows line up; partner column optional
+const OB_COLS = (showPartner) =>
+  showPartner
+    ? '34px minmax(320px,2fr) 160px minmax(220px,1.3fr) 70px 150px 36px'
+    : '34px minmax(360px,2.2fr) minmax(240px,1.4fr) 70px 150px 36px';
+
 // ─── Review row ──────────────────────────────────────────────────────────────
-function OBRow({ r, idx, onAssign, onRemove }) {
+function OBRow({ r, idx, showPartner, onAssign, onRemove }) {
   const missing = !r.code;
   const willCreate = r.code && !OB_COA.has(r.code);
   return (
     <div style={{
-      display: 'grid', gridTemplateColumns: '32px minmax(300px,1.4fr) 150px 1fr 64px 132px 36px',
-      gap: 12, padding: '9px 16px', borderBottom: '1px solid var(--a-border)', alignItems: 'center',
+      display: 'grid', gridTemplateColumns: OB_COLS(showPartner),
+      gap: 14, padding: '9px 18px', borderBottom: '1px solid var(--a-border)', alignItems: 'center',
       background: missing ? 'var(--a-neg-soft)' : 'transparent',
       boxShadow: missing ? 'inset 2px 0 0 var(--a-neg)' : 'none',
     }}>
       <div className="mono" style={{ fontSize: 11, color: 'var(--a-text-3)' }}>{idx}</div>
 
-      {/* account picker — full width, shows code + name */}
-      <div>
+      {/* account picker — shows code · name; one subtle "new" badge, no repeated text */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         <select
           value={r.code || ''}
           onChange={(e) => onAssign(r.id, e.target.value)}
           style={{
-            width: '100%', height: 34, padding: '0 10px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13,
+            flex: 1, minWidth: 0, height: 34, padding: '0 10px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13,
             border: missing ? '1px solid var(--a-neg)' : '1px solid var(--a-border)',
             background: 'var(--a-surface)', color: missing ? 'var(--a-neg)' : 'var(--a-text)', cursor: 'pointer',
           }}>
           <option value="">{missing ? 'Select account…' : ''}</option>
-          {willCreate && <option value={r.code}>{r.code} · {r.name} — will be created</option>}
+          {willCreate && <option value={r.code}>{r.code} · {r.name}</option>}
           {(window.DATA ? DATA.accounts : []).map((a) => (
             <option key={a.code} value={a.code}>{a.code} · {a.name}</option>
           ))}
         </select>
-        {(missing || willCreate) && (
-          <div style={{ marginTop: 3, fontSize: 11, display: 'flex', gap: 10 }}>
-            <span style={{ color: 'var(--a-accent)', cursor: 'pointer', fontWeight: 500 }}>+ New account</span>
-            {willCreate && <span style={{ color: 'var(--a-warn)' }}>new · created on confirm</span>}
-          </div>
+        {missing && (
+          <span style={{ color: 'var(--a-accent)', cursor: 'pointer', fontWeight: 500, fontSize: 11.5, whiteSpace: 'nowrap', flexShrink: 0 }}>+ New</span>
+        )}
+        {willCreate && (
+          <span title="New account — created on confirm" style={{
+            flexShrink: 0, fontSize: 10, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+            color: 'var(--a-warn)', background: 'var(--a-warn-soft)', border: '1px solid #e8d3a8',
+            padding: '2px 7px', borderRadius: 5,
+          }}>New</span>
         )}
       </div>
 
-      <select defaultValue="" style={{ height: 34, padding: '0 8px', borderRadius: 7, fontFamily: 'inherit', fontSize: 12.5, border: '1px solid var(--a-border)', background: 'var(--a-surface)', color: 'var(--a-text-2)' }}>
-        <option value="">Optional</option>
-        {(window.DATA ? DATA.partners.slice(0, 6) : []).map((p) => <option key={p.code}>{p.name}</option>)}
-      </select>
+      {showPartner && (
+        <select defaultValue="" style={{ height: 34, padding: '0 8px', borderRadius: 7, fontFamily: 'inherit', fontSize: 12.5, border: '1px solid var(--a-border)', background: 'var(--a-surface)', color: 'var(--a-text-2)', minWidth: 0 }}>
+          <option value="">Optional</option>
+          {(window.DATA ? DATA.partners.slice(0, 6) : []).map((p) => <option key={p.code}>{p.name}</option>)}
+        </select>
+      )}
 
       <div style={{ fontSize: 12.5, color: 'var(--a-text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.desc}</div>
 
