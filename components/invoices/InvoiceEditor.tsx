@@ -1,28 +1,24 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, CheckCircle2, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { invoicesApi, type InvoiceDraftPayload } from '@/lib/api/invoices.api';
 import { recurringExpensesApi, type ExpenseFrequency } from '@/lib/api/recurringExpenses.api';
 import { getIsoToday } from '@/lib/utils/date';
-
-type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
-
-type DraftLine = {
-  description: string;
-  account_id: string;
-  quantity: string;
-  unit_price: string;
-  discount_percent: string;
-  tax_rate: string;
-  supply_type: SupplyType;
-};
+import { Button } from '@/components/ui/Button';
+import { Kbd } from '@/components/ui/Kbd';
+import { CommandBar } from '@/components/layout/CommandBar';
+import InvoiceLinesEditor, {
+  computeTotals,
+  emptyEditorLine,
+  type EditorLine,
+  type SupplyType,
+} from '@/components/invoices/InvoiceLinesEditor';
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
 
@@ -48,16 +44,6 @@ type InvoiceEditorProps = {
   prefill?: AiPrefillData;
 };
 
-const emptyLine = (): DraftLine => ({
-  description: '',
-  account_id: '',
-  quantity: '1',
-  unit_price: '',
-  discount_percent: '0',
-  tax_rate: '22',
-  supply_type: 'domestic',
-});
-
 export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId, prefill }: InvoiceEditorProps) {
   const t = useTranslations('invoices');
   const router = useRouter();
@@ -72,9 +58,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const [currency, setCurrency] = useState(prefill?.currency || 'EUR');
   const [paymentReference, setPaymentReference] = useState('');
   const [notes, setNotes] = useState(prefill?.notes || '');
-  const [lines, setLines] = useState<DraftLine[]>(
+  const [lines, setLines] = useState<EditorLine[]>(
     prefill?.lines && prefill.lines.length > 0
-      ? prefill.lines.map(l => ({
+      ? prefill.lines.map((l) => ({
           description: l.description,
           account_id: '',
           quantity: String(l.quantity),
@@ -83,7 +69,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
           tax_rate: String(l.tax_rate),
           supply_type: 'domestic' as const,
         }))
-      : [emptyLine()]
+      : [emptyEditorLine()]
   );
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
@@ -140,7 +126,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 tax_rate: String(line.tax_rate ?? 0),
                 supply_type: (line.supply_type as SupplyType) || 'domestic',
               }))
-            : [emptyLine()]
+            : [emptyEditorLine()]
         );
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -152,30 +138,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     void loadInvoice();
   }, [invoiceId, mode]);
 
-  const totals = useMemo(() => {
-    return lines.reduce(
-      (acc, line) => {
-        const quantity = Number(line.quantity || 0);
-        const unitPrice = Number(line.unit_price || 0);
-        const discountPercent = Number(line.discount_percent || 0);
-        const taxRate = Number(line.tax_rate || 0);
-        const net = quantity * unitPrice * (1 - discountPercent / 100);
-        const tax = net * (taxRate / 100);
-        acc.subtotal += Number.isFinite(net) ? net : 0;
-        acc.tax += Number.isFinite(tax) ? tax : 0;
-        return acc;
-      },
-      { subtotal: 0, tax: 0 }
-    );
-  }, [lines]);
-
-  const updateLine = (index: number, patch: Partial<DraftLine>) => {
-    setLines((current) => current.map((line, i) => (i === index ? { ...line, ...patch } : line)));
-  };
-
-  const removeLine = (index: number) => {
-    setLines((current) => (current.length === 1 ? current : current.filter((_, i) => i !== index)));
-  };
+  const totals = useMemo(() => computeTotals(lines), [lines]);
 
   const buildPayload = (): InvoiceDraftPayload => ({
     type,
@@ -194,7 +157,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       unit_price: Number(line.unit_price || 0),
       discount_percent: Number(line.discount_percent || 0),
       tax_rate: Number(line.tax_rate || 0),
-      supply_type: line.supply_type,
+      supply_type: line.supply_type || 'domestic',
     })),
   });
 
@@ -210,9 +173,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
 
       // If recurring is ticked on a purchase invoice, upsert the recurring expense entry
       if (isRecurring && type === 'purchase_invoice' && partnerId) {
-        const invoiceTotal = totals.subtotal + totals.tax;
-        const dominantAccountId = lines.find(l => l.account_id)?.account_id || null;
-        const partnerName = partners.find(p => p.id === partnerId)?.name || '';
+        const invoiceTotal = totals.total;
+        const dominantAccountId = lines.find((l) => l.account_id)?.account_id || null;
+        const partnerName = partners.find((p) => p.id === partnerId)?.name || '';
         const expectedDay = Number(recurringExpectedDay) || new Date(invoiceDate).getDate();
         const maxSum = Number(recurringMaxSum) || invoiceTotal;
 
@@ -244,246 +207,156 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     }
   };
 
+  const title = mode === 'create'
+    ? (isCreditNote ? t('newCreditNote') : t('newInvoiceDraft'))
+    : (isCreditNote ? t('editCreditNote') : t('editInvoiceDraft'));
+
+  const saveAction = (
+    <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving || isLoading}>
+      {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+      {mode === 'create' ? t('createDraft') : t('saveDraft')}
+      <Kbd inverse>⌘S</Kbd>
+    </Button>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div className="flex min-h-full flex-col bg-[var(--a-surface)]">
+      <CommandBar crumbs={[t('overview'), title]} actions={saveAction} />
+
+      <div className="flex-1 space-y-5 px-4 pb-10 pt-4 sm:px-6 lg:px-7">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {mode === 'create'
-              ? (isCreditNote ? t('newCreditNote') : t('newInvoiceDraft'))
-              : (isCreditNote ? t('editCreditNote') : t('editInvoiceDraft'))}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-[22px] font-semibold leading-tight text-[var(--a-text)]">{title}</h1>
+          <p className="mt-1 text-[13px] text-[var(--a-text-2)]">
             {mode === 'create'
               ? (isCreditNote ? t('createCreditNoteDescription') : t('createInvoiceDraftDescription'))
               : t('editInvoiceDraftDescription')}
           </p>
         </div>
-        <Link
-          href={type === 'purchase_invoice' || type === 'purchase_credit_note' ? '/invoices/purchase' : '/invoices/sales'}
-          className="inline-flex h-10 items-center rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          {t('backToList')}
-        </Link>
-      </div>
 
-      {errorMessage && (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
+        {errorMessage && (
+          <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] px-4 py-3 text-[13px] text-[var(--a-neg)]">
+            {errorMessage}
           </div>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="card border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{successMessage}</span>
+        )}
+        {successMessage && (
+          <div className="rounded-lg border border-[var(--a-pos-soft)] bg-[var(--a-pos-soft)] px-4 py-3 text-[13px] text-[var(--a-pos)]">
+            {successMessage}
           </div>
-        </div>
-      )}
+        )}
 
-      {isLoading ? (
-        <div className="card p-8 text-sm text-slate-500">{t('loadingInvoiceDraft')}</div>
-      ) : (
-        <>
-          <div className="card p-5">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field label={t('invoiceType')}>
-                <select
-                  value={type}
-                  onChange={(event) => setType(event.target.value as InvoiceType)}
-                  disabled={mode === 'edit'}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3 disabled:bg-slate-50"
-                >
-                  <option value="sales_invoice">{t('salesList')}</option>
-                  <option value="purchase_invoice">{t('purchaseList')}</option>
-                  <option value="sales_credit_note">{t('salesCreditNote')}</option>
-                  <option value="purchase_credit_note">{t('purchaseCreditNote')}</option>
-                </select>
-              </Field>
-              <Field label={t('partner')}>
-                <select value={partnerId} onChange={(event) => setPartnerId(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3">
-                  <option value="">{t('selectPartner')}</option>
-                  {partners.map((partner) => (
-                    <option key={partner.id} value={partner.id}>{partner.name}</option>
-                  ))}
-                </select>
-              </Field>
-              <Field label={t('invoiceNumber')}>
-                <input value={invoiceNumber} onChange={(event) => setInvoiceNumber(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-              <Field label={t('currency')}>
-                <input value={currency} onChange={(event) => setCurrency(event.target.value.toUpperCase())} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-              <Field label={t('invoiceDate')}>
-                <input type="date" value={invoiceDate} onChange={(event) => setInvoiceDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-              <Field label={t('dueDate')}>
-                <input type="date" value={dueDate} onChange={(event) => setDueDate(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-              <Field label={t('paymentReference')}>
-                <input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-              <Field label={t('notes')}>
-                <input value={notes} onChange={(event) => setNotes(event.target.value)} className="h-11 w-full rounded-lg border border-slate-200 px-3" />
-              </Field>
-            </div>
-
-            {/* Recurring toggle — purchase invoices only */}
-            {type === 'purchase_invoice' && (
-              <div className="mt-4 border-t border-slate-200 pt-4">
-                <label className="flex cursor-pointer items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={isRecurring}
-                    onChange={e => {
-                      setIsRecurring(e.target.checked);
-                      if (e.target.checked) {
-                        const total = totals.subtotal + totals.tax;
-                        if (!recurringMaxSum) setRecurringMaxSum(total.toFixed(2));
-                        if (!recurringExpectedDay) setRecurringExpectedDay(String(new Date(invoiceDate).getDate() || 1));
-                      }
-                    }}
-                    className="h-4 w-4 rounded border-slate-300 text-blue-600"
-                  />
-                  <span className="text-sm font-medium text-slate-700">Recurring</span>
-                </label>
-
-                {isRecurring && (
-                  <div className="mt-4 grid gap-4 md:grid-cols-3">
-                    <Field label="Max sum">
-                      <input
-                        type="number"
-                        value={recurringMaxSum}
-                        onChange={e => setRecurringMaxSum(e.target.value)}
-                        placeholder={(totals.subtotal + totals.tax).toFixed(2)}
-                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
-                      />
-                    </Field>
-                    <Field label="Expected day of month">
-                      <input
-                        type="number"
-                        min={1}
-                        max={31}
-                        value={recurringExpectedDay}
-                        onChange={e => setRecurringExpectedDay(e.target.value)}
-                        placeholder={String(new Date(invoiceDate).getDate() || 1)}
-                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
-                      />
-                    </Field>
-                    <Field label="Frequency">
-                      <select
-                        value={recurringFrequency}
-                        onChange={e => setRecurringFrequency(e.target.value as ExpenseFrequency)}
-                        className="h-11 w-full rounded-lg border border-slate-200 px-3"
-                      >
-                        <option value="monthly">Monthly</option>
-                        <option value="quarterly">Quarterly</option>
-                        <option value="annual">Annual</option>
-                      </select>
-                    </Field>
-                  </div>
-                )}
+        {isLoading ? (
+          <div className="flex items-center gap-2 rounded-[10px] border border-[var(--a-border)] p-8 text-[13px] text-[var(--a-text-3)]">
+            <Loader2 className="h-4 w-4 animate-spin" /> {t('loadingInvoiceDraft')}
+          </div>
+        ) : (
+          <>
+            {/* Header detail card */}
+            <div className="rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-5">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <Field label={t('invoiceType')}>
+                  <select value={type} onChange={(e) => setType(e.target.value as InvoiceType)} disabled={mode === 'edit'} className={`${selectClass} disabled:bg-[var(--a-surface-2)] disabled:text-[var(--a-text-3)]`}>
+                    <option value="sales_invoice">{t('salesList')}</option>
+                    <option value="purchase_invoice">{t('purchaseList')}</option>
+                    <option value="sales_credit_note">{t('salesCreditNote')}</option>
+                    <option value="purchase_credit_note">{t('purchaseCreditNote')}</option>
+                  </select>
+                </Field>
+                <Field label={t('partner')}>
+                  <select value={partnerId} onChange={(e) => setPartnerId(e.target.value)} className={selectClass}>
+                    <option value="">{t('selectPartner')}</option>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>{partner.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label={t('invoiceNumber')}>
+                  <input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label={t('currency')}>
+                  <input value={currency} onChange={(e) => setCurrency(e.target.value.toUpperCase())} className={inputClass} />
+                </Field>
+                <Field label={t('invoiceDate')}>
+                  <input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label={t('dueDate')}>
+                  <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label={t('paymentReference')}>
+                  <input value={paymentReference} onChange={(e) => setPaymentReference(e.target.value)} className={inputClass} />
+                </Field>
+                <Field label={t('notes')}>
+                  <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
+                </Field>
               </div>
-            )}
-          </div>
 
-          <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">{t('invoiceLines')}</h2>
-              <button
-                onClick={() => setLines((current) => [...current, emptyLine()])}
-                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-white"
-              >
-                <Plus className="h-4 w-4" />
-                <span>{t('addLine')}</span>
-              </button>
-            </div>
-            <div className="space-y-4 p-5">
-              {lines.map((line, index) => (
-                <div key={`${index}-${line.description}`} className="rounded-2xl border border-slate-200 p-4">
-                  <div className="grid gap-3 xl:grid-cols-[minmax(0,1.8fr)_180px_110px_140px_120px_120px_150px_auto]">
+              {/* Recurring toggle — purchase invoices only */}
+              {type === 'purchase_invoice' && (
+                <div className="mt-4 border-t border-[var(--a-border)] pt-4">
+                  <label className="flex cursor-pointer items-center gap-3">
                     <input
-                      value={line.description}
-                      onChange={(event) => updateLine(index, { description: event.target.value })}
-                      placeholder={t('description')}
-                      className="h-11 rounded-lg border border-slate-200 px-3"
+                      type="checkbox"
+                      checked={isRecurring}
+                      onChange={(e) => {
+                        setIsRecurring(e.target.checked);
+                        if (e.target.checked) {
+                          if (!recurringMaxSum) setRecurringMaxSum(totals.total.toFixed(2));
+                          if (!recurringExpectedDay) setRecurringExpectedDay(String(new Date(invoiceDate).getDate() || 1));
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-[var(--a-border)] text-[var(--a-accent)]"
                     />
-                    <select
-                      value={line.account_id}
-                      onChange={(event) => updateLine(index, { account_id: event.target.value })}
-                      className="h-11 rounded-lg border border-slate-200 px-3"
-                    >
-                      <option value="">{t('account')}</option>
-                      {accounts.map((account) => (
-                        <option key={account.id} value={account.id}>{account.code} {account.name}</option>
-                      ))}
-                    </select>
-                    <input value={line.quantity} onChange={(event) => updateLine(index, { quantity: event.target.value })} placeholder={t('qty')} className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.unit_price} onChange={(event) => updateLine(index, { unit_price: event.target.value })} placeholder={t('unitPrice')} className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.discount_percent} onChange={(event) => updateLine(index, { discount_percent: event.target.value })} placeholder={t('discount')} className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <input value={line.tax_rate} onChange={(event) => updateLine(index, { tax_rate: event.target.value })} placeholder={t('vatRate')} className="h-11 rounded-lg border border-slate-200 px-3" />
-                    <select
-                      value={line.supply_type}
-                      onChange={(event) => updateLine(index, { supply_type: event.target.value as SupplyType })}
-                      className="h-11 rounded-lg border border-slate-200 px-3 text-sm"
-                    >
-                      <option value="domestic">{t('supplyDomestic')}</option>
-                      <option value="intra_community">{t('supplyIntraCommunity')}</option>
-                      <option value="reverse_charge">{t('supplyReverseCharge')}</option>
-                      <option value="third_country">{t('supplyThirdCountry')}</option>
-                    </select>
-                    <button
-                      onClick={() => removeLine(index)}
-                      className="inline-flex h-11 items-center justify-center rounded-lg border border-red-200 px-3 text-red-700 hover:bg-red-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                    <span className="text-[13px] font-medium text-[var(--a-text)]">Recurring</span>
+                  </label>
+
+                  {isRecurring && (
+                    <div className="mt-4 grid gap-4 md:grid-cols-3">
+                      <Field label="Max sum">
+                        <input type="number" value={recurringMaxSum} onChange={(e) => setRecurringMaxSum(e.target.value)} placeholder={totals.total.toFixed(2)} className={inputClass} />
+                      </Field>
+                      <Field label="Expected day of month">
+                        <input type="number" min={1} max={31} value={recurringExpectedDay} onChange={(e) => setRecurringExpectedDay(e.target.value)} placeholder={String(new Date(invoiceDate).getDate() || 1)} className={inputClass} />
+                      </Field>
+                      <Field label="Frequency">
+                        <select value={recurringFrequency} onChange={(e) => setRecurringFrequency(e.target.value as ExpenseFrequency)} className={selectClass}>
+                          <option value="monthly">Monthly</option>
+                          <option value="quarterly">Quarterly</option>
+                          <option value="annual">Annual</option>
+                        </select>
+                      </Field>
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
-          </div>
 
-          <div className="grid gap-3 md:grid-cols-3">
-            <SummaryCard label={t('subtotal')} value={totals.subtotal} />
-            <SummaryCard label={t('taxTotal')} value={totals.tax} />
-            <SummaryCard label={t('total')} value={totals.subtotal + totals.tax} />
-          </div>
+            {/* Lines */}
+            <div>
+              <div className="micro mb-2 text-[var(--a-text-3)]">{t('invoiceLines')}</div>
+              <InvoiceLinesEditor lines={lines} onChange={setLines} accounts={accounts} showSupplyType currency={currency} />
+            </div>
 
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--primary)] px-5 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              <span>{mode === 'create' ? t('createDraft') : t('saveDraft')}</span>
-            </button>
-          </div>
-        </>
-      )}
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving}>
+                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                {mode === 'create' ? t('createDraft') : t('saveDraft')}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
+
+const inputClass =
+  'h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]';
+const selectClass = inputClass;
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
+      <div className="micro mb-1.5 text-[var(--a-text-3)]">{label}</div>
       {children}
     </label>
-  );
-}
-
-function SummaryCard({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="card p-5">
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 font-mono text-2xl font-semibold text-slate-900">{value.toFixed(2)}</div>
-    </div>
   );
 }

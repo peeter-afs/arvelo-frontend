@@ -1144,6 +1144,7 @@
     "account": "Konto",
     "discount": "Allahindlus",
     "lineTotal": "Rea summa",
+    "supplyType": "Käibe liik",
     "pendingApproval": "Ootel kinnitus",
     "readyForPosting": "Valmis konteerimiseks",
     "needsCorrection": "Vajab parandamist",

@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/ui/ErrorState';
 import { Kbd } from '@/components/ui/Kbd';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Button } from '@/components/ui/Button';
+import InvoiceLinesEditor, { emptyEditorLine, type EditorLine } from '@/components/invoices/InvoiceLinesEditor';
 
 // ─── Pure helpers (no Date.now() in render) ─────────────────────────────────
 
@@ -1454,16 +1455,11 @@ function CreateTemplateModal({
     notes: '',
     period_note_template: '',
   });
-  const [lines, setLines] = useState([
-    { description: '', account_id: '', quantity: '1', unit_price: '', tax_rate: '22' },
-  ]);
+  const [lines, setLines] = useState<EditorLine[]>([emptyEditorLine()]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const upd = (k: string, v: string) => setForm(prev => ({ ...prev, [k]: v }));
-  const updLine = (i: number, k: string, v: string) => {
-    setLines(prev => prev.map((l, j) => (j === i ? { ...l, [k]: v } : l)));
-  };
 
   const billingModeToFrequency = (
     mode: BillingMode,
@@ -1528,6 +1524,7 @@ function CreateTemplateModal({
             account_id: l.account_id || undefined,
             quantity: parseFloat(l.quantity) || 1,
             unit_price: parseFloat(l.unit_price),
+            discount_percent: parseFloat(l.discount_percent) || 0,
             tax_rate: parseFloat(l.tax_rate) ?? 22,
           })),
       });
@@ -1766,89 +1763,7 @@ function CreateTemplateModal({
             >
               {t('lines')}
             </label>
-            {lines.map((line, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 mb-2">
-                <div className="col-span-4">
-                  <input
-                    placeholder={tc('description')}
-                    value={line.description}
-                    onChange={e => updLine(i, 'description', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded text-sm"
-                    style={inputStyle}
-                  />
-                </div>
-                <div className="col-span-3">
-                  <select
-                    value={line.account_id}
-                    onChange={e => updLine(i, 'account_id', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded text-sm"
-                    style={inputStyle}
-                  >
-                    <option value="">—</option>
-                    {accounts
-                      .filter(a => a.is_active)
-                      .map(a => (
-                        <option key={a.id} value={a.id}>
-                          {a.code} – {a.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div className="col-span-1">
-                  <input
-                    type="number"
-                    placeholder={t('quantity')}
-                    value={line.quantity}
-                    onChange={e => updLine(i, 'quantity', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded text-sm"
-                    style={inputStyle}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder={t('price')}
-                    value={line.unit_price}
-                    onChange={e => updLine(i, 'unit_price', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded text-sm"
-                    style={inputStyle}
-                  />
-                </div>
-                <div className="col-span-1">
-                  <input
-                    type="number"
-                    placeholder={t('vatRate')}
-                    value={line.tax_rate}
-                    onChange={e => updLine(i, 'tax_rate', e.target.value)}
-                    className="w-full px-2 py-1.5 rounded text-sm"
-                    style={inputStyle}
-                  />
-                </div>
-                <div className="col-span-1 flex items-center">
-                  {lines.length > 1 && (
-                    <button
-                      onClick={() => setLines(prev => prev.filter((_, j) => j !== i))}
-                      style={{ color: 'var(--a-neg)' }}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                setLines(prev => [
-                  ...prev,
-                  { description: '', account_id: '', quantity: '1', unit_price: '', tax_rate: '22' },
-                ])
-              }
-              className="text-sm mt-1"
-              style={{ color: 'var(--a-accent)' }}
-            >
-              + {t('addLine')}
-            </button>
+            <InvoiceLinesEditor lines={lines} onChange={setLines} accounts={accounts} />
           </div>
 
           {err && (

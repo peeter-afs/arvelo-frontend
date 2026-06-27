@@ -1144,6 +1144,7 @@
     "account": "Account",
     "discount": "Discount",
     "lineTotal": "Line total",
+    "supplyType": "Supply type",
     "pendingApproval": "Pending approval",
     "readyForPosting": "Ready for posting",
     "needsCorrection": "Needs correction",
