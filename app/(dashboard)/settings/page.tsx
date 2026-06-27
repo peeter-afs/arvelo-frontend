@@ -10,6 +10,8 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
 import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
+import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyTypeSalesAccountsPanel';
+import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
@@ -353,6 +355,25 @@ export default function SettingsPage() {
         result.warnings?.length
           ? t('systemRolesSavedWithWarnings', { warnings: result.warnings.join('; ') })
           : t('systemRolesSaved')
+      );
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setRolesSaving(false);
+    }
+  };
+
+  const handleSaveSalesDefaults = async (mapping: SupplyTypeSalesDefaults) => {
+    setRolesSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.updateSupplyTypeSalesDefaults(mapping);
+      setAccountingSettings(result.settings);
+      setSettingsSuccess(
+        result.warnings?.length
+          ? t('systemRolesSavedWithWarnings', { warnings: result.warnings.join('; ') })
+          : t('salesDefaultsSaved')
       );
     } catch (error) {
       setSettingsError(getErrorMessage(error));
@@ -2200,6 +2221,15 @@ export default function SettingsPage() {
                       selectAccount: t('selectAccount'),
                       emptyHint: t('createDefaultChartHint'),
                     }}
+                  />
+                )}
+
+                {canManageData && (
+                  <SupplyTypeSalesAccountsPanel
+                    accounts={roleAccounts}
+                    settings={accountingSettings}
+                    saving={rolesSaving}
+                    onSave={handleSaveSalesDefaults}
                   />
                 )}
 

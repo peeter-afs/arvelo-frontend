@@ -49,6 +49,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const router = useRouter();
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  const [salesDefaults, setSalesDefaults] = useState<Partial<Record<SupplyType, string>>>({});
   const [type, setType] = useState<InvoiceType>(defaultType);
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
   const [partnerId, setPartnerId] = useState(prefill?.partner_id || '');
@@ -85,12 +86,21 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   useEffect(() => {
     const loadBase = async () => {
       try {
-        const [partnerItems, accountItems] = await Promise.all([
+        const [partnerItems, accountItems, settings] = await Promise.all([
           accountingApi.getPartners(),
           accountingApi.getAccounts(),
+          accountingApi.getAccountingSettings().catch(() => null),
         ]);
         setPartners(partnerItems);
         setAccounts(accountItems);
+        if (settings) {
+          const map: Partial<Record<SupplyType, string>> = {};
+          if (settings.default_sales_account_id_domestic) map.domestic = settings.default_sales_account_id_domestic;
+          if (settings.default_sales_account_id_intra_community) map.intra_community = settings.default_sales_account_id_intra_community;
+          if (settings.default_sales_account_id_reverse_charge) map.reverse_charge = settings.default_sales_account_id_reverse_charge;
+          if (settings.default_sales_account_id_third_country) map.third_country = settings.default_sales_account_id_third_country;
+          setSalesDefaults(map);
+        }
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       }
@@ -339,6 +349,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 showSupplyType
                 currency={currency}
                 accountFilterType={type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue'}
+                supplyTypeDefaults={type === 'purchase_invoice' || type === 'purchase_credit_note' ? undefined : salesDefaults}
               />
             </div>
 

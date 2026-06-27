@@ -23,9 +23,20 @@ export type AccountingSettings = {
   vat_output_account_id: string | null;
   vat_input_account_id: string | null;
   bank_account_default_id: string | null;
+  default_sales_account_id_domestic?: string | null;
+  default_sales_account_id_intra_community?: string | null;
+  default_sales_account_id_reverse_charge?: string | null;
+  default_sales_account_id_third_country?: string | null;
   fiscal_year_start_month?: number;
   fiscal_year_start_day?: number;
 };
+
+export type SupplyTypeSalesDefaults = Partial<{
+  default_sales_account_id_domestic: string | null;
+  default_sales_account_id_intra_community: string | null;
+  default_sales_account_id_reverse_charge: string | null;
+  default_sales_account_id_third_country: string | null;
+}>;
 
 export type SystemRoleMapping = Partial<{
   accounts_receivable_account_id: string;
@@ -216,6 +227,14 @@ export const accountingApi = {
   async updateAccountingSettings(mapping: SystemRoleMapping) {
     const response = await apiClient.put<ApiResponse<{ settings: AccountingSettings; warnings: string[] }>>(
       '/api/accounting/settings',
+      mapping
+    );
+    return response.data.data;
+  },
+
+  async updateSupplyTypeSalesDefaults(mapping: SupplyTypeSalesDefaults) {
+    const response = await apiClient.put<ApiResponse<{ settings: AccountingSettings; warnings: string[] }>>(
+      '/api/accounting/settings/sales-defaults',
       mapping
     );
     return response.data.data;

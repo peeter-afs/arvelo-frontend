@@ -64,6 +64,8 @@ type Props = {
   currency?: string;
   /** Restrict the account picker to a single account type (e.g. 'revenue' for sales, 'expense' for purchases). */
   accountFilterType?: 'revenue' | 'expense';
+  /** Default sales account id per supply type; auto-fills an empty line account on add / supply-type change. */
+  supplyTypeDefaults?: Partial<Record<SupplyType, string>>;
 };
 
 export default function InvoiceLinesEditor({
@@ -73,6 +75,7 @@ export default function InvoiceLinesEditor({
   showSupplyType = false,
   currency = 'EUR',
   accountFilterType,
+  supplyTypeDefaults,
 }: Props) {
   const t = useTranslations('invoices');
   const [showAccount, setShowAccount] = useState(true);
@@ -98,7 +101,18 @@ export default function InvoiceLinesEditor({
     onChange(lines.map((line, i) => (i === index ? { ...line, ...patch } : line)));
   const remove = (index: number) =>
     onChange(lines.length > 1 ? lines.filter((_, i) => i !== index) : lines);
-  const add = () => onChange([...lines, emptyEditorLine()]);
+  const add = () => {
+    const line = emptyEditorLine();
+    const fallback = supplyTypeDefaults?.[line.supply_type || 'domestic'];
+    if (fallback) line.account_id = fallback;
+    onChange([...lines, line]);
+  };
+
+  const changeSupplyType = (index: number, line: EditorLine, supply_type: SupplyType) => {
+    const fallback = supplyTypeDefaults?.[supply_type];
+    // Auto-fill the account from the supply-type default, but only when the line has none yet.
+    update(index, fallback && !line.account_id ? { supply_type, account_id: fallback } : { supply_type });
+  };
 
   // Column order: description · qty · unit price · discount · VAT · [supply] · line total · account (last) · delete
   const gridCols = [
@@ -194,7 +208,7 @@ export default function InvoiceLinesEditor({
                 {showSupplyType && (
                   <select
                     value={line.supply_type || 'domestic'}
-                    onChange={(event) => update(index, { supply_type: event.target.value as SupplyType })}
+                    onChange={(event) => changeSupplyType(index, line, event.target.value as SupplyType)}
                     className={`${inputClass} text-[12px]`}
                   >
                     <option value="domestic">{t('supplyDomestic')}</option>
