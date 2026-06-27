@@ -577,6 +577,7 @@
     "statusMatchedManual": "Manually posted",
     "reconciledRowsUpdated": "{count} entries updated.",
     "reconcilingData": "Loading bank transactions...",
+    "statementPeriod": "Statement period",
     "currentJob": "Current job",
     "fileLabel": "File",
     "format": "Format",

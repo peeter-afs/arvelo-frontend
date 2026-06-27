@@ -434,6 +434,11 @@ export default function BankImportPage() {
                     <div>{t('parsedRows')}: {summary.parsed_row_count}</div>
                     <div>{t('approvedRows')}: {summary.approved_row_count}</div>
                     <div>{t('reviewRows')}: {summary.review_row_count}</div>
+                    {(summary.statement_date_from || summary.statement_date_to) && (
+                      <div>
+                        {t('statementPeriod')}: {summary.statement_date_from || '…'} – {summary.statement_date_to || '…'}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

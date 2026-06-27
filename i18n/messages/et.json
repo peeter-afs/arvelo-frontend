@@ -577,6 +577,7 @@
     "statusMatchedManual": "Käsitsi kantud",
     "reconciledRowsUpdated": "{count} kannet uuendatud.",
     "reconcilingData": "Laen pangakandeid...",
+    "statementPeriod": "Väljavõtte periood",
     "currentJob": "Praegune töö",
     "fileLabel": "Fail",
     "format": "Vorming",
