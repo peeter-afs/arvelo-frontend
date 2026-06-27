@@ -332,7 +332,14 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
             {/* Lines */}
             <div>
               <div className="micro mb-2 text-[var(--a-text-3)]">{t('invoiceLines')}</div>
-              <InvoiceLinesEditor lines={lines} onChange={setLines} accounts={accounts} showSupplyType currency={currency} />
+              <InvoiceLinesEditor
+                lines={lines}
+                onChange={setLines}
+                accounts={accounts}
+                showSupplyType
+                currency={currency}
+                accountFilterType={type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue'}
+              />
             </div>
 
             <div className="flex justify-end">

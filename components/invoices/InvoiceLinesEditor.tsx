@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Eye, EyeOff, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AccountOption } from '@/lib/api/accounting.api';
 
@@ -62,6 +62,8 @@ type Props = {
   accounts: AccountOption[];
   showSupplyType?: boolean;
   currency?: string;
+  /** Restrict the account picker to a single account type (e.g. 'revenue' for sales, 'expense' for purchases). */
+  accountFilterType?: 'revenue' | 'expense';
 };
 
 export default function InvoiceLinesEditor({
@@ -70,10 +72,26 @@ export default function InvoiceLinesEditor({
   accounts,
   showSupplyType = false,
   currency = 'EUR',
+  accountFilterType,
 }: Props) {
   const t = useTranslations('invoices');
+  const [showAccount, setShowAccount] = useState(true);
 
-  const activeAccounts = useMemo(() => accounts.filter((account) => account.is_active), [accounts]);
+  // Sales should list revenue accounts, purchases expense accounts. Fall back to all
+  // active accounts if the type filter would leave nothing to pick.
+  const accountOptions = useMemo(() => {
+    const active = accounts.filter((a) => a.is_active);
+    if (!accountFilterType) return active;
+    const typed = active.filter((a) => a.type === accountFilterType);
+    return typed.length > 0 ? typed : active;
+  }, [accounts, accountFilterType]);
+
+  const accountLabels = useMemo(() => {
+    const map = new Map<string, string>();
+    accounts.forEach((a) => map.set(a.id, `${a.code} ${a.name}`));
+    return map;
+  }, [accounts]);
+
   const totals = useMemo(() => computeTotals(lines), [lines]);
 
   const update = (index: number, patch: Partial<EditorLine>) =>
@@ -82,136 +100,169 @@ export default function InvoiceLinesEditor({
     onChange(lines.length > 1 ? lines.filter((_, i) => i !== index) : lines);
   const add = () => onChange([...lines, emptyEditorLine()]);
 
-  const gridCols = showSupplyType
-    ? 'minmax(160px,1fr) 150px 64px 96px 76px 66px 140px 100px 32px'
-    : 'minmax(160px,1fr) 150px 64px 96px 76px 66px 100px 32px';
-  const minWidth = showSupplyType ? 900 : 760;
+  // Column order: description · qty · unit price · discount · VAT · [supply] · line total · account (last) · delete
+  const gridCols = [
+    'minmax(160px,1fr)',
+    '64px',
+    '96px',
+    '76px',
+    '66px',
+    showSupplyType ? '140px' : null,
+    '100px',
+    showAccount ? '160px' : '22px',
+    '32px',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const minWidth = (showSupplyType ? 760 : 620) + (showAccount ? 160 : 22);
 
   return (
-    <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
-      <div style={{ minWidth }}>
-        {/* Header */}
-        <div
-          className="grid items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]"
-          style={{ gridTemplateColumns: gridCols }}
+    <div>
+      <div className="mb-2 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowAccount((v) => !v)}
+          title={showAccount ? t('hideAccountColumn') : t('showAccountColumn')}
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
         >
-          <div>{t('description')}</div>
-          <div>{t('account')}</div>
-          <div className="text-right">{t('qty')}</div>
-          <div className="text-right">{t('unitPrice')}</div>
-          <div className="text-right">{t('discount')}</div>
-          <div className="text-right">{t('vatRate')}</div>
-          {showSupplyType && <div>{t('supplyType')}</div>}
-          <div className="text-right">{t('lineTotal')}</div>
-          <div />
-        </div>
+          {showAccount ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {t('account')}
+        </button>
+      </div>
 
-        {/* Rows */}
-        <div>
-          {lines.map((line, index) => (
-            <div
-              key={index}
-              className="grid items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2"
-              style={{ gridTemplateColumns: gridCols }}
-            >
-              <input
-                value={line.description}
-                onChange={(event) => update(index, { description: event.target.value })}
-                placeholder={t('description')}
-                className={inputClass}
-              />
-              <select
-                value={line.account_id}
-                onChange={(event) => update(index, { account_id: event.target.value })}
-                className={`${inputClass} text-[12px]`}
-              >
-                <option value="">{t('account')}</option>
-                {activeAccounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.code} {account.name}
-                  </option>
-                ))}
-              </select>
-              <input
-                inputMode="decimal"
-                value={line.quantity}
-                onChange={(event) => update(index, { quantity: event.target.value })}
-                placeholder={t('qty')}
-                className={numberClass}
-              />
-              <input
-                inputMode="decimal"
-                value={line.unit_price}
-                onChange={(event) => update(index, { unit_price: event.target.value })}
-                placeholder={t('unitPrice')}
-                className={numberClass}
-              />
-              <input
-                inputMode="decimal"
-                value={line.discount_percent}
-                onChange={(event) => update(index, { discount_percent: event.target.value })}
-                placeholder="0"
-                className={numberClass}
-              />
-              <input
-                inputMode="decimal"
-                value={line.tax_rate}
-                onChange={(event) => update(index, { tax_rate: event.target.value })}
-                placeholder="0"
-                className={numberClass}
-              />
-              {showSupplyType && (
-                <select
-                  value={line.supply_type || 'domestic'}
-                  onChange={(event) => update(index, { supply_type: event.target.value as SupplyType })}
-                  className={`${inputClass} text-[12px]`}
-                >
-                  <option value="domestic">{t('supplyDomestic')}</option>
-                  <option value="intra_community">{t('supplyIntraCommunity')}</option>
-                  <option value="reverse_charge">{t('supplyReverseCharge')}</option>
-                  <option value="third_country">{t('supplyThirdCountry')}</option>
-                </select>
-              )}
-              <div className="text-right font-mono text-[12.5px] font-medium tabular-nums text-[var(--a-text)]">
-                {lineNet(line).toFixed(2)}
-              </div>
-              <button
-                type="button"
-                onClick={() => remove(index)}
-                disabled={lines.length === 1}
-                className="flex h-7 w-7 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {/* Add line */}
-        <div className="px-3.5 py-2">
-          <button
-            type="button"
-            onClick={add}
-            className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
+      <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
+        <div style={{ minWidth }}>
+          {/* Header */}
+          <div
+            className="grid items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]"
+            style={{ gridTemplateColumns: gridCols }}
           >
-            <Plus className="h-3.5 w-3.5" />
-            {t('addLine')}
-          </button>
-        </div>
+            <div>{t('description')}</div>
+            <div className="text-right">{t('qty')}</div>
+            <div className="text-right">{t('unitPrice')}</div>
+            <div className="text-right">{t('discount')}</div>
+            <div className="text-right">{t('vatRate')}</div>
+            {showSupplyType && <div>{t('supplyType')}</div>}
+            <div className="text-right">{t('lineTotal')}</div>
+            <div>{showAccount ? t('account') : ''}</div>
+            <div />
+          </div>
 
-        {/* Totals */}
-        <div className="flex flex-col items-end gap-1 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-3 text-[12.5px]">
-          <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
-            <span>{t('subtotal')}</span>
-            <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.subtotal.toFixed(2)} {currency}</span>
+          {/* Rows */}
+          <div>
+            {lines.map((line, index) => (
+              <div
+                key={index}
+                className="grid items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2"
+                style={{ gridTemplateColumns: gridCols }}
+                title={!showAccount && line.account_id ? accountLabels.get(line.account_id) : undefined}
+              >
+                <input
+                  value={line.description}
+                  onChange={(event) => update(index, { description: event.target.value })}
+                  placeholder={t('description')}
+                  className={inputClass}
+                />
+                <input
+                  inputMode="decimal"
+                  value={line.quantity}
+                  onChange={(event) => update(index, { quantity: event.target.value })}
+                  placeholder={t('qty')}
+                  className={numberClass}
+                />
+                <input
+                  inputMode="decimal"
+                  value={line.unit_price}
+                  onChange={(event) => update(index, { unit_price: event.target.value })}
+                  placeholder={t('unitPrice')}
+                  className={numberClass}
+                />
+                <input
+                  inputMode="decimal"
+                  value={line.discount_percent}
+                  onChange={(event) => update(index, { discount_percent: event.target.value })}
+                  placeholder="0"
+                  className={numberClass}
+                />
+                <input
+                  inputMode="decimal"
+                  value={line.tax_rate}
+                  onChange={(event) => update(index, { tax_rate: event.target.value })}
+                  placeholder="0"
+                  className={numberClass}
+                />
+                {showSupplyType && (
+                  <select
+                    value={line.supply_type || 'domestic'}
+                    onChange={(event) => update(index, { supply_type: event.target.value as SupplyType })}
+                    className={`${inputClass} text-[12px]`}
+                  >
+                    <option value="domestic">{t('supplyDomestic')}</option>
+                    <option value="intra_community">{t('supplyIntraCommunity')}</option>
+                    <option value="reverse_charge">{t('supplyReverseCharge')}</option>
+                    <option value="third_country">{t('supplyThirdCountry')}</option>
+                  </select>
+                )}
+                <div className="text-right font-mono text-[12.5px] font-medium tabular-nums text-[var(--a-text)]">
+                  {lineNet(line).toFixed(2)}
+                </div>
+                {showAccount ? (
+                  <select
+                    value={line.account_id}
+                    onChange={(event) => update(index, { account_id: event.target.value })}
+                    className={`${inputClass} text-[12px]`}
+                  >
+                    <option value="">{t('account')}</option>
+                    {accountOptions.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.code} {account.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span
+                    className={`mx-auto h-2 w-2 rounded-full ${line.account_id ? 'bg-[var(--a-accent)]' : 'border border-[var(--a-border-strong)]'}`}
+                    title={line.account_id ? accountLabels.get(line.account_id) : t('account')}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => remove(index)}
+                  disabled={lines.length === 1}
+                  className="flex h-7 w-7 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
           </div>
-          <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
-            <span>{t('taxTotal')}</span>
-            <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.tax.toFixed(2)} {currency}</span>
+
+          {/* Add line */}
+          <div className="px-3.5 py-2">
+            <button
+              type="button"
+              onClick={add}
+              className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              {t('addLine')}
+            </button>
           </div>
-          <div className="flex w-full max-w-[260px] justify-between border-t border-[var(--a-border)] pt-1 font-semibold text-[var(--a-text)]">
-            <span>{t('total')}</span>
-            <span className="font-mono tabular-nums">{totals.total.toFixed(2)} {currency}</span>
+
+          {/* Totals */}
+          <div className="flex flex-col items-end gap-1 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-3 text-[12.5px]">
+            <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
+              <span>{t('subtotal')}</span>
+              <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.subtotal.toFixed(2)} {currency}</span>
+            </div>
+            <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
+              <span>{t('taxTotal')}</span>
+              <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.tax.toFixed(2)} {currency}</span>
+            </div>
+            <div className="flex w-full max-w-[260px] justify-between border-t border-[var(--a-border)] pt-1 font-semibold text-[var(--a-text)]">
+              <span>{t('total')}</span>
+              <span className="font-mono tabular-nums">{totals.total.toFixed(2)} {currency}</span>
+            </div>
           </div>
         </div>
       </div>

@@ -1145,6 +1145,8 @@
     "discount": "Discount",
     "lineTotal": "Line total",
     "supplyType": "Supply type",
+    "showAccountColumn": "Show account column",
+    "hideAccountColumn": "Hide account column (shown on hover)",
     "pendingApproval": "Pending approval",
     "readyForPosting": "Ready for posting",
     "needsCorrection": "Needs correction",

@@ -1763,7 +1763,7 @@ function CreateTemplateModal({
             >
               {t('lines')}
             </label>
-            <InvoiceLinesEditor lines={lines} onChange={setLines} accounts={accounts} />
+            <InvoiceLinesEditor lines={lines} onChange={setLines} accounts={accounts} accountFilterType="revenue" />
           </div>
 
           {err && (

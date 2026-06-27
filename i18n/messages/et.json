@@ -1145,6 +1145,8 @@
     "discount": "Allahindlus",
     "lineTotal": "Rea summa",
     "supplyType": "Käibe liik",
+    "showAccountColumn": "Näita konto veergu",
+    "hideAccountColumn": "Peida konto veerg (hoveril näha)",
     "pendingApproval": "Ootel kinnitus",
     "readyForPosting": "Valmis konteerimiseks",
     "needsCorrection": "Vajab parandamist",
