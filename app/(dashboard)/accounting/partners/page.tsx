@@ -593,7 +593,7 @@ function PartnerDetailPanel({
       </div>
 
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-        <Section label={t('identity')}>
+        <Section label={t('identity')} cols={2}>
           <Field label={t('type')} value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
             { label: t('customer'), value: 'customer' },
             { label: t('supplier'), value: 'supplier' },
@@ -601,21 +601,18 @@ function PartnerDetailPanel({
           ]} />
           <Field label={t('name')} value={form.name} onChange={(value) => setForm((current) => ({ ...current, name: value }))} />
           <Field label={t('code')} value={form.code} onChange={(value) => setForm((current) => ({ ...current, code: value }))} />
-        </Section>
-
-        <Section label={t('registration')}>
           <Field label={t('registryCode')} value={form.reg_code} onChange={(value) => setForm((current) => ({ ...current, reg_code: value }))} />
           <Field label={t('vatNumber')} value={form.vat_number} onChange={(value) => setForm((current) => ({ ...current, vat_number: value.toUpperCase() }))} />
         </Section>
 
-        <Section label={t('contact')}>
+        <Section label={t('contact')} cols={2}>
           <Field label={t('email')} value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
           <Field label={t('phone')} value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
           <Field label={t('website')} value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
           <Field label={t('address')} value={form.address} onChange={(value) => setForm((current) => ({ ...current, address: value }))} />
         </Section>
 
-        <Section label={t('billing')}>
+        <Section label={t('billing')} cols={2}>
           <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
           <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
           <Field label={t('receiptResponsibleEmail')} value={form.receipt_responsible_email || ''} onChange={(value) => setForm((current) => ({ ...current, receipt_responsible_email: value }))} />
@@ -624,17 +621,6 @@ function PartnerDetailPanel({
         <Section label={t('other')}>
           <Field label={t('notes')} value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
         </Section>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={onCheckDuplicates} disabled={!!actionLoading}>
-            {actionLoading === 'check-duplicates' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
-            {t('checkDuplicates')}
-          </Button>
-          <Button variant="primary" onClick={onSave} disabled={!form.name || !!actionLoading}>
-            {actionLoading === 'save-partner' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            {t('saveChanges')}
-          </Button>
-        </div>
 
         {duplicateWarnings.length > 0 && (
           <div className="rounded-lg border border-[var(--a-warn-soft)] bg-[var(--a-warn-soft)] p-3">
@@ -764,6 +750,18 @@ function PartnerDetailPanel({
           </Section>
         )}
       </div>
+
+      {/* Sticky footer — primary actions stay pinned regardless of scroll */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--a-border)] px-5 py-3.5">
+        <Button onClick={onCheckDuplicates} disabled={!!actionLoading}>
+          {actionLoading === 'check-duplicates' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
+          {t('checkDuplicates')}
+        </Button>
+        <Button variant="primary" onClick={onSave} disabled={!form.name || !!actionLoading}>
+          {actionLoading === 'save-partner' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+          {t('saveChanges')}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -787,11 +785,11 @@ function PartnerTypeBadge({ type }: { type: PartnerRecord['type'] }) {
   return <span className={`inline-flex rounded px-2 py-1 text-[11px] font-semibold capitalize leading-none ${style}`}>{type}</span>;
 }
 
-function Section({ label, children, icon }: { label: string; children: React.ReactNode; icon?: React.ReactNode }) {
+function Section({ label, children, icon, cols = 1 }: { label: string; children: React.ReactNode; icon?: React.ReactNode; cols?: 1 | 2 }) {
   return (
     <section>
       <div className="micro mb-3 flex items-center gap-1.5 text-[var(--a-text-3)]">{icon}{label}</div>
-      <div className="space-y-3">{children}</div>
+      <div className={cols === 2 ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>{children}</div>
     </section>
   );
 }
