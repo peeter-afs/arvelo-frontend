@@ -87,6 +87,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           ],
         },
         { label: tAccounting('bankReview'), href: '/accounting/bank-review', icon: Landmark },
+        { label: tAccounting('bankReconciliation'), href: '/accounting/bank-reconciliation', icon: Scale },
       ],
     },
     {

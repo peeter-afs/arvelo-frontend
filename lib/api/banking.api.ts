@@ -33,6 +33,8 @@ export type BankImportPreviewRow = {
   warning_flags: string[];
   needs_review: boolean;
   is_approved: boolean;
+  manually_approved?: boolean;
+  can_approve?: boolean;
   parsed_payload: Record<string, any>;
 };
 
@@ -134,6 +136,30 @@ export type PaymentBatchLine = {
   payment_reference?: string | null;
 };
 
+export type BankReconciliationItem = {
+  transaction_id: string;
+  bank_account_id: string;
+  bank_account_name?: string | null;
+  bank_account_iban?: string | null;
+  tx_date: string;
+  value_date?: string | null;
+  amount: number;
+  currency: string;
+  counterparty_name?: string | null;
+  description?: string | null;
+  reference?: string | null;
+  matched_status: string;
+  is_reconciled: boolean;
+};
+
+export type BankReconciliationSummary = {
+  reconciled_count: number;
+  unreconciled_count: number;
+  reconciled_amount: number;
+  unreconciled_amount: number;
+  net_amount: number;
+};
+
 export type BankAccountRecord = {
   id: string;
   account_id?: string | null;
@@ -201,6 +227,15 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  async setImportRowApproval(id: string, updates: Array<{ row_no: number; is_approved: boolean }>) {
+    const response = await apiClient.post<ApiResponse<{
+      job: BankImportJob;
+      preview_rows: BankImportPreviewRow[];
+      summary: Record<string, any>;
+    }>>(`/api/banking/import-jobs/${id}/rows/approval`, { updates });
+    return response.data.data;
+  },
+
   async commitImportJob(id: string) {
     const response = await apiClient.post<ApiResponse<{
       job: BankImportJob;
@@ -219,6 +254,30 @@ export const bankingApi = {
       items: BankReviewQueueItem[];
       total: number;
     }>>('/api/banking/transactions/review-queue', { params });
+    return response.data.data;
+  },
+
+  async getReconciliation(params?: {
+    bank_account_id?: string;
+    reconciled?: boolean;
+    date_from?: string;
+    date_to?: string;
+    limit?: number;
+    offset?: number;
+  }) {
+    const response = await apiClient.get<ApiResponse<{
+      items: BankReconciliationItem[];
+      total: number;
+      summary: BankReconciliationSummary;
+    }>>('/api/banking/transactions/reconciliation', { params });
+    return response.data.data;
+  },
+
+  async reconcileTransactions(payload: { transaction_ids: string[]; is_reconciled: boolean }) {
+    const response = await apiClient.post<ApiResponse<{
+      updated_count: number;
+      is_reconciled: boolean;
+    }>>('/api/banking/transactions/reconcile', payload);
     return response.data.data;
   },
 

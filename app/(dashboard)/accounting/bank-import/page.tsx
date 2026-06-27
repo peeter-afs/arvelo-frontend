@@ -58,6 +58,8 @@ export default function BankImportPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
   const [isCommitting, setIsCommitting] = useState(false);
+  const [pendingApprovalRow, setPendingApprovalRow] = useState<number | null>(null);
+  const [isBulkApproving, setIsBulkApproving] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -79,6 +81,7 @@ export default function BankImportPage() {
       total: previewRows.length,
       approved: previewRows.filter((row) => row.is_approved && !row.needs_review).length,
       review: previewRows.filter((row) => row.needs_review).length,
+      reviewable: previewRows.filter((row) => row.needs_review && row.can_approve).length,
     };
   }, [previewRows]);
 
@@ -182,6 +185,57 @@ export default function BankImportPage() {
     setBankAccountId(value);
     if (pendingMessage && value.trim()) {
       setPendingMessage(t('bankAccountIdFilledReupload'));
+    }
+  };
+
+  const applyApprovalResult = (result: { job: BankImportJob; preview_rows: BankImportPreviewRow[]; summary: Record<string, any> }) => {
+    setJob(result.job);
+    setPreviewRows(result.preview_rows);
+    setSummary(result.summary);
+    setCommitSummary(null);
+  };
+
+  const handleRowApproval = async (rowNo: number, isApproved: boolean) => {
+    if (!job) return;
+
+    setPendingApprovalRow(rowNo);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setPendingMessage(null);
+
+    try {
+      const result = await bankingApi.setImportRowApproval(job.id, [{ row_no: rowNo, is_approved: isApproved }]);
+      applyApprovalResult(result);
+      setSuccessMessage(isApproved ? t('rowApproved', { row: rowNo }) : t('rowApprovalReverted', { row: rowNo }));
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setPendingApprovalRow(null);
+    }
+  };
+
+  const handleApproveAllReviewable = async () => {
+    if (!job) return;
+
+    const updates = previewRows
+      .filter((row) => row.needs_review && row.can_approve)
+      .map((row) => ({ row_no: row.row_no, is_approved: true }));
+
+    if (updates.length === 0) return;
+
+    setIsBulkApproving(true);
+    setErrorMessage(null);
+    setSuccessMessage(null);
+    setPendingMessage(null);
+
+    try {
+      const result = await bankingApi.setImportRowApproval(job.id, updates);
+      applyApprovalResult(result);
+      setSuccessMessage(t('reviewableRowsApproved', { count: updates.length }));
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsBulkApproving(false);
     }
   };
 
@@ -397,11 +451,23 @@ export default function BankImportPage() {
           )}
 
           <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <h2 className="text-base font-semibold text-slate-900">{t('previewRows')}</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {t('previewRowsDescription')}
-              </p>
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-900">{t('previewRows')}</h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  {t('previewRowsDescription')}
+                </p>
+              </div>
+              {counts.reviewable > 0 && (
+                <button
+                  onClick={handleApproveAllReviewable}
+                  disabled={isBulkApproving || pendingApprovalRow !== null}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isBulkApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                  <span>{t('approveAllReviewable', { count: counts.reviewable })}</span>
+                </button>
+              )}
             </div>
 
             {previewRows.length === 0 ? (
@@ -441,11 +507,51 @@ export default function BankImportPage() {
                               <div className="text-xs text-amber-800">
                                 {row.warning_flags.map(formatLabel).join(', ')}
                               </div>
+                              {row.can_approve ? (
+                                <button
+                                  onClick={() => void handleRowApproval(row.row_no, true)}
+                                  disabled={pendingApprovalRow === row.row_no || isBulkApproving}
+                                  className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                  {pendingApprovalRow === row.row_no ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <ShieldCheck className="h-3.5 w-3.5" />
+                                  )}
+                                  <span>{t('approveAnyway')}</span>
+                                </button>
+                              ) : (
+                                <div className="text-[11px] font-medium text-red-600">{t('cannotApproveRow')}</div>
+                              )}
                             </div>
                           ) : (
-                            <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
-                              {t('approved')}
-                            </span>
+                            <div className="space-y-2">
+                              <span className="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+                                {t('approved')}
+                              </span>
+                              {row.manually_approved && (
+                                <>
+                                  <div className="text-[11px] font-medium text-emerald-700">{t('manuallyApproved')}</div>
+                                  {row.warning_flags.length > 0 && (
+                                    <div className="text-xs text-amber-800">
+                                      {row.warning_flags.map(formatLabel).join(', ')}
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={() => void handleRowApproval(row.row_no, false)}
+                                    disabled={pendingApprovalRow === row.row_no || isBulkApproving}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    {pendingApprovalRow === row.row_no ? (
+                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ) : (
+                                      <ShieldAlert className="h-3.5 w-3.5" />
+                                    )}
+                                    <span>{t('undoApproval')}</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
                           )}
                         </td>
                       </tr>

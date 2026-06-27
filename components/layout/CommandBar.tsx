@@ -46,6 +46,7 @@ export function CommandBar({
     accounting: tNavigation('books'),
     accounts: tAccounting('chartOfAccounts'),
     'bank-review': tAccounting('bankReview'),
+    'bank-reconciliation': tAccounting('bankReconciliation'),
     journal: tAccounting('journalEntries'),
     partners: tAccounting('partners'),
     invoices: tInvoices('overview'),
