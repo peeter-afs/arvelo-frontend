@@ -367,7 +367,7 @@ export default function InvoiceListWorkspace({
           >
             <Plus className="h-3.5 w-3.5" />
             {t('newInvoice')}
-            <Kbd inverse>N</Kbd>
+            <Kbd inverse>U</Kbd>
           </Link>
           <Link
             href={`/invoices/new?type=${invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note'}`}

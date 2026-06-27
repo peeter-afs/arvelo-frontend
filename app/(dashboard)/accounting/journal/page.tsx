@@ -127,7 +127,7 @@ export default function JournalEntriesPage() {
 
       if (isEditingText) return;
 
-      if (event.key.toLowerCase() === 'n') {
+      if (event.key.toLowerCase() === 'u') {
         event.preventDefault();
         router.push('/accounting/journal/new');
         return;
@@ -144,7 +144,7 @@ export default function JournalEntriesPage() {
         event.preventDefault();
         void handleSelect(filtered[Math.max(0, currentIndex - 1)]);
       }
-      if (event.key.toLowerCase() === 'e' && selectedEntry) {
+      if (event.key.toLowerCase() === 'm' && selectedEntry) {
         event.preventDefault();
         router.push(`/accounting/journal/${selectedEntry.id}/edit`);
       }
@@ -195,7 +195,7 @@ export default function JournalEntriesPage() {
           <Button variant="primary" onClick={() => router.push('/accounting/journal/new')}>
             <Plus className="h-3.5 w-3.5" />
             {t('newEntry')}
-            <Kbd inverse>N</Kbd>
+            <Kbd inverse>U</Kbd>
           </Button>
         </div>
       </div>
@@ -250,7 +250,7 @@ export default function JournalEntriesPage() {
             <Kbd>K</Kbd>
             <span>{t('navigateHint')}</span>
             <span>·</span>
-            <Kbd>E</Kbd>
+            <Kbd>M</Kbd>
             <span>{t('editHint')}</span>
             <span>·</span>
             <Kbd>D</Kbd>
@@ -325,8 +325,8 @@ export default function JournalEntriesPage() {
 
           <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
             <span><span className="text-[var(--a-text)]">{filtered.length}</span> {t('shown')}</span>
-            <span>Σ Dr <span className="text-[var(--a-text)]">{formatEUR(totalDebit)}</span></span>
-            <span>Σ Cr <span className="text-[var(--a-text)]">{formatEUR(totalCredit)}</span></span>
+            <span>Σ {t('debitAbbr')} <span className="text-[var(--a-text)]">{formatEUR(totalDebit)}</span></span>
+            <span>Σ {t('creditAbbr')} <span className="text-[var(--a-text)]">{formatEUR(totalCredit)}</span></span>
             <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {t('balanced')}
@@ -425,7 +425,7 @@ function EntryDetailPanel({
               return (
                 <div key={row.id} className="flex items-center gap-2 text-[12.5px]">
                   <span className={`rounded px-1.5 py-0.5 font-mono text-[10px] font-bold ${side === 'Dr' ? 'bg-[var(--a-surface-2)] text-[var(--a-text)]' : 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]'}`}>
-                    {side.toUpperCase()}
+                    {side === 'Dr' ? t('debitAbbr') : t('creditAbbr')}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[var(--a-text)]">{accountLabel(row.account_id)}</span>
                   <span className="font-mono font-medium tabular-nums text-[var(--a-text)]">{formatEUR(debit || credit)}</span>
@@ -472,7 +472,7 @@ function EntryDetailPanel({
           onClick={onEdit}
         >
           <Pencil className="h-3.5 w-3.5" />
-          {t('edit')} <Kbd>E</Kbd>
+          {t('edit')} <Kbd>M</Kbd>
         </Button>
         <Button
           className="h-8 flex-1 text-xs"

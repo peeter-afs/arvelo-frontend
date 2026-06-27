@@ -134,7 +134,7 @@ export default function ChartOfAccountsPage() {
           <Button variant="primary" onClick={() => setShowCreateModal(true)}>
             <Plus className="h-3.5 w-3.5" />
             {t('newAccount')}
-            <Kbd inverse>N</Kbd>
+            <Kbd inverse>U</Kbd>
           </Button>
         </div>
       </div>

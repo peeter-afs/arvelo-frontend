@@ -355,10 +355,10 @@ export default function RecurringInvoicesPage() {
         e.preventDefault();
         const tmpl = templates.find(t => t.id === selectedId);
         if (tmpl) handleToggle(tmpl);
-      } else if ((e.key === 'e' || e.key === 'E') && selectedId) {
+      } else if ((e.key === 'm' || e.key === 'M') && selectedId) {
         e.preventDefault();
         setShowCreate(true);
-      } else if (e.key === 'n' || e.key === 'N') {
+      } else if (e.key === 'u' || e.key === 'U') {
         e.preventDefault();
         setShowCreate(true);
       }
@@ -488,11 +488,11 @@ export default function RecurringInvoicesPage() {
           >
             <Kbd>J</Kbd>
             <Kbd>K</Kbd>
-            {' navigate · '}
+            {` ${t('navigateHint')} · `}
             <Kbd>P</Kbd>
-            {' pause · '}
-            <Kbd>E</Kbd>
-            {' edit'}
+            {` ${t('pauseHint')} · `}
+            <Kbd>M</Kbd>
+            {` ${t('editHint')}`}
           </span>
 
           {/* Generate due button */}
@@ -505,7 +505,7 @@ export default function RecurringInvoicesPage() {
           <Button variant="primary" onClick={() => setShowCreate(true)}>
             <Plus className="h-3.5 w-3.5" />
             {t('newTemplate')}
-            <Kbd inverse>N</Kbd>
+            <Kbd inverse>U</Kbd>
           </Button>
         </div>
       </div>
@@ -1115,13 +1115,13 @@ function RecDetailPane({
         >
           <FileText style={{ width: 13, height: 13 }} />
           {tc('edit')}
-          <Kbd>E</Kbd>
+          <Kbd>M</Kbd>
         </Button>
         <Button
           variant="danger"
           style={{ width: 32, justifyContent: 'center', padding: 0 }}
           onClick={() => {
-            if (window.confirm('Delete this template?')) onDelete(template.id);
+            if (window.confirm(t('deleteConfirm'))) onDelete(template.id);
           }}
           title={tc('delete')}
         >

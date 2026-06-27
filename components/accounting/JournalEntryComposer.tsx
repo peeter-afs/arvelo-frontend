@@ -524,7 +524,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                       setDisplayDate(isoToDisplay(entryDate));
                     }
                   }}
-                  placeholder="DD.MM.YYYY"
+                  placeholder={t('dateFormatPlaceholder')}
                   className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 font-mono text-[13px] text-[var(--a-text)] outline-none focus:border-[var(--a-accent)]"
                 />
               </div>
@@ -570,7 +570,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                   type="text"
                   value={reference}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setReference(e.target.value)}
-                  placeholder="REF-001"
+                  placeholder={t('referencePlaceholder')}
                   className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                 />
               </div>
@@ -670,7 +670,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       updateLine(index, { debit: e.target.value })
                     }
-                    placeholder="0.00"
+                    placeholder={t('amountPlaceholder')}
                     className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
 
@@ -682,7 +682,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                       updateLine(index, { credit: e.target.value })
                     }
-                    placeholder="0.00"
+                    placeholder={t('amountPlaceholder')}
                     className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
 

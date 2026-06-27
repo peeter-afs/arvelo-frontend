@@ -329,10 +329,10 @@ export default function BusinessPartnersPage() {
     <div className="flex min-h-full flex-col gap-4">
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
-          <div className="micro text-[var(--a-text-3)]">Customers, suppliers, employees</div>
+          <div className="micro text-[var(--a-text-3)]">{t('partnersSubtitle')}</div>
           <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('businessPartnersTitle')}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
-            {partners.length} contacts · {customers.length} customers · {suppliers.length} suppliers
+            {t('partnersCounts', { contacts: partners.length, customers: customers.length, suppliers: suppliers.length })}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -350,7 +350,7 @@ export default function BusinessPartnersPage() {
           >
             <Plus className="h-3.5 w-3.5" />
             {t('addPartner')}
-            <Kbd inverse>N</Kbd>
+            <Kbd inverse>U</Kbd>
           </Button>
         </div>
       </div>
