@@ -84,6 +84,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             { label: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
             { label: tInvoices('recurring'), href: '/invoices/recurring' },
             { label: tInvoices('reminders'), href: '/invoices/reminders' },
+            { label: tInvoices('productsTitle'), href: '/invoices/products' },
           ],
         },
         { label: tAccounting('bankReview'), href: '/accounting/bank-review', icon: Landmark },

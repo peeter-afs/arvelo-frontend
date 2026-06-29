@@ -19,6 +19,8 @@ import InvoiceLinesEditor, {
   type EditorLine,
   type SupplyType,
 } from '@/components/invoices/InvoiceLinesEditor';
+import { ProductModal } from '@/components/invoices/ProductModal';
+import { productsApi, type Product } from '@/lib/api/products.api';
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
 
@@ -50,6 +52,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [salesDefaults, setSalesDefaults] = useState<Partial<Record<SupplyType, string>>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [quickAddLine, setQuickAddLine] = useState<EditorLine | null>(null);
   const [type, setType] = useState<InvoiceType>(defaultType);
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
   const [partnerId, setPartnerId] = useState(prefill?.partner_id || '');
@@ -86,13 +90,15 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   useEffect(() => {
     const loadBase = async () => {
       try {
-        const [partnerItems, accountItems, settings] = await Promise.all([
+        const [partnerItems, accountItems, settings, productItems] = await Promise.all([
           accountingApi.getPartners(),
           accountingApi.getAccounts(),
           accountingApi.getAccountingSettings().catch(() => null),
+          productsApi.list().catch(() => [] as Product[]),
         ]);
         setPartners(partnerItems);
         setAccounts(accountItems);
+        setProducts(productItems);
         if (settings) {
           const map: Partial<Record<SupplyType, string>> = {};
           if (settings.default_sales_account_id_domestic) map.domestic = settings.default_sales_account_id_domestic;
@@ -220,6 +226,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const title = mode === 'create'
     ? (isCreditNote ? t('newCreditNote') : t('newInvoiceDraft'))
     : (isCreditNote ? t('editCreditNote') : t('editInvoiceDraft'));
+
+  const revenueAccounts = accounts.filter((a) => a.is_active && a.type === 'revenue');
+  const productAccounts = revenueAccounts.length > 0 ? revenueAccounts : accounts.filter((a) => a.is_active);
 
   const saveAction = (
     <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving || isLoading}>
@@ -350,6 +359,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 currency={currency}
                 accountFilterType={type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue'}
                 supplyTypeDefaults={type === 'purchase_invoice' || type === 'purchase_credit_note' ? undefined : salesDefaults}
+                products={products}
+                onQuickAdd={(line) => setQuickAddLine(line)}
               />
             </div>
 
@@ -360,6 +371,26 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
               </Button>
             </div>
           </>
+        )}
+
+        {quickAddLine && (
+          <ProductModal
+            initial={{
+              name: quickAddLine.description,
+              description: quickAddLine.description,
+              unit_price: Number(quickAddLine.unit_price) || null,
+              tax_rate: Number(quickAddLine.tax_rate) || null,
+              supply_type: quickAddLine.supply_type,
+              sales_account_id: quickAddLine.account_id || '',
+            }}
+            accounts={productAccounts}
+            onClose={() => setQuickAddLine(null)}
+            onSaved={async () => {
+              setQuickAddLine(null);
+              const items = await productsApi.list().catch(() => [] as Product[]);
+              setProducts(items);
+            }}
+          />
         )}
       </div>
     </div>

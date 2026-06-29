@@ -56,6 +56,7 @@ export function CommandBar({
     'purchase-imports': tInvoices('purchaseImports'),
     recurring: tInvoices('recurring'),
     reminders: tInvoices('reminders'),
+    products: tInvoices('productsTitle'),
     reports: tNavigation('reports'),
     'profit-loss': tReports('profitLoss'),
     vat: tReports('vatReport'),
