@@ -92,6 +92,17 @@ const createSubledgerRow = (date = ''): SubledgerRow => ({
 
 const fmt = (value: number) => `€${value.toFixed(2)}`;
 
+// Opening balances accept Merit PDF exports and Merit Excel (käibeandmik /
+// open-items) exports.
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const XLS_MIME = 'application/vnd.ms-excel';
+const ACCEPT_TYPES = `.pdf,.xlsx,.xls,application/pdf,${XLSX_MIME},${XLS_MIME}`;
+const isImportableFile = (file: File) =>
+  /\.(pdf|xlsx|xls)$/i.test(file.name) ||
+  [ 'application/pdf', XLSX_MIME, XLS_MIME ].includes(file.type);
+const isExcelResult = (fileName: string, model: string) =>
+  /\.xlsx?$/i.test(fileName) || model === 'merit-excel-parser';
+
 // Document noun for the active mode, interpolated into the upload/step copy
 // ("balance" / "receivables" / "payables") so the wording tracks the chosen tab.
 const docNoun = (mode: Mode, t: ReturnType<typeof useTranslations>) =>
@@ -137,6 +148,11 @@ export default function OpeningBalancesPage() {
   const [payableRows, setPayableRows] = useState<SubledgerRow[]>([createSubledgerRow()]);
   const [receivablesOffsetAccountId, setReceivablesOffsetAccountId] = useState('');
   const [payablesOffsetAccountId, setPayablesOffsetAccountId] = useState('');
+  // Configured AR/AP control accounts — used to recommend/prefill the subledger
+  // offset so open items don't double-count the AR/AP already in a committed
+  // balance sheet / käibeandmik.
+  const [arControlAccountId, setArControlAccountId] = useState('');
+  const [apControlAccountId, setApControlAccountId] = useState('');
 
   const currentGeneralTotals = useMemo(() => {
     return generalRows.reduce(
@@ -230,11 +246,12 @@ export default function OpeningBalancesPage() {
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        const [accountItems, partnerItems, batchResult, importStatus] = await Promise.all([
+        const [accountItems, partnerItems, batchResult, importStatus, settings] = await Promise.all([
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, committed_batches: [] as ImportStatusBatch[] }))
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, committed_batches: [] as ImportStatusBatch[] })),
+          accountingApi.getAccountingSettings().catch(() => null)
         ]);
 
         setAccounts(accountItems);
@@ -251,6 +268,18 @@ export default function OpeningBalancesPage() {
         const glBatch = committedBatches.find((b) => b.batch_type === 'general');
         if (glBatch?.opening_date) {
           setGlOpeningDate(glBatch.opening_date);
+        }
+
+        const arId = settings?.accounts_receivable_account_id || '';
+        const apId = settings?.accounts_payable_account_id || '';
+        setArControlAccountId(arId);
+        setApControlAccountId(apId);
+        // When the balance sheet / käibeandmik is already committed, its AR/AP
+        // totals are in the books — prefill the subledger offset with the control
+        // account so importing open items nets to zero in the GL (no double-count).
+        if (committed.has('general')) {
+          if (arId) setReceivablesOffsetAccountId((prev) => prev || arId);
+          if (apId) setPayablesOffsetAccountId((prev) => prev || apId);
         }
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
@@ -826,7 +855,7 @@ function OBUpload({
   const doc = docNoun(mode, t);
 
   // Without these handlers a dropped file falls through to the browser, which
-  // just navigates to (opens) the PDF instead of importing it.
+  // just navigates to (opens) the file instead of importing it.
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     if (!canDrop) return;
     event.preventDefault();
@@ -840,7 +869,7 @@ function OBUpload({
     event.preventDefault();
     setDragActive(false);
     if (!canDrop) return;
-    const file = Array.from(event.dataTransfer.files).find((f) => f.type === 'application/pdf')
+    const file = Array.from(event.dataTransfer.files).find(isImportableFile)
       ?? event.dataTransfer.files[0]
       ?? null;
     onFileSelected(file);
@@ -876,7 +905,7 @@ function OBUpload({
             <input
               ref={inputRef}
               type="file"
-              accept="application/pdf"
+              accept={ACCEPT_TYPES}
               className="hidden"
               onChange={(event) => {
                 const file = event.target.files?.[0] || null;
@@ -972,9 +1001,15 @@ function OBReview(props: {
       {/* source summary card */}
       {importResult && (
         <div className="mt-4 flex items-center gap-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-3">
-          <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#fbeaea] text-[8.5px] font-bold text-[#c0392b]">
-            PDF
-          </div>
+          {isExcelResult(importResult.file_name, importResult.model) ? (
+            <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#e6f4ea] text-[8.5px] font-bold text-[#1e7e34]">
+              XLS
+            </div>
+          ) : (
+            <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#fbeaea] text-[8.5px] font-bold text-[#c0392b]">
+              PDF
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13px] font-medium text-[var(--a-text)]">{importResult.file_name}</div>
             <div className="truncate font-mono text-[11.5px] text-[var(--a-text-3)]">
@@ -1100,6 +1135,13 @@ function OBReview(props: {
           className="h-[30px] min-w-[160px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text)]"
         />
       </div>
+
+      {(mode === 'receivables' || mode === 'payables') && (
+        <div className="mt-2 flex items-start gap-2 rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 py-2 text-[12px] text-[var(--a-text-2)]">
+          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--a-text-3)]" />
+          <span>{t('obOffsetHint')}</span>
+        </div>
+      )}
 
       {mode === 'general' ? (
         <GeneralTable
