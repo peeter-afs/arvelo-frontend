@@ -10,6 +10,7 @@ export type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'th
 
 export type EditorLine = {
   description: string;
+  code?: string;
   account_id: string;
   quantity: string;
   unit_price: string;
@@ -20,6 +21,7 @@ export type EditorLine = {
 
 export const emptyEditorLine = (): EditorLine => ({
   description: '',
+  code: '',
   account_id: '',
   quantity: '1',
   unit_price: '',
@@ -102,10 +104,10 @@ export default function InvoiceLinesEditor({
   const applyProduct = (index: number, line: EditorLine, product: Product) => {
     update(index, {
       description: product.description || product.name,
+      code: product.code || line.code || '',
       unit_price: product.unit_price != null ? String(product.unit_price) : line.unit_price,
       tax_rate: product.tax_rate != null ? String(product.tax_rate) : line.tax_rate,
       account_id: product.sales_account_id || line.account_id,
-      supply_type: (product.supply_type as SupplyType) || line.supply_type,
     });
     setProductMenuRow(null);
   };
@@ -114,9 +116,9 @@ export default function InvoiceLinesEditor({
   // active accounts if the type filter would leave nothing to pick.
   const accountOptions = useMemo(() => {
     const active = accounts.filter((a) => a.is_active);
-    if (!accountFilterType) return active;
-    const typed = active.filter((a) => a.type === accountFilterType);
-    return typed.length > 0 ? typed : active;
+    // Show only real sales/expense accounts (no fallback to all): a sales invoice should
+    // only ever post to revenue accounts, a purchase to expense accounts.
+    return accountFilterType ? active.filter((a) => a.type === accountFilterType) : active;
   }, [accounts, accountFilterType]);
 
   const accountLabels = useMemo(() => {
@@ -144,9 +146,10 @@ export default function InvoiceLinesEditor({
     update(index, fallback && !line.account_id ? { supply_type, account_id: fallback } : { supply_type });
   };
 
-  // Column order: description · qty · unit price · discount · VAT · [supply] · line total · account (last) · delete
+  // Column order: code · description · qty · unit price · discount · VAT · [supply] · line total · account (last) · delete
   const gridCols = [
-    'minmax(160px,1fr)',
+    '88px',
+    'minmax(150px,1fr)',
     '64px',
     '96px',
     '76px',
@@ -158,7 +161,7 @@ export default function InvoiceLinesEditor({
   ]
     .filter(Boolean)
     .join(' ');
-  const minWidth = (showSupplyType ? 760 : 620) + (showAccount ? 160 : 22) + (onQuickAdd ? 26 : 0);
+  const minWidth = (showSupplyType ? 760 : 620) + 88 + (showAccount ? 160 : 22) + (onQuickAdd ? 26 : 0);
 
   return (
     <div>
@@ -181,7 +184,8 @@ export default function InvoiceLinesEditor({
             className="grid items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]"
             style={{ gridTemplateColumns: gridCols }}
           >
-            <div>{t('description')}</div>
+            <div>{t('productCode')}</div>
+            <div>{t('lineDescription')}</div>
             <div className="text-right">{t('qty')}</div>
             <div className="text-right">{t('unitPrice')}</div>
             <div className="text-right">{t('discount')}</div>
@@ -201,6 +205,12 @@ export default function InvoiceLinesEditor({
                 style={{ gridTemplateColumns: gridCols }}
                 title={!showAccount && line.account_id ? accountLabels.get(line.account_id) : undefined}
               >
+                <input
+                  value={line.code || ''}
+                  onChange={(event) => update(index, { code: event.target.value })}
+                  placeholder={t('productCode')}
+                  className={inputClass}
+                />
                 {products && products.length > 0 ? (
                   <div className="relative">
                     <input
@@ -235,7 +245,7 @@ export default function InvoiceLinesEditor({
                   <input
                     value={line.description}
                     onChange={(event) => update(index, { description: event.target.value })}
-                    placeholder={t('description')}
+                    placeholder={t('lineDescription')}
                     className={inputClass}
                   />
                 )}

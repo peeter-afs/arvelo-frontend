@@ -3,27 +3,16 @@
 import { useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { productsApi, type Product, type ProductInput, type SupplyType } from '@/lib/api/products.api';
+import { productsApi, type Product, type ProductInput } from '@/lib/api/products.api';
 import type { AccountOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 
-const SUPPLY_TYPES: SupplyType[] = ['domestic', 'intra_community', 'reverse_charge', 'third_country'];
 const fieldInput =
   'h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]';
 
-export function supplyKey(s: SupplyType): string {
-  return s === 'intra_community'
-    ? 'supplyIntraCommunity'
-    : s === 'reverse_charge'
-      ? 'supplyReverseCharge'
-      : s === 'third_country'
-        ? 'supplyThirdCountry'
-        : 'supplyDomestic';
-}
-
 const baseDraft = (): ProductInput => ({
-  code: '', name: '', description: '', unit: '', unit_price: null, tax_rate: 22, supply_type: 'domestic', sales_account_id: '', is_active: true,
+  code: '', name: '', description: '', unit: '', unit_price: null, purchase_price: null, tax_rate: 22, sales_account_id: '', is_active: true,
 });
 
 type Props = {
@@ -43,8 +32,9 @@ export function ProductModal({ product, initial, accounts, onClose, onSaved }: P
       ? {
           code: product.code || '', name: product.name, description: product.description || '', unit: product.unit || '',
           unit_price: product.unit_price === null ? null : Number(product.unit_price),
+          purchase_price: product.purchase_price == null ? null : Number(product.purchase_price),
           tax_rate: product.tax_rate === null ? null : Number(product.tax_rate),
-          supply_type: product.supply_type, sales_account_id: product.sales_account_id || '', is_active: product.is_active,
+          sales_account_id: product.sales_account_id || '', is_active: product.is_active,
         }
       : { ...baseDraft(), ...initial }
   );
@@ -58,10 +48,12 @@ export function ProductModal({ product, initial, accounts, onClose, onSaved }: P
     setSaving(true);
     setError(null);
     try {
+      const num = (v: unknown) => (v === null || v === '' || v === undefined ? null : Number(v));
       const payload: ProductInput = {
         ...draft,
-        unit_price: draft.unit_price === null || (draft.unit_price as unknown as string) === '' ? null : Number(draft.unit_price),
-        tax_rate: draft.tax_rate === null || (draft.tax_rate as unknown as string) === '' ? null : Number(draft.tax_rate),
+        unit_price: num(draft.unit_price),
+        purchase_price: num(draft.purchase_price),
+        tax_rate: num(draft.tax_rate),
         sales_account_id: draft.sales_account_id || null,
       };
       const saved = product ? await productsApi.update(product.id, payload) : await productsApi.create(payload);
@@ -91,12 +83,8 @@ export function ProductModal({ product, initial, accounts, onClose, onSaved }: P
             <Field label={t('productCode')}><input value={draft.code || ''} onChange={(e) => set({ code: e.target.value })} className={fieldInput} /></Field>
             <Field label={t('productUnit')}><input value={draft.unit || ''} onChange={(e) => set({ unit: e.target.value })} placeholder={t('unitPlaceholder')} className={fieldInput} /></Field>
             <Field label={t('unitPrice')}><input inputMode="decimal" value={draft.unit_price ?? ''} onChange={(e) => set({ unit_price: e.target.value === '' ? null : Number(e.target.value) })} className={fieldInput} /></Field>
+            <Field label={t('purchasePrice')}><input inputMode="decimal" value={draft.purchase_price ?? ''} onChange={(e) => set({ purchase_price: e.target.value === '' ? null : Number(e.target.value) })} className={fieldInput} /></Field>
             <Field label={t('vatRate')}><input inputMode="decimal" value={draft.tax_rate ?? ''} onChange={(e) => set({ tax_rate: e.target.value === '' ? null : Number(e.target.value) })} className={fieldInput} /></Field>
-            <Field label={t('supplyType')}>
-              <select value={draft.supply_type} onChange={(e) => set({ supply_type: e.target.value as SupplyType })} className={fieldInput}>
-                {SUPPLY_TYPES.map((s) => <option key={s} value={s}>{t(supplyKey(s))}</option>)}
-              </select>
-            </Field>
             <Field label={t('productSalesAccount')} full>
               <select value={draft.sales_account_id || ''} onChange={(e) => set({ sales_account_id: e.target.value })} className={fieldInput}>
                 <option value="">{t('selectAccountOptional')}</option>

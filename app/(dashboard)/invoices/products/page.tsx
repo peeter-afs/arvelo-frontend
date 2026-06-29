@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, Loader2, Package, Pencil, Plus, Search, Trash2, X } from 'lucide-react';
-import { productsApi, type Product, type SupplyType } from '@/lib/api/products.api';
+import { AlertCircle, Loader2, Package, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { productsApi, type Product } from '@/lib/api/products.api';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
-import { ProductModal, supplyKey } from '@/components/invoices/ProductModal';
+import { ProductModal } from '@/components/invoices/ProductModal';
 
 const fieldInput =
   'h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]';
@@ -22,10 +22,8 @@ export default function ProductsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
 
-  const revenueAccounts = useMemo(() => {
-    const rev = accounts.filter((a) => a.is_active && a.type === 'revenue');
-    return rev.length > 0 ? rev : accounts.filter((a) => a.is_active);
-  }, [accounts]);
+  // Only real sales (revenue) accounts — no fallback to all active accounts.
+  const revenueAccounts = useMemo(() => accounts.filter((a) => a.is_active && a.type === 'revenue'), [accounts]);
   const accountLabel = useMemo(() => {
     const map = new Map<string, string>();
     accounts.forEach((a) => map.set(a.id, `${a.code} ${a.name}`));
@@ -106,8 +104,8 @@ export default function ProductsPage() {
               <th className="px-3.5 py-2.5 text-left">{t('productName')}</th>
               <th className="px-3.5 py-2.5 text-left">{t('productCode')}</th>
               <th className="px-3.5 py-2.5 text-right">{t('unitPrice')}</th>
+              <th className="px-3.5 py-2.5 text-right">{t('purchasePrice')}</th>
               <th className="px-3.5 py-2.5 text-right">{t('vatRate')}</th>
-              <th className="px-3.5 py-2.5 text-left">{t('supplyType')}</th>
               <th className="px-3.5 py-2.5 text-left">{t('account')}</th>
               <th className="px-3.5 py-2.5" />
             </tr>
@@ -125,8 +123,8 @@ export default function ProductsPage() {
                   <td className="px-3.5 py-2.5 text-[13px] font-medium text-[var(--a-text)]">{p.name}</td>
                   <td className="px-3.5 py-2.5 text-[12.5px] text-[var(--a-text-2)]">{p.code || '—'}</td>
                   <td className="px-3.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)]">{fmt(p.unit_price)}</td>
+                  <td className="px-3.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text-2)]">{fmt(p.purchase_price)}</td>
                   <td className="px-3.5 py-2.5 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text-2)]">{fmt(p.tax_rate)}</td>
-                  <td className="px-3.5 py-2.5 text-[12.5px] text-[var(--a-text-2)]">{t(supplyKey(p.supply_type))}</td>
                   <td className="px-3.5 py-2.5 text-[12px] text-[var(--a-text-2)]">{p.sales_account_id ? (accountLabel.get(p.sales_account_id) || '—') : '—'}</td>
                   <td className="px-3.5 py-2.5">
                     <div className="flex items-center justify-end gap-1">

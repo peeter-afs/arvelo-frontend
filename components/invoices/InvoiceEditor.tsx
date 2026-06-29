@@ -67,6 +67,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     prefill?.lines && prefill.lines.length > 0
       ? prefill.lines.map((l) => ({
           description: l.description,
+          code: '',
           account_id: '',
           quantity: String(l.quantity),
           unit_price: String(l.unit_price),
@@ -135,6 +136,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
           result.lines.length > 0
             ? result.lines.map((line) => ({
                 description: line.description || '',
+                code: (line.meta?.code as string) || '',
                 account_id: line.account_id || '',
                 quantity: String(line.quantity ?? 1),
                 unit_price: String(line.unit_price ?? ''),
@@ -174,6 +176,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       discount_percent: Number(line.discount_percent || 0),
       tax_rate: Number(line.tax_rate || 0),
       supply_type: line.supply_type || 'domestic',
+      meta: line.code ? { code: line.code } : undefined,
     })),
   });
 
@@ -227,8 +230,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     ? (isCreditNote ? t('newCreditNote') : t('newInvoiceDraft'))
     : (isCreditNote ? t('editCreditNote') : t('editInvoiceDraft'));
 
-  const revenueAccounts = accounts.filter((a) => a.is_active && a.type === 'revenue');
-  const productAccounts = revenueAccounts.length > 0 ? revenueAccounts : accounts.filter((a) => a.is_active);
+  // Sales account pickers list only real revenue accounts (no fallback to all).
+  const productAccounts = accounts.filter((a) => a.is_active && a.type === 'revenue');
 
   const saveAction = (
     <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving || isLoading}>

@@ -14,8 +14,9 @@ export type Product = {
   description: string | null;
   unit: string | null;
   unit_price: number | string | null;
+  purchase_price: number | string | null;
   tax_rate: number | string | null;
-  supply_type: SupplyType;
+  supply_type?: SupplyType;
   sales_account_id: string | null;
   is_active: boolean;
   created_at: string;
@@ -28,6 +29,7 @@ export type ProductInput = {
   description?: string | null;
   unit?: string | null;
   unit_price?: number | null;
+  purchase_price?: number | null;
   tax_rate?: number | null;
   supply_type?: SupplyType;
   sales_account_id?: string | null;
