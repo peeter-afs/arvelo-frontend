@@ -129,6 +129,8 @@ export default function OpeningBalancesPage() {
   // block importing receivables or payables.
   const [committedModes, setCommittedModes] = useState<Set<Mode>>(new Set());
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
+  const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | null>(null);
+  const [savingStrategy, setSavingStrategy] = useState(false);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -250,7 +252,7 @@ export default function OpeningBalancesPage() {
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, committed_batches: [] as ImportStatusBatch[] })),
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | null, committed_batches: [] as ImportStatusBatch[] })),
           accountingApi.getAccountingSettings().catch(() => null)
         ]);
 
@@ -265,6 +267,7 @@ export default function OpeningBalancesPage() {
           }
         }
         setCommittedModes(committed);
+        setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | null }).opening_balances_strategy) ?? null);
         const glBatch = committedBatches.find((b) => b.batch_type === 'general');
         if (glBatch?.opening_date) {
           setGlOpeningDate(glBatch.opening_date);
@@ -300,6 +303,31 @@ export default function OpeningBalancesPage() {
   const refreshBatches = async () => {
     const batchResult = await accountingApi.listOpeningBalances();
     setBatches(batchResult.items);
+  };
+
+  const handleChooseStrategy = async (choice: 'with_general' | 'subledger_only') => {
+    if (choice === 'subledger_only' && !window.confirm(t('obConfirmSkipGeneral'))) return;
+    setSavingStrategy(true);
+    setErrorMessage(null);
+    try {
+      await accountingApi.setOpeningBalancesStrategy(choice);
+      setStrategy(choice);
+      if (choice === 'subledger_only') {
+        // No käibeandmik — receivables/payables net against the opening-balance equity (3900).
+        const equity = accounts.find((a) => a.code === '3900' || a.system_code === 'OPENING_BALANCE_EQUITY');
+        if (equity) {
+          setReceivablesOffsetAccountId((prev) => prev || equity.id);
+          setPayablesOffsetAccountId((prev) => prev || equity.id);
+        }
+        setMode((m) => (m === 'general' ? 'receivables' : m));
+      } else {
+        setMode('general');
+      }
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setSavingStrategy(false);
+    }
   };
 
   const handleModeChange = (nextMode: Mode) => {
@@ -529,6 +557,41 @@ export default function OpeningBalancesPage() {
   })();
 
   const showActionBar = step === 'review' || step === 'confirm';
+
+  // Force an explicit choice before any import: with käibeandmik, or subledger-only.
+  if (!isBootLoading && !strategy && committedModes.size === 0) {
+    return (
+      <div className="flex h-full min-h-0 flex-col items-center justify-center p-6">
+        <div className="w-full max-w-xl rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-6">
+          <h2 className="text-[18px] font-semibold text-[var(--a-text)]">{t('obStrategyTitle')}</h2>
+          <p className="mt-1.5 text-[13px] text-[var(--a-text-2)]">{t('obStrategyDescription')}</p>
+          {errorMessage && (
+            <div className="mt-3 rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-3 py-2 text-[12.5px] text-[var(--a-neg)]">{errorMessage}</div>
+          )}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              disabled={savingStrategy}
+              onClick={() => void handleChooseStrategy('with_general')}
+              className="rounded-[10px] border border-[var(--a-border)] p-4 text-left transition hover:border-[var(--a-accent)] disabled:opacity-50"
+            >
+              <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategyWithGeneral')}</div>
+              <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategyWithGeneralHint')}</div>
+            </button>
+            <button
+              type="button"
+              disabled={savingStrategy}
+              onClick={() => void handleChooseStrategy('subledger_only')}
+              className="rounded-[10px] border border-[var(--a-border)] p-4 text-left transition hover:border-[var(--a-accent)] disabled:opacity-50"
+            >
+              <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategySubledgerOnly')}</div>
+              <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategySubledgerOnlyHint')}</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">

@@ -435,8 +435,17 @@ export const accountingApi = {
       can_reset: boolean;
       reset_reference_date: string | null;
       reset_window_months: number;
+      opening_balances_strategy: 'with_general' | 'subledger_only' | null;
       committed_batches: Array<{ id: string; batch_type: string; opening_date: string; committed_at: string }>;
     }>>('/api/accounting/opening-balances/import-status');
+    return response.data.data;
+  },
+
+  async setOpeningBalancesStrategy(strategy: 'with_general' | 'subledger_only') {
+    const response = await apiClient.post<ApiResponse<{ settings: AccountingSettings }>>(
+      '/api/accounting/opening-balances/strategy',
+      { strategy }
+    );
     return response.data.data;
   },
 
