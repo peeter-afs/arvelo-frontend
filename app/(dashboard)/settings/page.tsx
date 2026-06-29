@@ -24,7 +24,7 @@ import type { UserRole } from '@/lib/types/auth.types';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
-  const { user, tenant, role } = useAuthStore();
+  const { user, tenant, role, setTenant } = useAuthStore();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -52,6 +52,14 @@ export default function SettingsPage() {
   };
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [settingsSuccess, setSettingsSuccess] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState(tenant?.name || '');
+  const [isVatRegistered, setIsVatRegistered] = useState<boolean>(tenant?.is_vat_registered ?? true);
+  const [savingCompany, setSavingCompany] = useState(false);
+
+  useEffect(() => {
+    setCompanyName(tenant?.name || '');
+    setIsVatRegistered(tenant?.is_vat_registered ?? true);
+  }, [tenant?.name, tenant?.is_vat_registered]);
   const [registrySettings, setRegistrySettings] = useState<BusinessRegistrySettings | null>(null);
   const [registryForm, setRegistryForm] = useState({
     enabled: false,
@@ -342,6 +350,25 @@ export default function SettingsPage() {
     ]);
     setAccountingSettings(settings);
     setRoleAccounts(accounts);
+  };
+
+  const handleSaveCompany = async () => {
+    if (!tenant) return;
+    setSavingCompany(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const updated = await tenantsApi.updateTenant(tenant.id, {
+        name: companyName.trim() || undefined,
+        is_vat_registered: isVatRegistered,
+      });
+      setTenant(updated, role);
+      setSettingsSuccess(t('companyInfoSaved'));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setSavingCompany(false);
+    }
   };
 
   const handleSaveSystemRoles = async (mapping: SystemRoleMapping) => {
@@ -802,14 +829,15 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('companyInformation')}</h2>
                 <p className="text-sm text-slate-500 mb-6">{t('companyDescription')}</p>
-                <form className="space-y-5">
+                <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void handleSaveCompany(); }}>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">
                       {t('companyName')}
                     </label>
                     <input
                       type="text"
-                      defaultValue={tenant?.name}
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
                       className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all"
                       style={{ fontSize: '16px' }}
                     />
@@ -849,10 +877,22 @@ export default function SettingsPage() {
                       <option value="GBP">GBP (£)</option>
                     </select>
                   </div>
+                  <label className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      checked={isVatRegistered}
+                      onChange={(e) => setIsVatRegistered(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-300 text-[var(--primary)]"
+                    />
+                    <span className="text-sm font-medium text-slate-700">{t('vatRegistered')}</span>
+                  </label>
+                  <p className="-mt-3 text-xs text-slate-500">{t('vatRegisteredHint')}</p>
                   <button
                     type="submit"
-                    className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors"
+                    disabled={savingCompany}
+                    className="inline-flex h-11 items-center gap-2 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                   >
+                    {savingCompany && <Loader2 className="h-4 w-4 animate-spin" />}
                     {t('saveChanges')}
                   </button>
                 </form>

@@ -63,6 +63,7 @@ type Props = {
   lines: EditorLine[];
   onChange: (lines: EditorLine[]) => void;
   accounts: AccountOption[];
+  /** Whether the supply-type (VAT treatment) column is available for this editor (off-by-default toggle). */
   showSupplyType?: boolean;
   currency?: string;
   /** Restrict the account picker to a single account type (e.g. 'revenue' for sales, 'expense' for purchases). */
@@ -73,6 +74,8 @@ type Props = {
   products?: Product[];
   /** Quick-add the current line to the product catalog. */
   onQuickAdd?: (line: EditorLine) => void;
+  /** When false the tenant is not VAT-liable: the VAT column is hidden and lines carry no VAT. */
+  vatEnabled?: boolean;
 };
 
 export default function InvoiceLinesEditor({
@@ -85,19 +88,23 @@ export default function InvoiceLinesEditor({
   supplyTypeDefaults,
   products,
   onQuickAdd,
+  vatEnabled = true,
 }: Props) {
   const t = useTranslations('invoices');
-  const [showAccount, setShowAccount] = useState(true);
+  // Account and supply-type columns are hidden by default — reveal only when needed.
+  const [showAccount, setShowAccount] = useState(false);
+  const [showSupply, setShowSupply] = useState(false);
   const [productMenuRow, setProductMenuRow] = useState<number | null>(null);
+
+  const supplyVisible = showSupplyType && showSupply;
+  const vatVisible = vatEnabled;
 
   const productMatches = (query: string): Product[] => {
     if (!products || products.length === 0) return [];
     const s = query.trim().toLowerCase();
     const pool = !s
       ? products
-      : products.filter((p) =>
-          `${p.name} ${p.code || ''} ${p.description || ''}`.toLowerCase().includes(s)
-        );
+      : products.filter((p) => `${p.name} ${p.code || ''} ${p.description || ''}`.toLowerCase().includes(s));
     return pool.slice(0, 8);
   };
 
@@ -106,25 +113,26 @@ export default function InvoiceLinesEditor({
       description: product.description || product.name,
       code: product.code || line.code || '',
       unit_price: product.unit_price != null ? String(product.unit_price) : line.unit_price,
-      tax_rate: product.tax_rate != null ? String(product.tax_rate) : line.tax_rate,
+      tax_rate: vatEnabled ? (product.tax_rate != null ? String(product.tax_rate) : line.tax_rate) : '0',
       account_id: product.sales_account_id || line.account_id,
     });
     setProductMenuRow(null);
   };
 
-  // Sales should list revenue accounts, purchases expense accounts. Fall back to all
-  // active accounts if the type filter would leave nothing to pick.
+  // Only real sales (revenue) / expense accounts — no fallback to all active.
   const accountOptions = useMemo(() => {
     const active = accounts.filter((a) => a.is_active);
-    // Show only real sales/expense accounts (no fallback to all): a sales invoice should
-    // only ever post to revenue accounts, a purchase to expense accounts.
     return accountFilterType ? active.filter((a) => a.type === accountFilterType) : active;
   }, [accounts, accountFilterType]);
 
   const accountLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    accounts.forEach((a) => map.set(a.id, `${a.code} ${a.name}`));
-    return map;
+    const labels = new Map<string, string>();
+    const codes = new Map<string, string>();
+    accounts.forEach((a) => {
+      labels.set(a.id, `${a.code} ${a.name}`);
+      codes.set(a.id, a.code);
+    });
+    return { labels, codes };
   }, [accounts]);
 
   const totals = useMemo(() => computeTotals(lines), [lines]);
@@ -135,6 +143,7 @@ export default function InvoiceLinesEditor({
     onChange(lines.length > 1 ? lines.filter((_, i) => i !== index) : lines);
   const add = () => {
     const line = emptyEditorLine();
+    if (!vatEnabled) line.tax_rate = '0';
     const fallback = supplyTypeDefaults?.[line.supply_type || 'domestic'];
     if (fallback) line.account_id = fallback;
     onChange([...lines, line]);
@@ -142,30 +151,41 @@ export default function InvoiceLinesEditor({
 
   const changeSupplyType = (index: number, line: EditorLine, supply_type: SupplyType) => {
     const fallback = supplyTypeDefaults?.[supply_type];
-    // Auto-fill the account from the supply-type default, but only when the line has none yet.
     update(index, fallback && !line.account_id ? { supply_type, account_id: fallback } : { supply_type });
   };
 
-  // Column order: code · description · qty · unit price · discount · VAT · [supply] · line total · account (last) · delete
+  // Column order: code · description · qty · unit price · discount · [VAT] · [supply] · line total · account · delete
   const gridCols = [
     '88px',
     'minmax(150px,1fr)',
     '64px',
     '96px',
     '76px',
-    '66px',
-    showSupplyType ? '140px' : null,
+    vatVisible ? '66px' : null,
+    supplyVisible ? '140px' : null,
     '100px',
-    showAccount ? '160px' : '22px',
+    showAccount ? '160px' : '64px',
     onQuickAdd ? '58px' : '32px',
   ]
     .filter(Boolean)
     .join(' ');
-  const minWidth = (showSupplyType ? 760 : 620) + 88 + (showAccount ? 160 : 22) + (onQuickAdd ? 26 : 0);
+  const minWidth =
+    574 + (vatVisible ? 66 : 0) + (supplyVisible ? 140 : 0) + (showAccount ? 160 : 64) + (onQuickAdd ? 58 : 32);
 
   return (
     <div>
-      <div className="mb-2 flex justify-end">
+      <div className="mb-2 flex justify-end gap-2">
+        {showSupplyType && (
+          <button
+            type="button"
+            onClick={() => setShowSupply((v) => !v)}
+            title={showSupply ? t('hideSupplyColumn') : t('showSupplyColumn')}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+          >
+            {showSupply ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {t('supplyType')}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setShowAccount((v) => !v)}
@@ -189,10 +209,10 @@ export default function InvoiceLinesEditor({
             <div className="text-right">{t('qty')}</div>
             <div className="text-right">{t('unitPrice')}</div>
             <div className="text-right">{t('discount')}</div>
-            <div className="text-right">{t('vatRate')}</div>
-            {showSupplyType && <div>{t('supplyType')}</div>}
+            {vatVisible && <div className="text-right">{t('vatRate')}</div>}
+            {supplyVisible && <div>{t('supplyType')}</div>}
             <div className="text-right">{t('lineTotal')}</div>
-            <div>{showAccount ? t('account') : ''}</div>
+            <div>{t('account')}</div>
             <div />
           </div>
 
@@ -203,7 +223,6 @@ export default function InvoiceLinesEditor({
                 key={index}
                 className="grid items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2"
                 style={{ gridTemplateColumns: gridCols }}
-                title={!showAccount && line.account_id ? accountLabels.get(line.account_id) : undefined}
               >
                 <input
                   value={line.code || ''}
@@ -249,35 +268,13 @@ export default function InvoiceLinesEditor({
                     className={inputClass}
                   />
                 )}
-                <input
-                  inputMode="decimal"
-                  value={line.quantity}
-                  onChange={(event) => update(index, { quantity: event.target.value })}
-                  placeholder={t('qty')}
-                  className={numberClass}
-                />
-                <input
-                  inputMode="decimal"
-                  value={line.unit_price}
-                  onChange={(event) => update(index, { unit_price: event.target.value })}
-                  placeholder={t('unitPrice')}
-                  className={numberClass}
-                />
-                <input
-                  inputMode="decimal"
-                  value={line.discount_percent}
-                  onChange={(event) => update(index, { discount_percent: event.target.value })}
-                  placeholder="0"
-                  className={numberClass}
-                />
-                <input
-                  inputMode="decimal"
-                  value={line.tax_rate}
-                  onChange={(event) => update(index, { tax_rate: event.target.value })}
-                  placeholder="0"
-                  className={numberClass}
-                />
-                {showSupplyType && (
+                <input inputMode="decimal" value={line.quantity} onChange={(e) => update(index, { quantity: e.target.value })} placeholder={t('qty')} className={numberClass} />
+                <input inputMode="decimal" value={line.unit_price} onChange={(e) => update(index, { unit_price: e.target.value })} placeholder={t('unitPrice')} className={numberClass} />
+                <input inputMode="decimal" value={line.discount_percent} onChange={(e) => update(index, { discount_percent: e.target.value })} placeholder="0" className={numberClass} />
+                {vatVisible && (
+                  <input inputMode="decimal" value={line.tax_rate} onChange={(e) => update(index, { tax_rate: e.target.value })} placeholder="0" className={numberClass} />
+                )}
+                {supplyVisible && (
                   <select
                     value={line.supply_type || 'domestic'}
                     onChange={(event) => changeSupplyType(index, line, event.target.value as SupplyType)}
@@ -306,10 +303,12 @@ export default function InvoiceLinesEditor({
                     ))}
                   </select>
                 ) : (
-                  <span
-                    className={`mx-auto h-2 w-2 rounded-full ${line.account_id ? 'bg-[var(--a-accent)]' : 'border border-[var(--a-border-strong)]'}`}
-                    title={line.account_id ? accountLabels.get(line.account_id) : t('account')}
-                  />
+                  <div
+                    className="truncate font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]"
+                    title={line.account_id ? accountLabels.labels.get(line.account_id) : t('noAccountSelected')}
+                  >
+                    {line.account_id ? (accountLabels.codes.get(line.account_id) || '·') : '—'}
+                  </div>
                 )}
                 <div className="flex items-center justify-end gap-0.5">
                   {onQuickAdd && (
@@ -338,11 +337,7 @@ export default function InvoiceLinesEditor({
 
           {/* Add line */}
           <div className="px-3.5 py-2">
-            <button
-              type="button"
-              onClick={add}
-              className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
-            >
+            <button type="button" onClick={add} className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]">
               <Plus className="h-3.5 w-3.5" />
               {t('addLine')}
             </button>
@@ -354,10 +349,12 @@ export default function InvoiceLinesEditor({
               <span>{t('subtotal')}</span>
               <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.subtotal.toFixed(2)} {currency}</span>
             </div>
-            <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
-              <span>{t('taxTotal')}</span>
-              <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.tax.toFixed(2)} {currency}</span>
-            </div>
+            {vatVisible && (
+              <div className="flex w-full max-w-[260px] justify-between text-[var(--a-text-2)]">
+                <span>{t('taxTotal')}</span>
+                <span className="font-mono tabular-nums text-[var(--a-text)]">{totals.tax.toFixed(2)} {currency}</span>
+              </div>
+            )}
             <div className="flex w-full max-w-[260px] justify-between border-t border-[var(--a-border)] pt-1 font-semibold text-[var(--a-text)]">
               <span>{t('total')}</span>
               <span className="font-mono tabular-nums">{totals.total.toFixed(2)} {currency}</span>

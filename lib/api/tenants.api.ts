@@ -70,6 +70,19 @@ export const tenantsApi = {
     return response.data.data;
   },
 
+  async updateTenant(tenantId: string, payload: {
+    name?: string;
+    registry_code?: string;
+    vat_number?: string;
+    is_vat_registered?: boolean;
+    address?: string;
+    email?: string;
+    phone?: string;
+  }) {
+    const response = await apiClient.put<ApiResponse<Tenant>>(`/api/tenants/${tenantId}`, payload);
+    return response.data.data;
+  },
+
   async listUserTenants() {
     const response = await apiClient.get<ApiResponse<Array<{
       tenant: Tenant;

@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
@@ -21,6 +22,7 @@ import InvoiceLinesEditor, {
 } from '@/components/invoices/InvoiceLinesEditor';
 import { ProductModal } from '@/components/invoices/ProductModal';
 import { productsApi, type Product } from '@/lib/api/products.api';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
 
@@ -49,6 +51,9 @@ type InvoiceEditorProps = {
 export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_invoice', creditNoteForInvoiceId, prefill }: InvoiceEditorProps) {
   const t = useTranslations('invoices');
   const router = useRouter();
+  const { tenant } = useAuthStore();
+  // VAT-liable tenants charge VAT; non-registered tenants issue invoices without VAT.
+  const vatEnabled = tenant ? Boolean(tenant.is_vat_registered) : true;
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [salesDefaults, setSalesDefaults] = useState<Partial<Record<SupplyType, string>>>({});
@@ -156,7 +161,22 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     void loadInvoice();
   }, [invoiceId, mode]);
 
+  // When the tenant is not VAT-liable, strip VAT from every line.
+  useEffect(() => {
+    if (vatEnabled) return;
+    setLines((current) =>
+      current.some((line) => line.tax_rate !== '0' && line.tax_rate !== '')
+        ? current.map((line) => ({ ...line, tax_rate: '0' }))
+        : current
+    );
+  }, [vatEnabled]);
+
   const totals = useMemo(() => computeTotals(lines), [lines]);
+
+  const accountFilterType: 'revenue' | 'expense' =
+    type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue';
+  const noPostingAccounts =
+    !isLoading && accounts.length > 0 && accounts.filter((a) => a.is_active && a.type === accountFilterType).length === 0;
 
   const buildPayload = (): InvoiceDraftPayload => ({
     type,
@@ -354,14 +374,24 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
             {/* Lines */}
             <div>
               <div className="micro mb-2 text-[var(--a-text-3)]">{t('invoiceLines')}</div>
+              {noPostingAccounts && (
+                <div className="mb-2 flex items-start gap-2 rounded-lg border border-[var(--a-warn-soft)] bg-[var(--a-warn-soft)] px-3 py-2.5 text-[12.5px] text-[var(--a-warn)]">
+                  <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    {accountFilterType === 'revenue' ? t('noSalesAccountsWarning') : t('noExpenseAccountsWarning')}{' '}
+                    <Link href="/accounting/accounts" className="font-medium underline">{t('chartOfAccounts')}</Link>
+                  </span>
+                </div>
+              )}
               <InvoiceLinesEditor
                 lines={lines}
                 onChange={setLines}
                 accounts={accounts}
                 showSupplyType
                 currency={currency}
-                accountFilterType={type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue'}
-                supplyTypeDefaults={type === 'purchase_invoice' || type === 'purchase_credit_note' ? undefined : salesDefaults}
+                vatEnabled={vatEnabled}
+                accountFilterType={accountFilterType}
+                supplyTypeDefaults={accountFilterType === 'revenue' ? salesDefaults : undefined}
                 products={products}
                 onQuickAdd={(line) => setQuickAddLine(line)}
               />
