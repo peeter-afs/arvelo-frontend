@@ -87,8 +87,18 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             { label: tInvoices('productsTitle'), href: '/invoices/products' },
           ],
         },
-        { label: tAccounting('bankReview'), href: '/accounting/bank-review', icon: Landmark },
-        { label: tAccounting('bankReconciliation'), href: '/accounting/bank-reconciliation', icon: Scale },
+        {
+          label: tAccounting('bank'),
+          href: '/accounting/bank-import',
+          icon: Landmark,
+          children: [
+            { label: tAccounting('bankImport'), href: '/accounting/bank-import' },
+            { label: tAccounting('bankReview'), href: '/accounting/bank-review' },
+            { label: tAccounting('bankReconciliation'), href: '/accounting/bank-reconciliation' },
+            { label: tAccounting('payments'), href: '/accounting/payments' },
+            { label: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
+          ],
+        },
       ],
     },
     {
