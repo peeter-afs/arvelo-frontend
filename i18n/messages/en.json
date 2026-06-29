@@ -583,6 +583,8 @@
     "reconciledRowsUpdated": "{count} entries updated.",
     "reconcilingData": "Loading bank transactions...",
     "statementPeriod": "Statement period",
+    "statementPeriodOverlapWarning": "Warning: this period overlaps a previously imported statement ({from} – {to}). Possible duplicate import.",
+    "statementPeriodGapWarning": "Warning: the previous statement ended {previousTo}, this one starts {from} — {days} day(s) in between may be missing.",
     "salesAccountDefaultsTitle": "Default sales accounts (by supply type)",
     "salesAccountDefaultsDescription": "Choose a default sales (revenue) account per supply type. Invoice lines auto-fill the account based on the line's supply type.",
     "salesAccountDefaultsSave": "Save sales accounts",

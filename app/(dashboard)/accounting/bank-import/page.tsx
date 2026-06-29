@@ -439,6 +439,23 @@ export default function BankImportPage() {
                         {t('statementPeriod')}: {summary.statement_date_from || '…'} – {summary.statement_date_to || '…'}
                       </div>
                     )}
+                    {summary.statement_period_warning?.kind === 'overlap' && (
+                      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800">
+                        {t('statementPeriodOverlapWarning', {
+                          from: summary.statement_period_warning.from || '…',
+                          to: summary.statement_period_warning.to || '…'
+                        })}
+                      </div>
+                    )}
+                    {summary.statement_period_warning?.kind === 'gap' && (
+                      <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800">
+                        {t('statementPeriodGapWarning', {
+                          previousTo: summary.statement_period_warning.previous_to,
+                          from: summary.statement_period_warning.from,
+                          days: summary.statement_period_warning.missing_days
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

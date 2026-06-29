@@ -583,6 +583,8 @@
     "reconciledRowsUpdated": "{count} kannet uuendatud.",
     "reconcilingData": "Laadin pangatehinguid...",
     "statementPeriod": "Väljavõtte periood",
+    "statementPeriodOverlapWarning": "Hoiatus: see periood kattub varem imporditud väljavõttega ({from} – {to}). Võimalik topeltimport.",
+    "statementPeriodGapWarning": "Hoiatus: eelmine väljavõte lõppes {previousTo}, see algab {from} — vahele jääb {days} päeva, mõni väljavõte võib puududa.",
     "salesAccountDefaultsTitle": "Vaikimisi müügikontod (käibe liigi järgi)",
     "salesAccountDefaultsDescription": "Vali iga käibe liigi jaoks vaikimisi müügikonto (revenue). Arve real täidetakse konto automaatselt käibe liigi põhjal.",
     "salesAccountDefaultsSave": "Salvesta müügikontod",
