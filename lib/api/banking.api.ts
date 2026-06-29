@@ -414,4 +414,52 @@ export const bankingApi = {
     const response = await apiClient.put<ApiResponse<any>>('/api/banking/missing-receipt-settings', data);
     return response.data.data;
   },
+
+  async listDraftableOutgoing(importJobId: string) {
+    const response = await apiClient.get<ApiResponse<{ items: DraftableOutgoingItem[] }>>(
+      `/api/banking/import-jobs/${importJobId}/draftable-outgoing`
+    );
+    return response.data.data;
+  },
+
+  async bulkMarkMissingReceipt(transactionIds: string[]) {
+    const response = await apiClient.post<ApiResponse<{
+      created: Array<{ transaction_id: string; invoice_id: string }>;
+      skipped: number;
+      errors: Array<{ transaction_id: string; error: string }>;
+    }>>('/api/banking/transactions/bulk-mark-missing-receipt', { transaction_ids: transactionIds });
+    return response.data.data;
+  },
+
+  async getDraftExclusionRules() {
+    const response = await apiClient.get<ApiResponse<{ rules: DraftExclusionRule[] }>>('/api/banking/draft-exclusion-rules');
+    return response.data.data.rules;
+  },
+
+  async saveDraftExclusionRules(rules: DraftExclusionRule[]) {
+    const response = await apiClient.put<ApiResponse<{ rules: DraftExclusionRule[] }>>('/api/banking/draft-exclusion-rules', { rules });
+    return response.data.data.rules;
+  },
+};
+
+export type DraftableOutgoingItem = {
+  transaction_id: string;
+  tx_date: string;
+  amount: number;
+  currency: string;
+  counterparty_name?: string | null;
+  counterparty_account?: string | null;
+  description?: string | null;
+  reference?: string | null;
+  excluded: boolean;
+  excluded_by?: string | null;
+};
+
+export type DraftExclusionRule = {
+  id: string;
+  label: string;
+  enabled: boolean;
+  field: 'counterparty_name' | 'counterparty_account' | 'reference' | 'description';
+  match: 'contains' | 'exact' | 'starts_with' | 'regex';
+  value: string;
 };

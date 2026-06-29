@@ -16,6 +16,7 @@ import {
   UserCheck,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
@@ -680,6 +681,14 @@ export default function BankReviewPage() {
                               <CheckCircle2 className="h-4 w-4" />
                               <span>{t('receiptPlaceholderCreated')}</span>
                             </div>
+                            {selectedItem.placeholder_invoice_id && (
+                              <Link
+                                href={`/invoices/${selectedItem.placeholder_invoice_id}/edit`}
+                                className="text-sm font-medium text-[var(--primary)] underline"
+                              >
+                                {t('openDraftInvoice')}
+                              </Link>
+                            )}
                             <input
                               value={dismissReason}
                               onChange={(event) => setDismissReason(event.target.value)}

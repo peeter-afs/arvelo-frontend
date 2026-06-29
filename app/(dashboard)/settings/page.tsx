@@ -14,7 +14,7 @@ import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyType
 import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type DraftExclusionRule } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
@@ -147,6 +147,7 @@ export default function SettingsPage() {
     email_subject: 'Missing receipt reminder: {{supplier_name}} — {{amount}} {{currency}}',
     email_body: 'Hello,\n\nA bank payment of {{amount}} {{currency}} on {{tx_date}} to {{supplier_name}} (ref: {{reference}}) has no matching purchase invoice or receipt on file.\n\nPlease upload the receipt or forward the invoice so it can be recorded.\n\n→ {{draft_link}}\n\nThis is reminder #{{reminder_index}}.\n\nThank you.',
   });
+  const [draftRules, setDraftRules] = useState<DraftExclusionRule[]>([]);
   const canManageRegistry = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
@@ -548,6 +549,36 @@ export default function SettingsPage() {
         });
       }
     } catch { /* settings not yet created, use defaults */ }
+    try {
+      setDraftRules(await bankingApi.getDraftExclusionRules());
+    } catch { /* rules unavailable */ }
+  };
+
+  const updateDraftRule = (id: string, patch: Partial<DraftExclusionRule>) => {
+    setDraftRules((current) => current.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)));
+  };
+
+  const addDraftRule = () => {
+    setDraftRules((current) => [
+      ...current,
+      { id: crypto.randomUUID(), label: '', enabled: true, field: 'counterparty_name', match: 'contains', value: '' },
+    ]);
+  };
+
+  const removeDraftRule = (id: string) => {
+    setDraftRules((current) => current.filter((rule) => rule.id !== id));
+  };
+
+  const saveDraftRules = async () => {
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const saved = await bankingApi.saveDraftExclusionRules(draftRules.filter((rule) => rule.value.trim()));
+      setDraftRules(saved);
+      setSettingsSuccess(t('draftExclusionRulesSaved'));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    }
   };
 
   const saveMissingReceiptSettings = async () => {
@@ -1378,6 +1409,78 @@ export default function SettingsPage() {
                           className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
                         >
                           {t('saveReminderSettings')}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
+                      <h3 className="text-sm font-semibold text-slate-900">{t('draftExclusionRulesTitle')}</h3>
+                      <p className="mt-1 text-sm text-slate-500">{t('draftExclusionRulesDescription')}</p>
+                      <div className="mt-4 space-y-2">
+                        {draftRules.map((rule) => (
+                          <div key={rule.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
+                            <input
+                              type="checkbox"
+                              checked={rule.enabled}
+                              onChange={(event) => updateDraftRule(rule.id, { enabled: event.target.checked })}
+                              className="h-4 w-4 shrink-0"
+                            />
+                            <input
+                              value={rule.label}
+                              onChange={(event) => updateDraftRule(rule.id, { label: event.target.value })}
+                              placeholder={t('ruleLabel')}
+                              className="h-10 min-w-[140px] flex-1 rounded-lg border border-slate-200 px-3 text-sm"
+                            />
+                            <select
+                              value={rule.field}
+                              onChange={(event) => updateDraftRule(rule.id, { field: event.target.value as DraftExclusionRule['field'] })}
+                              className="h-10 rounded-lg border border-slate-200 px-2 text-sm"
+                            >
+                              <option value="counterparty_name">{t('ruleFieldCounterpartyName')}</option>
+                              <option value="counterparty_account">{t('ruleFieldCounterpartyAccount')}</option>
+                              <option value="reference">{t('ruleFieldReference')}</option>
+                              <option value="description">{t('ruleFieldDescription')}</option>
+                            </select>
+                            <select
+                              value={rule.match}
+                              onChange={(event) => updateDraftRule(rule.id, { match: event.target.value as DraftExclusionRule['match'] })}
+                              className="h-10 rounded-lg border border-slate-200 px-2 text-sm"
+                            >
+                              <option value="contains">{t('ruleMatchContains')}</option>
+                              <option value="exact">{t('ruleMatchExact')}</option>
+                              <option value="starts_with">{t('ruleMatchStartsWith')}</option>
+                              <option value="regex">{t('ruleMatchRegex')}</option>
+                            </select>
+                            <input
+                              value={rule.value}
+                              onChange={(event) => updateDraftRule(rule.id, { value: event.target.value })}
+                              placeholder={t('ruleValue')}
+                              className="h-10 min-w-[140px] flex-1 rounded-lg border border-slate-200 px-3 text-sm"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeDraftRule(rule.id)}
+                              className="h-10 rounded-lg border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50"
+                            >
+                              {t('removeRule')}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={addDraftRule}
+                          className="h-11 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          {t('addRule')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void saveDraftRules()}
+                          className="h-11 rounded-lg bg-[var(--primary)] px-6 font-medium text-white transition-colors hover:bg-[var(--primary-hover)] disabled:opacity-50"
+                        >
+                          {t('saveDraftExclusionRules')}
                         </button>
                       </div>
                     </div>
