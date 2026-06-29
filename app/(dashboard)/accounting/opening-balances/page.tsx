@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -92,6 +92,11 @@ const createSubledgerRow = (date = ''): SubledgerRow => ({
 
 const fmt = (value: number) => `€${value.toFixed(2)}`;
 
+// Document noun for the active mode, interpolated into the upload/step copy
+// ("balance" / "receivables" / "payables") so the wording tracks the chosen tab.
+const docNoun = (mode: Mode, t: ReturnType<typeof useTranslations>) =>
+  t(mode === 'general' ? 'obDocGeneral' : mode === 'receivables' ? 'obDocReceivables' : 'obDocPayables');
+
 export default function OpeningBalancesPage() {
   const t = useTranslations('accounting');
   const [mode, setMode] = useState<Mode>('general');
@@ -108,7 +113,10 @@ export default function OpeningBalancesPage() {
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
   const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
   const [importSource, setImportSource] = useState<'auto' | 'merit' | 'generic'>('auto');
-  const [isImported, setIsImported] = useState(false);
+  // Each type (general / receivables / payables) is imported independently, so the
+  // "already imported" lock is per-mode — committing the balance sheet must not
+  // block importing receivables or payables.
+  const [committedModes, setCommittedModes] = useState<Set<Mode>>(new Set());
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -193,6 +201,7 @@ export default function OpeningBalancesPage() {
     payablesOffsetAccountId
   })) && !!previewResult;
 
+  const isImported = committedModes.has(mode);
   const isDateLocked = mode !== 'general' && !!glOpeningDate;
 
   useEffect(() => {
@@ -231,8 +240,15 @@ export default function OpeningBalancesPage() {
         setAccounts(accountItems);
         setPartners(partnerItems);
         setBatches(batchResult.items);
-        setIsImported(importStatus.is_imported);
-        const glBatch = (importStatus.committed_batches as ImportStatusBatch[]).find((b) => b.batch_type === 'general');
+        const committedBatches = importStatus.committed_batches as ImportStatusBatch[];
+        const committed = new Set<Mode>();
+        for (const b of committedBatches) {
+          if (b.batch_type === 'general' || b.batch_type === 'receivables' || b.batch_type === 'payables') {
+            committed.add(b.batch_type);
+          }
+        }
+        setCommittedModes(committed);
+        const glBatch = committedBatches.find((b) => b.batch_type === 'general');
         if (glBatch?.opening_date) {
           setGlOpeningDate(glBatch.opening_date);
         }
@@ -331,7 +347,6 @@ export default function OpeningBalancesPage() {
     if (!file) return;
 
     setStep('parsing');
-    setIsImported(false);
     setErrorMessage(null);
     try {
       const result = await importApi.parseOpeningBalancePdf(file, {
@@ -413,7 +428,7 @@ export default function OpeningBalancesPage() {
             : await accountingApi.commitOpeningPayables(payload);
 
       setCommitResult(result);
-      setIsImported(true);
+      setCommittedModes((current) => new Set(current).add(mode));
       await refreshBatches();
       await maybeOfferRoleMapping();
     } catch (error) {
@@ -505,7 +520,7 @@ export default function OpeningBalancesPage() {
       </div>
 
       {/* Stepper */}
-      <OBStepper step={step} t={t} />
+      <OBStepper step={step} mode={mode} t={t} />
 
       {/* Already-imported lock notice */}
       {isImported && (
@@ -536,6 +551,7 @@ export default function OpeningBalancesPage() {
           {(step === 'upload' || step === 'parsing') && (
             <OBUpload
               step={step}
+              mode={mode}
               importSource={importSource}
               onSourceChange={(value) => setImportSource(value)}
               onFileSelected={handleFileSelected}
@@ -681,10 +697,10 @@ export default function OpeningBalancesPage() {
 }
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
-function OBStepper({ step, t }: { step: Step; t: ReturnType<typeof useTranslations> }) {
+function OBStepper({ step, mode, t }: { step: Step; mode: Mode; t: ReturnType<typeof useTranslations> }) {
   const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
   const steps = [
-    { n: 1, label: t('obStepUpload'), sub: t('obStepUploadSub') },
+    { n: 1, label: t('obStepUpload'), sub: t('obStepUploadSub', { doc: docNoun(mode, t) }) },
     { n: 2, label: t('obStepReview'), sub: t('obStepReviewSub') },
     { n: 3, label: t('obStepConfirm'), sub: t('obStepConfirmSub') },
   ];
@@ -786,6 +802,7 @@ function OBModeRow({
 // ─── Upload step ──────────────────────────────────────────────────────────────
 function OBUpload({
   step,
+  mode,
   importSource,
   onSourceChange,
   onFileSelected,
@@ -794,6 +811,7 @@ function OBUpload({
   t,
 }: {
   step: Step;
+  mode: Mode;
   importSource: 'auto' | 'merit' | 'generic';
   onSourceChange: (value: 'auto' | 'merit' | 'generic') => void;
   onFileSelected: (file: File | null) => void;
@@ -802,19 +820,52 @@ function OBUpload({
   t: ReturnType<typeof useTranslations>;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const parsing = step === 'parsing';
+  const canDrop = !parsing && !disabled;
+  const doc = docNoun(mode, t);
+
+  // Without these handlers a dropped file falls through to the browser, which
+  // just navigates to (opens) the PDF instead of importing it.
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    if (!canDrop) return;
+    event.preventDefault();
+    setDragActive(true);
+  };
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+  };
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    if (!canDrop) return;
+    const file = Array.from(event.dataTransfer.files).find((f) => f.type === 'application/pdf')
+      ?? event.dataTransfer.files[0]
+      ?? null;
+    onFileSelected(file);
+  };
 
   return (
     <div className="mt-4">
       <div
-        className="rounded-[12px] border border-dashed border-[var(--a-border-strong)] bg-[var(--a-surface)] px-6 text-center"
-        style={{ paddingTop: 40, paddingBottom: 40 }}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className="rounded-[12px] border border-dashed px-6 text-center transition-colors"
+        style={{
+          paddingTop: 40,
+          paddingBottom: 40,
+          borderColor: dragActive ? 'var(--a-accent)' : 'var(--a-border-strong)',
+          background: dragActive ? 'var(--a-accent-soft)' : 'var(--a-surface)',
+        }}
       >
         <div className="mx-auto grid h-12 w-12 place-items-center rounded-[12px] bg-[var(--a-accent-soft)] text-[var(--a-accent)]">
           {parsing ? <Loader2 className="h-[22px] w-[22px] animate-spin" /> : <Upload className="h-[22px] w-[22px]" />}
         </div>
         <div className="mt-4 text-[16px] font-semibold text-[var(--a-text)]">
-          {parsing ? t('obParsingHeadline') : t('obUploadHeadline')}
+          {parsing ? t('obParsingHeadline', { doc }) : t('obUploadHeadline', { doc })}
         </div>
         <div className="mx-auto mt-1.5 max-w-[440px] text-[13px] text-[var(--a-text-2)]">
           {parsing ? t('obParsingSubcopy') : t('obUploadSubcopy')}
