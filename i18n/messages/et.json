@@ -520,6 +520,8 @@
     "markMissingReceipt": "Märgi puuduv kviitung",
     "markMissingReceiptDescription": "Sobivat ostuarvet ei leitud. Loo kohatäite mustand ja alusta kviitungi meeldetuletusi.",
     "openDraftInvoice": "Ava mustand ostuarve",
+    "txDescription": "Selgitus",
+    "showReference": "Näita viidet",
     "draftFromOutgoingTitle": "Loo sobitamata väljaminekutest draft ostuarved",
     "draftFromOutgoingDescription": "Sobitamata väljaminevad maksed, millele ei leitud ostuarvet. Reeglitega välistatud (EMTA, pangatasud) on vaikimisi märkimata.",
     "draftsCreatedSummary": "Loodud {created} draft ostuarvet, vahele jäetud {skipped}.",

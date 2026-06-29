@@ -61,6 +61,7 @@ export default function BankImportPage() {
   const [isCommitting, setIsCommitting] = useState(false);
   const [pendingApprovalRow, setPendingApprovalRow] = useState<number | null>(null);
   const [isBulkApproving, setIsBulkApproving] = useState(false);
+  const [showReference, setShowReference] = useState(false);
   // Post-commit bulk step: draft purchase invoices from unmatched outgoing.
   const [draftable, setDraftable] = useState<DraftableOutgoingItem[]>([]);
   const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
@@ -547,8 +548,9 @@ export default function BankImportPage() {
                           className="h-4 w-4 shrink-0"
                         />
                         <span className="w-24 shrink-0 font-mono text-xs text-slate-500">{item.tx_date}</span>
-                        <span className="min-w-0 flex-1 truncate text-slate-700">
-                          {item.counterparty_name || item.description || item.reference || '—'}
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-slate-700">{item.counterparty_name || '—'}</span>
+                          {item.description && <span className="block truncate text-xs text-slate-400">{item.description}</span>}
                         </span>
                         {item.excluded && (
                           <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
@@ -582,16 +584,27 @@ export default function BankImportPage() {
                   {t('previewRowsDescription')}
                 </p>
               </div>
-              {counts.reviewable > 0 && (
-                <button
-                  onClick={handleApproveAllReviewable}
-                  disabled={isBulkApproving || pendingApprovalRow !== null}
-                  className="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {isBulkApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                  <span>{t('approveAllReviewable', { count: counts.reviewable })}</span>
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+                  <input
+                    type="checkbox"
+                    checked={showReference}
+                    onChange={(event) => setShowReference(event.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  {t('showReference')}
+                </label>
+                {counts.reviewable > 0 && (
+                  <button
+                    onClick={handleApproveAllReviewable}
+                    disabled={isBulkApproving || pendingApprovalRow !== null}
+                    className="inline-flex h-10 items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {isBulkApproving ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                    <span>{t('approveAllReviewable', { count: counts.reviewable })}</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {previewRows.length === 0 ? (
@@ -604,7 +617,10 @@ export default function BankImportPage() {
                       <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('row')}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('date')}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('counterparty')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('reference')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('txDescription')}</th>
+                      {showReference && (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('reference')}</th>
+                      )}
                       <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">{t('amount')}</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
                     </tr>
@@ -616,9 +632,14 @@ export default function BankImportPage() {
                         <td className="px-4 py-4 text-sm text-slate-700">{row.tx_date || row.value_date || '-'}</td>
                         <td className="px-4 py-4">
                           <div className="text-sm font-medium text-slate-900">{row.counterparty_name || t('unknownCounterparty')}</div>
-                          <div className="mt-1 text-xs text-slate-500">{row.description || row.counterparty_account || ''}</div>
+                          {row.counterparty_account && (
+                            <div className="mt-1 text-xs text-slate-500">{row.counterparty_account}</div>
+                          )}
                         </td>
-                        <td className="px-4 py-4 text-sm text-slate-600">{row.reference || '-'}</td>
+                        <td className="px-4 py-4 text-sm text-slate-600">{row.description || '-'}</td>
+                        {showReference && (
+                          <td className="px-4 py-4 text-sm text-slate-600">{row.reference || '-'}</td>
+                        )}
                         <td className="px-4 py-4 text-right text-sm font-mono text-slate-900">
                           {row.amount.toFixed(2)} {row.currency}
                         </td>

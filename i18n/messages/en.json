@@ -520,6 +520,8 @@
     "markMissingReceipt": "Mark as missing receipt",
     "markMissingReceiptDescription": "No matching purchase invoice found. Create a placeholder draft and start receipt reminders.",
     "openDraftInvoice": "Open draft invoice",
+    "txDescription": "Description",
+    "showReference": "Show reference",
     "draftFromOutgoingTitle": "Create draft purchase invoices from unmatched outgoing",
     "draftFromOutgoingDescription": "Unmatched outgoing payments with no purchase invoice found. Rows excluded by a rule (EMTA, bank fees) are unchecked by default.",
     "draftsCreatedSummary": "Created {created} draft purchase invoice(s), skipped {skipped}.",
