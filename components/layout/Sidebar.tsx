@@ -71,7 +71,6 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       label: tNavigation('workspace'),
       items: [
         { label: tNavigation('dashboard'), href: '/', icon: Home },
-        { label: tAccounting('journalEntries'), href: '/accounting/journal', icon: ReceiptText, badge: formatMetricCount(navigationMetrics.journalEntryCount) },
         {
           label: tInvoices('overview'),
           href: '/invoices',
