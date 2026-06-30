@@ -13,8 +13,9 @@ import {
   FileText,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { importApi, type PurchaseInvoiceImportDetail, type PurchaseInvoiceImportListItem } from '@/lib/api/import.api';
+import { importApi, type BoltCsvImportSummary, type PurchaseInvoiceImportDetail, type PurchaseInvoiceImportListItem } from '@/lib/api/import.api';
 import { accountingApi, type PartnerOption } from '@/lib/api/accounting.api';
+import { StatusPill } from '@/components/ui/StatusPill';
 
 type EditableLine = {
   description: string;
@@ -64,6 +65,7 @@ export default function PurchaseInvoiceImportsPage() {
   const [manualPartnerId, setManualPartnerId] = useState('');
   const [confirmDuplicateWarning, setConfirmDuplicateWarning] = useState(false);
   const [draftResult, setDraftResult] = useState<DraftInvoiceResult | null>(null);
+  const [boltCsvResult, setBoltCsvResult] = useState<BoltCsvImportSummary | null>(null);
   const [previewDraft, setPreviewDraft] = useState<PreviewDraft | null>(null);
   const [lineDrafts, setLineDrafts] = useState<EditableLine[]>([emptyLine()]);
 
@@ -144,11 +146,29 @@ export default function PurchaseInvoiceImportsPage() {
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
-      const result = await importApi.uploadPurchaseInvoicePdf(selectedFile);
-      await refreshList(result.import.id);
-      await refreshDetail(result.import.id);
-      setSelectedFile(null);
-      setSuccessMessage(t('importedForReview', { file: result.import.file_name || selectedFile.name }));
+      if (isCsvFile(selectedFile)) {
+        // Bolt CSV: each user_invoice_link is downloaded and run through the same
+        // import pipeline, producing normal import records that show up in the queue.
+        const summary = await importApi.importBoltCsv(selectedFile);
+        setBoltCsvResult(summary);
+        const firstImportId = summary.items.find((item) => item.import_id)?.import_id;
+        await refreshList(firstImportId);
+        setSelectedFile(null);
+        setSuccessMessage(
+          t('boltCsvImportComplete', {
+            processed: summary.processed_count,
+            duplicates: summary.duplicate_count,
+            errors: summary.error_count,
+          })
+        );
+      } else {
+        setBoltCsvResult(null);
+        const result = await importApi.uploadPurchaseInvoicePdf(selectedFile);
+        await refreshList(result.import.id);
+        await refreshDetail(result.import.id);
+        setSelectedFile(null);
+        setSuccessMessage(t('importedForReview', { file: result.import.file_name || selectedFile.name }));
+      }
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -277,8 +297,8 @@ export default function PurchaseInvoiceImportsPage() {
                 <FileUp className="h-5 w-5" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-slate-900">{t('uploadPdf')}</div>
-                <div className="text-xs text-slate-500">{t('uploadPdfHint')}</div>
+                <div className="text-sm font-semibold text-slate-900">{t('uploadInvoiceFile')}</div>
+                <div className="text-xs text-slate-500">{t('uploadInvoiceFileHint')}</div>
               </div>
             </div>
 
@@ -286,7 +306,7 @@ export default function PurchaseInvoiceImportsPage() {
               <span className="mb-2 block font-medium text-slate-700">{t('chooseFile')}</span>
               <input
                 type="file"
-                accept="application/pdf"
+                accept="application/pdf,.csv,text/csv,application/vnd.ms-excel"
                 onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
                 className="block w-full text-sm text-slate-500"
               />
@@ -369,6 +389,70 @@ export default function PurchaseInvoiceImportsPage() {
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>{successMessage}</span>
+              </div>
+            </div>
+          )}
+
+          {boltCsvResult && (
+            <div className="card overflow-hidden">
+              <div className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+                <div>
+                  <h2 className="text-base font-semibold text-slate-900">{t('boltCsvSummaryTitle')}</h2>
+                  <p className="mt-1 text-sm text-slate-500">{boltCsvResult.csv_file_name}</p>
+                </div>
+                <button
+                  onClick={() => setBoltCsvResult(null)}
+                  className="inline-flex h-9 items-center rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  {t('closeSummary')}
+                </button>
+              </div>
+
+              <div className="space-y-5 p-5">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+                  <SummaryStat label={t('linksFound')} value={boltCsvResult.total_links_found} />
+                  <SummaryStat label={t('processedCount')} value={boltCsvResult.processed_count} tone="success" />
+                  <SummaryStat label={t('duplicateCount')} value={boltCsvResult.duplicate_count} tone="warning" />
+                  <SummaryStat label={t('errorCount')} value={boltCsvResult.error_count} tone="danger" />
+                  <SummaryStat label={t('skippedCount')} value={boltCsvResult.skipped_count} />
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200">
+                  <div className="max-h-80 overflow-auto">
+                    <table className="w-full text-left text-sm">
+                      <thead className="sticky top-0 bg-slate-50 text-xs uppercase tracking-[0.12em] text-slate-500">
+                        <tr>
+                          <th className="px-3 py-2 font-semibold">{t('csvItemRow')}</th>
+                          <th className="px-3 py-2 font-semibold">{t('csvItemLink')}</th>
+                          <th className="px-3 py-2 font-semibold">{t('csvItemStatus')}</th>
+                          <th className="px-3 py-2 font-semibold">{t('csvItemUrl')}</th>
+                          <th className="px-3 py-2 font-semibold">{t('csvItemDetail')}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {boltCsvResult.items.map((item, index) => {
+                          const detailText = item.error_message || (item.reason ? formatLabel(item.reason) : '');
+                          const clickable = Boolean(item.import_id);
+                          return (
+                            <tr
+                              key={index}
+                              onClick={() => item.import_id && setSelectedId(item.import_id)}
+                              className={clickable ? 'cursor-pointer hover:bg-slate-50' : ''}
+                            >
+                              <td className="px-3 py-2 text-slate-700">{item.row_index}</td>
+                              <td className="px-3 py-2 text-slate-700">{item.link_index ?? '—'}</td>
+                              <td className="px-3 py-2">
+                                <StatusPill tone={boltCsvStatusTone(item.status)}>{t(boltCsvStatusLabelKey(item.status))}</StatusPill>
+                              </td>
+                              <td className="max-w-[280px] truncate px-3 py-2 text-slate-500" title={item.url || ''}>{item.url || '—'}</td>
+                              <td className="px-3 py-2 text-slate-500">{detailText || '—'}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -707,6 +791,50 @@ function InfoCard({
       </div>
     </div>
   );
+}
+
+function isCsvFile(file: File) {
+  return /\.csv$/i.test(file.name) || file.type === 'text/csv' || file.type === 'application/vnd.ms-excel';
+}
+
+function SummaryStat({
+  label,
+  value,
+  tone = 'neutral',
+}: {
+  label: string;
+  value: number;
+  tone?: 'neutral' | 'success' | 'warning' | 'danger';
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'text-emerald-700'
+      : tone === 'warning'
+        ? 'text-amber-700'
+        : tone === 'danger'
+          ? 'text-red-700'
+          : 'text-slate-900';
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+      <div className={`text-2xl font-semibold tabular-nums ${toneClass}`}>{value}</div>
+      <div className="mt-1 text-xs font-medium text-slate-500">{label}</div>
+    </div>
+  );
+}
+
+function boltCsvStatusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
+  if (status === 'processed') return 'success';
+  if (status === 'duplicate') return 'warning';
+  if (status === 'error') return 'danger';
+  return 'neutral';
+}
+
+function boltCsvStatusLabelKey(status: string) {
+  if (status === 'processed') return 'statusProcessed';
+  if (status === 'duplicate') return 'statusDuplicate';
+  if (status === 'error') return 'statusError';
+  return 'statusNoLink';
 }
 
 function statusBadge(status: string) {

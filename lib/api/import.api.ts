@@ -40,6 +40,31 @@ export type PurchaseInvoiceImportDetail = {
   }>;
 };
 
+export type BoltCsvImportItemStatus = 'processed' | 'duplicate' | 'error' | 'no_link';
+
+export type BoltCsvImportItem = {
+  row_index: number;
+  link_index: number | null;
+  url: string | null;
+  status: BoltCsvImportItemStatus;
+  reason?: string;
+  error_code?: string;
+  error_message?: string;
+  import_id?: string;
+};
+
+export type BoltCsvImportSummary = {
+  success: boolean;
+  csv_file_name: string;
+  total_rows: number;
+  total_links_found: number;
+  processed_count: number;
+  duplicate_count: number;
+  error_count: number;
+  skipped_count: number;
+  items: BoltCsvImportItem[];
+};
+
 export type OpeningBalanceSource = 'merit' | 'generic';
 
 export type OpeningBalanceImportResult = {
@@ -131,6 +156,19 @@ export const importApi = {
         'Content-Type': 'multipart/form-data'
       },
       timeout: 120000
+    });
+    return response.data.data;
+  },
+
+  async importBoltCsv(file: File) {
+    const formData = new FormData();
+    formData.append('csv', file);
+
+    const response = await apiClient.post<ApiResponse<BoltCsvImportSummary>>('/api/import/purchase-invoices/bolt-csv', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 300000
     });
     return response.data.data;
   },
