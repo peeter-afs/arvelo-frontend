@@ -693,6 +693,15 @@ export default function SettingsPage() {
     }
   };
 
+  const futursoftLineTypeAccount = (lineType: 'goods' | 'service') =>
+    futursoftRules.find((r) => r.match_type === 'line_type' && r.match_value === lineType)?.account_id || '';
+  const setFutursoftLineTypeAccount = (lineType: 'goods' | 'service', accountId: string) => {
+    setFutursoftRules((current) => {
+      const others = current.filter((r) => !(r.match_type === 'line_type' && r.match_value === lineType));
+      return accountId ? [...others, { match_type: 'line_type', match_value: lineType, account_id: accountId, is_active: true }] : others;
+    });
+  };
+
   const runFutursoftImport = async () => {
     setFutursoftSyncing(true);
     setSettingsError(null);
@@ -2564,6 +2573,48 @@ export default function SettingsPage() {
                         </select>
                       </div>
 
+                      <div className="mt-6">
+                        <div className="text-sm font-medium text-slate-900">{t('futursoftBaseAccounts')}</div>
+                        <p className="mt-1 text-xs text-slate-500">{t('futursoftBaseAccountsHint')}</p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">{t('futursoftGoods')}</label>
+                            <select
+                              value={futursoftLineTypeAccount('goods')}
+                              onChange={(event) => setFutursoftLineTypeAccount('goods', event.target.value)}
+                              className="h-10 w-full px-2 border border-slate-200 rounded-lg text-sm"
+                            >
+                              <option value="">{t('futursoftSelectAccount')}</option>
+                              {futursoftRevenueAccounts.map((a) => (<option key={a.id} value={a.id}>{a.code} · {a.name}</option>))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">{t('futursoftServices')}</label>
+                            <select
+                              value={futursoftLineTypeAccount('service')}
+                              onChange={(event) => setFutursoftLineTypeAccount('service', event.target.value)}
+                              className="h-10 w-full px-2 border border-slate-200 rounded-lg text-sm"
+                            >
+                              <option value="">{t('futursoftSelectAccount')}</option>
+                              {futursoftRevenueAccounts.map((a) => (<option key={a.id} value={a.id}>{a.code} · {a.name}</option>))}
+                            </select>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={saveFutursoftRules}
+                          disabled={futursoftRulesSaving}
+                          className="mt-3 h-10 px-5 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors disabled:opacity-50"
+                        >
+                          {futursoftRulesSaving ? t('saving') : t('futursoftSaveRules')}
+                        </button>
+                      </div>
+
+                      {futursoftForm.line_grouping === 'by_type' ? (
+                        <div className="mt-6 rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-500">
+                          {t('futursoftByTypeNote')}
+                        </div>
+                      ) : (
                       <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
                         <div className="text-sm font-medium text-slate-900">{t('futursoftDiscoverTitle')}</div>
                         <p className="mt-1 text-xs text-slate-500">{t('futursoftDiscoverHint')}</p>
@@ -2607,7 +2658,7 @@ export default function SettingsPage() {
                                   <thead className="bg-slate-100 text-xs text-slate-500">
                                     <tr>
                                       <th className="px-3 py-2 text-left font-medium">{t('futursoftRuleProductCode')}</th>
-                                      <th className="px-3 py-2 text-left font-medium">{t('name')}</th>
+                                      <th className="px-3 py-2 text-left font-medium">{t('futursoftCodeName')}</th>
                                       <th className="px-3 py-2 text-left font-medium">{t('futursoftRuleLineType')}</th>
                                       <th className="px-3 py-2 text-right font-medium">{t('futursoftDiscoverCount')}</th>
                                       <th className="px-3 py-2 text-left font-medium">{t('futursoftSelectAccount')}</th>
@@ -2652,84 +2703,7 @@ export default function SettingsPage() {
                           )
                         )}
                       </div>
-
-                      <div className="mt-6">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium text-slate-900">{t('futursoftRules')}</div>
-                          <button
-                            type="button"
-                            onClick={() => setFutursoftRules((current) => [...current, { match_type: 'line_type', match_value: 'goods', account_id: futursoftRevenueAccounts[0]?.id || '', is_active: true }])}
-                            className="text-sm text-[var(--primary)] hover:underline"
-                          >
-                            + {t('futursoftAddRule')}
-                          </button>
-                        </div>
-                        <p className="mt-1 text-xs text-slate-500">{t('futursoftRulesHint')}</p>
-
-                        {futursoftRules.length === 0 ? (
-                          <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-400">{t('futursoftNoRules')}</div>
-                        ) : (
-                          <div className="mt-3 space-y-2">
-                            {futursoftRules.map((rule, idx) => (
-                              <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
-                                <select
-                                  value={rule.match_type}
-                                  onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_type: event.target.value as 'product_code' | 'line_type', match_value: event.target.value === 'line_type' ? 'goods' : '' } : r))}
-                                  className="h-9 px-2 border border-slate-200 rounded-lg text-sm"
-                                >
-                                  <option value="line_type">{t('futursoftRuleLineType')}</option>
-                                  <option value="product_code">{t('futursoftRuleProductCode')}</option>
-                                </select>
-                                {rule.match_type === 'line_type' ? (
-                                  <select
-                                    value={rule.match_value}
-                                    onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_value: event.target.value } : r))}
-                                    className="h-9 px-2 border border-slate-200 rounded-lg text-sm"
-                                  >
-                                    <option value="goods">{t('futursoftGoods')}</option>
-                                    <option value="service">{t('futursoftServices')}</option>
-                                  </select>
-                                ) : (
-                                  <input
-                                    value={rule.match_value}
-                                    onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_value: event.target.value } : r))}
-                                    placeholder={t('futursoftProductCodePlaceholder')}
-                                    className="h-9 px-2 border border-slate-200 rounded-lg text-sm w-40"
-                                  />
-                                )}
-                                <span className="text-xs text-slate-400">→</span>
-                                <select
-                                  value={rule.account_id}
-                                  onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, account_id: event.target.value } : r))}
-                                  className="h-9 px-2 border border-slate-200 rounded-lg text-sm flex-1 min-w-[200px]"
-                                >
-                                  <option value="">{t('futursoftSelectAccount')}</option>
-                                  {futursoftRevenueAccounts.map((a) => (
-                                    <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
-                                  ))}
-                                </select>
-                                <button
-                                  type="button"
-                                  onClick={() => setFutursoftRules((current) => current.filter((_, i) => i !== idx))}
-                                  className="text-slate-400 hover:text-[var(--danger)] p-1"
-                                  aria-label={t('delete')}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={saveFutursoftRules}
-                          disabled={futursoftRulesSaving}
-                          className="mt-4 h-10 px-5 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors disabled:opacity-50"
-                        >
-                          {futursoftRulesSaving ? t('saving') : t('futursoftSaveRules')}
-                        </button>
-                      </div>
+                      )}
                     </div>
 
                     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
