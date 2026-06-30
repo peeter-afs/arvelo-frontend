@@ -16,7 +16,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord, type DraftExclusionRule } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { futursoftApi, type FutursoftSettings, type FutursoftAccountRule } from '@/lib/api/futursoft.api';
+import { futursoftApi, type FutursoftSettings, type FutursoftAccountRule, type FutursoftDiscoveredCode } from '@/lib/api/futursoft.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
@@ -92,6 +92,11 @@ export default function SettingsPage() {
   const [futursoftRules, setFutursoftRules] = useState<FutursoftAccountRule[]>([]);
   const [futursoftRevenueAccounts, setFutursoftRevenueAccounts] = useState<AccountOption[]>([]);
   const [futursoftRulesSaving, setFutursoftRulesSaving] = useState(false);
+  const [futursoftDiscoverRange, setFutursoftDiscoverRange] = useState({ from: '', to: '' });
+  const [futursoftDiscovering, setFutursoftDiscovering] = useState(false);
+  const [futursoftDiscovered, setFutursoftDiscovered] = useState<FutursoftDiscoveredCode[] | null>(null);
+  const [futursoftCodeAccounts, setFutursoftCodeAccounts] = useState<Record<string, string>>({});
+  const [futursoftMatchSaving, setFutursoftMatchSaving] = useState(false);
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companyAction, setCompanyAction] = useState<string | null>(null);
   const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
@@ -636,6 +641,55 @@ export default function SettingsPage() {
       setSettingsError(getErrorMessage(error));
     } finally {
       setFutursoftRulesSaving(false);
+    }
+  };
+
+  const runFutursoftDiscover = async () => {
+    setFutursoftDiscovering(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await futursoftApi.discover({ from: futursoftDiscoverRange.from, to: futursoftDiscoverRange.to });
+      setFutursoftDiscovered(result.codes);
+      // Pre-fill each code's account from any existing product_code rule.
+      const prefill: Record<string, string> = {};
+      for (const code of result.codes) {
+        const key = code.product_code.toUpperCase();
+        const rule = futursoftRules.find((r) => r.match_type === 'product_code' && r.match_value.toUpperCase() === key);
+        if (rule) prefill[key] = rule.account_id;
+      }
+      setFutursoftCodeAccounts(prefill);
+      setSettingsSuccess(t('futursoftDiscoverDone', { count: result.codes.length, invoices: result.scanned_invoices }));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftDiscovering(false);
+    }
+  };
+
+  const saveCodeMappings = async () => {
+    if (!futursoftDiscovered) return;
+    setFutursoftMatchSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const discoveredUpper = new Set(futursoftDiscovered.map((c) => c.product_code.toUpperCase()));
+      // Keep line_type rules and any product_code rules not in this discovery; replace
+      // the discovered ones with the (assigned) account selections.
+      const kept = futursoftRules.filter(
+        (r) => !(r.match_type === 'product_code' && discoveredUpper.has(r.match_value.toUpperCase()))
+      );
+      const newCodeRules: FutursoftAccountRule[] = futursoftDiscovered
+        .map((c) => ({ code: c.product_code, account_id: futursoftCodeAccounts[c.product_code.toUpperCase()] }))
+        .filter((x) => x.account_id)
+        .map((x) => ({ match_type: 'product_code' as const, match_value: x.code, account_id: x.account_id, is_active: true }));
+      const saved = await futursoftApi.updateRules([...kept, ...newCodeRules]);
+      setFutursoftRules(saved);
+      setSettingsSuccess(t('futursoftMatchSaved', { count: newCodeRules.length }));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftMatchSaving(false);
     }
   };
 
@@ -2508,6 +2562,95 @@ export default function SettingsPage() {
                           <option value="by_type">{t('futursoftGroupingByType')}</option>
                           <option value="by_account">{t('futursoftGroupingByAccount')}</option>
                         </select>
+                      </div>
+
+                      <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+                        <div className="text-sm font-medium text-slate-900">{t('futursoftDiscoverTitle')}</div>
+                        <p className="mt-1 text-xs text-slate-500">{t('futursoftDiscoverHint')}</p>
+
+                        <div className="mt-3 flex flex-wrap items-end gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">{t('futursoftDiscoverFrom')}</label>
+                            <input
+                              type="date"
+                              value={futursoftDiscoverRange.from}
+                              onChange={(event) => setFutursoftDiscoverRange((current) => ({ ...current, from: event.target.value }))}
+                              className="h-10 px-3 border border-slate-200 rounded-lg text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 mb-1">{t('futursoftDiscoverTo')}</label>
+                            <input
+                              type="date"
+                              value={futursoftDiscoverRange.to}
+                              onChange={(event) => setFutursoftDiscoverRange((current) => ({ ...current, to: event.target.value }))}
+                              className="h-10 px-3 border border-slate-200 rounded-lg text-sm"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={runFutursoftDiscover}
+                            disabled={futursoftDiscovering || !futursoftDiscoverRange.from || !futursoftDiscoverRange.to || !futursoftSettings?.enabled}
+                            className="h-10 px-5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] text-sm font-medium transition-colors disabled:opacity-50"
+                          >
+                            {futursoftDiscovering ? t('futursoftDiscovering') : t('futursoftDiscoverLoad')}
+                          </button>
+                        </div>
+
+                        {futursoftDiscovered && (
+                          futursoftDiscovered.length === 0 ? (
+                            <div className="mt-3 text-xs text-slate-400">{t('futursoftDiscoverEmpty')}</div>
+                          ) : (
+                            <div className="mt-4">
+                              <div className="overflow-hidden rounded-lg border border-slate-200">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-slate-100 text-xs text-slate-500">
+                                    <tr>
+                                      <th className="px-3 py-2 text-left font-medium">{t('futursoftRuleProductCode')}</th>
+                                      <th className="px-3 py-2 text-left font-medium">{t('name')}</th>
+                                      <th className="px-3 py-2 text-left font-medium">{t('futursoftRuleLineType')}</th>
+                                      <th className="px-3 py-2 text-right font-medium">{t('futursoftDiscoverCount')}</th>
+                                      <th className="px-3 py-2 text-left font-medium">{t('futursoftSelectAccount')}</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {futursoftDiscovered.map((code) => {
+                                      const key = code.product_code.toUpperCase();
+                                      return (
+                                        <tr key={key} className="border-t border-slate-100">
+                                          <td className="px-3 py-2 font-medium text-slate-800">{code.product_code}</td>
+                                          <td className="px-3 py-2 text-slate-600">{code.sample_name || '—'}</td>
+                                          <td className="px-3 py-2 text-slate-600">{code.line_type === 'service' ? t('futursoftServices') : t('futursoftGoods')}</td>
+                                          <td className="px-3 py-2 text-right text-slate-500">{code.count}</td>
+                                          <td className="px-3 py-2">
+                                            <select
+                                              value={futursoftCodeAccounts[key] || ''}
+                                              onChange={(event) => setFutursoftCodeAccounts((current) => ({ ...current, [key]: event.target.value }))}
+                                              className="h-9 px-2 border border-slate-200 rounded-lg text-sm w-full min-w-[200px]"
+                                            >
+                                              <option value="">{t('futursoftSelectAccount')}</option>
+                                              {futursoftRevenueAccounts.map((a) => (
+                                                <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
+                                              ))}
+                                            </select>
+                                          </td>
+                                        </tr>
+                                      );
+                                    })}
+                                  </tbody>
+                                </table>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={saveCodeMappings}
+                                disabled={futursoftMatchSaving}
+                                className="mt-3 h-10 px-5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] text-sm font-medium transition-colors disabled:opacity-50"
+                              >
+                                {futursoftMatchSaving ? t('saving') : t('futursoftSaveMatches')}
+                              </button>
+                            </div>
+                          )
+                        )}
                       </div>
 
                       <div className="mt-6">

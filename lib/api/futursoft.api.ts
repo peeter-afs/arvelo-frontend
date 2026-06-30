@@ -42,6 +42,20 @@ export type FutursoftAccountRule = {
   is_active?: boolean;
 };
 
+export type FutursoftDiscoveredCode = {
+  product_code: string;
+  line_type: 'goods' | 'service';
+  sample_name: string;
+  count: number;
+};
+
+export type FutursoftDiscoverResult = {
+  from: string;
+  to: string;
+  scanned_invoices: number;
+  codes: FutursoftDiscoveredCode[];
+};
+
 export const futursoftApi = {
   async getSettings() {
     const response = await apiClient.get<ApiResponse<FutursoftSettings>>('/api/tenant-admin/integrations/futursoft');
@@ -59,6 +73,14 @@ export const futursoftApi = {
     line_grouping?: 'itemized' | 'by_account' | 'by_type';
   }) {
     const response = await apiClient.put<ApiResponse<FutursoftSettings>>('/api/tenant-admin/integrations/futursoft', payload);
+    return response.data.data;
+  },
+
+  async discover(payload: { from: string; to: string }) {
+    const response = await apiClient.post<ApiResponse<FutursoftDiscoverResult>>(
+      '/api/tenant-admin/integrations/futursoft/discover',
+      payload
+    );
     return response.data.data;
   },
 
