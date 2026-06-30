@@ -129,8 +129,12 @@ export default function OpeningBalancesPage() {
   // block importing receivables or payables.
   const [committedModes, setCommittedModes] = useState<Set<Mode>>(new Set());
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
-  const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | null>(null);
+  const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | 'mid_year' | null>(null);
   const [savingStrategy, setSavingStrategy] = useState(false);
+  // Mid-year: which general-side document the grid is currently for.
+  const [generalLayer, setGeneralLayer] = useState<'year_end' | 'turnover' | 'control'>('year_end');
+  const [reconResult, setReconResult] = useState<any>(null);
+  const [isLocking, setIsLocking] = useState(false);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -219,7 +223,13 @@ export default function OpeningBalancesPage() {
     payablesOffsetAccountId
   })) && !!previewResult;
 
-  const isImported = committedModes.has(mode);
+  // Mid-year layers year_end/turnover both use mode 'general', so the per-mode lock
+  // must look at the specific committed batch_type instead of the coarse mode.
+  const midYearLayerCommitted = (layer: 'year_end' | 'turnover') =>
+    batches.some((b: any) => b.status === 'committed' && b.batch_type === (layer === 'year_end' ? 'year_end_balance' : 'period_turnover'));
+  const isImported = strategy === 'mid_year' && mode === 'general'
+    ? (generalLayer === 'control' ? false : midYearLayerCommitted(generalLayer as 'year_end' | 'turnover'))
+    : committedModes.has(mode);
   const isDateLocked = mode !== 'general' && !!glOpeningDate;
 
   useEffect(() => {
@@ -252,7 +262,7 @@ export default function OpeningBalancesPage() {
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | null, committed_batches: [] as ImportStatusBatch[] })),
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | 'mid_year' | null, committed_batches: [] as ImportStatusBatch[] })),
           accountingApi.getAccountingSettings().catch(() => null)
         ]);
 
@@ -267,7 +277,7 @@ export default function OpeningBalancesPage() {
           }
         }
         setCommittedModes(committed);
-        setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | null }).opening_balances_strategy) ?? null);
+        setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | null }).opening_balances_strategy) ?? null);
         const glBatch = committedBatches.find((b) => b.batch_type === 'general');
         if (glBatch?.opening_date) {
           setGlOpeningDate(glBatch.opening_date);
@@ -305,14 +315,17 @@ export default function OpeningBalancesPage() {
     setBatches(batchResult.items);
   };
 
-  const handleChooseStrategy = async (choice: 'with_general' | 'subledger_only') => {
+  const handleChooseStrategy = async (choice: 'with_general' | 'subledger_only' | 'mid_year') => {
     if (choice === 'subledger_only' && !window.confirm(t('obConfirmSkipGeneral'))) return;
     setSavingStrategy(true);
     setErrorMessage(null);
     try {
       await accountingApi.setOpeningBalancesStrategy(choice);
       setStrategy(choice);
-      if (choice === 'subledger_only') {
+      if (choice === 'mid_year') {
+        setMode('general');
+        setGeneralLayer('year_end');
+      } else if (choice === 'subledger_only') {
         // No käibeandmik — receivables/payables net against the opening-balance equity (3900).
         const equity = accounts.find((a) => a.code === '3900' || a.system_code === 'OPENING_BALANCE_EQUITY');
         if (equity) {
@@ -437,13 +450,27 @@ export default function OpeningBalancesPage() {
     setCommitResult(null);
 
     try {
-      const payload = buildPayload(mode, sharedFields, {
+      // The control balance is just expected per-account figures for comparison —
+      // it need not be debit==credit balanced, so skip the validating preview.
+      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'control') {
+        const localPayload = buildPayload(mode, sharedFields, {
+          generalRows, receivableRows, payableRows, receivablesOffsetAccountId, payablesOffsetAccountId
+        });
+        setPreviewResult({ lines: (localPayload as any).lines, totals: { debit_total: 0, credit_total: 0, difference: 0 } });
+        setPreviewSnapshot(JSON.stringify(localPayload));
+        setStep('confirm');
+        return;
+      }
+      const payload: Record<string, any> = buildPayload(mode, sharedFields, {
         generalRows,
         receivableRows,
         payableRows,
         receivablesOffsetAccountId,
         payablesOffsetAccountId
       });
+      if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+        payload.gl_neutral = true;
+      }
 
       const result =
         mode === 'general'
@@ -469,7 +496,7 @@ export default function OpeningBalancesPage() {
     setErrorMessage(null);
 
     try {
-      const payload = buildPayload(mode, sharedFields, {
+      const payload: Record<string, any> = buildPayload(mode, sharedFields, {
         generalRows,
         receivableRows,
         payableRows,
@@ -477,21 +504,83 @@ export default function OpeningBalancesPage() {
         payablesOffsetAccountId
       });
 
-      const result =
-        mode === 'general'
-          ? await accountingApi.commitOpeningBalances(payload)
-          : mode === 'receivables'
-            ? await accountingApi.commitOpeningReceivables(payload)
-            : await accountingApi.commitOpeningPayables(payload);
+      // Mid-year "control" layer: the grid holds the old software's transition
+      // balance — store it as expected balances and reconcile, no ledger posting.
+      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'control') {
+        const codeById = new Map(accounts.map((a) => [a.id, a.code]));
+        const expected = generalRows
+          .map((row) => {
+            const code = (row.account_code || codeById.get(row.account_id) || '').trim();
+            const amount = Number(row.amount || 0);
+            return code && amount ? { account_code: code, balance: row.side === 'debit' ? amount : -amount } : null;
+          })
+          .filter(Boolean) as Array<{ account_code: string; balance: number }>;
+        await accountingApi.uploadControlBalance({ transition_date: sharedFields.opening_date || null, expected_balances: expected });
+        const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
+        setReconResult(recon);
+        setCommitResult({ reconciliation: recon } as CommitResult);
+        return;
+      }
+
+      if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+        payload.gl_neutral = true;
+      }
+
+      let result: CommitResult;
+      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'year_end') {
+        result = await accountingApi.commitYearEndBalance({ ...payload, fiscal_year_start: payload.opening_date });
+      } else if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover') {
+        result = await accountingApi.commitPeriodTurnover({ ...payload, transition_date: payload.opening_date });
+      } else if (mode === 'general') {
+        result = await accountingApi.commitOpeningBalances(payload);
+      } else if (mode === 'receivables') {
+        result = await accountingApi.commitOpeningReceivables(payload);
+      } else {
+        result = await accountingApi.commitOpeningPayables(payload);
+      }
 
       setCommitResult(result);
-      setCommittedModes((current) => new Set(current).add(mode));
+      // Mid-year general layers share mode 'general'; their lock is tracked by
+      // batch_type (isImported), so don't coarsely mark the whole 'general' mode.
+      if (!(strategy === 'mid_year' && mode === 'general')) {
+        setCommittedModes((current) => new Set(current).add(mode));
+      }
+      // Mid-year: advance to the next general-side document automatically.
+      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'year_end') {
+        setGeneralLayer('turnover');
+        setGeneralRows([createGeneralRow(), createGeneralRow()]);
+        setSharedFields((f) => ({ ...f, source_document_id: '' }));
+        invalidatePreview();
+      }
       await refreshBatches();
       await maybeOfferRoleMapping();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsCommitLoading(false);
+    }
+  };
+
+  const handleReconcile = async () => {
+    setErrorMessage(null);
+    try {
+      const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
+      setReconResult(recon);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    }
+  };
+
+  const handleLock = async () => {
+    setIsLocking(true);
+    setErrorMessage(null);
+    try {
+      const result = await accountingApi.lockOpeningBalances();
+      setReconResult(result);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsLocking(false);
     }
   };
 
@@ -545,10 +634,11 @@ export default function OpeningBalancesPage() {
   const liveDiff = liveDebit - liveCredit;
   const liveBalanced = Math.abs(liveDiff) < 0.005;
 
+  const isControlLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
   const blockingReason = (() => {
     if (mode === 'general') {
-      if (generalMissingCount > 0) return t('obRowsNeedAccount', { count: generalMissingCount });
-      if (!generalBalanced) return t('obEntryNotBalanced');
+      if (generalMissingCount > 0 && !isControlLayer) return t('obRowsNeedAccount', { count: generalMissingCount });
+      if (!generalBalanced && !isControlLayer) return t('obEntryNotBalanced');
       if (!generalRows.some((r) => Number(r.amount || 0) !== 0)) return t('obAddAtLeastOneRow');
     } else if (!subledgerHasRows) {
       return t('obAddAtLeastOneRow');
@@ -587,6 +677,15 @@ export default function OpeningBalancesPage() {
               <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategySubledgerOnly')}</div>
               <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategySubledgerOnlyHint')}</div>
             </button>
+            <button
+              type="button"
+              disabled={savingStrategy}
+              onClick={() => void handleChooseStrategy('mid_year')}
+              className="rounded-[10px] border border-[var(--a-border)] p-4 text-left transition hover:border-[var(--a-accent)] disabled:opacity-50 sm:col-span-2"
+            >
+              <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategyMidYear')}</div>
+              <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategyMidYearHint')}</div>
+            </button>
           </div>
         </div>
       </div>
@@ -613,6 +712,88 @@ export default function OpeningBalancesPage() {
 
       {/* Stepper */}
       <OBStepper step={step} mode={mode} t={t} />
+
+      {/* Mid-year transition: which general-side document the grid is for */}
+      {strategy === 'mid_year' && mode === 'general' && (
+        <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: 'year_end', label: t('obLayerYearEnd') },
+              { id: 'turnover', label: t('obLayerTurnover') },
+              { id: 'control', label: t('obLayerControl') },
+            ] as const).map((layer) => (
+              <button
+                key={layer.id}
+                type="button"
+                onClick={() => { setGeneralLayer(layer.id); invalidatePreview(); setCommitResult(null); }}
+                className={`rounded-[8px] border px-3 py-1.5 text-[12.5px] font-medium transition ${generalLayer === layer.id ? 'border-[var(--a-accent)] bg-[var(--a-accent)]/10 text-[var(--a-text)]' : 'border-[var(--a-border)] text-[var(--a-text-2)] hover:border-[var(--a-accent)]'}`}
+              >
+                {layer.label}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] text-[var(--a-text-3)]">
+            {generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint')}
+          </p>
+        </div>
+      )}
+
+      {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
+      {strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
+        <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-4 py-2.5 text-[12.5px] text-[var(--a-text-2)]">
+          {t('obGlNeutralHint')}
+        </div>
+      )}
+
+      {/* Mid-year reconciliation + lock panel (control layer) */}
+      {strategy === 'mid_year' && mode === 'general' && generalLayer === 'control' && (reconResult || (commitResult as any)?.reconciliation) && (
+        (() => {
+          const recon = reconResult || (commitResult as any)?.reconciliation;
+          const passed = !!recon?.passed || recon?.status === 'passed' || recon?.status === 'locked';
+          const diffs: Array<any> = recon?.diffs || recon?.diff_result?.diffs || [];
+          const locked = recon?.status === 'locked' || recon?.locked;
+          return (
+            <div className="mt-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-[13px] font-semibold text-[var(--a-text)]">{t('obReconcileTitle')}</div>
+                <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${passed ? 'bg-[var(--a-pos-soft)] text-[var(--a-pos)]' : 'bg-[var(--a-neg-soft)] text-[var(--a-neg)]'}`}>
+                  {locked ? t('obLocked') : passed ? t('obReconcilePass') : t('obReconcileFail')}
+                </span>
+              </div>
+              {diffs.length > 0 && (
+                <div className="mt-3 overflow-hidden rounded-[8px] border border-[var(--a-border)]">
+                  <table className="w-full text-[12.5px]">
+                    <thead className="bg-[var(--a-surface-2)] text-[var(--a-text-3)]">
+                      <tr>
+                        <th className="px-3 py-1.5 text-left font-medium">{t('obReconcileAccount')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileExpected')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileActual')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileDiff')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {diffs.map((d, i) => (
+                        <tr key={i} className="border-t border-[var(--a-border)]">
+                          <td className="px-3 py-1.5 text-[var(--a-text)]">{d.account_code} {d.account_name || ''}</td>
+                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.expected).toFixed(2)}</td>
+                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.actual).toFixed(2)}</td>
+                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-neg)]">{Number(d.diff).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
+                <Button variant="primary" disabled={!passed || locked || isLocking} onClick={() => void handleLock()}>
+                  {isLocking ? t('obLocking') : t('obLockConfirm')}
+                </Button>
+              </div>
+            </div>
+          );
+        })()
+      )}
 
       {/* Already-imported lock notice */}
       {isImported && (

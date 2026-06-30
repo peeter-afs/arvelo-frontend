@@ -428,6 +428,38 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  // Mid-year transition: two-layer general (year-end balance + period turnover)
+  async commitYearEndBalance(payload: Record<string, any>) {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/year-end/commit', payload);
+    return response.data.data;
+  },
+
+  async commitPeriodTurnover(payload: Record<string, any>) {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/turnover/commit', payload);
+    return response.data.data;
+  },
+
+  // Reconciliation against the old software's transition-date balance sheet
+  async getOpeningBalanceReconciliation() {
+    const response = await apiClient.get<ApiResponse<any>>('/api/accounting/opening-balances/reconciliation');
+    return response.data.data;
+  },
+
+  async uploadControlBalance(payload: { transition_date?: string | null; source_document_id?: string | null; expected_balances: Array<{ account_code: string; account_name?: string; balance: number }> }) {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/control', payload);
+    return response.data.data;
+  },
+
+  async reconcileOpeningBalances(asOfDate?: string) {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/reconcile', { as_of_date: asOfDate });
+    return response.data.data;
+  },
+
+  async lockOpeningBalances() {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/lock', {});
+    return response.data.data;
+  },
+
   // Opening balance import lock / reset
   async getOpeningBalanceImportStatus() {
     const response = await apiClient.get<ApiResponse<{
@@ -435,13 +467,14 @@ export const accountingApi = {
       can_reset: boolean;
       reset_reference_date: string | null;
       reset_window_months: number;
-      opening_balances_strategy: 'with_general' | 'subledger_only' | null;
+      opening_balances_strategy: 'with_general' | 'subledger_only' | 'mid_year' | null;
       committed_batches: Array<{ id: string; batch_type: string; opening_date: string; committed_at: string }>;
+      reconciliation?: any;
     }>>('/api/accounting/opening-balances/import-status');
     return response.data.data;
   },
 
-  async setOpeningBalancesStrategy(strategy: 'with_general' | 'subledger_only') {
+  async setOpeningBalancesStrategy(strategy: 'with_general' | 'subledger_only' | 'mid_year') {
     const response = await apiClient.post<ApiResponse<{ settings: AccountingSettings }>>(
       '/api/accounting/opening-balances/strategy',
       { strategy }
