@@ -29,6 +29,7 @@ import { StatusPill } from '@/components/ui/StatusPill';
 import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
 import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
+import { futursoftApi } from '@/lib/api/futursoft.api';
 
 type InvoiceDetail = {
   invoice: InvoiceListItem;
@@ -195,6 +196,26 @@ export default function InvoiceListWorkspace({
 
     void load();
   }, [invoiceType]);
+
+  // Lazy on-access Futursoft sync: when opening the sales-invoices view, trigger an
+  // import if the tenant's last sync is >1h old (the backend throttles to ~1×/hour).
+  // Fire-and-forget so a Futursoft outage can never block or break the list.
+  useEffect(() => {
+    if (isPurchase) return;
+    let cancelled = false;
+    futursoftApi
+      .sync({ trigger: 'on_access' })
+      .then((result) => {
+        if (!cancelled && result.status === 'success' && result.imported_count > 0) {
+          void refreshInvoices();
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceType, isPurchase]);
 
   useEffect(() => {
     if (!selectedInvoiceId) {

@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
@@ -16,6 +16,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord, type DraftExclusionRule } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
+import { futursoftApi, type FutursoftSettings } from '@/lib/api/futursoft.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
@@ -74,6 +75,19 @@ export default function SettingsPage() {
   const [registryLoading, setRegistryLoading] = useState(false);
   const [registrySaving, setRegistrySaving] = useState(false);
   const [registryTesting, setRegistryTesting] = useState(false);
+  const [futursoftSettings, setFutursoftSettings] = useState<FutursoftSettings | null>(null);
+  const [futursoftForm, setFutursoftForm] = useState({
+    enabled: false,
+    base_url: 'https://apikey.autofutur.net/apigw.php',
+    api_key: '',
+    sync_window_days: 30,
+    default_page_size: 100,
+    start_date: '',
+  });
+  const [futursoftLoading, setFutursoftLoading] = useState(false);
+  const [futursoftSaving, setFutursoftSaving] = useState(false);
+  const [futursoftTesting, setFutursoftTesting] = useState(false);
+  const [futursoftSyncing, setFutursoftSyncing] = useState(false);
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companyAction, setCompanyAction] = useState<string | null>(null);
   const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
@@ -149,6 +163,7 @@ export default function SettingsPage() {
   });
   const [draftRules, setDraftRules] = useState<DraftExclusionRule[]>([]);
   const canManageRegistry = role === 'owner' || role === 'admin';
+  const canManageFutursoft = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
 
@@ -186,6 +201,7 @@ export default function SettingsPage() {
     { id: 'security', label: t('security'), icon: Shield, category: 'account' },
     { id: 'localization', label: t('localization'), icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
+    { id: 'integrations', label: t('integrations'), icon: Plug, category: 'organization' },
     { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
     ...(canManageBilling ? [{ id: 'ai', label: t('ai'), icon: Sparkles, category: 'organization' as const }] : []),
     ...(canManageData ? [{ id: 'team', label: t('team'), icon: Users, category: 'organization' as const }] : []),
@@ -314,6 +330,35 @@ export default function SettingsPage() {
 
     void load();
   }, [activeTab, canManageRegistry]);
+
+  useEffect(() => {
+    if (activeTab !== 'integrations' || !canManageFutursoft) {
+      return;
+    }
+
+    const load = async () => {
+      setFutursoftLoading(true);
+      setSettingsError(null);
+      try {
+        const settings = await futursoftApi.getSettings();
+        setFutursoftSettings(settings);
+        setFutursoftForm({
+          enabled: settings.enabled,
+          base_url: settings.base_url || 'https://apikey.autofutur.net/apigw.php',
+          api_key: '',
+          sync_window_days: settings.sync_window_days ?? 30,
+          default_page_size: settings.default_page_size ?? 100,
+          start_date: settings.start_date || '',
+        });
+      } catch (error) {
+        setSettingsError(getErrorMessage(error));
+      } finally {
+        setFutursoftLoading(false);
+      }
+    };
+
+    void load();
+  }, [activeTab, canManageFutursoft]);
 
   useEffect(() => {
     if (activeTab !== 'data-management' || !canManageData) {
@@ -516,6 +561,69 @@ export default function SettingsPage() {
       setSettingsError(getErrorMessage(error));
     } finally {
       setRegistryTesting(false);
+    }
+  };
+
+  const saveFutursoftSettings = async () => {
+    setFutursoftSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const updated = await futursoftApi.updateSettings({
+        enabled: futursoftForm.enabled,
+        base_url: futursoftForm.base_url,
+        api_key: futursoftForm.api_key || undefined,
+        sync_window_days: futursoftForm.sync_window_days,
+        default_page_size: futursoftForm.default_page_size,
+        start_date: futursoftForm.start_date || null,
+      });
+      setFutursoftSettings(updated);
+      setFutursoftForm((current) => ({ ...current, api_key: '' }));
+      setSettingsSuccess(t('futursoftSettingsSaved'));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftSaving(false);
+    }
+  };
+
+  const testFutursoftSettings = async () => {
+    setFutursoftTesting(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await futursoftApi.testSettings();
+      setSettingsSuccess(t('connectionTestStatus', { status: result.status, testedAt: new Date(result.tested_at).toLocaleString() }));
+      const refreshed = await futursoftApi.getSettings();
+      setFutursoftSettings(refreshed);
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftTesting(false);
+    }
+  };
+
+  const runFutursoftImport = async () => {
+    setFutursoftSyncing(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await futursoftApi.sync({ trigger: 'manual', force: true });
+      if (result.status === 'skipped') {
+        setSettingsSuccess(t('futursoftImportSkipped'));
+      } else {
+        setSettingsSuccess(t('futursoftImportDone', {
+          imported: result.imported_count,
+          skipped: result.skipped_count,
+          failed: result.failed_count,
+        }));
+      }
+      const refreshed = await futursoftApi.getSettings();
+      setFutursoftSettings(refreshed);
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftSyncing(false);
     }
   };
 
@@ -2266,6 +2374,123 @@ export default function SettingsPage() {
                         className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
                       >
                         {registryTesting ? t('testing') : t('testConnection')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'integrations' && (
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('integrationsTitle')}</h2>
+                <p className="text-sm text-slate-500 mb-6">{t('integrationsDescription')}</p>
+
+                {!canManageFutursoft ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                    {t('businessRegistryPermission')}
+                  </div>
+                ) : futursoftLoading ? (
+                  <div className="text-sm text-slate-500">{t('loadingIntegrationSettings')}</div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+                      {t('futursoftConfigureAccountsWarning')}
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4">
+                        <input
+                          type="checkbox"
+                          checked={futursoftForm.enabled}
+                          onChange={(event) => setFutursoftForm((current) => ({ ...current, enabled: event.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">{t('futursoftEnabled')}</div>
+                          <div className="text-xs text-slate-500">{t('futursoftEnabledDescription')}</div>
+                        </div>
+                      </label>
+
+                      <div className="rounded-lg border border-slate-200 p-4">
+                        <div className="text-sm font-medium text-slate-900">{t('futursoftApiKey')}</div>
+                        <div className="mt-2 text-xs text-slate-500">
+                          {futursoftSettings?.has_api_key
+                            ? t('storedValue', { value: futursoftSettings.api_key_masked || t('stored') })
+                            : t('notSet')}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <Field
+                        label={t('futursoftBaseUrl')}
+                        value={futursoftForm.base_url}
+                        onChange={(value) => setFutursoftForm((current) => ({ ...current, base_url: value }))}
+                      />
+                      <Field
+                        label={futursoftSettings?.has_api_key ? t('futursoftApiKeyStored') : t('futursoftApiKey')}
+                        value={futursoftForm.api_key}
+                        onChange={(value) => setFutursoftForm((current) => ({ ...current, api_key: value }))}
+                        placeholder={t('leaveBlankKeepApiKey')}
+                        type="password"
+                      />
+                      <Field
+                        label={t('syncWindowDays')}
+                        value={String(futursoftForm.sync_window_days)}
+                        onChange={(value) => setFutursoftForm((current) => ({ ...current, sync_window_days: Number(value) || 0 }))}
+                      />
+                      <Field
+                        label={t('futursoftPageSize')}
+                        value={String(futursoftForm.default_page_size)}
+                        onChange={(value) => setFutursoftForm((current) => ({ ...current, default_page_size: Number(value) || 0 }))}
+                      />
+                      <div>
+                        <Field
+                          label={t('futursoftStartDate')}
+                          value={futursoftForm.start_date}
+                          onChange={(value) => setFutursoftForm((current) => ({ ...current, start_date: value }))}
+                          type="date"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">{t('futursoftStartDateHint')}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                      <div className="font-medium text-slate-900">{t('status')}</div>
+                      <div className="mt-2 space-y-1 text-xs text-slate-600">
+                        <div>{t('lastSyncAt')}: {futursoftSettings?.last_sync_at ? new Date(futursoftSettings.last_sync_at).toLocaleString() : t('notRun')}</div>
+                        <div>{t('lastSyncStatus')}: {futursoftSettings?.last_sync_status || t('notRun')}</div>
+                        <div>{t('lastImportedCount')}: {futursoftSettings?.last_imported_count ?? t('na')}</div>
+                        <div>{t('lastTestStatus')}: {futursoftSettings?.last_test_status || t('notRun')}</div>
+                        <div>{t('lastError')}: {futursoftSettings?.last_error_message || t('none')}</div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={saveFutursoftSettings}
+                        disabled={futursoftSaving}
+                        className="h-11 px-6 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] font-medium transition-colors disabled:opacity-50"
+                      >
+                        {futursoftSaving ? t('saving') : t('saveSettings')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={testFutursoftSettings}
+                        disabled={futursoftTesting}
+                        className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                      >
+                        {futursoftTesting ? t('testing') : t('testConnection')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={runFutursoftImport}
+                        disabled={futursoftSyncing || !futursoftSettings?.enabled}
+                        className="h-11 px-6 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+                      >
+                        {futursoftSyncing ? t('futursoftImporting') : t('importNow')}
                       </button>
                     </div>
                   </div>
