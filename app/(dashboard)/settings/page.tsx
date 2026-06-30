@@ -16,7 +16,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord, type DraftExclusionRule } from '@/lib/api/banking.api';
 import { businessRegistryApi, type BusinessRegistrySettings } from '@/lib/api/businessRegistry.api';
-import { futursoftApi, type FutursoftSettings } from '@/lib/api/futursoft.api';
+import { futursoftApi, type FutursoftSettings, type FutursoftAccountRule } from '@/lib/api/futursoft.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
@@ -83,11 +83,15 @@ export default function SettingsPage() {
     sync_window_days: 30,
     default_page_size: 100,
     start_date: '',
+    line_grouping: 'itemized' as 'itemized' | 'by_account' | 'by_type',
   });
   const [futursoftLoading, setFutursoftLoading] = useState(false);
   const [futursoftSaving, setFutursoftSaving] = useState(false);
   const [futursoftTesting, setFutursoftTesting] = useState(false);
   const [futursoftSyncing, setFutursoftSyncing] = useState(false);
+  const [futursoftRules, setFutursoftRules] = useState<FutursoftAccountRule[]>([]);
+  const [futursoftRevenueAccounts, setFutursoftRevenueAccounts] = useState<AccountOption[]>([]);
+  const [futursoftRulesSaving, setFutursoftRulesSaving] = useState(false);
   const [companyLoading, setCompanyLoading] = useState(false);
   const [companyAction, setCompanyAction] = useState<string | null>(null);
   const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
@@ -340,7 +344,11 @@ export default function SettingsPage() {
       setFutursoftLoading(true);
       setSettingsError(null);
       try {
-        const settings = await futursoftApi.getSettings();
+        const [settings, rules, accounts] = await Promise.all([
+          futursoftApi.getSettings(),
+          futursoftApi.getRules().catch(() => []),
+          accountingApi.getAccounts().catch(() => []),
+        ]);
         setFutursoftSettings(settings);
         setFutursoftForm({
           enabled: settings.enabled,
@@ -349,7 +357,11 @@ export default function SettingsPage() {
           sync_window_days: settings.sync_window_days ?? 30,
           default_page_size: settings.default_page_size ?? 100,
           start_date: settings.start_date || '',
+          line_grouping: (settings.line_grouping as 'itemized' | 'by_account' | 'by_type') || 'itemized',
         });
+        setFutursoftRules(rules);
+        const revenue = accounts.filter((a) => a.type === 'revenue' && a.is_active);
+        setFutursoftRevenueAccounts(revenue.length > 0 ? revenue : accounts.filter((a) => a.is_active));
       } catch (error) {
         setSettingsError(getErrorMessage(error));
       } finally {
@@ -576,6 +588,7 @@ export default function SettingsPage() {
         sync_window_days: futursoftForm.sync_window_days,
         default_page_size: futursoftForm.default_page_size,
         start_date: futursoftForm.start_date || null,
+        line_grouping: futursoftForm.line_grouping,
       });
       setFutursoftSettings(updated);
       setFutursoftForm((current) => ({ ...current, api_key: '' }));
@@ -600,6 +613,29 @@ export default function SettingsPage() {
       setSettingsError(getErrorMessage(error));
     } finally {
       setFutursoftTesting(false);
+    }
+  };
+
+  const saveFutursoftRules = async () => {
+    setFutursoftRulesSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const clean = futursoftRules
+        .filter((r) => r.match_value.trim() && r.account_id)
+        .map((r) => ({
+          match_type: r.match_type,
+          match_value: r.match_type === 'line_type' ? r.match_value : r.match_value.trim(),
+          account_id: r.account_id,
+          is_active: r.is_active !== false,
+        }));
+      const saved = await futursoftApi.updateRules(clean);
+      setFutursoftRules(saved);
+      setSettingsSuccess(t('futursoftRulesSaved'));
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setFutursoftRulesSaving(false);
     }
   };
 
@@ -2453,6 +2489,103 @@ export default function SettingsPage() {
                           type="date"
                         />
                         <p className="mt-1 text-xs text-slate-500">{t('futursoftStartDateHint')}</p>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 p-5">
+                      <h3 className="text-base font-semibold text-slate-900">{t('futursoftPostingTitle')}</h3>
+                      <p className="mt-1 text-xs text-slate-500">{t('futursoftPostingHint')}</p>
+
+                      <div className="mt-4 max-w-md">
+                        <label className="block text-sm font-medium text-slate-700 mb-1.5">{t('futursoftGrouping')}</label>
+                        <select
+                          value={futursoftForm.line_grouping}
+                          onChange={(event) => setFutursoftForm((current) => ({ ...current, line_grouping: event.target.value as 'itemized' | 'by_account' | 'by_type' }))}
+                          className="w-full h-11 px-3 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)]"
+                          style={{ fontSize: '16px' }}
+                        >
+                          <option value="itemized">{t('futursoftGroupingItemized')}</option>
+                          <option value="by_type">{t('futursoftGroupingByType')}</option>
+                          <option value="by_account">{t('futursoftGroupingByAccount')}</option>
+                        </select>
+                      </div>
+
+                      <div className="mt-6">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium text-slate-900">{t('futursoftRules')}</div>
+                          <button
+                            type="button"
+                            onClick={() => setFutursoftRules((current) => [...current, { match_type: 'line_type', match_value: 'goods', account_id: futursoftRevenueAccounts[0]?.id || '', is_active: true }])}
+                            className="text-sm text-[var(--primary)] hover:underline"
+                          >
+                            + {t('futursoftAddRule')}
+                          </button>
+                        </div>
+                        <p className="mt-1 text-xs text-slate-500">{t('futursoftRulesHint')}</p>
+
+                        {futursoftRules.length === 0 ? (
+                          <div className="mt-3 rounded-lg border border-dashed border-slate-200 p-4 text-xs text-slate-400">{t('futursoftNoRules')}</div>
+                        ) : (
+                          <div className="mt-3 space-y-2">
+                            {futursoftRules.map((rule, idx) => (
+                              <div key={idx} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2">
+                                <select
+                                  value={rule.match_type}
+                                  onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_type: event.target.value as 'product_code' | 'line_type', match_value: event.target.value === 'line_type' ? 'goods' : '' } : r))}
+                                  className="h-9 px-2 border border-slate-200 rounded-lg text-sm"
+                                >
+                                  <option value="line_type">{t('futursoftRuleLineType')}</option>
+                                  <option value="product_code">{t('futursoftRuleProductCode')}</option>
+                                </select>
+                                {rule.match_type === 'line_type' ? (
+                                  <select
+                                    value={rule.match_value}
+                                    onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_value: event.target.value } : r))}
+                                    className="h-9 px-2 border border-slate-200 rounded-lg text-sm"
+                                  >
+                                    <option value="goods">{t('futursoftGoods')}</option>
+                                    <option value="service">{t('futursoftServices')}</option>
+                                  </select>
+                                ) : (
+                                  <input
+                                    value={rule.match_value}
+                                    onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, match_value: event.target.value } : r))}
+                                    placeholder={t('futursoftProductCodePlaceholder')}
+                                    className="h-9 px-2 border border-slate-200 rounded-lg text-sm w-40"
+                                  />
+                                )}
+                                <span className="text-xs text-slate-400">→</span>
+                                <select
+                                  value={rule.account_id}
+                                  onChange={(event) => setFutursoftRules((current) => current.map((r, i) => i === idx ? { ...r, account_id: event.target.value } : r))}
+                                  className="h-9 px-2 border border-slate-200 rounded-lg text-sm flex-1 min-w-[200px]"
+                                >
+                                  <option value="">{t('futursoftSelectAccount')}</option>
+                                  {futursoftRevenueAccounts.map((a) => (
+                                    <option key={a.id} value={a.id}>{a.code} · {a.name}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => setFutursoftRules((current) => current.filter((_, i) => i !== idx))}
+                                  className="text-slate-400 hover:text-[var(--danger)] p-1"
+                                  aria-label={t('delete')}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={saveFutursoftRules}
+                          disabled={futursoftRulesSaving}
+                          className="mt-4 h-10 px-5 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm font-medium text-slate-700 transition-colors disabled:opacity-50"
+                        >
+                          {futursoftRulesSaving ? t('saving') : t('futursoftSaveRules')}
+                        </button>
                       </div>
                     </div>
 

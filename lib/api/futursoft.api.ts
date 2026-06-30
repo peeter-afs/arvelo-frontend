@@ -16,6 +16,7 @@ export type FutursoftSettings = {
   default_page_size: number;
   internal_sales: number;
   start_date: string | null;
+  line_grouping: string;
   last_sync_at: string | null;
   last_sync_status: string | null;
   last_imported_count: number | null;
@@ -33,6 +34,14 @@ export type FutursoftSyncResult = {
   failed_count: number;
 };
 
+export type FutursoftAccountRule = {
+  id?: string;
+  match_type: 'product_code' | 'line_type';
+  match_value: string;
+  account_id: string;
+  is_active?: boolean;
+};
+
 export const futursoftApi = {
   async getSettings() {
     const response = await apiClient.get<ApiResponse<FutursoftSettings>>('/api/tenant-admin/integrations/futursoft');
@@ -47,9 +56,25 @@ export const futursoftApi = {
     default_page_size?: number;
     internal_sales?: number;
     start_date?: string | null;
+    line_grouping?: 'itemized' | 'by_account' | 'by_type';
   }) {
     const response = await apiClient.put<ApiResponse<FutursoftSettings>>('/api/tenant-admin/integrations/futursoft', payload);
     return response.data.data;
+  },
+
+  async getRules() {
+    const response = await apiClient.get<ApiResponse<{ rules: FutursoftAccountRule[] }>>(
+      '/api/tenant-admin/integrations/futursoft/rules'
+    );
+    return response.data.data.rules;
+  },
+
+  async updateRules(rules: FutursoftAccountRule[]) {
+    const response = await apiClient.put<ApiResponse<{ rules: FutursoftAccountRule[] }>>(
+      '/api/tenant-admin/integrations/futursoft/rules',
+      { rules }
+    );
+    return response.data.data.rules;
   },
 
   async testSettings() {
