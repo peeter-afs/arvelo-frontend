@@ -1,34 +1,28 @@
 'use client';
 
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
-  Eye,
-  FileQuestion,
-  Filter,
   Loader2,
   RefreshCw,
-  ShieldCheck,
-  Sparkles,
-  Split,
-  UserCheck,
-  XCircle,
 } from 'lucide-react';
-import Link from 'next/link';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
+import { SummaryMetric, InfoBox, formatLabel } from './shared';
+import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 
-type ManualAllocation = {
-  invoice_id: string;
-  amount: string;
-};
-
-export default function BankReviewPage() {
+export function ReviewTab({
+  refreshKey = 0,
+  onCountChange,
+}: {
+  refreshKey?: number;
+  onCountChange?: (count: number) => void;
+}) {
   const t = useTranslations('accounting');
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -77,7 +71,11 @@ export default function BankReviewPage() {
     };
 
     void load();
-  }, [autoMatchableOnly, reviewFilter]);
+  }, [autoMatchableOnly, reviewFilter, refreshKey]);
+
+  useEffect(() => {
+    onCountChange?.(items.length);
+  }, [items.length, onCountChange]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -246,13 +244,6 @@ export default function BankReviewPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('bankReviewQueue')}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          {t('bankReviewDescription')}
-        </p>
-      </div>
-
       {errorMessage && (
         <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <div className="flex items-start gap-3">
@@ -462,336 +453,37 @@ export default function BankReviewPage() {
                 )}
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-                <div className="card overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                    <div>
-                      <h2 className="text-base font-semibold text-slate-900">{t('suggestedInvoiceMatches')}</h2>
-                      <p className="mt-1 text-sm text-slate-500">{t('suggestedInvoiceMatchesDescription')}</p>
-                    </div>
-                    <button
-                      onClick={() => selectedItem && setSelectedTransactionId(selectedItem.transaction_id)}
-                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>{t('selectedTx')}</span>
-                    </button>
-                  </div>
-
-                  {isCandidateLoading ? (
-                    <div className="p-5 text-sm text-slate-500">{t('loadingCandidates')}</div>
-                  ) : suggestedCandidates.length === 0 ? (
-                    <div className="p-5 text-sm text-slate-500">{t('noInvoiceCandidates')}</div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {suggestedCandidates.slice(0, 6).map((candidate) => (
-                        <div key={candidate.invoice_id} className="p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <div className="text-sm font-semibold text-slate-900">
-                                {candidate.invoice_number || candidate.invoice_id.slice(0, 8)}
-                              </div>
-                              <div className="mt-1 text-xs text-slate-500">
-                                {candidate.partner_name || t('unknownPartner')} · {t('openAmountValue', { amount: candidate.open_amount.toFixed(2), currency: candidate.currency })}
-                              </div>
-                              <div className="mt-2 text-xs text-slate-500">
-                                {candidate.match_reasons.map(formatLabel).join(', ')}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
-                                {t('scoreValue', { score: candidate.score })}
-                              </div>
-                              <button
-                                onClick={() => handleSingleMatch(candidate)}
-                                disabled={!!actionLoading}
-                                className="mt-3 inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                              >
-                                <ShieldCheck className="h-4 w-4" />
-                                <span>{t('match')}</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
-                  <ActionCard
-                    title={t('quickActions')}
-                    description={t('quickActionsDescription')}
-                  >
-                    <div className="grid gap-3">
-                      <button
-                        onClick={handleAutoMatch}
-                        disabled={!selectedItem.auto_match_ready || !!actionLoading}
-                        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                        {actionLoading === 'auto' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                        <span>{t('autoMatch')}</span>
-                      </button>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <button
-                          onClick={() => handleReview('reviewed')}
-                          disabled={!!actionLoading}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {actionLoading === 'review-reviewed' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-                          <span>{t('markReviewed')}</span>
-                        </button>
-                        <button
-                          onClick={() => handleReview('pending')}
-                          disabled={!!actionLoading}
-                          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {actionLoading === 'review-pending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />}
-                          <span>{t('resetPending')}</span>
-                        </button>
-                      </div>
-
-                      <textarea
-                        value={reviewNote}
-                        onChange={(event) => setReviewNote(event.target.value)}
-                        placeholder={t('reviewNote')}
-                        className="min-h-24 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-                      />
-                    </div>
-                  </ActionCard>
-
-                  <ActionCard
-                    title={t('manualPosting')}
-                    description={t('manualPostingDescription')}
-                  >
-                    <div className="grid gap-3">
-                      {selectedItem.suggested_manual_account_name && (
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
-                          {t('suggestedDefault', { account: `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}` })}
-                        </div>
-                      )}
-                      <select
-                        value={manualAccountId}
-                        onChange={(event) => setManualAccountId(event.target.value)}
-                        className="h-11 rounded-lg border border-slate-200 px-3"
-                      >
-                        <option value="">{t('selectCounterAccount')}</option>
-                        {accounts.map((account) => (
-                          <option key={account.id} value={account.id}>
-                            {account.code} · {account.name}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        value={manualDescription}
-                        onChange={(event) => setManualDescription(event.target.value)}
-                        placeholder={t('manualPostingDescriptionPlaceholder')}
-                        className="h-11 rounded-lg border border-slate-200 px-3"
-                      />
-                      <button
-                        onClick={handleManualPost}
-                        disabled={!manualAccountId || !!actionLoading}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                        {actionLoading === 'manual-post' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                        <span>{t('createManualPosting')}</span>
-                      </button>
-                    </div>
-                  </ActionCard>
-
-                  <ActionCard
-                    title={t('splitMatch')}
-                    description={t('splitMatchDescription')}
-                  >
-                    <div className="space-y-3">
-                      {manualAllocations.map((allocation, index) => (
-                        <div key={`${allocation.invoice_id}-${index}`} className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_140px]">
-                          <select
-                            value={allocation.invoice_id}
-                            onChange={(event) => updateAllocation(setManualAllocations, index, 'invoice_id', event.target.value)}
-                            className="h-10 rounded-lg border border-slate-200 px-3"
-                          >
-                            <option value="">{t('selectInvoice')}</option>
-                            {suggestedCandidates.map((candidate) => (
-                              <option key={candidate.invoice_id} value={candidate.invoice_id}>
-                                {(candidate.invoice_number || candidate.invoice_id.slice(0, 8))} · {candidate.open_amount.toFixed(2)}
-                              </option>
-                            ))}
-                          </select>
-                          <input
-                            value={allocation.amount}
-                            onChange={(event) => updateAllocation(setManualAllocations, index, 'amount', event.target.value)}
-                            className="h-10 rounded-lg border border-slate-200 px-3"
-                            placeholder={t('amount')}
-                          />
-                        </div>
-                      ))}
-                      <div className="flex gap-3">
-                        <button
-                          onClick={() => setManualAllocations((current) => [...current, { invoice_id: '', amount: '' }])}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50"
-                        >
-                          <Split className="h-4 w-4" />
-                          <span>{t('addAllocation')}</span>
-                        </button>
-                        <button
-                          onClick={handleSplitMatch}
-                          disabled={!manualAllocations.some((allocation) => allocation.invoice_id) || !!actionLoading}
-                          className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                          {actionLoading === 'split-match' ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                          <span>{t('runSplitMatch')}</span>
-                        </button>
-                      </div>
-                    </div>
-                  </ActionCard>
-
-                  <ActionCard
-                    title={t('ignoreTransaction')}
-                    description={t('ignoreTransactionDescription')}
-                  >
-                    <div className="grid gap-3">
-                      <input
-                        value={ignoreReason}
-                        onChange={(event) => setIgnoreReason(event.target.value)}
-                        placeholder={t('reasonForIgnoring')}
-                        className="h-11 rounded-lg border border-slate-200 px-3"
-                      />
-                      <button
-                        onClick={handleIgnore}
-                        disabled={!!actionLoading}
-                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 text-sm text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                        {actionLoading === 'ignore' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                        <span>{t('ignoreTransaction')}</span>
-                      </button>
-                    </div>
-                  </ActionCard>
-
-                  {selectedItem.amount < 0 && (
-                    <ActionCard
-                      title={t('markMissingReceipt')}
-                      description={selectedItem.has_missing_receipt_placeholder ? t('receiptPlaceholderCreated') : t('markMissingReceiptDescription')}
-                    >
-                      <div className="grid gap-3">
-                        {selectedItem.has_missing_receipt_placeholder ? (
-                          <>
-                            <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
-                              <CheckCircle2 className="h-4 w-4" />
-                              <span>{t('receiptPlaceholderCreated')}</span>
-                            </div>
-                            {selectedItem.placeholder_invoice_id && (
-                              <Link
-                                href={`/invoices/${selectedItem.placeholder_invoice_id}/edit`}
-                                className="text-sm font-medium text-[var(--primary)] underline"
-                              >
-                                {t('openDraftInvoice')}
-                              </Link>
-                            )}
-                            <input
-                              value={dismissReason}
-                              onChange={(event) => setDismissReason(event.target.value)}
-                              placeholder={t('dismissReason')}
-                              className="h-11 rounded-lg border border-slate-200 px-3"
-                            />
-                            <button
-                              onClick={handleDismissMissingReceipt}
-                              disabled={!!actionLoading}
-                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {actionLoading === 'dismiss-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                              <span>{t('noReceiptExpected')}</span>
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={handleMarkMissingReceipt}
-                              disabled={!!actionLoading}
-                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {actionLoading === 'mark-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />}
-                              <span>{t('markMissingReceipt')}</span>
-                            </button>
-                            <button
-                              onClick={handleDismissMissingReceipt}
-                              disabled={!!actionLoading}
-                              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              {actionLoading === 'dismiss-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
-                              <span>{t('noReceiptExpected')}</span>
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </ActionCard>
-                  )}
-                </div>
-              </div>
+              <ReviewActionPanel
+                selectedItem={selectedItem}
+                accounts={accounts}
+                suggestedCandidates={suggestedCandidates}
+                isCandidateLoading={isCandidateLoading}
+                actionLoading={actionLoading}
+                reviewNote={reviewNote}
+                setReviewNote={setReviewNote}
+                ignoreReason={ignoreReason}
+                setIgnoreReason={setIgnoreReason}
+                manualAccountId={manualAccountId}
+                setManualAccountId={setManualAccountId}
+                manualDescription={manualDescription}
+                setManualDescription={setManualDescription}
+                manualAllocations={manualAllocations}
+                setManualAllocations={setManualAllocations}
+                dismissReason={dismissReason}
+                setDismissReason={setDismissReason}
+                onAutoMatch={handleAutoMatch}
+                onReview={handleReview}
+                onIgnore={handleIgnore}
+                onMarkMissingReceipt={handleMarkMissingReceipt}
+                onDismissMissingReceipt={handleDismissMissingReceipt}
+                onManualPost={handleManualPost}
+                onSingleMatch={handleSingleMatch}
+                onSplitMatch={handleSplitMatch}
+              />
             </>
           )}
         </section>
       </div>
     </div>
   );
-}
-
-function SummaryMetric({
-  label,
-  value,
-  tone = 'neutral',
-}: {
-  label: string;
-  value: number;
-  tone?: 'neutral' | 'success';
-}) {
-  return (
-    <div className="card p-5">
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className={`mt-2 text-2xl font-semibold ${tone === 'success' ? 'text-emerald-700' : 'text-slate-900'}`}>{value}</div>
-    </div>
-  );
-}
-
-function InfoBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-slate-50 p-4">
-      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm text-slate-800">{value}</div>
-    </div>
-  );
-}
-
-function ActionCard({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="card p-5">
-      <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-      <p className="mt-1 text-sm text-slate-500">{description}</p>
-      <div className="mt-4">{children}</div>
-    </div>
-  );
-}
-
-function updateAllocation(
-  setAllocations: Dispatch<SetStateAction<ManualAllocation[]>>,
-  index: number,
-  key: keyof ManualAllocation,
-  value: string
-) {
-  setAllocations((current) => current.map((allocation, currentIndex) => currentIndex === index ? { ...allocation, [key]: value } : allocation));
-}
-
-function formatLabel(value: string) {
-  return value
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (match) => match.toUpperCase());
 }

@@ -88,12 +88,10 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         },
         {
           label: tAccounting('bank'),
-          href: '/accounting/bank-import',
+          href: '/accounting/bank',
           icon: Landmark,
           children: [
-            { label: tAccounting('bankImport'), href: '/accounting/bank-import' },
-            { label: tAccounting('bankReview'), href: '/accounting/bank-review' },
-            { label: tAccounting('bankReconciliation'), href: '/accounting/bank-reconciliation' },
+            { label: tAccounting('bankWorkspace'), href: '/accounting/bank' },
             { label: tAccounting('payments'), href: '/accounting/payments' },
             { label: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
           ],

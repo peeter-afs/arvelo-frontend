@@ -18,6 +18,7 @@ import {
   type BankReconciliationSummary,
 } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { SummaryCard } from './shared';
 
 type ReconciledFilter = 'all' | 'reconciled' | 'unreconciled';
 
@@ -33,7 +34,11 @@ function formatAmount(value: number, currency: string) {
   return `${value.toFixed(2)} ${currency}`;
 }
 
-export default function BankReconciliationPage() {
+export function ReconcileTab({
+  onUnreconciledCountChange,
+}: {
+  onUnreconciledCountChange?: (count: number) => void;
+}) {
   const t = useTranslations('accounting');
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
@@ -81,12 +86,13 @@ export default function BankReconciliationPage() {
       setItems(result.items);
       setSummary(result.summary);
       setSelected(new Set());
+      onUnreconciledCountChange?.(result.summary.unreconciled_count);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }
-  }, [bankAccountId, reconciledFilter, dateFrom, dateTo]);
+  }, [bankAccountId, reconciledFilter, dateFrom, dateTo, onUnreconciledCountChange]);
 
   useEffect(() => {
     void loadData();
@@ -161,11 +167,6 @@ export default function BankReconciliationPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('bankReconciliation')}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">{t('bankReconciliationDescription')}</p>
-      </div>
-
       {errorMessage && (
         <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <div className="flex items-start gap-3">
@@ -384,40 +385,6 @@ export default function BankReconciliationPage() {
           </div>
         )}
       </div>
-    </div>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-  hint,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  icon: React.ComponentType<{ className?: string }>;
-  tone: 'neutral' | 'success' | 'warning';
-}) {
-  const iconClass =
-    tone === 'success'
-      ? 'bg-emerald-50 text-emerald-600'
-      : tone === 'warning'
-        ? 'bg-amber-50 text-amber-600'
-        : 'bg-slate-100 text-slate-700';
-
-  return (
-    <div className="card p-5">
-      <div className="mb-3 flex items-center gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconClass}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-slate-900">{value}</div>
-      {hint && <div className="mt-1 font-mono text-xs text-slate-500">{hint}</div>}
     </div>
   );
 }

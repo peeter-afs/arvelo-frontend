@@ -45,8 +45,7 @@ export function CommandBar({
   const labels = {
     accounting: tNavigation('books'),
     accounts: tAccounting('chartOfAccounts'),
-    'bank-review': tAccounting('bankReview'),
-    'bank-reconciliation': tAccounting('bankReconciliation'),
+    bank: tAccounting('bankWorkspace'),
     journal: tAccounting('journalEntries'),
     partners: tAccounting('partners'),
     invoices: tInvoices('overview'),

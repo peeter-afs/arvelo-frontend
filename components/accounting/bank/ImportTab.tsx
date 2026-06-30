@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow, type DraftableOutgoingItem } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { SummaryCard, formatLabel } from './shared';
 
 type ImportFormat = 'csv' | 'camt53';
 
@@ -41,7 +42,13 @@ function detectStatementIban(fileContent: string): string | null {
   return normalized || null;
 }
 
-export default function BankImportPage() {
+export function ImportTab({
+  onCommitted,
+  onReviewCountChange,
+}: {
+  onCommitted: () => void;
+  onReviewCountChange?: (count: number) => void;
+}) {
   const t = useTranslations('accounting');
   const [file, setFile] = useState<File | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
@@ -91,6 +98,10 @@ export default function BankImportPage() {
       reviewable: previewRows.filter((row) => row.needs_review && row.can_approve).length,
     };
   }, [previewRows]);
+
+  useEffect(() => {
+    onReviewCountChange?.(counts.review);
+  }, [counts.review, onReviewCountChange]);
 
   const startImport = async (nextFile: File) => {
     const fileContent = await nextFile.text();
@@ -268,6 +279,8 @@ export default function BankImportPage() {
       } catch {
         /* non-fatal — the bulk step just won't show */
       }
+      // Advance the workspace to the review queue now that rows are imported.
+      onCommitted();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -305,13 +318,6 @@ export default function BankImportPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('bankImport')}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">
-          {t('bankImportDescription')}
-        </p>
-      </div>
-
       {errorMessage && (
         <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
           <div className="flex items-start gap-3">
@@ -710,41 +716,4 @@ export default function BankImportPage() {
       </div>
     </div>
   );
-}
-
-function SummaryCard({
-  label,
-  value,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: number;
-  icon: React.ComponentType<{ className?: string }>;
-  tone: 'neutral' | 'success' | 'warning';
-}) {
-  const iconClass =
-    tone === 'success'
-      ? 'bg-emerald-50 text-emerald-600'
-      : tone === 'warning'
-        ? 'bg-amber-50 text-amber-600'
-        : 'bg-slate-100 text-slate-700';
-
-  return (
-    <div className="card p-5">
-      <div className="mb-3 flex items-center gap-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconClass}`}>
-          <Icon className="h-5 w-5" />
-        </div>
-      </div>
-      <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-slate-900">{value}</div>
-    </div>
-  );
-}
-
-function formatLabel(value: string) {
-  return value
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (match) => match.toUpperCase());
 }
