@@ -1377,7 +1377,7 @@
     "maxReminders": "Max reminders",
     "emailSubject": "Email subject",
     "emailBody": "Email body",
-    "templateVars": "Available: {{invoice_number}}, {{partner_name}}, {{total}}, {{currency}}, {{due_date}}, {{reminder_number}}"
+    "templateVars": "Available: '{{invoice_number}}, {{partner_name}}, {{total}}, {{currency}}, {{due_date}}, {{reminder_number}}'"
   },
   "auditLog": {
     "title": "Audit Log",
@@ -1520,7 +1520,7 @@
     "missingReceiptMaxRemindersUnlimited": "Unlimited",
     "missingReceiptEmailSubject": "Email subject template",
     "missingReceiptEmailBody": "Email body template",
-    "missingReceiptPlaceholders": "Available placeholders: {{supplier_name}}, {{amount}}, {{currency}}, {{tx_date}}, {{reference}}, {{draft_link}}, {{reminder_index}}",
+    "missingReceiptPlaceholders": "Available placeholders: '{{supplier_name}}, {{amount}}, {{currency}}, {{tx_date}}, {{reference}}, {{draft_link}}, {{reminder_index}}'",
     "receiptResponsibleEmail": "Receipt responsible email",
     "receiptResponsibleEmailHint": "Person to notify when a receipt is missing for this {entity}",
     "anyWeekday": "Any weekday",

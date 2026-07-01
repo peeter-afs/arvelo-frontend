@@ -1377,7 +1377,7 @@
     "maxReminders": "Max meeldetuletusi",
     "emailSubject": "E-kirja teema",
     "emailBody": "E-kirja sisu",
-    "templateVars": "Saadaval: {{invoice_number}}, {{partner_name}}, {{total}}, {{currency}}, {{due_date}}, {{reminder_number}}"
+    "templateVars": "Saadaval: '{{invoice_number}}, {{partner_name}}, {{total}}, {{currency}}, {{due_date}}, {{reminder_number}}'"
   },
   "auditLog": {
     "title": "Auditilogi",
@@ -1520,7 +1520,7 @@
     "missingReceiptMaxRemindersUnlimited": "Piiramatu",
     "missingReceiptEmailSubject": "E-kirja teema mall",
     "missingReceiptEmailBody": "E-kirja sisu mall",
-    "missingReceiptPlaceholders": "Saadaolevad kohahoidjad: {{supplier_name}}, {{amount}}, {{currency}}, {{tx_date}}, {{reference}}, {{draft_link}}, {{reminder_index}}",
+    "missingReceiptPlaceholders": "Saadaolevad kohahoidjad: '{{supplier_name}}, {{amount}}, {{currency}}, {{tx_date}}, {{reference}}, {{draft_link}}, {{reminder_index}}'",
     "receiptResponsibleEmail": "Kviitungi eest vastutav e-post",
     "receiptResponsibleEmailHint": "Isik, keda teavitada puuduva kviitungi korral selle {entity} jaoks",
     "anyWeekday": "Ükskõik milline tööpäev",

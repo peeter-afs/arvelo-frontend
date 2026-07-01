@@ -23,6 +23,13 @@ import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import type { UserRole } from '@/lib/types/auth.types';
 import { BusinessRegistryTab } from './_tabs/BusinessRegistryTab';
 
+// All tab IDs that can appear in ?tab= (superset; permission-gated tabs render
+// their own access notice). Kept in sync with the `tabs` array inside the page.
+const KNOWN_TAB_IDS = [
+  'company', 'profile', 'billing', 'notifications', 'security', 'localization',
+  'business-registry', 'integrations', 'data-management', 'ai', 'team',
+];
+
 export default function SettingsPage() {
   const t = useTranslations('settings');
   const { user, tenant, role, setTenant } = useAuthStore();
@@ -35,8 +42,10 @@ export default function SettingsPage() {
   // The active tab is derived from the URL (?tab=…) so it's the single source of
   // truth: deep links, refresh, and the browser back button all keep the right
   // tab, and cross-page links like /settings?tab=data-management work even when
-  // already on this page.
-  const activeTab = searchParams.get('tab') || 'company';
+  // already on this page. Unknown values fall back to 'company' instead of
+  // rendering an empty content card.
+  const requestedTab = searchParams.get('tab');
+  const activeTab = requestedTab && KNOWN_TAB_IDS.includes(requestedTab) ? requestedTab : 'company';
 
   // Keep the localization select in sync if the active locale changes elsewhere.
   useEffect(() => {
