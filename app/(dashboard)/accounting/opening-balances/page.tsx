@@ -218,10 +218,17 @@ export default function OpeningBalancesPage() {
   // balanced (turnover auto-offsets; control is figures to compare), so those
   // layers may advance to preview with just a non-zero row.
   const skipBalanceForLayer = strategy === 'mid_year' && mode === 'general' && (generalLayer === 'turnover' || generalLayer === 'control');
+  const isTurnoverGate = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+  // The käibeandmik covers a period start..end. Start comes from the year-end
+  // balance (fiscal-year start); the end (transition date) must be entered — the
+  // file has no period, so import isn't possible without it.
+  const periodStart = batches.find((b: any) => b.status === 'committed' && b.batch_type === 'year_end_balance')?.opening_date || glOpeningDate || '';
   // Whether the form is allowed to advance to the Confirm (preview) step.
   const canAdvanceToConfirm =
     mode === 'general'
-      ? (skipBalanceForLayer || (generalBalanced && generalMissingCount === 0)) && generalRows.some((r) => Number(r.amount || 0) !== 0)
+      ? (skipBalanceForLayer || (generalBalanced && generalMissingCount === 0))
+        && generalRows.some((r) => Number(r.amount || 0) !== 0)
+        && (!isTurnoverGate || !!sharedFields.opening_date)
       : subledgerHasRows;
 
   const canCommit = previewSnapshot === JSON.stringify(buildPayload(mode, sharedFields, {
@@ -431,10 +438,15 @@ export default function OpeningBalancesPage() {
   // Parsing now begins as soon as a file is chosen (no separate "Parse" button).
   const handleFileSelected = async (file: File | null) => {
     if (!file) return;
+    const isTurnover = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+    // The käibeandmik has no period in the file — require the end (transition) date.
+    if (isTurnover && !sharedFields.opening_date) {
+      setErrorMessage(t('obTurnoverEndDateRequired'));
+      return;
+    }
 
     setStep('parsing');
     setErrorMessage(null);
-    const isTurnover = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
     try {
       const result = await importApi.parseOpeningBalancePdf(file, {
         mode,
@@ -582,7 +594,9 @@ export default function OpeningBalancesPage() {
         const next = generalLayer === 'year_end' ? 'turnover' : 'control';
         setGeneralLayer(next);
         setGeneralRows([createGeneralRow(), createGeneralRow()]);
-        setSharedFields((f) => ({ ...f, source_document_id: '' }));
+        // Advancing to the turnover layer clears the date so the transition (end)
+        // date is entered fresh (the year-end used the fiscal-year-start date).
+        setSharedFields((f) => ({ ...f, source_document_id: '', ...(next === 'turnover' ? { opening_date: '' } : {}) }));
         invalidatePreview();
         setStep('upload');
         setMidYearNotice(t('obMidYearLayerImported', {
@@ -921,6 +935,10 @@ export default function OpeningBalancesPage() {
               onEnterManually={handleEnterManually}
               disabled={isImported || isBootLoading}
               docOverride={isTurnoverLayer ? t('obDocTurnover') : isControlLayer ? t('obDocControl') : undefined}
+              isTurnover={isTurnoverLayer}
+              endDate={sharedFields.opening_date}
+              periodStart={periodStart}
+              onEndDateChange={(v) => setSharedFields((f) => ({ ...f, opening_date: v }))}
               t={t}
             />
           )}
@@ -944,6 +962,8 @@ export default function OpeningBalancesPage() {
               subledgerTotal={currentSubledgerTotal}
               generalMissingCount={generalMissingCount}
               hideBalanceSummary={isTurnoverLayer}
+              isTurnover={isTurnoverLayer}
+              periodStart={periodStart}
               willCreateAccounts={willCreateAccounts}
               showCreateList={showCreateList}
               onToggleCreateList={() => setShowCreateList((v) => !v)}
@@ -1180,6 +1200,10 @@ function OBUpload({
   onEnterManually,
   disabled,
   docOverride,
+  isTurnover,
+  endDate,
+  periodStart,
+  onEndDateChange,
   t,
 }: {
   step: Step;
@@ -1190,12 +1214,17 @@ function OBUpload({
   onEnterManually: () => void;
   disabled: boolean;
   docOverride?: string;
+  isTurnover?: boolean;
+  endDate?: string;
+  periodStart?: string;
+  onEndDateChange?: (value: string) => void;
   t: ReturnType<typeof useTranslations>;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const parsing = step === 'parsing';
-  const canDrop = !parsing && !disabled;
+  const needsEndDate = !!isTurnover && !endDate;
+  const canDrop = !parsing && !disabled && !needsEndDate;
   const doc = docOverride || docNoun(mode, t);
 
   // Without these handlers a dropped file falls through to the browser, which
@@ -1221,6 +1250,24 @@ function OBUpload({
 
   return (
     <div className="mt-4">
+      {isTurnover && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-3">
+          <label className="flex items-center gap-2">
+            <span className="text-[11px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obPeriodEnd')}</span>
+            <input
+              type="date"
+              value={endDate || ''}
+              onChange={(event) => onEndDateChange?.(event.target.value)}
+              className="h-[30px] w-[150px] rounded-[7px] border px-2 font-mono text-[12.5px] text-[var(--a-text)]"
+              style={{ borderColor: needsEndDate ? 'var(--a-neg)' : 'var(--a-border)', background: 'var(--a-surface)' }}
+            />
+          </label>
+          <span className="text-[12px] text-[var(--a-text-3)]">
+            {t('obPeriodRange', { start: periodStart || '—', end: endDate || '—' })}
+          </span>
+          {needsEndDate && <span className="text-[12px] text-[var(--a-neg)]">{t('obTurnoverEndDateRequired')}</span>}
+        </div>
+      )}
       <div
         onDragOver={handleDragOver}
         onDragEnter={handleDragOver}
@@ -1258,7 +1305,7 @@ function OBUpload({
               }}
             />
             <div className="mt-[18px] flex items-center justify-center gap-2.5">
-              <Button variant="primary" disabled={disabled} onClick={() => inputRef.current?.click()}>
+              <Button variant="primary" disabled={disabled || needsEndDate} onClick={() => inputRef.current?.click()}>
                 <Upload className="h-3.5 w-3.5" />
                 <span>{t('obChooseFile')}</span>
               </Button>
@@ -1318,6 +1365,8 @@ function OBReview(props: {
   subledgerTotal: number;
   generalMissingCount: number;
   hideBalanceSummary?: boolean;
+  isTurnover?: boolean;
+  periodStart?: string;
   willCreateAccounts: { id: string; code: string; name: string }[];
   showCreateList: boolean;
   onToggleCreateList: () => void;
@@ -1338,7 +1387,7 @@ function OBReview(props: {
     subledgerTotal, generalMissingCount, willCreateAccounts, showCreateList,
     onToggleCreateList, receivablesOffsetAccountId, payablesOffsetAccountId, onReplace,
     onSharedFieldChange, onOffsetChange, onGeneralChange, onGeneralAddRow,
-    onSubledgerChange, onSubledgerAddRow, onCreateAccount,
+    onSubledgerChange, onSubledgerAddRow, onCreateAccount, isTurnover, periodStart,
   } = props;
 
   return (
@@ -1428,7 +1477,7 @@ function OBReview(props: {
                 : t('openingDate')
           }
         >
-          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('openingDate')}</span>
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{isTurnover ? t('obPeriodEnd') : t('openingDate')}</span>
           <input
             type="date"
             value={sharedFields.opening_date}
@@ -1442,6 +1491,11 @@ function OBReview(props: {
           />
           {!isDateLocked && detectedDate && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--a-pos)]" />}
         </label>
+        {isTurnover && (
+          <span className="text-[11.5px] text-[var(--a-text-3)]">
+            {t('obPeriodRange', { start: periodStart || '—', end: sharedFields.opening_date || '—' })}
+          </span>
+        )}
 
         <label className="flex items-center gap-1.5" title={t('currency')}>
           <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('currency')}</span>
