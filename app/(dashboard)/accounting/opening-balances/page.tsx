@@ -964,6 +964,7 @@ export default function OpeningBalancesPage() {
               hideBalanceSummary={isTurnoverLayer}
               isTurnover={isTurnoverLayer}
               periodStart={periodStart}
+              openingByCode={isTurnoverLayer ? new Map(turnoverOpening.map((o) => [o.account_code.toUpperCase(), o.opening_net])) : undefined}
               willCreateAccounts={willCreateAccounts}
               showCreateList={showCreateList}
               onToggleCreateList={() => setShowCreateList((v) => !v)}
@@ -1367,6 +1368,7 @@ function OBReview(props: {
   hideBalanceSummary?: boolean;
   isTurnover?: boolean;
   periodStart?: string;
+  openingByCode?: Map<string, number>;
   willCreateAccounts: { id: string; code: string; name: string }[];
   showCreateList: boolean;
   onToggleCreateList: () => void;
@@ -1551,6 +1553,7 @@ function OBReview(props: {
           accountByCode={accountByCode}
           missingCount={generalMissingCount}
           hideSummary={props.hideBalanceSummary}
+          openingByCode={props.openingByCode}
           onChange={onGeneralChange}
           onAddRow={onGeneralAddRow}
           onCreateAccount={onCreateAccount}
@@ -1594,6 +1597,7 @@ function GeneralTable({
   accountByCode,
   missingCount,
   hideSummary,
+  openingByCode,
   onChange,
   onAddRow,
   onCreateAccount,
@@ -1605,6 +1609,7 @@ function GeneralTable({
   accountByCode: Map<string, AccountOption>;
   missingCount: number;
   hideSummary?: boolean;
+  openingByCode?: Map<string, number>;
   onChange: (rows: GeneralRow[]) => void;
   onAddRow: () => void;
   onCreateAccount: (payload: { code: string; name: string; type: string }) => Promise<AccountOption>;
@@ -1884,12 +1889,23 @@ function GeneralTable({
                   })}
                 </div>
 
-                <input
-                  value={row.amount}
-                  onChange={(e) => updateRow(row.id, 'amount', e.target.value)}
-                  inputMode="decimal"
-                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-right font-mono text-[13px] tabular-nums text-[var(--a-text)]"
-                />
+                <div>
+                  <input
+                    value={row.amount}
+                    onChange={(e) => updateRow(row.id, 'amount', e.target.value)}
+                    inputMode="decimal"
+                    className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-right font-mono text-[13px] tabular-nums text-[var(--a-text)]"
+                  />
+                  {openingByCode && (() => {
+                    const code = (row.account_code || accountByCode.get(row.account_code)?.code || '').toString().toUpperCase();
+                    const op = openingByCode.get(code);
+                    return op !== undefined ? (
+                      <div className="mt-0.5 pr-1 text-right font-mono text-[10px] text-[var(--a-text-3)]">
+                        {t('obOpeningShort')} {op.toFixed(2)}
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
 
                 <button
                   type="button"
