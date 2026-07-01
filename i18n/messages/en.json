@@ -256,6 +256,8 @@
     "obStepUpload": "Upload",
     "obStepUploadSub": "{doc} PDF",
     "obDocGeneral": "balance",
+    "obDocTurnover": "käibeandmik",
+    "obDocControl": "control balance",
     "obDocReceivables": "receivables",
     "obDocPayables": "payables",
     "obStepReview": "Review",

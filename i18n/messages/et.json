@@ -256,6 +256,8 @@
     "obStepUpload": "Üleslaadimine",
     "obStepUploadSub": "{doc} PDF",
     "obDocGeneral": "bilansi",
+    "obDocTurnover": "käibeandmiku",
+    "obDocControl": "kontrollbilansi",
     "obDocReceivables": "nõuete",
     "obDocPayables": "kohustuste",
     "obStepReview": "Ülevaatus",

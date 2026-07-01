@@ -214,10 +214,14 @@ export default function OpeningBalancesPage() {
   const generalBalanced = Math.abs(currentGeneralTotals.difference) < 0.005;
   const subledgerHasRows = (mode === 'receivables' ? receivableRows : payableRows).some((r) => Number(r.amount || 0) !== 0);
 
+  // The käibeandmik turnover and the control balance need not be debit==credit
+  // balanced (turnover auto-offsets; control is figures to compare), so those
+  // layers may advance to preview with just a non-zero row.
+  const skipBalanceForLayer = strategy === 'mid_year' && mode === 'general' && (generalLayer === 'turnover' || generalLayer === 'control');
   // Whether the form is allowed to advance to the Confirm (preview) step.
   const canAdvanceToConfirm =
     mode === 'general'
-      ? generalBalanced && generalMissingCount === 0 && generalRows.some((r) => Number(r.amount || 0) !== 0)
+      ? (skipBalanceForLayer || (generalBalanced && generalMissingCount === 0)) && generalRows.some((r) => Number(r.amount || 0) !== 0)
       : subledgerHasRows;
 
   const canCommit = previewSnapshot === JSON.stringify(buildPayload(mode, sharedFields, {
@@ -916,6 +920,7 @@ export default function OpeningBalancesPage() {
               onFileSelected={handleFileSelected}
               onEnterManually={handleEnterManually}
               disabled={isImported || isBootLoading}
+              docOverride={isTurnoverLayer ? t('obDocTurnover') : isControlLayer ? t('obDocControl') : undefined}
               t={t}
             />
           )}
@@ -1174,6 +1179,7 @@ function OBUpload({
   onFileSelected,
   onEnterManually,
   disabled,
+  docOverride,
   t,
 }: {
   step: Step;
@@ -1183,13 +1189,14 @@ function OBUpload({
   onFileSelected: (file: File | null) => void;
   onEnterManually: () => void;
   disabled: boolean;
+  docOverride?: string;
   t: ReturnType<typeof useTranslations>;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const parsing = step === 'parsing';
   const canDrop = !parsing && !disabled;
-  const doc = docNoun(mode, t);
+  const doc = docOverride || docNoun(mode, t);
 
   // Without these handlers a dropped file falls through to the browser, which
   // just navigates to (opens) the file instead of importing it.
