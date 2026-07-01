@@ -938,6 +938,7 @@ export default function OpeningBalancesPage() {
               generalTotals={currentGeneralTotals}
               subledgerTotal={currentSubledgerTotal}
               generalMissingCount={generalMissingCount}
+              hideBalanceSummary={isTurnoverLayer}
               willCreateAccounts={willCreateAccounts}
               showCreateList={showCreateList}
               onToggleCreateList={() => setShowCreateList((v) => !v)}
@@ -989,12 +990,14 @@ export default function OpeningBalancesPage() {
             <OBTotal label={t('obCredit')} value={liveCredit} />
             <div className="h-[30px] w-px bg-[var(--a-border)]" />
             <div>
-              <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obDifference')}</div>
+              <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+                {isTurnoverLayer ? t('obPeriodResult') : t('obDifference')}
+              </div>
               <div
                 className="font-mono text-[17px] font-semibold tabular-nums"
-                style={{ color: liveBalanced ? 'var(--a-pos)' : 'var(--a-neg)' }}
+                style={{ color: isTurnoverLayer ? 'var(--a-text)' : liveBalanced ? 'var(--a-pos)' : 'var(--a-neg)' }}
               >
-                {liveBalanced ? '€0.00 ✓' : fmt(Math.abs(liveDiff))}
+                {isTurnoverLayer ? fmt(Math.abs(liveDiff)) : liveBalanced ? '€0.00 ✓' : fmt(Math.abs(liveDiff))}
               </div>
             </div>
           </div>
@@ -1307,6 +1310,7 @@ function OBReview(props: {
   generalTotals: { debit: number; credit: number; difference: number };
   subledgerTotal: number;
   generalMissingCount: number;
+  hideBalanceSummary?: boolean;
   willCreateAccounts: { id: string; code: string; name: string }[];
   showCreateList: boolean;
   onToggleCreateList: () => void;
@@ -1485,6 +1489,7 @@ function OBReview(props: {
           partners={partners}
           accountByCode={accountByCode}
           missingCount={generalMissingCount}
+          hideSummary={props.hideBalanceSummary}
           onChange={onGeneralChange}
           onAddRow={onGeneralAddRow}
           onCreateAccount={onCreateAccount}
@@ -1527,6 +1532,7 @@ function GeneralTable({
   partners,
   accountByCode,
   missingCount,
+  hideSummary,
   onChange,
   onAddRow,
   onCreateAccount,
@@ -1537,6 +1543,7 @@ function GeneralTable({
   partners: PartnerOption[];
   accountByCode: Map<string, AccountOption>;
   missingCount: number;
+  hideSummary?: boolean;
   onChange: (rows: GeneralRow[]) => void;
   onAddRow: () => void;
   onCreateAccount: (payload: { code: string; name: string; type: string }) => Promise<AccountOption>;
@@ -1837,26 +1844,29 @@ function GeneralTable({
         })}
       </div>
 
-      {/* balance-sheet summary strip */}
-      <div className="mt-3.5">
-        <div className="mb-2 text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obBalanceSheetSummary')}</div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <OBSummaryCard label={t('obTotalAssets')} value={balanceSheetSummary.totalAssets} />
-          <OBSummaryCard label={t('obTotalLiabilities')} value={balanceSheetSummary.totalLiabilities} />
-          <OBSummaryCard label={t('obTotalEquity')} value={balanceSheetSummary.totalEquity} />
-          <OBSummaryCard
-            label={t('obBalanceCheck')}
-            value={Math.abs(balanceSheetSummary.totalAssets - (balanceSheetSummary.totalLiabilities + balanceSheetSummary.totalEquity))}
-            check
-            ok={balanceSheetSummary.isBalanced && missingCount === 0}
-          />
+      {/* balance-sheet summary strip — hidden for the käibeandmik turnover (a movement
+          isn't a balance sheet and doesn't balance; the imbalance is auto-offset). */}
+      {!hideSummary && (
+        <div className="mt-3.5">
+          <div className="mb-2 text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obBalanceSheetSummary')}</div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <OBSummaryCard label={t('obTotalAssets')} value={balanceSheetSummary.totalAssets} />
+            <OBSummaryCard label={t('obTotalLiabilities')} value={balanceSheetSummary.totalLiabilities} />
+            <OBSummaryCard label={t('obTotalEquity')} value={balanceSheetSummary.totalEquity} />
+            <OBSummaryCard
+              label={t('obBalanceCheck')}
+              value={Math.abs(balanceSheetSummary.totalAssets - (balanceSheetSummary.totalLiabilities + balanceSheetSummary.totalEquity))}
+              check
+              ok={balanceSheetSummary.isBalanced && missingCount === 0}
+            />
+          </div>
+          {balanceSheetSummary.unmatchedCount > 0 && (
+            <p className="mt-2 text-[12px] text-[var(--a-text-3)]">
+              {t('obRowsExcludedFromSummary', { count: balanceSheetSummary.unmatchedCount })}
+            </p>
+          )}
         </div>
-        {balanceSheetSummary.unmatchedCount > 0 && (
-          <p className="mt-2 text-[12px] text-[var(--a-text-3)]">
-            {t('obRowsExcludedFromSummary', { count: balanceSheetSummary.unmatchedCount })}
-          </p>
-        )}
-      </div>
+      )}
     </>
   );
 }
