@@ -740,34 +740,31 @@ export default function OpeningBalancesPage() {
         )}
       </div>
 
-      {/* Mid-year guided checklist */}
+      {/* Mid-year compact step bar — progress + navigation (replaces the layer toggle) */}
       {midYear && (() => {
         const steps = [
-          { done: hasYearEnd, title: t('obMidYearStep1'), hint: t('obMidYearStep1Hint'), go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); } },
-          { done: hasTurnover, title: t('obMidYearStep2'), hint: t('obMidYearStep2Hint'), go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); } },
-          { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), hint: t('obMidYearStep3Hint'), go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
-          { done: reconLocked, title: t('obMidYearStep4'), hint: t('obMidYearStep4Hint'), go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); } },
+          { done: hasYearEnd, title: t('obMidYearStep1'), active: mode === 'general' && generalLayer === 'year_end', go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
+          { done: hasTurnover, title: t('obMidYearStep2'), active: mode === 'general' && generalLayer === 'turnover', go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
+          { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), active: mode === 'receivables' || mode === 'payables', go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
+          { done: reconLocked, title: t('obMidYearStep4'), active: mode === 'general' && generalLayer === 'control', go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
         ];
+        const hint = (mode === 'receivables' || mode === 'payables')
+          ? t('obMidYearStep3Hint')
+          : generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint');
         return (
-          <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
-            <div className="text-[13px] font-semibold text-[var(--a-text)]">{t('obMidYearGuideTitle')}</div>
-            <p className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obMidYearGuideIntro')}</p>
-            <ol className="mt-3 space-y-1.5">
+          <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2">
+            <div className="flex flex-wrap items-center gap-y-1">
               {steps.map((s, i) => (
-                <li key={i}>
-                  <button type="button" onClick={s.go} className="flex w-full items-start gap-2.5 rounded-[8px] px-2 py-1.5 text-left transition hover:bg-[var(--a-surface-2)]">
-                    <span className={`mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${s.done ? 'bg-[var(--a-pos)] text-white' : (s as any).partial ? 'bg-[var(--a-warn-soft)] text-[var(--a-warn)]' : 'bg-[var(--a-surface-2)] text-[var(--a-text-3)]'}`} style={{ height: '18px', width: '18px' }}>
-                      {s.done ? '✓' : i + 1}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="text-[12.5px] font-medium text-[var(--a-text)]">{s.title}</span>
-                      <span className="ml-2 text-[11.5px] text-[var(--a-text-3)]">{s.done ? t('obLayerDone') : ''}</span>
-                      <span className="block text-[11.5px] text-[var(--a-text-3)]">{s.hint}</span>
-                    </span>
+                <div key={i} className="flex items-center">
+                  {i > 0 && <span className="px-1 text-[12px] text-[var(--a-text-3)]">›</span>}
+                  <button type="button" onClick={s.go} className={`flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] transition hover:bg-[var(--a-surface-2)] ${s.active ? 'bg-[var(--a-surface-2)] font-semibold text-[var(--a-text)]' : 'text-[var(--a-text-2)]'}`}>
+                    <span className="grid place-items-center rounded-full text-[10px] font-semibold" style={{ height: '16px', width: '16px', background: s.done ? 'var(--a-pos)' : (s as any).partial ? 'var(--a-warn-soft)' : 'var(--a-surface-2)', color: s.done ? '#fff' : (s as any).partial ? 'var(--a-warn)' : 'var(--a-text-3)' }}>{s.done ? '✓' : i + 1}</span>
+                    <span>{s.title.replace(/^\d+\.\s*/, '')}</span>
                   </button>
-                </li>
+                </div>
               ))}
-            </ol>
+            </div>
+            <p className="mt-1 text-[11.5px] text-[var(--a-text-3)]">{hint}</p>
           </div>
         );
       })()}
@@ -782,31 +779,6 @@ export default function OpeningBalancesPage() {
 
       {/* Stepper */}
       <OBStepper step={step} mode={mode} t={t} strategy={strategy} generalLayer={generalLayer} />
-
-      {/* Mid-year transition: which general-side document the grid is for */}
-      {strategy === 'mid_year' && mode === 'general' && (
-        <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
-          <div className="flex flex-wrap gap-2">
-            {([
-              { id: 'year_end', label: t('obLayerYearEnd') },
-              { id: 'turnover', label: t('obLayerTurnover') },
-              { id: 'control', label: t('obLayerControl') },
-            ] as const).map((layer) => (
-              <button
-                key={layer.id}
-                type="button"
-                onClick={() => { setGeneralLayer(layer.id); invalidatePreview(); setCommitResult(null); setMidYearNotice(null); setStep('upload'); }}
-                className={`rounded-[8px] border px-3 py-1.5 text-[12.5px] font-medium transition ${generalLayer === layer.id ? 'border-[var(--a-accent)] bg-[var(--a-accent)]/10 text-[var(--a-text)]' : 'border-[var(--a-border)] text-[var(--a-text-2)] hover:border-[var(--a-accent)]'}`}
-              >
-                {layer.label}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-[12px] text-[var(--a-text-3)]">
-            {generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint')}
-          </p>
-        </div>
-      )}
 
       {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
       {strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
