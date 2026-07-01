@@ -888,8 +888,10 @@ export default function OpeningBalancesPage() {
                     <thead className="bg-[var(--a-surface-2)] text-[var(--a-text-3)]">
                       <tr>
                         <th className="px-3 py-1.5 text-left font-medium">{t('obReconcileAccount')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileExpected')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileOpening')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileMovement')}</th>
                         <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileActual')}</th>
+                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileExpected')}</th>
                         <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileDiff')}</th>
                       </tr>
                     </thead>
@@ -897,14 +899,19 @@ export default function OpeningBalancesPage() {
                       {diffs.map((d, i) => (
                         <tr key={i} className="border-t border-[var(--a-border)]">
                           <td className="px-3 py-1.5 text-[var(--a-text)]">{d.account_code} {d.account_name || ''}</td>
-                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.expected).toFixed(2)}</td>
+                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-text-2)]">{d.opening !== undefined ? Number(d.opening).toFixed(2) : '—'}</td>
+                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-text-2)]">{d.movement !== undefined ? Number(d.movement).toFixed(2) : '—'}</td>
                           <td className="px-3 py-1.5 text-right font-mono">{Number(d.actual).toFixed(2)}</td>
+                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.expected).toFixed(2)}</td>
                           <td className="px-3 py-1.5 text-right font-mono text-[var(--a-neg)]">{Number(d.diff).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
+              )}
+              {diffs.length > 0 && (
+                <p className="mt-2 text-[11.5px] text-[var(--a-text-3)]">{t('obReconcileDetailHint')}</p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
