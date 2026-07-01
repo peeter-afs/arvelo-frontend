@@ -504,6 +504,14 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  async undoOpeningBalanceLayer(batchType: 'general' | 'year_end_balance' | 'period_turnover' | 'receivables' | 'payables') {
+    const response = await apiClient.post<ApiResponse<{ batch_type: string; deleted_entries: number; deleted_invoices: number }>>(
+      '/api/accounting/opening-balances/undo-layer',
+      { batch_type: batchType }
+    );
+    return response.data.data;
+  },
+
   async listResetBackups() {
     const response = await apiClient.get<ApiResponse<any[]>>('/api/accounting/opening-balances/reset-backups');
     return response.data.data;

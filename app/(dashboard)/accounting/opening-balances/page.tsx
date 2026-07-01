@@ -12,6 +12,7 @@ import {
   Loader2,
   Lock,
   Plus,
+  RotateCcw,
   Trash2,
   Upload,
   X
@@ -661,6 +662,40 @@ export default function OpeningBalancesPage() {
     }
   };
 
+  // The committed batch_type of the layer currently in view (null on the control
+  // layer, which posts nothing and so has no batch to undo).
+  const currentLayerBatchType = (): 'year_end_balance' | 'period_turnover' | 'receivables' | 'payables' | null => {
+    if (mode === 'receivables') return 'receivables';
+    if (mode === 'payables') return 'payables';
+    if (mode === 'general' && generalLayer === 'year_end') return 'year_end_balance';
+    if (mode === 'general' && generalLayer === 'turnover') return 'period_turnover';
+    return null;
+  };
+
+  // Re-import a single committed layer: undo just this layer (delete its entries /
+  // open items), leaving the others, then reopen the upload step. Only offered while
+  // the set is not locked (a finalized import must go through the full reset).
+  const handleReimportLayer = async () => {
+    const batchType = currentLayerBatchType();
+    if (!batchType) return;
+    if (typeof window !== 'undefined' && !window.confirm(t('obReimportConfirm'))) return;
+    setErrorMessage(null);
+    try {
+      await accountingApi.undoOpeningBalanceLayer(batchType);
+      await refreshBatches();
+      setImportResult(null);
+      setReconResult(null);
+      if (mode === 'general') setGeneralRows([createGeneralRow(), createGeneralRow()]);
+      else if (mode === 'receivables') setReceivableRows([createSubledgerRow()]);
+      else if (mode === 'payables') setPayableRows([createSubledgerRow()]);
+      invalidatePreview();
+      setMidYearNotice(null);
+      setStep('upload');
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    }
+  };
+
   // After committing opening balances, offer to map system roles to the imported
   // chart — but only while the roles still point at the app's default accounts.
   const maybeOfferRoleMapping = async () => {
@@ -864,6 +899,7 @@ export default function OpeningBalancesPage() {
       {strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-4 py-2.5 text-[12.5px] text-[var(--a-text-2)]">
           {t('obGlNeutralHint')}
+          <span className="ml-1 text-[var(--a-text-3)]">{t('obSubledgerIndependentHint')}</span>
         </div>
       )}
 
@@ -913,6 +949,9 @@ export default function OpeningBalancesPage() {
               {diffs.length > 0 && (
                 <p className="mt-2 text-[11.5px] text-[var(--a-text-3)]">{t('obReconcileDetailHint')}</p>
               )}
+              {!locked && (
+                <p className="mt-2 text-[11.5px] text-[var(--a-text-3)]">{t('obImportsSavedIndependent')}</p>
+              )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
                 <Button variant="primary" disabled={!passed || locked || isLocking} onClick={() => void handleLock()}>
@@ -929,7 +968,23 @@ export default function OpeningBalancesPage() {
       {isImported && midYear && (
         <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-3">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
-          <div className="text-[13px] text-[var(--a-text-2)]">{t('obMidYearDocImported')}</div>
+          <div className="flex-1 text-[13px] text-[var(--a-text-2)]">
+            {t('obMidYearDocImported')}
+            {/* Re-import this one layer — only before the set is locked. */}
+            {!reconLocked && currentLayerBatchType() && (
+              <div className="mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => void handleReimportLayer()}
+                  className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 py-1 text-[12px] font-medium text-[var(--a-text)] transition hover:bg-[var(--a-surface-2)]"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  <span>{t('obReimportLayer')}</span>
+                </button>
+                <span className="ml-2 text-[11.5px] text-[var(--a-text-3)]">{t('obReimportHint')}</span>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {isImported && !midYear && (
