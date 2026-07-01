@@ -817,61 +817,89 @@ export default function OpeningBalancesPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Top row: mode selector + History button */}
-      <div className="flex items-center gap-3 pt-2">
-        <OBModeRow mode={mode} onChange={handleModeChange} t={t} />
-        <Button
-          variant="default"
-          onClick={() => setShowHistory(true)}
-          className="shrink-0"
-        >
-          <History className="h-3.5 w-3.5" />
-          <span>{t('obHistory')}</span>
-          {batches.length > 0 && (
-            <span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>
-          )}
-        </Button>
-        {/* Nothing committed yet → let the accountant re-pick the import strategy
-            (the choice screen reappears when strategy is cleared locally). */}
-        {strategy && committedModes.size === 0 && (
-          <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
-            <span>{t('obChangeStrategy')}</span>
-          </Button>
-        )}
-      </div>
-
-      {/* Mid-year compact step bar — progress + navigation (replaces the layer toggle) */}
-      {midYear && (() => {
-        const steps = [
-          { done: hasYearEnd, title: t('obMidYearStep1'), active: mode === 'general' && generalLayer === 'year_end', go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
-          { done: hasTurnover, title: t('obMidYearStep2'), active: mode === 'general' && generalLayer === 'turnover', go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
-          { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), active: mode === 'receivables' || mode === 'payables', go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
-          { done: reconLocked, title: t('obMidYearStep4'), active: mode === 'general' && generalLayer === 'control', go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
-        ];
-        const hint = (mode === 'receivables' || mode === 'payables')
-          ? t('obMidYearStep3Hint')
-          : generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint');
-        return (
-          <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2">
-            <div className="flex flex-wrap items-center gap-y-1">
-              {steps.map((s, i) => (
-                <div key={i} className="flex items-center">
-                  {i > 0 && <span className="px-1 text-[12px] text-[var(--a-text-3)]">›</span>}
-                  <button type="button" onClick={s.go} className={`flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] transition hover:bg-[var(--a-surface-2)] ${s.active ? 'bg-[var(--a-surface-2)] font-semibold text-[var(--a-text)]' : 'text-[var(--a-text-2)]'}`}>
-                    <span className="grid place-items-center rounded-full text-[10px] font-semibold" style={{ height: '16px', width: '16px', background: s.done ? 'var(--a-pos)' : (s as any).partial ? 'var(--a-warn-soft)' : 'var(--a-surface-2)', color: s.done ? '#fff' : (s as any).partial ? 'var(--a-warn)' : 'var(--a-text-3)' }}>{s.done ? '✓' : i + 1}</span>
-                    <span>{s.title.replace(/^\d+\.\s*/, '')}</span>
-                  </button>
+      {/* Top zone. Mid-year: the compact step bar is the primary progress AND
+          navigation (it drives mode/layer), sat at the very top with History beside
+          it — the mode row is hidden to avoid a redundant second control. Simple
+          strategies keep the mode selector row. */}
+      {midYear ? (
+        <div className="flex items-start gap-2 pt-2">
+          {(() => {
+            const steps = [
+              { done: hasYearEnd, title: t('obMidYearStep1'), active: mode === 'general' && generalLayer === 'year_end', go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
+              { done: hasTurnover, title: t('obMidYearStep2'), active: mode === 'general' && generalLayer === 'turnover', go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
+              { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), active: mode === 'receivables' || mode === 'payables', go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
+              { done: reconLocked, title: t('obMidYearStep4'), active: mode === 'general' && generalLayer === 'control', go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
+            ];
+            const hint = (mode === 'receivables' || mode === 'payables')
+              ? t('obMidYearStep3Hint')
+              : generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint');
+            return (
+              <div className="min-w-0 flex-1 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-1.5">
+                <div className="flex flex-wrap items-center gap-y-1">
+                  {steps.map((s, i) => (
+                    <div key={i} className="flex items-center">
+                      {i > 0 && <span className="px-1 text-[12px] text-[var(--a-text-3)]">›</span>}
+                      <button type="button" onClick={s.go} className={`flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] transition hover:bg-[var(--a-surface-2)] ${s.active ? 'bg-[var(--a-surface-2)] font-semibold text-[var(--a-text)]' : 'text-[var(--a-text-2)]'}`}>
+                        <span className="grid place-items-center rounded-full text-[10px] font-semibold" style={{ height: '16px', width: '16px', background: s.done ? 'var(--a-pos)' : (s as any).partial ? 'var(--a-warn-soft)' : 'var(--a-surface-2)', color: s.done ? '#fff' : (s as any).partial ? 'var(--a-warn)' : 'var(--a-text-3)' }}>{s.done ? '✓' : i + 1}</span>
+                        <span>{s.title.replace(/^\d+\.\s*/, '')}</span>
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <p className="mt-1 text-[11.5px] text-[var(--a-text-3)]">{hint}</p>
-          </div>
-        );
-      })()}
+                <p className="mt-0.5 text-[11px] text-[var(--a-text-3)]">{hint}</p>
+              </div>
+            );
+          })()}
+          <Button variant="default" onClick={() => setShowHistory(true)} className="shrink-0">
+            <History className="h-3.5 w-3.5" />
+            <span>{t('obHistory')}</span>
+            {batches.length > 0 && (<span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>)}
+          </Button>
+          {/* Nothing imported yet → allow re-picking the strategy. */}
+          {!hasYearEnd && !hasTurnover && !hasReceivables && !hasPayables && (
+            <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
+              <span>{t('obChangeStrategy')}</span>
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 pt-2">
+          <OBModeRow mode={mode} onChange={handleModeChange} t={t} />
+          <Button variant="default" onClick={() => setShowHistory(true)} className="shrink-0">
+            <History className="h-3.5 w-3.5" />
+            <span>{t('obHistory')}</span>
+            {batches.length > 0 && (<span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>)}
+          </Button>
+          {/* Nothing committed yet → let the accountant re-pick the import strategy. */}
+          {strategy && committedModes.size === 0 && (
+            <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
+              <span>{t('obChangeStrategy')}</span>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Mid-year subledger step covers both receivables and payables; the mode row
+          is hidden in mid-year, so provide a compact toggle to switch between them. */}
+      {midYear && (mode === 'receivables' || mode === 'payables') && (
+        <div className="mt-2 inline-flex rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5 text-[12.5px]">
+          {(['receivables', 'payables'] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => handleModeChange(m)}
+              className={`rounded-[6px] px-3.5 py-1 font-medium transition ${mode === m ? 'bg-[var(--a-surface)] text-[var(--a-text)]' : 'text-[var(--a-text-2)] hover:text-[var(--a-text)]'}`}
+              style={mode === m ? { border: '1px solid var(--a-border)' } : undefined}
+            >
+              {m === 'receivables' ? t('obModeReceivables') : t('obModePayables')}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Mid-year: notice after a layer commit, guiding to the next document */}
       {midYear && midYearNotice && (
-        <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-2.5 text-[12.5px] text-[var(--a-text)]">
+        <div className="mt-2 flex items-start gap-2.5 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-3.5 py-2 text-[12.5px] text-[var(--a-text)]">
           <span className="text-[var(--a-pos)]">✓</span>
           <span>{midYearNotice}</span>
         </div>
@@ -879,9 +907,9 @@ export default function OpeningBalancesPage() {
 
       {/* Turnover: käibeandmik opening (algsaldo) vs year-end balance control (warning) */}
       {isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
-        <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-4 py-2.5">
+        <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3.5 py-2">
           <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverControl.diffs.length })}</div>
-          <div className="mt-1 max-h-40 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
+          <div className="mt-1 max-h-32 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
             {turnoverControl.diffs.slice(0, 20).map((d: any, i: number) => (
               <div key={i} className="flex justify-between gap-3 font-mono">
                 <span>{d.account_code}</span>
@@ -892,12 +920,14 @@ export default function OpeningBalancesPage() {
         </div>
       )}
 
-      {/* Stepper */}
-      <OBStepper step={step} mode={mode} t={t} strategy={strategy} generalLayer={generalLayer} />
+      {/* Stepper. In mid-year the compact step bar above is the primary progress,
+          so the Upload/Review/Confirm stepper is only shown for the simple strategies
+          (avoids two stacked progress rows). */}
+      {!midYear && <OBStepper step={step} mode={mode} t={t} strategy={strategy} generalLayer={generalLayer} />}
 
       {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
       {strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
-        <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-4 py-2.5 text-[12.5px] text-[var(--a-text-2)]">
+        <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-3.5 py-2 text-[12.5px] text-[var(--a-text-2)]">
           {t('obGlNeutralHint')}
           <span className="ml-1 text-[var(--a-text-3)]">{t('obSubledgerIndependentHint')}</span>
         </div>
@@ -911,7 +941,7 @@ export default function OpeningBalancesPage() {
           const diffs: Array<any> = recon?.diffs || recon?.diff_result?.diffs || [];
           const locked = recon?.status === 'locked' || recon?.locked;
           return (
-            <div className="mt-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
+            <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
               <div className="flex items-center justify-between">
                 <div className="text-[13px] font-semibold text-[var(--a-text)]">{t('obReconcileTitle')}</div>
                 <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-medium ${passed ? 'bg-[var(--a-pos-soft)] text-[var(--a-pos)]' : 'bg-[var(--a-neg-soft)] text-[var(--a-neg)]'}`}>
@@ -919,27 +949,27 @@ export default function OpeningBalancesPage() {
                 </span>
               </div>
               {diffs.length > 0 && (
-                <div className="mt-3 overflow-hidden rounded-[8px] border border-[var(--a-border)]">
+                <div className="mt-2 overflow-hidden rounded-[8px] border border-[var(--a-border)]">
                   <table className="w-full text-[12.5px]">
                     <thead className="bg-[var(--a-surface-2)] text-[var(--a-text-3)]">
                       <tr>
-                        <th className="px-3 py-1.5 text-left font-medium">{t('obReconcileAccount')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileOpening')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileMovement')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileActual')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileExpected')}</th>
-                        <th className="px-3 py-1.5 text-right font-medium">{t('obReconcileDiff')}</th>
+                        <th className="px-3 py-1 text-left font-medium">{t('obReconcileAccount')}</th>
+                        <th className="px-3 py-1 text-right font-medium">{t('obReconcileOpening')}</th>
+                        <th className="px-3 py-1 text-right font-medium">{t('obReconcileMovement')}</th>
+                        <th className="px-3 py-1 text-right font-medium">{t('obReconcileActual')}</th>
+                        <th className="px-3 py-1 text-right font-medium">{t('obReconcileExpected')}</th>
+                        <th className="px-3 py-1 text-right font-medium">{t('obReconcileDiff')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {diffs.map((d, i) => (
                         <tr key={i} className="border-t border-[var(--a-border)]">
-                          <td className="px-3 py-1.5 text-[var(--a-text)]">{d.account_code} {d.account_name || ''}</td>
-                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-text-2)]">{d.opening !== undefined ? Number(d.opening).toFixed(2) : '—'}</td>
-                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-text-2)]">{d.movement !== undefined ? Number(d.movement).toFixed(2) : '—'}</td>
-                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.actual).toFixed(2)}</td>
-                          <td className="px-3 py-1.5 text-right font-mono">{Number(d.expected).toFixed(2)}</td>
-                          <td className="px-3 py-1.5 text-right font-mono text-[var(--a-neg)]">{Number(d.diff).toFixed(2)}</td>
+                          <td className="px-3 py-1 text-[var(--a-text)]">{d.account_code} {d.account_name || ''}</td>
+                          <td className="px-3 py-1 text-right font-mono text-[var(--a-text-2)]">{d.opening !== undefined ? Number(d.opening).toFixed(2) : '—'}</td>
+                          <td className="px-3 py-1 text-right font-mono text-[var(--a-text-2)]">{d.movement !== undefined ? Number(d.movement).toFixed(2) : '—'}</td>
+                          <td className="px-3 py-1 text-right font-mono">{Number(d.actual).toFixed(2)}</td>
+                          <td className="px-3 py-1 text-right font-mono">{Number(d.expected).toFixed(2)}</td>
+                          <td className="px-3 py-1 text-right font-mono text-[var(--a-neg)]">{Number(d.diff).toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -952,7 +982,7 @@ export default function OpeningBalancesPage() {
               {!locked && (
                 <p className="mt-2 text-[11.5px] text-[var(--a-text-3)]">{t('obImportsSavedIndependent')}</p>
               )}
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
                 <Button variant="primary" disabled={!passed || locked || isLocking} onClick={() => void handleLock()}>
                   {isLocking ? t('obLocking') : t('obLockConfirm')}
@@ -966,7 +996,7 @@ export default function OpeningBalancesPage() {
       {/* Already-imported notice. In mid-year this is per-document (not a full lock)
           so it guides the user on via the checklist instead of prompting a reset. */}
       {isImported && midYear && (
-        <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-3">
+        <div className="mt-2 flex items-start gap-2.5 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-3.5 py-2">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
           <div className="flex-1 text-[13px] text-[var(--a-text-2)]">
             {t('obMidYearDocImported')}
@@ -1003,7 +1033,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {errorMessage && (
-        <div className="mt-3 flex items-start gap-3 rounded-[10px] border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-4 py-3 text-[13px] text-[var(--a-neg)]">
+        <div className="mt-2 flex items-start gap-2.5 rounded-[10px] border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-4 py-2.5 text-[13px] text-[var(--a-neg)]">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
@@ -1483,7 +1513,7 @@ function OBReview(props: {
     <div>
       {/* source summary card */}
       {importResult && (
-        <div className="mt-4 flex items-center gap-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-3">
+        <div className="mt-3 flex items-center gap-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-2.5">
           {isExcelResult(importResult.file_name, importResult.model) ? (
             <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#e6f4ea] text-[8.5px] font-bold text-[#1e7e34]">
               XLS
@@ -1555,7 +1585,7 @@ function OBReview(props: {
       )}
 
       {/* meta strip — compact; auto-detected detail surfaces on hover */}
-      <div className="mt-4 flex flex-wrap items-center gap-2.5">
+      <div className="mt-3 flex flex-wrap items-center gap-2.5">
         <label
           className="flex items-center gap-1.5"
           title={
@@ -1785,8 +1815,8 @@ function GeneralTable({
 
   return (
     <>
-      <div className="mt-4 overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--a-border)] px-4 py-3">
+      <div className="mt-3 overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--a-border)] px-4 py-2.5">
           <div className="text-[13.5px] font-semibold text-[var(--a-text)]">{t('obGeneralLedgerRows')}</div>
           <div className="flex items-center gap-2">
             <button
@@ -1839,7 +1869,7 @@ function GeneralTable({
           return (
             <div key={row.id}>
               <div
-                className="grid items-center gap-3.5 border-b border-[var(--a-border)] px-[18px] py-2.5"
+                className="grid items-center gap-3.5 border-b border-[var(--a-border)] px-[18px] py-2"
                 style={{
                   gridTemplateColumns: OB_COLS(showPartner),
                   background: missing ? 'var(--a-neg-soft)' : 'transparent',
@@ -2113,7 +2143,7 @@ function SubledgerTable({
           {rows.map((row, index) => (
             <div
               key={row.id}
-              className="grid min-w-[1240px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-2.5"
+              className="grid min-w-[1240px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-2"
               style={{ gridTemplateColumns: SUB_GRID }}
             >
               <div className="font-mono text-[11px] text-[var(--a-text-3)]">{index + 1}</div>
