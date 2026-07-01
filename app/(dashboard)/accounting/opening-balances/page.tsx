@@ -135,6 +135,7 @@ export default function OpeningBalancesPage() {
   const [generalLayer, setGeneralLayer] = useState<'year_end' | 'turnover' | 'control'>('year_end');
   const [reconResult, setReconResult] = useState<any>(null);
   const [isLocking, setIsLocking] = useState(false);
+  const [midYearNotice, setMidYearNotice] = useState<string | null>(null);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -278,6 +279,13 @@ export default function OpeningBalancesPage() {
         }
         setCommittedModes(committed);
         setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | null }).opening_balances_strategy) ?? null);
+        setReconResult((importStatus as { reconciliation?: any }).reconciliation ?? null);
+        // Mid-year: resume on the first not-yet-imported general-side layer.
+        if ((importStatus as any).opening_balances_strategy === 'mid_year') {
+          const hasYearEnd = committedBatches.some((b) => b.batch_type === 'year_end_balance');
+          const hasTurnover = committedBatches.some((b) => b.batch_type === 'period_turnover');
+          setGeneralLayer(!hasYearEnd ? 'year_end' : !hasTurnover ? 'turnover' : 'control');
+        }
         const glBatch = committedBatches.find((b) => b.batch_type === 'general');
         if (glBatch?.opening_date) {
           setGlOpeningDate(glBatch.opening_date);
@@ -545,12 +553,20 @@ export default function OpeningBalancesPage() {
       if (!(strategy === 'mid_year' && mode === 'general')) {
         setCommittedModes((current) => new Set(current).add(mode));
       }
-      // Mid-year: advance to the next general-side document automatically.
-      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'year_end') {
-        setGeneralLayer('turnover');
+      // Mid-year: after a general-side layer commits, advance to the next document
+      // and reset to the upload step so the next import is immediately available
+      // (otherwise the screen stays on "confirm" and looks locked).
+      if (strategy === 'mid_year' && mode === 'general' && (generalLayer === 'year_end' || generalLayer === 'turnover')) {
+        const next = generalLayer === 'year_end' ? 'turnover' : 'control';
+        setGeneralLayer(next);
         setGeneralRows([createGeneralRow(), createGeneralRow()]);
         setSharedFields((f) => ({ ...f, source_document_id: '' }));
         invalidatePreview();
+        setStep('upload');
+        setMidYearNotice(t('obMidYearLayerImported', {
+          done: generalLayer === 'year_end' ? t('obLayerYearEnd') : t('obLayerTurnover'),
+          next: next === 'turnover' ? t('obLayerTurnover') : t('obLayerControl'),
+        }));
       }
       await refreshBatches();
       await maybeOfferRoleMapping();
@@ -635,6 +651,13 @@ export default function OpeningBalancesPage() {
   const liveBalanced = Math.abs(liveDiff) < 0.005;
 
   const isControlLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
+  // Mid-year progress (from committed batch types + reconciliation status).
+  const midYear = strategy === 'mid_year';
+  const hasYearEnd = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'year_end_balance');
+  const hasTurnover = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'period_turnover');
+  const hasReceivables = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'receivables');
+  const hasPayables = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'payables');
+  const reconLocked = reconResult?.status === 'locked' || !!reconResult?.locked;
   const blockingReason = (() => {
     if (mode === 'general') {
       if (generalMissingCount > 0 && !isControlLayer) return t('obRowsNeedAccount', { count: generalMissingCount });
@@ -710,8 +733,48 @@ export default function OpeningBalancesPage() {
         </Button>
       </div>
 
+      {/* Mid-year guided checklist */}
+      {midYear && (() => {
+        const steps = [
+          { done: hasYearEnd, title: t('obMidYearStep1'), hint: t('obMidYearStep1Hint'), go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); } },
+          { done: hasTurnover, title: t('obMidYearStep2'), hint: t('obMidYearStep2Hint'), go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); } },
+          { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), hint: t('obMidYearStep3Hint'), go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
+          { done: reconLocked, title: t('obMidYearStep4'), hint: t('obMidYearStep4Hint'), go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); } },
+        ];
+        return (
+          <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
+            <div className="text-[13px] font-semibold text-[var(--a-text)]">{t('obMidYearGuideTitle')}</div>
+            <p className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obMidYearGuideIntro')}</p>
+            <ol className="mt-3 space-y-1.5">
+              {steps.map((s, i) => (
+                <li key={i}>
+                  <button type="button" onClick={s.go} className="flex w-full items-start gap-2.5 rounded-[8px] px-2 py-1.5 text-left transition hover:bg-[var(--a-surface-2)]">
+                    <span className={`mt-0.5 flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${s.done ? 'bg-[var(--a-pos)] text-white' : (s as any).partial ? 'bg-[var(--a-warn-soft)] text-[var(--a-warn)]' : 'bg-[var(--a-surface-2)] text-[var(--a-text-3)]'}`} style={{ height: '18px', width: '18px' }}>
+                      {s.done ? '✓' : i + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="text-[12.5px] font-medium text-[var(--a-text)]">{s.title}</span>
+                      <span className="ml-2 text-[11.5px] text-[var(--a-text-3)]">{s.done ? t('obLayerDone') : ''}</span>
+                      <span className="block text-[11.5px] text-[var(--a-text-3)]">{s.hint}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })()}
+
+      {/* Mid-year: notice after a layer commit, guiding to the next document */}
+      {midYear && midYearNotice && (
+        <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-2.5 text-[12.5px] text-[var(--a-text)]">
+          <span className="text-[var(--a-pos)]">✓</span>
+          <span>{midYearNotice}</span>
+        </div>
+      )}
+
       {/* Stepper */}
-      <OBStepper step={step} mode={mode} t={t} />
+      <OBStepper step={step} mode={mode} t={t} strategy={strategy} generalLayer={generalLayer} />
 
       {/* Mid-year transition: which general-side document the grid is for */}
       {strategy === 'mid_year' && mode === 'general' && (
@@ -725,7 +788,7 @@ export default function OpeningBalancesPage() {
               <button
                 key={layer.id}
                 type="button"
-                onClick={() => { setGeneralLayer(layer.id); invalidatePreview(); setCommitResult(null); }}
+                onClick={() => { setGeneralLayer(layer.id); invalidatePreview(); setCommitResult(null); setMidYearNotice(null); setStep('upload'); }}
                 className={`rounded-[8px] border px-3 py-1.5 text-[12.5px] font-medium transition ${generalLayer === layer.id ? 'border-[var(--a-accent)] bg-[var(--a-accent)]/10 text-[var(--a-text)]' : 'border-[var(--a-border)] text-[var(--a-text-2)] hover:border-[var(--a-accent)]'}`}
               >
                 {layer.label}
@@ -795,8 +858,15 @@ export default function OpeningBalancesPage() {
         })()
       )}
 
-      {/* Already-imported lock notice */}
-      {isImported && (
+      {/* Already-imported notice. In mid-year this is per-document (not a full lock)
+          so it guides the user on via the checklist instead of prompting a reset. */}
+      {isImported && midYear && (
+        <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
+          <div className="text-[13px] text-[var(--a-text-2)]">{t('obMidYearDocImported')}</div>
+        </div>
+      )}
+      {isImported && !midYear && (
         <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-3">
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
           <div className="text-[13px]">
@@ -970,10 +1040,14 @@ export default function OpeningBalancesPage() {
 }
 
 // ─── Stepper ──────────────────────────────────────────────────────────────────
-function OBStepper({ step, mode, t }: { step: Step; mode: Mode; t: ReturnType<typeof useTranslations> }) {
+function OBStepper({ step, mode, t, strategy, generalLayer }: { step: Step; mode: Mode; t: ReturnType<typeof useTranslations>; strategy?: string | null; generalLayer?: 'year_end' | 'turnover' | 'control' }) {
   const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
+  // Mid-year: reflect the current general-side document in the upload sub-label.
+  const uploadDoc = strategy === 'mid_year' && mode === 'general'
+    ? (generalLayer === 'year_end' ? t('obLayerYearEnd') : generalLayer === 'turnover' ? t('obLayerTurnover') : t('obLayerControl'))
+    : docNoun(mode, t);
   const steps = [
-    { n: 1, label: t('obStepUpload'), sub: t('obStepUploadSub', { doc: docNoun(mode, t) }) },
+    { n: 1, label: t('obStepUpload'), sub: t('obStepUploadSub', { doc: uploadDoc }) },
     { n: 2, label: t('obStepReview'), sub: t('obStepReviewSub') },
     { n: 3, label: t('obStepConfirm'), sub: t('obStepConfirmSub') },
   ];
