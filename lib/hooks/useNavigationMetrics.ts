@@ -33,6 +33,55 @@ function fiscalYearLabel(fiscalYears: FiscalYearWithPeriods[], today: string) {
   return startYear === endYear ? String(startYear) : `${startYear}/${endYear}`;
 }
 
+async function fetchMetrics(): Promise<NavigationMetrics> {
+  const today = getIsoToday();
+  const [journalResult, invoiceResult, fiscalYearResult, trialBalanceResult] = await Promise.allSettled([
+    accountingApi.listJournalEntries({ limit: LIST_LIMIT }),
+    invoicesApi.listInvoices({ limit: LIST_LIMIT }),
+    accountingApi.listFiscalYears(),
+    reportsApi.getTrialBalance(today),
+  ]);
+
+  return {
+    fiscalYearLabel:
+      fiscalYearResult.status === 'fulfilled'
+        ? fiscalYearLabel(fiscalYearResult.value, today)
+        : currentYearLabel(),
+    invoiceCount: invoiceResult.status === 'fulfilled' ? invoiceResult.value.length : undefined,
+    journalEntryCount: journalResult.status === 'fulfilled' ? journalResult.value.length : undefined,
+    isBalanced: trialBalanceResult.status === 'fulfilled' ? trialBalanceResult.value.isBalanced : undefined,
+    lastUpdatedAt: new Date(),
+    isLoading: false,
+    hasError: [journalResult, invoiceResult, fiscalYearResult, trialBalanceResult].some((result) => result.status === 'rejected'),
+  };
+}
+
+// The metrics badge is rendered by the sidebar, the status footer, and the
+// mobile nav — all mounted together. Without sharing, each fired its own batch
+// of four requests (two of them 1,000-row list downloads). Cache the result
+// module-wide with a short TTL and de-duplicate concurrent callers so the whole
+// shell costs one batch per navigation, not three.
+const CACHE_TTL_MS = 30_000;
+let cachedMetrics: { data: NavigationMetrics; at: number } | null = null;
+let inflight: Promise<NavigationMetrics> | null = null;
+
+function loadSharedMetrics(): Promise<NavigationMetrics> {
+  if (cachedMetrics && Date.now() - cachedMetrics.at < CACHE_TTL_MS) {
+    return Promise.resolve(cachedMetrics.data);
+  }
+  if (inflight) return inflight;
+
+  inflight = fetchMetrics()
+    .then((data) => {
+      cachedMetrics = { data, at: Date.now() };
+      return data;
+    })
+    .finally(() => {
+      inflight = null;
+    });
+  return inflight;
+}
+
 export function useNavigationMetrics(): NavigationMetrics {
   const [metrics, setMetrics] = useState<NavigationMetrics>({
     fiscalYearLabel: currentYearLabel(),
@@ -43,32 +92,13 @@ export function useNavigationMetrics(): NavigationMetrics {
   useEffect(() => {
     let isMounted = true;
 
-    const loadMetrics = async () => {
-      const today = getIsoToday();
-      const [journalResult, invoiceResult, fiscalYearResult, trialBalanceResult] = await Promise.allSettled([
-        accountingApi.listJournalEntries({ limit: LIST_LIMIT }),
-        invoicesApi.listInvoices({ limit: LIST_LIMIT }),
-        accountingApi.listFiscalYears(),
-        reportsApi.getTrialBalance(today),
-      ]);
-
-      if (!isMounted) return;
-
-      setMetrics({
-        fiscalYearLabel:
-          fiscalYearResult.status === 'fulfilled'
-            ? fiscalYearLabel(fiscalYearResult.value, today)
-            : currentYearLabel(),
-        invoiceCount: invoiceResult.status === 'fulfilled' ? invoiceResult.value.length : undefined,
-        journalEntryCount: journalResult.status === 'fulfilled' ? journalResult.value.length : undefined,
-        isBalanced: trialBalanceResult.status === 'fulfilled' ? trialBalanceResult.value.isBalanced : undefined,
-        lastUpdatedAt: new Date(),
-        isLoading: false,
-        hasError: [journalResult, invoiceResult, fiscalYearResult, trialBalanceResult].some((result) => result.status === 'rejected'),
+    loadSharedMetrics()
+      .then((data) => {
+        if (isMounted) setMetrics(data);
+      })
+      .catch(() => {
+        if (isMounted) setMetrics((prev) => ({ ...prev, isLoading: false, hasError: true }));
       });
-    };
-
-    void loadMetrics();
 
     return () => {
       isMounted = false;

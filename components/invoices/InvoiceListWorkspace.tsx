@@ -266,6 +266,14 @@ export default function InvoiceListWorkspace({
     void loadPayments();
   }, [selectedInvoiceId]);
 
+  // Patch a single row from a mutation response instead of refetching both full
+  // lists. Status actions return the updated invoice, so a client-side splice
+  // keeps the list in sync without two extra 200-row round trips per click. The
+  // status/overdue tab filters are derived from this state, so they recompute.
+  const patchInvoiceInList = (updated: InvoiceListItem) => {
+    setInvoices((prev) => prev.map((invoice) => (invoice.id === updated.id ? { ...invoice, ...updated } : invoice)));
+  };
+
   const refreshInvoices = async (preferredId?: string | null) => {
     const creditNoteType = invoiceType === 'sales_invoice' ? 'sales_credit_note' : 'purchase_credit_note';
     const [invoiceItems, creditNoteItems] = await Promise.all([
@@ -298,27 +306,27 @@ export default function InvoiceListWorkspace({
   const handleSubmitApproval = async () => {
     if (!selectedInvoiceId) return;
     await runAction('submit', async () => {
-      await invoicesApi.submitApproval(selectedInvoiceId);
+      const result = await invoicesApi.submitApproval(selectedInvoiceId);
       setSuccessMessage(t('invoiceSubmittedForApproval'));
-      await refreshInvoices(selectedInvoiceId);
+      patchInvoiceInList(result.invoice);
     });
   };
 
   const handleApprove = async () => {
     if (!selectedInvoiceId) return;
     await runAction('approve', async () => {
-      await invoicesApi.approve(selectedInvoiceId);
+      const result = await invoicesApi.approve(selectedInvoiceId);
       setSuccessMessage(t('invoiceApproved'));
-      await refreshInvoices(selectedInvoiceId);
+      patchInvoiceInList(result.invoice);
     });
   };
 
   const handleReject = async () => {
     if (!selectedInvoiceId) return;
     await runAction('reject', async () => {
-      await invoicesApi.reject(selectedInvoiceId, rejectReason || undefined);
+      const result = await invoicesApi.reject(selectedInvoiceId, rejectReason || undefined);
       setSuccessMessage(t('invoiceRejected'));
-      await refreshInvoices(selectedInvoiceId);
+      patchInvoiceInList(result.invoice);
     });
   };
 
@@ -327,7 +335,7 @@ export default function InvoiceListWorkspace({
     await runAction('confirm', async () => {
       const result = await invoicesApi.confirm(selectedInvoiceId);
       setSuccessMessage(t('invoicePostedJournalEntry', { id: result.journal_entry_id }));
-      await refreshInvoices(selectedInvoiceId);
+      patchInvoiceInList(result.invoice);
     });
   };
 
@@ -339,7 +347,7 @@ export default function InvoiceListWorkspace({
         message: sendMessage || undefined,
       });
       setSuccessMessage(t('invoiceSentTo', { recipient: result.sent_to }));
-      await refreshInvoices(selectedInvoiceId);
+      patchInvoiceInList(result.invoice);
     });
   };
 

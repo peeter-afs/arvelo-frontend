@@ -1,9 +1,28 @@
 import apiClient from './client';
+import { createCachedFetcher } from './cache';
 
 type ApiResponse<T> = {
   success: boolean;
   data: T;
 };
+
+// The active chart of accounts and the partner picker list change rarely but
+// are read by ~17 screens. Cache them briefly and share concurrent requests so
+// navigating between screens doesn't re-download them every time. Mutations
+// below invalidate the relevant cache.
+const ACTIVE_LISTS_TTL_MS = 60_000;
+
+async function fetchActiveAccounts(): Promise<AccountOption[]> {
+  const response = await apiClient.get<ApiResponse<AccountOption[]>>('/api/accounting/accounts?is_active=true');
+  return response.data.data;
+}
+const activeAccountsCache = createCachedFetcher(fetchActiveAccounts, ACTIVE_LISTS_TTL_MS);
+
+async function fetchActivePartners(): Promise<PartnerOption[]> {
+  const response = await apiClient.get<ApiResponse<PartnerOption[]>>('/api/accounting/partners?is_active=true');
+  return response.data.data;
+}
+const activePartnersCache = createCachedFetcher(fetchActivePartners, ACTIVE_LISTS_TTL_MS);
 
 export type AccountOption = {
   id: string;
@@ -193,9 +212,15 @@ export type JournalLineRecord = {
 };
 
 export const accountingApi = {
-  async getAccounts() {
-    const response = await apiClient.get<ApiResponse<AccountOption[]>>('/api/accounting/accounts?is_active=true');
-    return response.data.data;
+  async getAccounts(options?: { force?: boolean }) {
+    // Return a shallow copy so a caller that sorts/filters in place can't
+    // mutate the shared cached array.
+    return activeAccountsCache.load(options?.force).then((list) => [...list]);
+  },
+
+  /** Drop the cached active-accounts list (call after a chart-of-accounts change). */
+  invalidateAccountsCache() {
+    activeAccountsCache.invalidate();
   },
 
   async listAccounts(params?: { type?: string; is_active?: boolean }) {
@@ -205,16 +230,19 @@ export const accountingApi = {
 
   async createAccount(payload: { code: string; name: string; type: string; parent_id?: string }) {
     const response = await apiClient.post<ApiResponse<AccountRecord>>('/api/accounting/accounts', payload);
+    activeAccountsCache.invalidate();
     return response.data.data;
   },
 
   async updateAccount(id: string, payload: Record<string, any>) {
     const response = await apiClient.put<ApiResponse<AccountRecord>>(`/api/accounting/accounts/${id}`, payload);
+    activeAccountsCache.invalidate();
     return response.data.data;
   },
 
   async deleteAccount(id: string) {
     const response = await apiClient.delete<ApiResponse<void>>(`/api/accounting/accounts/${id}`);
+    activeAccountsCache.invalidate();
     return response.data.data;
   },
 
@@ -244,6 +272,7 @@ export const accountingApi = {
     const response = await apiClient.post<ApiResponse<{ created: string[]; reused: string[]; skipped: string[]; settings: AccountingSettings }>>(
       '/api/accounting/accounts/create-defaults'
     );
+    activeAccountsCache.invalidate();
     return response.data.data;
   },
 
@@ -311,9 +340,13 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async getPartners() {
-    const response = await apiClient.get<ApiResponse<PartnerOption[]>>('/api/accounting/partners?is_active=true');
-    return response.data.data;
+  async getPartners(options?: { force?: boolean }) {
+    return activePartnersCache.load(options?.force).then((list) => [...list]);
+  },
+
+  /** Drop the cached active-partners list (call after a partner change). */
+  invalidatePartnersCache() {
+    activePartnersCache.invalidate();
   },
 
   async listPartners(params?: { type?: string; is_active?: boolean; search?: string }) {
@@ -335,11 +368,13 @@ export const accountingApi = {
 
   async createPartner(payload: Record<string, any>) {
     const response = await apiClient.post<ApiResponse<PartnerRecord>>('/api/accounting/partners', payload);
+    activePartnersCache.invalidate();
     return response.data.data;
   },
 
   async updatePartner(id: string, payload: Record<string, any>) {
     const response = await apiClient.put<ApiResponse<PartnerRecord>>(`/api/accounting/partners/${id}`, payload);
+    activePartnersCache.invalidate();
     return response.data.data;
   },
 
@@ -501,6 +536,9 @@ export const accountingApi = {
         delete_partners: options?.deletePartners ?? false,
       }
     );
+    // A reset can delete accounts and/or partners; drop both caches.
+    activeAccountsCache.invalidate();
+    activePartnersCache.invalidate();
     return response.data.data;
   },
 
