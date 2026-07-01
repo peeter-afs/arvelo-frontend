@@ -290,6 +290,7 @@
     "obLayerDone": "✓ done",
     "obMidYearLayerImported": "{done} imported. Now upload: {next}.",
     "obMidYearDocImported": "This document is imported. Continue with the next document from the checklist above.",
+    "obChangeStrategy": "Change import method",
     "obGlNeutralHint": "In mid-year mode invoices are created as open items only — no new ledger entries (the balance already came from the käibeandmik).",
     "obReconcileTitle": "Control against the old software's balance",
     "obReconcilePass": "Matches",

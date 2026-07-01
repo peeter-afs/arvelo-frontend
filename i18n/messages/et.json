@@ -290,6 +290,7 @@
     "obLayerDone": "✓ tehtud",
     "obMidYearLayerImported": "{done} imporditud. Laadi nüüd üles: {next}.",
     "obMidYearDocImported": "See dokument on imporditud. Jätka järgmise dokumendiga ülalolevast kontrollnimekirjast.",
+    "obChangeStrategy": "Muuda importimise viisi",
     "obGlNeutralHint": "Kesk-aasta režiimis luuakse arved ainult avatud-kirjetena — pearaamatusse uusi kandeid ei teki (saldo on juba käibeandmikust).",
     "obReconcileTitle": "Kontroll vana tarkvara bilansiga",
     "obReconcilePass": "Klapib",

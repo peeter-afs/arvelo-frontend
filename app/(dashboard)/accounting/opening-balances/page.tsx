@@ -731,6 +731,13 @@ export default function OpeningBalancesPage() {
             <span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>
           )}
         </Button>
+        {/* Nothing committed yet → let the accountant re-pick the import strategy
+            (the choice screen reappears when strategy is cleared locally). */}
+        {strategy && committedModes.size === 0 && (
+          <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
+            <span>{t('obChangeStrategy')}</span>
+          </Button>
+        )}
       </div>
 
       {/* Mid-year guided checklist */}
