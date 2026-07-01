@@ -291,6 +291,8 @@
     "obMidYearLayerImported": "{done} imporditud. Laadi nüüd üles: {next}.",
     "obMidYearDocImported": "See dokument on imporditud. Jätka järgmise dokumendiga ülalolevast kontrollnimekirjast.",
     "obChangeStrategy": "Muuda importimise viisi",
+    "obTurnoverControlWarn": "Kontroll: {count} kontol erineb käibeandmiku algsaldo aasta lõpu bilansist.",
+    "obTurnoverControlRow": "käibeandmik {kaibeandmik} · bilanss {bilanss}",
     "obGlNeutralHint": "Kesk-aasta režiimis luuakse arved ainult avatud-kirjetena — pearaamatusse uusi kandeid ei teki (saldo on juba käibeandmikust).",
     "obReconcileTitle": "Kontroll vana tarkvara bilansiga",
     "obReconcilePass": "Klapib",

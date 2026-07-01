@@ -136,6 +136,10 @@ export default function OpeningBalancesPage() {
   const [reconResult, setReconResult] = useState<any>(null);
   const [isLocking, setIsLocking] = useState(false);
   const [midYearNotice, setMidYearNotice] = useState<string | null>(null);
+  // Käibeandmik opening balances (algsaldo) parsed from the turnover file, kept for
+  // the vs-year-end-balance control comparison.
+  const [turnoverOpening, setTurnoverOpening] = useState<Array<{ account_code: string; opening_net: number }>>([]);
+  const [turnoverControl, setTurnoverControl] = useState<any>(null);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -426,14 +430,23 @@ export default function OpeningBalancesPage() {
 
     setStep('parsing');
     setErrorMessage(null);
+    const isTurnover = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
     try {
       const result = await importApi.parseOpeningBalancePdf(file, {
         mode,
         opening_date: sharedFields.opening_date,
-        source: importSource
+        source: importSource,
+        ...(isTurnover ? { layer: 'turnover' as const } : {})
       });
       setImportResult(result);
       applyImportedRows(result);
+      // Turnover: keep the parsed opening balances (algsaldo) for the control check.
+      if (isTurnover) {
+        const opening = ((result as any).lines || [])
+          .filter((l: any) => l.opening_net !== undefined && (l.account_code || '').trim())
+          .map((l: any) => ({ account_code: String(l.account_code).trim(), opening_net: Number(l.opening_net) }));
+        setTurnoverOpening(opening);
+      }
       setStep('review');
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -458,13 +471,17 @@ export default function OpeningBalancesPage() {
     setCommitResult(null);
 
     try {
-      // The control balance is just expected per-account figures for comparison —
-      // it need not be debit==credit balanced, so skip the validating preview.
-      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'control') {
+      // The control balance and the käibeandmik turnover need not be debit==credit
+      // balanced (the control is just figures to compare; the turnover auto-offsets),
+      // so skip the validating preview and confirm locally.
+      if (skipBalanceCheck) {
         const localPayload = buildPayload(mode, sharedFields, {
           generalRows, receivableRows, payableRows, receivablesOffsetAccountId, payablesOffsetAccountId
         });
-        setPreviewResult({ lines: (localPayload as any).lines, totals: { debit_total: 0, credit_total: 0, difference: 0 } });
+        const lines = (localPayload as any).lines as Array<{ side: string; amount: number }>;
+        const debit = lines.filter((l) => l.side === 'debit').reduce((s, l) => s + Number(l.amount || 0), 0);
+        const credit = lines.filter((l) => l.side === 'credit').reduce((s, l) => s + Number(l.amount || 0), 0);
+        setPreviewResult({ lines, totals: { debit_total: debit, credit_total: credit, difference: Math.round((debit - credit) * 100) / 100 } });
         setPreviewSnapshot(JSON.stringify(localPayload));
         setStep('confirm');
         return;
@@ -538,7 +555,8 @@ export default function OpeningBalancesPage() {
       if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'year_end') {
         result = await accountingApi.commitYearEndBalance({ ...payload, fiscal_year_start: payload.opening_date });
       } else if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover') {
-        result = await accountingApi.commitPeriodTurnover({ ...payload, transition_date: payload.opening_date });
+        result = await accountingApi.commitPeriodTurnover({ ...payload, transition_date: payload.opening_date, control_opening: turnoverOpening });
+        setTurnoverControl((result as any)?.control || null);
       } else if (mode === 'general') {
         result = await accountingApi.commitOpeningBalances(payload);
       } else if (mode === 'receivables') {
@@ -651,6 +669,10 @@ export default function OpeningBalancesPage() {
   const liveBalanced = Math.abs(liveDiff) < 0.005;
 
   const isControlLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
+  // The käibeandmik movement (turnover) need not balance — the backend auto-offsets
+  // any imbalance (= period result) — so the UI does not force debit==credit here.
+  const isTurnoverLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+  const skipBalanceCheck = isControlLayer || isTurnoverLayer;
   // Mid-year progress (from committed batch types + reconciliation status).
   const midYear = strategy === 'mid_year';
   const hasYearEnd = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'year_end_balance');
@@ -661,7 +683,7 @@ export default function OpeningBalancesPage() {
   const blockingReason = (() => {
     if (mode === 'general') {
       if (generalMissingCount > 0 && !isControlLayer) return t('obRowsNeedAccount', { count: generalMissingCount });
-      if (!generalBalanced && !isControlLayer) return t('obEntryNotBalanced');
+      if (!generalBalanced && !skipBalanceCheck) return t('obEntryNotBalanced');
       if (!generalRows.some((r) => Number(r.amount || 0) !== 0)) return t('obAddAtLeastOneRow');
     } else if (!subledgerHasRows) {
       return t('obAddAtLeastOneRow');
@@ -774,6 +796,21 @@ export default function OpeningBalancesPage() {
         <div className="mt-2 flex items-start gap-3 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-4 py-2.5 text-[12.5px] text-[var(--a-text)]">
           <span className="text-[var(--a-pos)]">✓</span>
           <span>{midYearNotice}</span>
+        </div>
+      )}
+
+      {/* Turnover: käibeandmik opening (algsaldo) vs year-end balance control (warning) */}
+      {isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
+        <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-4 py-2.5">
+          <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverControl.diffs.length })}</div>
+          <div className="mt-1 max-h-40 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
+            {turnoverControl.diffs.slice(0, 20).map((d: any, i: number) => (
+              <div key={i} className="flex justify-between gap-3 font-mono">
+                <span>{d.account_code}</span>
+                <span>{t('obTurnoverControlRow', { kaibeandmik: Number(d.kaibeandmik).toFixed(2), bilanss: Number(d.bilanss).toFixed(2) })}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
