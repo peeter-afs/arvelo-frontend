@@ -439,6 +439,7 @@ export default function OpeningBalancesPage() {
   const handleFileSelected = async (file: File | null) => {
     if (!file) return;
     const isTurnover = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+    const isControl = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
     // The käibeandmik has no period in the file — require the end (transition) date.
     if (isTurnover && !sharedFields.opening_date) {
       setErrorMessage(t('obTurnoverEndDateRequired'));
@@ -462,6 +463,21 @@ export default function OpeningBalancesPage() {
           .filter((l: any) => l.opening_net !== undefined && (l.account_code || '').trim())
           .map((l: any) => ({ account_code: String(l.account_code).trim(), opening_net: Number(l.opening_net) }));
         setTurnoverOpening(opening);
+      }
+      // Control layer: reconcile immediately against the ledger — the accountant just
+      // wants to see whether "algbilanss + käive = kontrollbilanss", not run a preview.
+      if (isControl) {
+        const controlRows = result.suggested_payload.lines.map((line) => ({
+          account_id: String(line.account_id || ''),
+          account_code: String((line as Record<string, unknown>).account_code || ''),
+          side: line.side === 'credit' ? 'credit' : 'debit',
+          amount: String(line.amount || '')
+        }));
+        try {
+          await runControlReconcile(controlRows);
+        } catch (error) {
+          setErrorMessage(getErrorMessage(error));
+        }
       }
       setStep('review');
     } catch (error) {
@@ -548,18 +564,7 @@ export default function OpeningBalancesPage() {
       // Mid-year "control" layer: the grid holds the old software's transition
       // balance — store it as expected balances and reconcile, no ledger posting.
       if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'control') {
-        const codeById = new Map(accounts.map((a) => [a.id, a.code]));
-        const expected = generalRows
-          .map((row) => {
-            const code = (row.account_code || codeById.get(row.account_id) || '').trim();
-            const amount = Number(row.amount || 0);
-            return code && amount ? { account_code: code, balance: row.side === 'debit' ? amount : -amount } : null;
-          })
-          .filter(Boolean) as Array<{ account_code: string; balance: number }>;
-        await accountingApi.uploadControlBalance({ transition_date: sharedFields.opening_date || null, expected_balances: expected });
-        const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
-        setReconResult(recon);
-        setCommitResult({ reconciliation: recon } as CommitResult);
+        await runControlReconcile();
         return;
       }
 
@@ -613,11 +618,31 @@ export default function OpeningBalancesPage() {
     }
   };
 
+  // Control layer: turn the grid (old software's transition balance) into expected
+  // balances, upload them, and reconcile against the posted ledger — no ledger
+  // posting. Runs straight after the control file parses so the diff shows at once.
+  const runControlReconcile = async (rows?: Array<{ account_id?: string; account_code?: string; side: string; amount: string | number }>) => {
+    const source = rows ?? generalRows;
+    const codeById = new Map(accounts.map((a) => [a.id, a.code]));
+    const expected = source
+      .map((row) => {
+        const code = (row.account_code || codeById.get(row.account_id || '') || '').trim();
+        const amount = Number(row.amount || 0);
+        return code && amount ? { account_code: code, balance: row.side === 'debit' ? amount : -amount } : null;
+      })
+      .filter(Boolean) as Array<{ account_code: string; balance: number }>;
+    await accountingApi.uploadControlBalance({ transition_date: sharedFields.opening_date || null, expected_balances: expected });
+    const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
+    setReconResult(recon);
+    setCommitResult({ reconciliation: recon } as CommitResult);
+    return recon;
+  };
+
   const handleReconcile = async () => {
     setErrorMessage(null);
     try {
-      const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
-      setReconResult(recon);
+      // Re-read the grid so manual edits to the control figures are picked up.
+      await runControlReconcile();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     }
