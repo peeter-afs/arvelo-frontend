@@ -496,6 +496,11 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  async applyReconciliationCorrection() {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/reconcile/correct', {});
+    return response.data.data;
+  },
+
   // Opening balance import lock / reset
   async getOpeningBalanceImportStatus() {
     const response = await apiClient.get<ApiResponse<{

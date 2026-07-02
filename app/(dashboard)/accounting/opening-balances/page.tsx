@@ -139,6 +139,7 @@ export default function OpeningBalancesPage() {
   const [generalLayer, setGeneralLayer] = useState<'year_end' | 'turnover' | 'control'>('year_end');
   const [reconResult, setReconResult] = useState<any>(null);
   const [isLocking, setIsLocking] = useState(false);
+  const [isCorrecting, setIsCorrecting] = useState(false);
   const [midYearNotice, setMidYearNotice] = useState<string | null>(null);
   // Käibeandmik opening balances (algsaldo) parsed from the turnover file, kept for
   // the vs-year-end-balance control comparison.
@@ -677,6 +678,23 @@ export default function OpeningBalancesPage() {
     }
   };
 
+  // Accept the control balance as authoritative: one correction entry moves every
+  // differing account to its control balance — no layer re-import needed.
+  const handleApplyCorrection = async () => {
+    if (typeof window !== 'undefined' && !window.confirm(t('obCorrectConfirm'))) return;
+    setIsCorrecting(true);
+    setErrorMessage(null);
+    try {
+      const result = await accountingApi.applyReconciliationCorrection();
+      setReconResult(result);
+      setCommitResult({ reconciliation: result } as CommitResult);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsCorrecting(false);
+    }
+  };
+
   // The committed batch_type of the layer currently in view (null on the control
   // layer, which posts nothing and so has no batch to undo).
   const currentLayerBatchType = (): 'year_end_balance' | 'period_turnover' | 'receivables' | 'payables' | null => {
@@ -1003,11 +1021,21 @@ export default function OpeningBalancesPage() {
               {!locked && (
                 <p className="mt-2 text-[11.5px] text-[var(--a-text-3)]">{t('obImportsSavedIndependent')}</p>
               )}
-              <div className="mt-2.5 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
+                {/* Accept the control balances → post a movement correction, no re-import */}
+                {!passed && !locked && diffs.length > 0 && (
+                  <Button variant="default" disabled={isCorrecting} onClick={() => void handleApplyCorrection()}>
+                    {isCorrecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                    <span>{t('obCorrectApply')}</span>
+                  </Button>
+                )}
                 <Button variant="primary" disabled={!passed || locked || isLocking} onClick={() => void handleLock()}>
                   {isLocking ? t('obLocking') : t('obLockConfirm')}
                 </Button>
+                {!passed && !locked && diffs.length > 0 && (
+                  <span className="text-[11.5px] text-[var(--a-text-3)]">{t('obCorrectHint')}</span>
+                )}
               </div>
             </div>
           );
