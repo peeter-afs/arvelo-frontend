@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
@@ -16,6 +16,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { FutursoftTab } from './_tabs/FutursoftTab';
+import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
@@ -27,7 +28,7 @@ import { BusinessRegistryTab } from './_tabs/BusinessRegistryTab';
 // their own access notice). Kept in sync with the `tabs` array inside the page.
 const KNOWN_TAB_IDS = [
   'company', 'profile', 'billing', 'notifications', 'security', 'localization',
-  'business-registry', 'integrations', 'data-management', 'ai', 'team',
+  'business-registry', 'integrations', 'bank-connections', 'data-management', 'ai', 'team',
 ];
 
 export default function SettingsPage() {
@@ -125,6 +126,7 @@ export default function SettingsPage() {
     { id: 'localization', label: t('localization'), icon: Globe, category: 'preferences' },
     { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
     { id: 'integrations', label: t('integrations'), icon: Plug, category: 'organization' },
+    { id: 'bank-connections', label: t('bankConnections'), icon: Landmark, category: 'organization' },
     { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
     ...(canManageBilling ? [{ id: 'ai', label: t('ai'), icon: Sparkles, category: 'organization' as const }] : []),
     ...(canManageData ? [{ id: 'team', label: t('team'), icon: Users, category: 'organization' as const }] : []),
@@ -826,6 +828,8 @@ export default function SettingsPage() {
             {activeTab === 'business-registry' && <BusinessRegistryTab canManage={canManageRegistry} />}
 
             {activeTab === 'integrations' && <FutursoftTab canManage={canManageFutursoft} />}
+
+            {activeTab === 'bank-connections' && <BankGatewaysTab canManage={canManageFutursoft} />}
 
             {activeTab === 'data-management' && (
               <div className="space-y-6">

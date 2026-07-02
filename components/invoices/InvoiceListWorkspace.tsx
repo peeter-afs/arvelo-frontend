@@ -10,6 +10,7 @@ import {
   ExternalLink,
   FileCheck2,
   FileX2,
+  Landmark,
   Loader2,
   Plus,
   RefreshCw,
@@ -30,6 +31,7 @@ import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
 import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
 import { futursoftApi } from '@/lib/api/futursoft.api';
+import { bankGatewayApi, type EinvoiceDispatch } from '@/lib/api/bankGateway.api';
 
 type InvoiceDetail = {
   invoice: InvoiceListItem;
@@ -757,6 +759,10 @@ function InvoiceDetailPanel({
           </section>
         )}
 
+        {!isPurchase && (
+          <EinvoiceSection invoiceId={invoice.id} defaultIban={selectedPartner?.einvoice_iban || ''} />
+        )}
+
         {isPurchase && (
           <section className="mt-5 space-y-2">
             <div className="micro text-[var(--a-text-3)]">{t('workflowActions')}</div>
@@ -814,6 +820,97 @@ function InvoiceDetailPanel({
         </Button>
       </div>
     </div>
+  );
+}
+
+function EinvoiceSection({ invoiceId, defaultIban }: { invoiceId: string; defaultIban: string }) {
+  const t = useTranslations('invoices');
+  const [iban, setIban] = useState(defaultIban);
+  const [dispatches, setDispatches] = useState<EinvoiceDispatch[]>([]);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<{ tone: 'danger' | 'success'; text: string } | null>(null);
+
+  useEffect(() => {
+    setMessage(null);
+    let cancelled = false;
+    void bankGatewayApi
+      .listEinvoiceDispatches(invoiceId)
+      .then((rows) => {
+        if (cancelled) return;
+        setDispatches(rows);
+        // Prefill from the most recent dispatch when the partner has no saved IBAN.
+        setIban((current) => current || defaultIban || rows[0]?.recipient_iban || '');
+      })
+      .catch(() => {
+        if (!cancelled) setDispatches([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoiceId]);
+
+  const send = async () => {
+    setSending(true);
+    setMessage(null);
+    try {
+      const dispatch = await bankGatewayApi.sendEinvoice(invoiceId, { recipient_iban: iban, remember_iban: true });
+      setDispatches((current) => [dispatch, ...current]);
+      setMessage({ tone: 'success', text: t('einvoiceSent') });
+    } catch (err) {
+      setMessage({ tone: 'danger', text: getErrorMessage(err) });
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const statusLabel = (dispatch: EinvoiceDispatch) => {
+    if (dispatch.status === 'delivered') return t('einvoiceStatusDelivered');
+    if (dispatch.status === 'failed') return t('einvoiceStatusFailed');
+    if (dispatch.status === 'sent') return t('einvoiceStatusSent');
+    return t('einvoiceStatusPending');
+  };
+
+  return (
+    <section className="mt-5 space-y-2">
+      <div className="micro text-[var(--a-text-3)]">{t('einvoiceTitle')}</div>
+      {message && (
+        <Notice tone={message.tone} icon={message.tone === 'danger' ? <AlertCircle className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}>
+          {message.text}
+        </Notice>
+      )}
+      <input
+        value={iban}
+        onChange={(event) => setIban(event.target.value)}
+        placeholder={t('einvoiceRecipientIban')}
+        className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 font-mono text-[13px] outline-none"
+      />
+      <Button className="w-full" disabled={sending || !iban.trim()} onClick={() => void send()}>
+        {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Landmark className="h-3.5 w-3.5" />}
+        {t('einvoiceSend')}
+      </Button>
+      {dispatches.length > 0 && (
+        <div className="space-y-1.5">
+          {dispatches.slice(0, 3).map((dispatch) => (
+            <div key={dispatch.id} className="flex items-center justify-between gap-3 text-[11.5px] text-[var(--a-text-3)]">
+              <span className="truncate font-mono">{dispatch.recipient_iban}</span>
+              <span
+                className={
+                  dispatch.status === 'failed'
+                    ? 'text-[var(--a-neg)]'
+                    : dispatch.status === 'delivered'
+                      ? 'text-[var(--a-pos)]'
+                      : ''
+                }
+                title={dispatch.fail_reason || undefined}
+              >
+                {statusLabel(dispatch)} · {formatDate(dispatch.sent_at || dispatch.created_at)}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
