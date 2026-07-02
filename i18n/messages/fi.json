@@ -468,7 +468,22 @@
     "bankGatewayRunsTitle": "Viimeisimmät synkronoinnit",
     "bankGatewayRunStarted": "Aloitettu",
     "bankGatewayRunProvider": "Pankki",
-    "bankGatewayRunJobs": "Tiliotteita"
+    "bankGatewayRunJobs": "Tiliotteita",
+    "bankGatewayContractTitle": "LHV Connect -sopimus",
+    "bankGatewayContractIntro": "Solmi LHV Connect -sopimus suoraan täältä: luomme LHV:hen odottavan sopimuksen ja pankki lähettää allekirjoituskontin yrityksesi edustajalle sähköpostitse. LHV aktivoi sopimuksen allekirjoituksen jälkeen.",
+    "bankGatewayContractStart": "Aloita LHV-sopimus",
+    "bankGatewayContractStarting": "Aloitetaan…",
+    "bankGatewayContractStarted": "LHV-sopimus aloitettu. Allekirjoituskontti lähetettiin edustajalle sähköpostitse — voit ladata sen myös alta.",
+    "bankGatewayContractDownload": "Lataa allekirjoituskontti (.bdoc)",
+    "bankGatewayContractRefresh": "Päivitä tila",
+    "bankGatewayContractRefreshing": "Päivitetään…",
+    "bankGatewayContractSignHint": "Odottaa allekirjoitusta ja LHV:n aktivointia. Yrityksen edustaja sai allekirjoituskontin sähköpostitse; allekirjoituksen jälkeen LHV:n asiakaspalvelu aktivoi sopimuksen.",
+    "bankGatewayContractStatusNone": "Ei sopimusta",
+    "bankGatewayContractStatusPending": "Odottaa allekirjoitusta",
+    "bankGatewayContractStatusActive": "Aktiivinen",
+    "bankGatewayContractStatusFailed": "Epäonnistui",
+    "bankGatewayContractStartDate": "Sopimuksen alkamispäivä",
+    "bankGatewayContractServices": "Käytössä olevat palvelut"
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",

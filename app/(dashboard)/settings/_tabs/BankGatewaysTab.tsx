@@ -8,6 +8,7 @@ import {
   type BankGatewayProvider,
   type BankGatewaySettings,
   type BankGatewaySyncRun,
+  type LhvContractStatus,
 } from '@/lib/api/bankGateway.api';
 import { TabHeader, TabFeedback } from '../_components/fields';
 
@@ -56,6 +57,10 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
   });
   const [busy, setBusy] = useState<string | null>(null);
   const [runs, setRuns] = useState<BankGatewaySyncRun[]>([]);
+  // BDOC signing container from the latest contract initiation (kept in memory
+  // only; LHV also emails it to the company's representative).
+  const [contractContainer, setContractContainer] = useState<string | null>(null);
+  const [contractInfo, setContractInfo] = useState<LhvContractStatus | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -151,6 +156,150 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
     } finally {
       setBusy(null);
     }
+  };
+
+  const startLhvContract = async () => {
+    setBusy('contract-start');
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await bankGatewayApi.initiateLhvContract({
+        client_code: forms.lhv_connect.client_code || undefined,
+      });
+      setContractContainer(result.contract_container);
+      setContractInfo(result);
+      setSuccess(t('bankGatewayContractStarted'));
+      await load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const refreshLhvContract = async () => {
+    setBusy('contract-refresh');
+    setError(null);
+    setSuccess(null);
+    try {
+      const result = await bankGatewayApi.getLhvContractStatus();
+      setContractInfo(result);
+      await load();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const downloadContractContainer = () => {
+    if (!contractContainer) return;
+    const bytes = Uint8Array.from(atob(contractContainer), (char) => char.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'application/vnd.etsi.asic-e+zip' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'lhv-connect-leping.bdoc';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const renderLhvContractSection = (current: BankGatewaySettings | undefined) => {
+    const status = contractInfo?.contract_status || current?.contract_status || null;
+    const startDate = contractInfo?.contract_start_date || current?.contract_start_date || null;
+    const services = contractInfo?.contract_services || current?.contract_services || null;
+
+    const statusLabel =
+      status === 'active'
+        ? t('bankGatewayContractStatusActive')
+        : status === 'pending'
+          ? t('bankGatewayContractStatusPending')
+          : status === 'failed'
+            ? t('bankGatewayContractStatusFailed')
+            : t('bankGatewayContractStatusNone');
+
+    return (
+      <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm font-medium text-slate-900">{t('bankGatewayContractTitle')}</div>
+          <span
+            className={`rounded-full px-3 py-1 text-xs font-medium ${
+              status === 'active'
+                ? 'bg-emerald-50 text-emerald-700'
+                : status === 'pending'
+                  ? 'bg-amber-50 text-amber-700'
+                  : status === 'failed'
+                    ? 'bg-red-50 text-red-700'
+                    : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {statusLabel}
+          </span>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">{t('bankGatewayContractIntro')}</p>
+
+        {status === 'pending' && (
+          <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+            {t('bankGatewayContractSignHint')}
+          </div>
+        )}
+
+        {status === 'active' && (
+          <div className="mt-3 space-y-1 text-xs text-slate-600">
+            {startDate && <div>{t('bankGatewayContractStartDate')}: {startDate}</div>}
+            {services && services.length > 0 && (
+              <div>
+                <div className="font-medium text-slate-700">{t('bankGatewayContractServices')}:</div>
+                <ul className="mt-1 list-inside list-disc space-y-0.5">
+                  {services.map((service) => (
+                    <li key={service.name}>
+                      {service.name}
+                      {service.ibans && service.ibans.length > 0 && (
+                        <span className="text-slate-400"> — {service.ibans.join(', ')}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-3">
+          {(!status || status === 'failed') && (
+            <button
+              type="button"
+              onClick={() => void startLhvContract()}
+              disabled={busy === 'contract-start' || !current?.platform_configured}
+              className="h-10 px-5 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {busy === 'contract-start' ? t('bankGatewayContractStarting') : t('bankGatewayContractStart')}
+            </button>
+          )}
+          {contractContainer && (
+            <button
+              type="button"
+              onClick={downloadContractContainer}
+              className="h-10 px-5 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors"
+            >
+              {t('bankGatewayContractDownload')}
+            </button>
+          )}
+          {status && status !== 'failed' && (
+            <button
+              type="button"
+              onClick={() => void refreshLhvContract()}
+              disabled={busy === 'contract-refresh' || !current?.platform_configured}
+              className="h-10 px-5 border border-slate-200 rounded-lg hover:bg-slate-50 text-sm text-slate-700 font-medium transition-colors disabled:opacity-50"
+            >
+              {busy === 'contract-refresh' ? t('bankGatewayContractRefreshing') : t('bankGatewayContractRefresh')}
+            </button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   const renderProviderCard = (provider: BankGatewayProvider) => {
@@ -268,6 +417,8 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
             <p className="mt-1 text-xs text-slate-500">{t('bankGatewayStartDateHint')}</p>
           </div>
         </div>
+
+        {isLhv && renderLhvContractSection(current)}
 
         <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
           <div className="space-y-1">

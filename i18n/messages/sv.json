@@ -468,7 +468,22 @@
     "bankGatewayRunsTitle": "Senaste synkroniseringar",
     "bankGatewayRunStarted": "Startad",
     "bankGatewayRunProvider": "Bank",
-    "bankGatewayRunJobs": "Kontoutdrag"
+    "bankGatewayRunJobs": "Kontoutdrag",
+    "bankGatewayContractTitle": "LHV Connect-avtal",
+    "bankGatewayContractIntro": "Ingå LHV Connect-avtalet direkt härifrån: vi skapar ett väntande avtal hos LHV och banken e-postar signeringsbehållaren till ditt företags representant. LHV aktiverar avtalet efter signering.",
+    "bankGatewayContractStart": "Starta LHV-avtal",
+    "bankGatewayContractStarting": "Startar…",
+    "bankGatewayContractStarted": "LHV-avtalet har startats. Signeringsbehållaren e-postades till representanten — du kan även ladda ner den nedan.",
+    "bankGatewayContractDownload": "Ladda ner signeringsbehållare (.bdoc)",
+    "bankGatewayContractRefresh": "Uppdatera status",
+    "bankGatewayContractRefreshing": "Uppdaterar…",
+    "bankGatewayContractSignHint": "Väntar på signering och LHV:s aktivering. Företagets representant fick signeringsbehållaren via e-post; efter signering aktiverar LHV:s kundtjänst avtalet.",
+    "bankGatewayContractStatusNone": "Inget avtal",
+    "bankGatewayContractStatusPending": "Väntar på signering",
+    "bankGatewayContractStatusActive": "Aktivt",
+    "bankGatewayContractStatusFailed": "Misslyckades",
+    "bankGatewayContractStartDate": "Avtalets startdatum",
+    "bankGatewayContractServices": "Aktiverade tjänster"
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",

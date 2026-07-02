@@ -24,7 +24,22 @@ export type BankGatewaySettings = {
   last_error_message: string | null;
   last_test_status: string | null;
   last_test_at: string | null;
+  contract_id: string | null;
+  contract_status: string | null;
+  contract_requested_at: string | null;
+  contract_start_date: string | null;
+  contract_services: Array<{ name: string; ibans?: string[] }> | null;
   updated_at: string | null;
+};
+
+export type LhvContractStatus = {
+  client_code: string | null;
+  contract_id: string | null;
+  contract_status: string | null;
+  contract_requested_at: string | null;
+  contract_start_date: string | null;
+  contract_services: Array<{ name: string; ibans?: string[] }> | null;
+  customer_name?: string | null;
 };
 
 export type BankGatewaySyncResult = {
@@ -105,6 +120,21 @@ export const bankGatewayApi = {
     const response = await apiClient.get<ApiResponse<BankGatewaySyncRun[]>>('/api/banking/gateways/runs', {
       params: provider ? { provider } : undefined,
     });
+    return response.data.data;
+  },
+
+  async initiateLhvContract(payload?: { client_code?: string; client_country?: string }) {
+    const response = await apiClient.post<ApiResponse<LhvContractStatus & { contract_container: string | null }>>(
+      '/api/banking/gateways/lhv_connect/contract',
+      payload || {}
+    );
+    return response.data.data;
+  },
+
+  async getLhvContractStatus() {
+    const response = await apiClient.get<ApiResponse<LhvContractStatus>>(
+      '/api/banking/gateways/lhv_connect/contract'
+    );
     return response.data.data;
   },
 

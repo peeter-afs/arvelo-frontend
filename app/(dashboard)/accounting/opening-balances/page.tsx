@@ -5,12 +5,15 @@ import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   ArrowLeft,
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   Eye,
   History,
   Loader2,
   Lock,
+  Maximize,
   Plus,
   RotateCcw,
   Trash2,
@@ -144,6 +147,8 @@ export default function OpeningBalancesPage() {
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
+  // Focus mode hides the surrounding chrome (nav, notices) so rows get the height.
+  const [focusMode, setFocusMode] = useState(false);
   // Snapshot of the payload at the moment Preview ran. Confirm is only enabled
   // while the live payload still matches this snapshot (any edit invalidates it).
   const [previewSnapshot, setPreviewSnapshot] = useState<string | null>(null);
@@ -817,11 +822,54 @@ export default function OpeningBalancesPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* Command bar: title · inline document stepper · focus toggle. The stepper
+          lives here (not as a separate block) so the rows get the vertical space. */}
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-2">
+        <div className="flex items-center gap-2.5 text-[15px] font-semibold text-[var(--a-text)]">
+          <span className="text-[var(--a-accent)]">⌘</span> {t('openingBalances')}
+        </div>
+        <div className="flex items-center gap-2">
+          {[t('obStepUpload'), t('obStepReview'), t('obStepConfirm')].map((label, i) => {
+            const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
+            const state = i < idx ? 'done' : i === idx ? 'active' : 'todo';
+            return (
+              <div key={label} className="flex items-center gap-2">
+                {i > 0 && <ChevronRight className="h-[15px] w-[15px] text-[var(--a-border-strong)]" />}
+                <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] font-semibold ${state === 'active' ? 'text-[var(--a-text)]' : state === 'done' ? 'text-[var(--a-text-2)]' : 'text-[var(--a-text-3)]'}`}>
+                  <span
+                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                    style={{
+                      background: state === 'done' ? 'var(--a-pos)' : state === 'active' ? 'var(--a-accent)' : 'var(--a-surface-2)',
+                      color: state === 'todo' ? 'var(--a-text-3)' : '#fff',
+                      border: state === 'todo' ? '1px solid var(--a-border)' : 'none',
+                    }}
+                  >
+                    {state === 'done' ? '✓' : i + 1}
+                  </span>
+                  {label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          onClick={() => setFocusMode((v) => !v)}
+          className="inline-flex h-[32px] items-center gap-1.5 rounded-[9px] border px-3 text-[12.5px] font-semibold transition"
+          style={focusMode
+            ? { background: 'var(--a-accent-soft)', borderColor: 'var(--a-accent)', color: 'var(--a-accent)' }
+            : { background: 'var(--a-surface)', borderColor: 'var(--a-border-strong)', color: 'var(--a-text-2)' }}
+        >
+          <Maximize className="h-3.5 w-3.5" />
+          {focusMode ? t('obShowAll') : t('obFocusRows')}
+        </button>
+      </div>
+
       {/* Top zone. Mid-year: the compact step bar is the primary progress AND
           navigation (it drives mode/layer), sat at the very top with History beside
           it — the mode row is hidden to avoid a redundant second control. Simple
-          strategies keep the mode selector row. */}
-      {midYear ? (
+          strategies keep the mode selector row. Hidden in focus mode. */}
+      {!focusMode && midYear && (
         <div className="flex items-start gap-2 pt-2">
           {(() => {
             const steps = [
@@ -862,7 +910,8 @@ export default function OpeningBalancesPage() {
             </Button>
           )}
         </div>
-      ) : (
+      )}
+      {!focusMode && !midYear && (
         <div className="flex items-center gap-3 pt-2">
           <OBModeRow mode={mode} onChange={handleModeChange} t={t} />
           <Button variant="default" onClick={() => setShowHistory(true)} className="shrink-0">
@@ -881,7 +930,7 @@ export default function OpeningBalancesPage() {
 
       {/* Mid-year subledger step covers both receivables and payables; the mode row
           is hidden in mid-year, so provide a compact toggle to switch between them. */}
-      {midYear && (mode === 'receivables' || mode === 'payables') && (
+      {!focusMode && midYear && (mode === 'receivables' || mode === 'payables') && (
         <div className="mt-2 inline-flex rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5 text-[12.5px]">
           {(['receivables', 'payables'] as const).map((m) => (
             <button
@@ -898,7 +947,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year: notice after a layer commit, guiding to the next document */}
-      {midYear && midYearNotice && (
+      {!focusMode && midYear && midYearNotice && (
         <div className="mt-2 flex items-start gap-2.5 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-3.5 py-2 text-[12.5px] text-[var(--a-text)]">
           <span className="text-[var(--a-pos)]">✓</span>
           <span>{midYearNotice}</span>
@@ -906,7 +955,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Turnover: käibeandmik opening (algsaldo) vs year-end balance control (warning) */}
-      {isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
+      {!focusMode && isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3.5 py-2">
           <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverControl.diffs.length })}</div>
           <div className="mt-1 max-h-32 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
@@ -920,13 +969,8 @@ export default function OpeningBalancesPage() {
         </div>
       )}
 
-      {/* Stepper. In mid-year the compact step bar above is the primary progress,
-          so the Upload/Review/Confirm stepper is only shown for the simple strategies
-          (avoids two stacked progress rows). */}
-      {!midYear && <OBStepper step={step} mode={mode} t={t} strategy={strategy} generalLayer={generalLayer} />}
-
       {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
-      {strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
+      {!focusMode && strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-3.5 py-2 text-[12.5px] text-[var(--a-text-2)]">
           {t('obGlNeutralHint')}
           <span className="ml-1 text-[var(--a-text-3)]">{t('obSubledgerIndependentHint')}</span>
@@ -1197,64 +1241,6 @@ export default function OpeningBalancesPage() {
         onApply={(mapping) => accountingApi.applyImportedSystemRoles(mapping)}
         onClose={() => setRoleDialogAccounts(null)}
       />
-    </div>
-  );
-}
-
-// ─── Stepper ──────────────────────────────────────────────────────────────────
-function OBStepper({ step, mode, t, strategy, generalLayer }: { step: Step; mode: Mode; t: ReturnType<typeof useTranslations>; strategy?: string | null; generalLayer?: 'year_end' | 'turnover' | 'control' }) {
-  const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
-  // Mid-year: reflect the current general-side document in the upload sub-label.
-  const uploadDoc = strategy === 'mid_year' && mode === 'general'
-    ? (generalLayer === 'year_end' ? t('obLayerYearEnd') : generalLayer === 'turnover' ? t('obLayerTurnover') : t('obLayerControl'))
-    : docNoun(mode, t);
-  const steps = [
-    { n: 1, label: t('obStepUpload'), sub: t('obStepUploadSub', { doc: uploadDoc }) },
-    { n: 2, label: t('obStepReview'), sub: t('obStepReviewSub') },
-    { n: 3, label: t('obStepConfirm'), sub: t('obStepConfirmSub') },
-  ];
-  return (
-    <div className="py-3">
-      <div className="mx-auto flex max-w-[1020px] items-center">
-        {steps.map((s, i) => {
-          const state = i < idx ? 'done' : i === idx ? 'active' : 'todo';
-          return (
-            <div key={s.n} className="contents">
-              <div className="flex items-center gap-[11px]">
-                <div
-                  className="grid h-[26px] w-[26px] shrink-0 place-items-center rounded-full font-mono text-[12px] font-semibold"
-                  style={{
-                    background:
-                      state === 'active' ? 'var(--a-accent)' : state === 'done' ? 'var(--a-pos)' : 'var(--a-surface)',
-                    color: state === 'todo' ? 'var(--a-text-3)' : '#fff',
-                    border: state === 'todo' ? '1px solid var(--a-border-strong)' : 'none',
-                  }}
-                >
-                  {state === 'done' ? <CheckCircle2 className="h-3.5 w-3.5" /> : s.n}
-                </div>
-                <div>
-                  <div
-                    className="text-[13px]"
-                    style={{
-                      fontWeight: state === 'active' ? 600 : 500,
-                      color: state === 'todo' ? 'var(--a-text-3)' : 'var(--a-text)',
-                    }}
-                  >
-                    {s.label}
-                  </div>
-                  <div className="text-[11px] text-[var(--a-text-3)]">{s.sub}</div>
-                </div>
-              </div>
-              {i < steps.length - 1 && (
-                <div
-                  className="mx-4 h-px flex-1"
-                  style={{ background: i < idx ? 'var(--a-pos)' : 'var(--a-border)' }}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
@@ -1705,6 +1691,15 @@ const OB_COLS = (showPartner: boolean) =>
     ? '34px minmax(320px,2fr) 160px minmax(220px,1.3fr) 70px 150px 36px'
     : '34px minmax(360px,2.2fr) minmax(240px,1.4fr) 70px 150px 36px';
 
+// Ghost cell input (design .cell-in): reads as text until hovered/focused, so a
+// full table of inputs scans like a list instead of a wall of form fields.
+const CELL_IN =
+  'h-[34px] w-full rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] text-[var(--a-text)] transition-colors hover:border-[var(--a-border)] hover:bg-[var(--a-surface)] focus:border-[var(--a-accent)] focus:bg-white focus:shadow-[0_0_0_3px_var(--a-accent-soft)] focus:outline-none';
+// Zebra stripe for even rows (design --row-alt).
+const ROW_ALT = '#faf8f3';
+// Index chip (design .idx .n).
+const IDX_CHIP = 'grid h-6 w-6 place-items-center rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface-2)] font-mono text-[11px] font-semibold text-[var(--a-text-2)]';
+
 // ─── General ledger table ─────────────────────────────────────────────────────
 function GeneralTable({
   t,
@@ -1872,11 +1867,11 @@ function GeneralTable({
                 className="grid items-center gap-3.5 border-b border-[var(--a-border)] px-[18px] py-2"
                 style={{
                   gridTemplateColumns: OB_COLS(showPartner),
-                  background: missing ? 'var(--a-neg-soft)' : 'transparent',
+                  background: missing ? 'var(--a-neg-soft)' : index % 2 === 1 ? ROW_ALT : 'transparent',
                   boxShadow: missing ? 'inset 2px 0 0 var(--a-neg)' : 'none',
                 }}
               >
-                <div className="font-mono text-[11px] text-[var(--a-text-3)]">{index + 1}</div>
+                <div className={IDX_CHIP}>{index + 1}</div>
 
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -1884,12 +1879,8 @@ function GeneralTable({
                       value={row.account_id}
                       onChange={(e) => selectRowAccount(row.id, e.target.value)}
                       title={willCreate ? t('obCreatedOnConfirmHint') : undefined}
-                      className="h-[34px] min-w-0 flex-1 rounded-[7px] px-2.5 text-[13px]"
-                      style={{
-                        border: missing ? '1px solid var(--a-neg)' : '1px solid var(--a-border)',
-                        background: 'var(--a-surface)',
-                        color: missing ? 'var(--a-neg)' : 'var(--a-text)',
-                      }}
+                      className={`${CELL_IN} min-w-0 flex-1`}
+                      style={missing ? { border: '1px solid var(--a-neg)', background: 'var(--a-surface)', color: 'var(--a-neg)' } : undefined}
                     >
                       <option value="">
                         {row.account_code
@@ -1971,7 +1962,7 @@ function GeneralTable({
                   <select
                     value={row.partner_id}
                     onChange={(e) => updateRow(row.id, 'partner_id', e.target.value)}
-                    className="h-[34px] min-w-0 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text-2)]"
+                    className={`${CELL_IN} min-w-0 text-[12.5px] text-[var(--a-text-2)]`}
                   >
                     <option value="">{t('obOptional')}</option>
                     {partners.map((partner) => (
@@ -1983,7 +1974,7 @@ function GeneralTable({
                 <input
                   value={row.description}
                   onChange={(e) => updateRow(row.id, 'description', e.target.value)}
-                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text-2)]"
+                  className={`${CELL_IN} text-[12.5px] text-[var(--a-text-2)]`}
                 />
 
                 <div className="inline-flex overflow-hidden rounded-[6px] border border-[var(--a-border)]">
@@ -2011,7 +2002,7 @@ function GeneralTable({
                     value={row.amount}
                     onChange={(e) => updateRow(row.id, 'amount', e.target.value)}
                     inputMode="decimal"
-                    className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-right font-mono text-[13px] tabular-nums text-[var(--a-text)]"
+                    className={`${CELL_IN} text-right font-mono font-semibold tabular-nums`}
                   />
                   {openingByCode && (() => {
                     const code = (row.account_code || accountByCode.get(row.account_code)?.code || '').toString().toUpperCase();
@@ -2077,7 +2068,9 @@ function OBSummaryCard({ label, value, check, ok }: { label: string; value: numb
   );
 }
 
-const SUB_GRID = '32px 180px 180px 130px 130px 130px 1fr 130px 132px 36px';
+// Merged partner cell (name + link chip) and a paired date cell keep each open
+// item on ONE readable line (design: .partner-cell / .dates).
+const SUB_GRID = '34px minmax(240px,1.6fr) 128px 96px 96px minmax(120px,1fr) 236px 112px 36px';
 
 // ─── Subledger table ──────────────────────────────────────────────────────────
 function SubledgerTable({
@@ -2101,6 +2094,13 @@ function SubledgerTable({
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   };
   const removeRow = (id: string) => onChange(rows.length > 1 ? rows.filter((row) => row.id !== id) : rows);
+  // Linking an existing partner also shows their name in the merged partner cell.
+  const linkPartner = (id: string, partnerId: string) => {
+    const partner = partners.find((p) => p.id === partnerId);
+    onChange(rows.map((row) => (row.id === id
+      ? { ...row, partner_id: partnerId, ...(partner ? { partner_name: partner.name } : {}) }
+      : row)));
+  };
 
   return (
     <>
