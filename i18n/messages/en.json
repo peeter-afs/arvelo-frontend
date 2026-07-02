@@ -821,7 +821,17 @@
     "backHint": "back",
     "draftSavedMsg": "Draft saved.",
     "minTwoLinesMsg": "At least two lines with accounts are required.",
-    "notBalancedMsg": "Entry is not balanced. Difference: {diff}"
+    "notBalancedMsg": "Entry is not balanced. Difference: {diff}",
+    "addManualLine": "Add manual payment",
+    "manualLine": "Manual",
+    "removeLine": "Remove",
+    "counterpartAccount": "Expense/liability account",
+    "selectCounterpartAccount": "Select account (e.g. tax liability)…",
+    "sendToBank": "Send to bank",
+    "batchSentToBank": "Batch sent to {provider}. The bank status will update automatically after the next sync.",
+    "bankSubmission": "Bank submission",
+    "sentVia": "Sent via {provider}",
+    "bankStatusLabel": "Bank status"
   },
   "exchangeRates": {
     "title": "Exchange Rates",

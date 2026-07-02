@@ -110,6 +110,12 @@ export type PaymentBatchListItem = {
   exported_file_name?: string | null;
   exported_file_format?: string | null;
   exported_file_content?: string | null;
+  submitted_via?: string | null;
+  submission_request_id?: string | null;
+  submitted_at?: string | null;
+  bank_status?: string | null;
+  bank_status_reason?: string | null;
+  bank_status_at?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -117,7 +123,8 @@ export type PaymentBatchListItem = {
 export type PaymentBatchLine = {
   id: string;
   batch_id: string;
-  invoice_id: string;
+  invoice_id: string | null;
+  counterpart_account_id?: string | null;
   line_no: number;
   payee_name: string;
   payee_iban: string;
@@ -357,16 +364,24 @@ export const bankingApi = {
     execution_date?: string;
     currency?: string;
     lines: Array<{
-      invoice_id: string;
+      invoice_id?: string | null;
       amount?: number;
       payee_name?: string;
       payee_iban?: string;
       payee_bic?: string;
       reference?: string;
       description?: string;
+      counterpart_account_id?: string | null;
     }>;
   }) {
     const response = await apiClient.post<ApiResponse<any>>('/api/banking/payment-batches', payload);
+    return response.data.data;
+  },
+
+  async submitPaymentBatchToBank(id: string) {
+    const response = await apiClient.post<ApiResponse<{ batch: PaymentBatchListItem; provider: string; request_id: string }>>(
+      `/api/banking/payment-batches/${id}/submit-to-bank`
+    );
     return response.data.data;
   },
 

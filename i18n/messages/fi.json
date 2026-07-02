@@ -250,7 +250,17 @@
     "backHint": "takaisin",
     "draftSavedMsg": "Luonnos tallennettu.",
     "minTwoLinesMsg": "Vähintään kaksi tilillistä riviä vaaditaan.",
-    "notBalancedMsg": "Kirjaus ei ole tasapainossa. Erotus: {diff}"
+    "notBalancedMsg": "Kirjaus ei ole tasapainossa. Erotus: {diff}",
+    "addManualLine": "Lisää manuaalinen maksu",
+    "manualLine": "Manuaalinen",
+    "removeLine": "Poista",
+    "counterpartAccount": "Kulu-/velkatili",
+    "selectCounterpartAccount": "Valitse tili (esim. verovelka)…",
+    "sendToBank": "Lähetä pankkiin",
+    "batchSentToBank": "Erä lähetetty: {provider}. Pankin tila päivittyy automaattisesti seuraavassa synkronoinnissa.",
+    "bankSubmission": "Pankkiin lähetys",
+    "sentVia": "Lähetetty: {provider}",
+    "bankStatusLabel": "Pankin tila"
   },
   "reports": {
     "balanceSheet": "Tase",

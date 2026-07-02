@@ -250,7 +250,17 @@
     "backHint": "tillbaka",
     "draftSavedMsg": "Utkast sparat.",
     "minTwoLinesMsg": "Minst två rader med konton krävs.",
-    "notBalancedMsg": "Posten är inte i balans. Differens: {diff}"
+    "notBalancedMsg": "Posten är inte i balans. Differens: {diff}",
+    "addManualLine": "Lägg till manuell betalning",
+    "manualLine": "Manuell",
+    "removeLine": "Ta bort",
+    "counterpartAccount": "Kostnads-/skuldkonto",
+    "selectCounterpartAccount": "Välj konto (t.ex. skatteskuld)…",
+    "sendToBank": "Skicka till banken",
+    "batchSentToBank": "Betalningsbunt skickad: {provider}. Bankstatusen uppdateras automatiskt vid nästa synkronisering.",
+    "bankSubmission": "Bankinlämning",
+    "sentVia": "Skickad via {provider}",
+    "bankStatusLabel": "Bankstatus"
   },
   "reports": {
     "balanceSheet": "Balansräkning",

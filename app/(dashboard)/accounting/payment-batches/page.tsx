@@ -17,16 +17,19 @@ import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { bankingApi, type BankAccountRecord, type PaymentBatchLine, type PaymentBatchListItem } from '@/lib/api/banking.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
+import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getIsoToday } from '@/lib/utils/date';
 
 type DraftLine = {
-  invoice_id: string;
+  /** null = manual/free-form line (taxes, rent, ...) */
+  invoice_id: string | null;
   amount: string;
   payee_name: string;
   payee_iban: string;
   payee_bic: string;
   reference: string;
   description: string;
+  counterpart_account_id?: string;
   warning_flags?: string[];
 };
 
@@ -43,6 +46,7 @@ export default function PaymentBatchesPage() {
   } | null>(null);
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
+  const [ledgerAccounts, setLedgerAccounts] = useState<AccountOption[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
   const [batchName, setBatchName] = useState('');
   const [executionDate, setExecutionDate] = useClientDateInput(getIsoToday);
@@ -58,10 +62,11 @@ export default function PaymentBatchesPage() {
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        const [invoiceItems, batchResult, bankAccountItems] = await Promise.all([
+        const [invoiceItems, batchResult, bankAccountItems, accountItems] = await Promise.all([
           invoicesApi.listInvoices({ type: 'purchase_invoice', limit: 100 }),
           bankingApi.listPaymentBatches({ limit: 30 }),
           bankingApi.listBankAccounts(),
+          accountingApi.getAccounts().catch(() => [] as AccountOption[]),
         ]);
 
         const payableInvoices = invoiceItems.filter((invoice) =>
@@ -69,6 +74,7 @@ export default function PaymentBatchesPage() {
         );
 
         setInvoices(payableInvoices);
+        setLedgerAccounts(accountItems.filter((account) => account.is_active));
         setBatches(batchResult.items);
         setBankAccounts(bankAccountItems.filter((item) => item.is_active));
         setBankAccountId((current) => current || bankAccountItems.find((item) => item.is_active)?.id || '');
@@ -156,6 +162,26 @@ export default function PaymentBatchesPage() {
     });
   };
 
+  const handleAddManualLine = () => {
+    setDraftLines((current) => [
+      ...current,
+      {
+        invoice_id: null,
+        amount: '',
+        payee_name: '',
+        payee_iban: '',
+        payee_bic: '',
+        reference: '',
+        description: '',
+        counterpart_account_id: '',
+      },
+    ]);
+  };
+
+  const handleRemoveLine = (index: number) => {
+    setDraftLines((current) => current.filter((_, currentIndex) => currentIndex !== index));
+  };
+
   const handleCreateBatch = async () => {
     if (!bankAccountId || draftLines.length === 0) return;
     await runAction('create', async () => {
@@ -165,13 +191,14 @@ export default function PaymentBatchesPage() {
         execution_date: executionDate || undefined,
         currency,
         lines: draftLines.map((line) => ({
-          invoice_id: line.invoice_id,
+          invoice_id: line.invoice_id || undefined,
           amount: Number(line.amount || 0),
           payee_name: line.payee_name || undefined,
           payee_iban: line.payee_iban || undefined,
           payee_bic: line.payee_bic || undefined,
           reference: line.reference || undefined,
           description: line.description || undefined,
+          counterpart_account_id: line.invoice_id ? undefined : line.counterpart_account_id || undefined,
         })),
       });
       setSuccessMessage(t('paymentBatchCreated'));
@@ -215,6 +242,15 @@ export default function PaymentBatchesPage() {
     await runAction('executed', async () => {
       const result = await bankingApi.confirmPaymentBatchExecuted(selectedBatchId);
       setSuccessMessage(t('batchExecutedPaymentsCreated', { count: result.payments_created ?? 0 }));
+      await refreshBatches(selectedBatchId);
+    });
+  };
+
+  const handleSubmitToBank = async () => {
+    if (!selectedBatchId) return;
+    await runAction('submit-to-bank', async () => {
+      const result = await bankingApi.submitPaymentBatchToBank(selectedBatchId);
+      setSuccessMessage(t('batchSentToBank', { provider: result.provider === 'lhv_connect' ? 'LHV' : 'Swedbank' }));
       await refreshBatches(selectedBatchId);
     });
   };
@@ -332,17 +368,25 @@ export default function PaymentBatchesPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200">
-                <div className="border-b border-slate-200 px-4 py-3">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
                   <h3 className="text-sm font-semibold text-slate-900">{t('draftLines')}</h3>
+                  <button
+                    onClick={handleAddManualLine}
+                    disabled={!!actionLoading}
+                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <Wallet className="h-4 w-4" />
+                    <span>{t('addManualLine')}</span>
+                  </button>
                 </div>
                 <div className="space-y-3 p-4">
                   {draftLines.length === 0 ? (
                     <div className="text-sm text-slate-500">{t('prefillLinesFirst')}</div>
                   ) : (
                     draftLines.map((line, index) => (
-                      <div key={`${line.invoice_id}-${index}`} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
+                      <div key={`${line.invoice_id || 'manual'}-${index}`} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
                         <div className="lg:col-span-2">
-                          <SmallField label={t('invoice')} value={line.invoice_id.slice(0, 8)} readOnly />
+                          <SmallField label={t('invoice')} value={line.invoice_id ? line.invoice_id.slice(0, 8) : t('manualLine')} readOnly />
                         </div>
                         <div className="lg:col-span-2">
                           <SmallField label={t('amount')} value={line.amount} onChange={(value) => updateDraftLine(setDraftLines, index, 'amount', value)} />
@@ -361,6 +405,32 @@ export default function PaymentBatchesPage() {
                         </div>
                         <div className="lg:col-span-8">
                           <SmallField label={t('description')} value={line.description} onChange={(value) => updateDraftLine(setDraftLines, index, 'description', value)} />
+                        </div>
+                        {!line.invoice_id && (
+                          <div className="lg:col-span-8">
+                            <label className="space-y-1">
+                              <span className="text-xs font-medium text-slate-500">{t('counterpartAccount')}</span>
+                              <select
+                                value={line.counterpart_account_id || ''}
+                                onChange={(event) => updateDraftLine(setDraftLines, index, 'counterpart_account_id', event.target.value)}
+                                className="h-10 w-full rounded-lg border border-slate-200 px-2 text-sm"
+                              >
+                                <option value="">{t('selectCounterpartAccount')}</option>
+                                {ledgerAccounts.map((account) => (
+                                  <option key={account.id} value={account.id}>{account.code} · {account.name}</option>
+                                ))}
+                              </select>
+                            </label>
+                          </div>
+                        )}
+                        <div className={`flex items-end ${line.invoice_id ? 'lg:col-span-12' : 'lg:col-span-4'} justify-end`}>
+                          <button
+                            onClick={() => handleRemoveLine(index)}
+                            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-500 hover:bg-slate-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>{t('removeLine')}</span>
+                          </button>
                         </div>
                         {line.warning_flags && line.warning_flags.length > 0 && (
                           <div className="lg:col-span-12 text-xs text-amber-700">
@@ -442,6 +512,22 @@ export default function PaymentBatchesPage() {
                   <InfoBox label={t('lines')} value={String(selectedBatch.summary.line_count || 0)} />
                 </div>
 
+                {selectedBatch.batch.submitted_via && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                    <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('bankSubmission')}</div>
+                    <div className="mt-2 space-y-1 text-xs text-slate-600">
+                      <div>{t('sentVia', { provider: selectedBatch.batch.submitted_via === 'lhv_connect' ? 'LHV Connect' : 'Swedbank Gateway' })}</div>
+                      <div>
+                        {t('bankStatusLabel')}: <span className={selectedBatch.batch.bank_status === 'rejected' ? 'font-medium text-red-700' : selectedBatch.batch.bank_status === 'settled' || selectedBatch.batch.bank_status === 'accepted' ? 'font-medium text-emerald-700' : 'font-medium text-slate-800'}>{selectedBatch.batch.bank_status || '-'}</span>
+                        {selectedBatch.batch.bank_status_at ? ` · ${new Date(selectedBatch.batch.bank_status_at).toLocaleString()}` : ''}
+                      </div>
+                      {selectedBatch.batch.bank_status_reason && (
+                        <div className="text-slate-500">{selectedBatch.batch.bank_status_reason}</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid gap-3">
                   <button
                     onClick={handleGenerateCsv}
@@ -458,6 +544,14 @@ export default function PaymentBatchesPage() {
                   >
                     {actionLoading === 'generate-pain' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileCode2 className="h-4 w-4" />}
                     <span>{t('generatePain')}</span>
+                  </button>
+                  <button
+                    onClick={handleSubmitToBank}
+                    disabled={!['draft', 'generated'].includes(selectedBatchStatus || '') || !!actionLoading}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {actionLoading === 'submit-to-bank' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    <span>{t('sendToBank')}</span>
                   </button>
                   <button
                     onClick={handleConfirmUploaded}
@@ -512,7 +606,7 @@ export default function PaymentBatchesPage() {
                         <div className="flex items-start justify-between gap-3">
                           <div>
                             <div className="text-sm font-medium text-slate-900">
-                              {line.invoice_number || line.invoice_id.slice(0, 8)} · {line.payee_name}
+                              {line.invoice_number || (line.invoice_id ? line.invoice_id.slice(0, 8) : t('manualLine'))} · {line.payee_name}
                             </div>
                             <div className="mt-1 text-xs text-slate-500">
                               {line.payee_iban} · {line.reference || t('noReference')}

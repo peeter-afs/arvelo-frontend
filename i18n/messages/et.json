@@ -821,7 +821,17 @@
     "backHint": "tagasi",
     "draftSavedMsg": "Mustand salvestatud.",
     "minTwoLinesMsg": "Vaja on vähemalt kahte kontoga rida.",
-    "notBalancedMsg": "Kanne pole tasakaalus. Vahe: {diff}"
+    "notBalancedMsg": "Kanne pole tasakaalus. Vahe: {diff}",
+    "addManualLine": "Lisa käsitsi makse",
+    "manualLine": "Käsitsi",
+    "removeLine": "Eemalda",
+    "counterpartAccount": "Kulu-/kohustusekonto",
+    "selectCounterpartAccount": "Vali konto (nt maksukohustus)…",
+    "sendToBank": "Saada panka",
+    "batchSentToBank": "Kogum saadetud: {provider}. Panga olek uueneb automaatselt järgmise sünkroonimisega.",
+    "bankSubmission": "Panka saatmine",
+    "sentVia": "Saadetud: {provider}",
+    "bankStatusLabel": "Panga olek"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",
