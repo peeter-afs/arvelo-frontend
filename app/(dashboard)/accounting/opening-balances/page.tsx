@@ -1181,7 +1181,7 @@ export default function OpeningBalancesPage() {
                 {isTurnoverLayer ? t('obPeriodResult') : t('obDifference')}
               </div>
               <div
-                className="font-mono text-[17px] font-semibold tabular-nums"
+                className="font-mono text-[19px] font-bold tabular-nums"
                 style={{ color: isTurnoverLayer ? 'var(--a-text)' : liveBalanced ? 'var(--a-pos)' : 'var(--a-neg)' }}
               >
                 {isTurnoverLayer ? fmt(Math.abs(liveDiff)) : liveBalanced ? '€0.00 ✓' : fmt(Math.abs(liveDiff))}
@@ -1680,7 +1680,7 @@ function OBTotal({ label, value }: { label: string; value: number }) {
   return (
     <div>
       <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{label}</div>
-      <div className="font-mono text-[17px] font-semibold tabular-nums text-[var(--a-text)]">{fmt(value)}</div>
+      <div className="font-mono text-[19px] font-bold tabular-nums text-[var(--a-text)]">{fmt(value)}</div>
     </div>
   );
 }
@@ -1848,7 +1848,7 @@ function GeneralTable({
           className="grid gap-3.5 bg-[var(--a-surface-2)] px-[18px] py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
           style={{ gridTemplateColumns: OB_COLS(showPartner) }}
         >
-          <div />
+          <div>#</div>
           <div>{t('obColAccount')}</div>
           {showPartner && <div>{t('obColPartner')}</div>}
           <div>{t('obColDescription')}</div>
@@ -2125,17 +2125,16 @@ function SubledgerTable({
 
         <div className="overflow-x-auto">
           <div
-            className="grid min-w-[1240px] gap-3 bg-[var(--a-surface-2)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
+            className="grid min-w-[1140px] items-center gap-3 bg-[var(--a-surface-2)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
             style={{ gridTemplateColumns: SUB_GRID }}
           >
-            <div />
+            <div>#</div>
             <div>{t('obColPartner')}</div>
-            <div>{t('obPartnerName')}</div>
             <div>{t('obRegistryCode')}</div>
             <div>{t('obInvoiceNo')}</div>
             <div>{t('reference')}</div>
             <div>{t('obColDescription')}</div>
-            <div>{t('obInvoiceDate')} / {t('obDueDate')}</div>
+            <div className="text-right">{t('obInvoiceDate')} → {t('obDueDate')}</div>
             <div className="text-right">{t('obColAmount')}</div>
             <div />
           </div>
@@ -2143,66 +2142,85 @@ function SubledgerTable({
           {rows.map((row, index) => (
             <div
               key={row.id}
-              className="grid min-w-[1240px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-2"
-              style={{ gridTemplateColumns: SUB_GRID }}
+              className="grid min-w-[1140px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-1.5"
+              style={{ gridTemplateColumns: SUB_GRID, background: index % 2 === 1 ? ROW_ALT : 'transparent' }}
             >
-              <div className="font-mono text-[11px] text-[var(--a-text-3)]">{index + 1}</div>
+              <div className={IDX_CHIP}>{index + 1}</div>
 
-              <select
-                value={row.partner_id}
-                onChange={(e) => updateRow(row.id, 'partner_id', e.target.value)}
-                className="h-[34px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text-2)]"
-              >
-                <option value="">{t('obMatchOrCreate')}</option>
-                {partners.map((partner) => (
-                  <option key={partner.id} value={partner.id}>{partner.name}</option>
-                ))}
-              </select>
-
-              <input
-                value={row.partner_name}
-                onChange={(e) => updateRow(row.id, 'partner_name', e.target.value)}
-                placeholder={t('obPartnerNeededIfNew')}
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text-2)]"
-              />
+              {/* merged partner cell: name + link-status chip (the chip is a native
+                  select overlay, so clicking it opens the existing-partner picker) */}
+              <div className="flex min-w-0 items-center gap-1.5">
+                <input
+                  value={row.partner_name}
+                  onChange={(e) => updateRow(row.id, 'partner_name', e.target.value)}
+                  placeholder={t('obPartnerNeededIfNew')}
+                  className={`${CELL_IN} min-w-0 flex-1 font-medium`}
+                />
+                <span className="relative inline-flex shrink-0">
+                  <span
+                    className="inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-[6px] border px-1.5 text-[11px] font-semibold"
+                    style={row.partner_id
+                      ? { background: 'var(--a-pos-soft)', color: 'var(--a-pos)', borderColor: '#cfe5dc' }
+                      : { background: 'var(--a-accent-soft)', color: 'var(--a-accent)', borderColor: '#ffd6c9' }}
+                  >
+                    {row.partner_id ? <CheckCircle2 className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
+                    {row.partner_id ? t('obLinked') : t('obNew')}
+                    <ChevronDown className="h-3 w-3 opacity-60" />
+                  </span>
+                  <select
+                    value={row.partner_id}
+                    onChange={(e) => linkPartner(row.id, e.target.value)}
+                    title={t('obMatchOrCreate')}
+                    className="absolute inset-0 cursor-pointer opacity-0"
+                  >
+                    <option value="">{t('obMatchOrCreate')}</option>
+                    {partners.map((partner) => (
+                      <option key={partner.id} value={partner.id}>{partner.name}</option>
+                    ))}
+                  </select>
+                </span>
+              </div>
 
               <input
                 value={row.reg_code}
                 onChange={(e) => updateRow(row.id, 'reg_code', e.target.value)}
                 placeholder={t('obOptional')}
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[12.5px] text-[var(--a-text-2)]"
+                className={`${CELL_IN} font-mono text-[12.5px] text-[var(--a-text-2)]`}
               />
 
               <input
                 value={row.invoice_number}
                 onChange={(e) => updateRow(row.id, 'invoice_number', e.target.value)}
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[12.5px] text-[var(--a-text-2)]"
+                className={`${CELL_IN} font-mono text-[12.5px] text-[var(--a-text-2)]`}
               />
 
               <input
                 value={row.reference}
                 onChange={(e) => updateRow(row.id, 'reference', e.target.value)}
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 font-mono text-[12.5px] text-[var(--a-text-2)]"
+                className={`${CELL_IN} font-mono text-[12.5px] text-[var(--a-text-2)]`}
               />
 
               <input
                 value={row.description}
                 onChange={(e) => updateRow(row.id, 'description', e.target.value)}
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text-2)]"
+                placeholder="—"
+                className={`${CELL_IN} text-[12.5px] text-[var(--a-text-2)]`}
               />
 
-              <div className="flex flex-col gap-1">
+              {/* paired dates keep the row on one line: invoice date → due date */}
+              <div className="flex items-center justify-end gap-1">
                 <input
                   type="date"
                   value={row.invoice_date}
                   onChange={(e) => updateRow(row.id, 'invoice_date', e.target.value)}
-                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12px] text-[var(--a-text-2)]"
+                  className={`${CELL_IN} w-[104px] px-1 text-center font-mono text-[12px] text-[var(--a-text-2)]`}
                 />
+                <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[var(--a-border-strong)]" />
                 <input
                   type="date"
                   value={row.due_date}
                   onChange={(e) => updateRow(row.id, 'due_date', e.target.value)}
-                  className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12px] text-[var(--a-text-2)]"
+                  className={`${CELL_IN} w-[104px] px-1 text-center font-mono text-[12px] text-[var(--a-text-2)]`}
                 />
               </div>
 
@@ -2210,16 +2228,16 @@ function SubledgerTable({
                 value={row.amount}
                 onChange={(e) => updateRow(row.id, 'amount', e.target.value)}
                 inputMode="decimal"
-                className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-right font-mono text-[13px] tabular-nums text-[var(--a-text)]"
+                className={`${CELL_IN} text-right font-mono font-semibold tabular-nums`}
               />
 
               <button
                 type="button"
                 onClick={() => removeRow(row.id)}
                 disabled={rows.length <= 1}
-                className="grid h-8 w-8 place-items-center rounded-[6px] text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] disabled:opacity-40"
+                className="grid h-8 w-8 place-items-center rounded-[8px] text-[var(--a-text-3)] transition hover:bg-[var(--a-accent-soft)] hover:text-[var(--a-accent)] disabled:opacity-40"
               >
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </button>
             </div>
           ))}
