@@ -1432,7 +1432,20 @@
     "verify": "Verify & Enable",
     "disable": "Disable 2FA",
     "disableTitle": "Disable Two-Factor Authentication",
-    "disableDescription": "Enter your current authenticator code to disable 2FA."
+    "disableDescription": "Enter your current authenticator code to disable 2FA.",
+    "passkeys": {
+      "title": "Passkeys",
+      "description": "Confirm sign-in with your fingerprint, face recognition, or a physical security key.",
+      "add": "Add passkey",
+      "unnamed": "Unnamed device",
+      "added": "Added",
+      "lastUsed": "last used",
+      "remove": "Remove"
+    },
+    "emailBackup": {
+      "title": "Email backup code",
+      "description": "If your authenticator app or passkey is unavailable, you can request a one-time code to your email address during sign-in."
+    }
   },
   "settings": {
     "title": "Settings",
@@ -2043,9 +2056,16 @@
       "title": "Two-factor authentication",
       "subtitle": "Verify your identity to continue",
       "prompt": "Enter the 6-digit code from your authenticator app",
+      "emailPrompt": "Enter the 6-digit code sent to your email",
       "codeLabel": "Authentication code",
       "verifying": "Verifying...",
-      "verify": "Verify"
+      "verify": "Verify",
+      "usePasskey": "Use passkey",
+      "or": "or",
+      "sendEmailCode": "Can't access your authenticator app? Send a code to your email",
+      "resendEmailCode": "Resend code",
+      "emailCodeSending": "Sending...",
+      "emailCodeSent": "A code was sent to your email address"
     },
     "strength": {
       "weak": "Weak",

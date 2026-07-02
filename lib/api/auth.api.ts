@@ -33,12 +33,45 @@ export const authApi = {
   },
 
   /**
-   * Verify 2FA code during login
+   * Verify 2FA code during login (authenticator app or email backup code)
    */
-  async verify2fa(twoFactorToken: string, code: string): Promise<Session> {
+  async verify2fa(twoFactorToken: string, code: string, method: 'totp' | 'email' = 'totp'): Promise<Session> {
     const response = await apiClient.post<ApiResponse<Session>>(
       '/api/auth/2fa/verify',
-      { two_factor_token: twoFactorToken, code }
+      { two_factor_token: twoFactorToken, code, method }
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Request an email backup code during 2FA login
+   */
+  async request2faEmailCode(twoFactorToken: string): Promise<void> {
+    await apiClient.post('/api/auth/2fa/email-code', { two_factor_token: twoFactorToken });
+  },
+
+  /**
+   * Get WebAuthn authentication options during 2FA login
+   */
+  async webauthnLoginOptions(twoFactorToken: string): Promise<{ options: unknown; challenge_token: string }> {
+    const response = await apiClient.post<ApiResponse<{ options: unknown; challenge_token: string }>>(
+      '/api/auth/2fa/webauthn/options',
+      { two_factor_token: twoFactorToken }
+    );
+    return response.data.data!;
+  },
+
+  /**
+   * Verify WebAuthn assertion during 2FA login
+   */
+  async webauthnLoginVerify(
+    twoFactorToken: string,
+    challengeToken: string,
+    assertion: unknown
+  ): Promise<Session> {
+    const response = await apiClient.post<ApiResponse<Session>>(
+      '/api/auth/2fa/webauthn/verify',
+      { two_factor_token: twoFactorToken, challenge_token: challengeToken, response: assertion }
     );
     return response.data.data!;
   },

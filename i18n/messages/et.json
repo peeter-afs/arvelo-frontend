@@ -1432,7 +1432,20 @@
     "verify": "Kinnita ja luba",
     "disable": "Keela 2FA",
     "disableTitle": "Kaheastmelise autentimise keelamine",
-    "disableDescription": "Sisestage oma praegune autentimiskood 2FA keelamiseks."
+    "disableDescription": "Sisestage oma praegune autentimiskood 2FA keelamiseks.",
+    "passkeys": {
+      "title": "Turvavõtmed (passkey)",
+      "description": "Kinnita sisselogimine sõrmejälje, näotuvastuse või füüsilise turvavõtmega.",
+      "add": "Lisa turvavõti",
+      "unnamed": "Nimetu seade",
+      "added": "Lisatud",
+      "lastUsed": "viimati kasutatud",
+      "remove": "Eemalda"
+    },
+    "emailBackup": {
+      "title": "E-posti varukood",
+      "description": "Kui autentimisrakendus või turvavõti pole käepärast, saad sisselogimisel tellida ühekordse koodi oma e-posti aadressile."
+    }
   },
   "settings": {
     "title": "Seaded",
@@ -2043,9 +2056,16 @@
       "title": "Kahefaktoriline autentimine",
       "subtitle": "Jätkamiseks kinnita oma isik",
       "prompt": "Sisesta autentimisrakenduse 6-kohaline kood",
+      "emailPrompt": "Sisesta e-postile saadetud 6-kohaline kood",
       "codeLabel": "Autentimiskood",
       "verifying": "Kinnitamine...",
-      "verify": "Kinnita"
+      "verify": "Kinnita",
+      "usePasskey": "Kasuta turvavõtit (passkey)",
+      "or": "või",
+      "sendEmailCode": "Ei pääse autentimisrakendusele ligi? Saada kood e-postile",
+      "resendEmailCode": "Saada kood uuesti",
+      "emailCodeSending": "Saadan...",
+      "emailCodeSent": "Kood saadeti sinu e-posti aadressile"
     },
     "strength": {
       "weak": "Nõrk",

@@ -27,6 +27,8 @@ export interface Tenant {
   updated_at: string;
 }
 
+export type TwoFactorMethod = 'totp' | 'webauthn' | 'email';
+
 export interface Session {
   user: User;
   tenant?: Tenant;
@@ -35,6 +37,7 @@ export interface Session {
   refresh_token: string;
   requires_2fa?: boolean;
   two_factor_token?: string;
+  two_factor_methods?: TwoFactorMethod[];
 }
 
 export interface LoginCredentials {

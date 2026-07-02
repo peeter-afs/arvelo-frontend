@@ -1,18 +1,28 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Shield, ShieldCheck, ShieldOff, Copy, Check } from 'lucide-react';
+import { ShieldCheck, ShieldOff, Copy, Check, KeyRound, Trash2, Mail } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { QRCodeSVG } from 'qrcode.react';
+import { startRegistration } from '@simplewebauthn/browser';
 import apiClient from '@/lib/api/client';
 import { getErrorMessage } from '@/lib/api/client';
 
 type ApiResponse<T> = { success: boolean; data: T };
+
+type PasskeyRow = {
+  id: string;
+  device_name: string | null;
+  created_at: string;
+  last_used_at: string | null;
+};
 
 export default function SecuritySettingsPage() {
   const t = useTranslations('twoFactor');
   const tc = useTranslations('common');
 
   const [enabled, setEnabled] = useState(false);
+  const [totpEnabled, setTotpEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -24,11 +34,20 @@ export default function SecuritySettingsPage() {
   const [copied, setCopied] = useState(false);
   const [showDisable, setShowDisable] = useState(false);
 
+  // Passkeys
+  const [passkeys, setPasskeys] = useState<PasskeyRow[]>([]);
+  const [passkeyBusy, setPasskeyBusy] = useState(false);
+
   const fetchStatus = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await apiClient.get<ApiResponse<{ enabled: boolean }>>('/api/auth/2fa/status');
-      setEnabled(data.data.enabled);
+      const [statusRes, passkeysRes] = await Promise.all([
+        apiClient.get<ApiResponse<{ enabled: boolean; totp_enabled: boolean; passkey_count: number }>>('/api/auth/2fa/status'),
+        apiClient.get<ApiResponse<PasskeyRow[]>>('/api/auth/2fa/webauthn/credentials'),
+      ]);
+      setEnabled(statusRes.data.data.enabled);
+      setTotpEnabled(statusRes.data.data.totp_enabled);
+      setPasskeys(passkeysRes.data.data);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -37,6 +56,42 @@ export default function SecuritySettingsPage() {
   }, []);
 
   useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  const handleAddPasskey = async () => {
+    setError('');
+    setPasskeyBusy(true);
+    try {
+      const { data } = await apiClient.post<ApiResponse<{ options: unknown; challenge_token: string }>>(
+        '/api/auth/2fa/webauthn/register/options'
+      );
+      const attestation = await startRegistration({ optionsJSON: data.data.options as never });
+      await apiClient.post('/api/auth/2fa/webauthn/register/verify', {
+        challenge_token: data.data.challenge_token,
+        response: attestation,
+      });
+      await fetchStatus();
+    } catch (err) {
+      // User cancelling the browser passkey dialog throws NotAllowedError
+      if ((err as Error)?.name !== 'NotAllowedError') {
+        setError(getErrorMessage(err));
+      }
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
+
+  const handleRemovePasskey = async (id: string) => {
+    setError('');
+    setPasskeyBusy(true);
+    try {
+      await apiClient.delete(`/api/auth/2fa/webauthn/credentials/${id}`);
+      await fetchStatus();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setPasskeyBusy(false);
+    }
+  };
 
   const handleSetup = async () => {
     setError('');
@@ -54,6 +109,7 @@ export default function SecuritySettingsPage() {
     try {
       await apiClient.post('/api/auth/2fa/enable', { code: verifyCode });
       setEnabled(true);
+      setTotpEnabled(true);
       setSetupData(null);
       setVerifyCode('');
     } catch (err) {
@@ -68,7 +124,8 @@ export default function SecuritySettingsPage() {
     setError('');
     try {
       await apiClient.post('/api/auth/2fa/disable', { code: disableCode });
-      setEnabled(false);
+      setTotpEnabled(false);
+      setEnabled(passkeys.length > 0);
       setShowDisable(false);
       setDisableCode('');
     } catch (err) {
@@ -121,7 +178,7 @@ export default function SecuritySettingsPage() {
             </p>
           </div>
           <div className="ml-auto">
-            {enabled ? (
+            {totpEnabled ? (
               <button
                 onClick={() => setShowDisable(true)}
                 className="px-4 py-2 rounded-lg text-sm font-medium"
@@ -159,13 +216,8 @@ export default function SecuritySettingsPage() {
               <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>{t('step1')}</p>
               <div className="flex items-center gap-4">
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'white', border: '1px solid var(--border)' }}>
-                  {/* QR code rendered via Google Charts API */}
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(setupData.otpauthUri)}`}
-                    alt="TOTP QR Code"
-                    width={200}
-                    height={200}
-                  />
+                  {/* Rendered locally so the TOTP secret never leaves the browser */}
+                  <QRCodeSVG value={setupData.otpauthUri} size={200} />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('manualEntry')}</p>
@@ -211,6 +263,67 @@ export default function SecuritySettingsPage() {
                   {tc('cancel')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Passkeys */}
+      <div className="card p-6 mb-6">
+        <div className="flex items-center gap-4 mb-1">
+          <KeyRound className="h-8 w-8" style={{ color: passkeys.length > 0 ? '#16a34a' : '#9ca3af' }} />
+          <div>
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('passkeys.title')}</h2>
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('passkeys.description')}</p>
+          </div>
+          <div className="ml-auto">
+            <button
+              onClick={handleAddPasskey}
+              disabled={passkeyBusy}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+              style={{ backgroundColor: 'var(--primary)' }}
+            >
+              {passkeyBusy ? tc('saving') : t('passkeys.add')}
+            </button>
+          </div>
+        </div>
+
+        {passkeys.length > 0 && (
+          <div className="mt-4 divide-y" style={{ borderColor: 'var(--border)' }}>
+            {passkeys.map(pk => (
+              <div key={pk.id} className="flex items-center gap-3 py-3">
+                <div className="flex-1">
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                    {pk.device_name || t('passkeys.unnamed')}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {t('passkeys.added')} {new Date(pk.created_at).toLocaleDateString()}
+                    {pk.last_used_at && ` · ${t('passkeys.lastUsed')} ${new Date(pk.last_used_at).toLocaleDateString()}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleRemovePasskey(pk.id)}
+                  disabled={passkeyBusy}
+                  className="p-2 rounded disabled:opacity-50"
+                  style={{ color: '#ef4444' }}
+                  title={t('passkeys.remove')}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Email backup info */}
+      {enabled && (
+        <div className="card p-6 mb-6">
+          <div className="flex items-center gap-4">
+            <Mail className="h-8 w-8" style={{ color: '#2563eb' }} />
+            <div>
+              <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('emailBackup.title')}</h2>
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('emailBackup.description')}</p>
             </div>
           </div>
         </div>

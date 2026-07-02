@@ -7,7 +7,9 @@ import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { TwoFactorMethod } from '@/lib/types/auth.types';
+import { startAuthentication } from '@simplewebauthn/browser';
+import { Loader2, AlertCircle, CheckCircle, KeyRound, Mail } from 'lucide-react';
 
 function LoginForm() {
   const t = useTranslations('auth');
@@ -26,6 +28,10 @@ function LoginForm() {
   const [requires2fa, setRequires2fa] = useState(false);
   const [twoFactorToken, setTwoFactorToken] = useState('');
   const [totpCode, setTotpCode] = useState('');
+  const [twoFactorMethods, setTwoFactorMethods] = useState<TwoFactorMethod[]>([]);
+  const [codeMode, setCodeMode] = useState<'totp' | 'email'>('totp');
+  const [emailCodeSent, setEmailCodeSent] = useState(false);
+  const [emailCodeSending, setEmailCodeSending] = useState(false);
 
   const completeLogin = async (session: Awaited<ReturnType<typeof authApi.login>>) => {
     setSession(
@@ -51,6 +57,8 @@ function LoginForm() {
       if (session.requires_2fa && session.two_factor_token) {
         setRequires2fa(true);
         setTwoFactorToken(session.two_factor_token);
+        setTwoFactorMethods(session.two_factor_methods || ['totp', 'email']);
+        setCodeMode(session.two_factor_methods?.includes('totp') === false ? 'email' : 'totp');
         setIsLoading(false);
         return;
       }
@@ -74,13 +82,46 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const session = await authApi.verify2fa(twoFactorToken, totpCode);
+      const session = await authApi.verify2fa(twoFactorToken, totpCode, codeMode);
       await completeLogin(session);
     } catch (err) {
       setError(getErrorMessage(err));
       setTotpCode('');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleWebauthn = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const { options, challenge_token } = await authApi.webauthnLoginOptions(twoFactorToken);
+      const assertion = await startAuthentication({ optionsJSON: options as never });
+      const session = await authApi.webauthnLoginVerify(twoFactorToken, challenge_token, assertion);
+      await completeLogin(session);
+    } catch (err) {
+      // User cancelling the browser passkey dialog throws NotAllowedError
+      if ((err as Error)?.name !== 'NotAllowedError') {
+        setError(getErrorMessage(err));
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSendEmailCode = async () => {
+    setError('');
+    setEmailCodeSending(true);
+    try {
+      await authApi.request2faEmailCode(twoFactorToken);
+      setCodeMode('email');
+      setEmailCodeSent(true);
+      setTotpCode('');
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setEmailCodeSending(false);
     }
   };
 
@@ -134,50 +175,100 @@ function LoginForm() {
       {/* 2FA Verification Form */}
       {requires2fa ? (
         <form onSubmit={handleVerify2fa} className="space-y-5">
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
-            <p className="text-sm text-slate-600">
-              {t('twoFactor.prompt')}
-            </p>
-          </div>
+          {/* Passkey option */}
+          {twoFactorMethods.includes('webauthn') && (
+            <>
+              <button
+                type="button"
+                onClick={handleWebauthn}
+                disabled={isLoading}
+                className="w-full h-11 sm:h-12 rounded-lg border border-slate-300 bg-white text-slate-800 font-medium hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+              >
+                <KeyRound className="h-4 w-4" />
+                {t('twoFactor.usePasskey')}
+              </button>
+              {(twoFactorMethods.includes('totp') || emailCodeSent) && (
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 h-px bg-slate-200" />
+                  <span className="text-xs text-slate-400 uppercase">{t('twoFactor.or')}</span>
+                  <div className="flex-1 h-px bg-slate-200" />
+                </div>
+              )}
+            </>
+          )}
 
-          <div>
-            <label
-              htmlFor="totpCode"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
-            >
-              {t('twoFactor.codeLabel')}
-            </label>
-            <input
-              id="totpCode"
-              type="text"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              maxLength={6}
-              value={totpCode}
-              onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-              required
-              className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-center text-lg tracking-widest"
-              placeholder="000000"
-              disabled={isLoading}
-              autoFocus
-              style={{ fontSize: '20px' }}
-            />
-          </div>
+          {(twoFactorMethods.includes('totp') || emailCodeSent) && (
+            <>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                <p className="text-sm text-slate-600">
+                  {codeMode === 'email' ? t('twoFactor.emailPrompt') : t('twoFactor.prompt')}
+                </p>
+              </div>
 
-          <button
-            type="submit"
-            disabled={isLoading || totpCode.length !== 6}
-            className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-lg hover:shadow-[var(--primary)]/25 flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>{t('twoFactor.verifying')}</span>
-              </>
-            ) : (
-              t('twoFactor.verify')
-            )}
-          </button>
+              <div>
+                <label
+                  htmlFor="totpCode"
+                  className="block text-sm font-medium text-slate-700 mb-1.5"
+                >
+                  {t('twoFactor.codeLabel')}
+                </label>
+                <input
+                  id="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                  required
+                  className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-center text-lg tracking-widest"
+                  placeholder="000000"
+                  disabled={isLoading}
+                  autoFocus
+                  style={{ fontSize: '20px' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading || totpCode.length !== 6}
+                className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-lg hover:shadow-[var(--primary)]/25 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>{t('twoFactor.verifying')}</span>
+                  </>
+                ) : (
+                  t('twoFactor.verify')
+                )}
+              </button>
+            </>
+          )}
+
+          {/* Email backup code */}
+          {twoFactorMethods.includes('email') && (
+            <div className="text-center">
+              {emailCodeSent && (
+                <p className="text-sm text-emerald-600 mb-1 flex items-center justify-center gap-1.5">
+                  <Mail className="h-4 w-4" />
+                  {t('twoFactor.emailCodeSent')}
+                </p>
+              )}
+              <button
+                type="button"
+                onClick={handleSendEmailCode}
+                disabled={emailCodeSending || isLoading}
+                className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] disabled:opacity-50 transition-colors"
+              >
+                {emailCodeSending
+                  ? t('twoFactor.emailCodeSending')
+                  : emailCodeSent
+                    ? t('twoFactor.resendEmailCode')
+                    : t('twoFactor.sendEmailCode')}
+              </button>
+            </div>
+          )}
 
           <button
             type="button"
@@ -185,6 +276,9 @@ function LoginForm() {
               setRequires2fa(false);
               setTwoFactorToken('');
               setTotpCode('');
+              setTwoFactorMethods([]);
+              setCodeMode('totp');
+              setEmailCodeSent(false);
               setError('');
             }}
             className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors"
