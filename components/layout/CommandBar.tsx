@@ -47,6 +47,7 @@ export function CommandBar({
     accounts: tAccounting('chartOfAccounts'),
     bank: tAccounting('bankWorkspace'),
     journal: tAccounting('journalEntries'),
+    'opening-balances': tAccounting('openingBalances'),
     partners: tAccounting('partners'),
     invoices: tInvoices('overview'),
     sales: tInvoices('salesList'),

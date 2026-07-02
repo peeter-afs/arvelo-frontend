@@ -237,13 +237,23 @@ export default function OpeningBalancesPage() {
         && (!isTurnoverGate || !!sharedFields.opening_date)
       : subledgerHasRows;
 
-  const canCommit = previewSnapshot === JSON.stringify(buildPayload(mode, sharedFields, {
-    generalRows,
-    receivableRows,
-    payableRows,
-    receivablesOffsetAccountId,
-    payablesOffsetAccountId
-  })) && !!previewResult;
+  // Must build the payload EXACTLY like handlePreview does (incl. the mid-year
+  // gl_neutral flag), otherwise the snapshot never matches and Confirm stays
+  // disabled on the mid-year receivables/payables preview.
+  const currentPayloadSnapshot = () => {
+    const payload: Record<string, any> = buildPayload(mode, sharedFields, {
+      generalRows,
+      receivableRows,
+      payableRows,
+      receivablesOffsetAccountId,
+      payablesOffsetAccountId
+    });
+    if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+      payload.gl_neutral = true;
+    }
+    return JSON.stringify(payload);
+  };
+  const canCommit = previewSnapshot === currentPayloadSnapshot() && !!previewResult;
 
   // Mid-year layers year_end/turnover both use mode 'general', so the per-mode lock
   // must look at the specific committed batch_type instead of the coarse mode.
@@ -820,56 +830,19 @@ export default function OpeningBalancesPage() {
     );
   }
 
+  // Focus only makes sense where the action bar (its exit toggle) is visible —
+  // never leave the user stranded in a chrome-less upload step.
+  const effectiveFocus = focusMode && (step === 'review' || step === 'confirm');
+
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Command bar: title · inline document stepper · focus toggle. The stepper
-          lives here (not as a separate block) so the rows get the vertical space. */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-2">
-        <div className="flex items-center gap-2.5 text-[15px] font-semibold text-[var(--a-text)]">
-          <span className="text-[var(--a-accent)]">⌘</span> {t('openingBalances')}
-        </div>
-        <div className="flex items-center gap-2">
-          {[t('obStepUpload'), t('obStepReview'), t('obStepConfirm')].map((label, i) => {
-            const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
-            const state = i < idx ? 'done' : i === idx ? 'active' : 'todo';
-            return (
-              <div key={label} className="flex items-center gap-2">
-                {i > 0 && <ChevronRight className="h-[15px] w-[15px] text-[var(--a-border-strong)]" />}
-                <span className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[13px] font-semibold ${state === 'active' ? 'text-[var(--a-text)]' : state === 'done' ? 'text-[var(--a-text-2)]' : 'text-[var(--a-text-3)]'}`}>
-                  <span
-                    className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
-                    style={{
-                      background: state === 'done' ? 'var(--a-pos)' : state === 'active' ? 'var(--a-accent)' : 'var(--a-surface-2)',
-                      color: state === 'todo' ? 'var(--a-text-3)' : '#fff',
-                      border: state === 'todo' ? '1px solid var(--a-border)' : 'none',
-                    }}
-                  >
-                    {state === 'done' ? '✓' : i + 1}
-                  </span>
-                  {label}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <button
-          type="button"
-          onClick={() => setFocusMode((v) => !v)}
-          className="inline-flex h-[32px] items-center gap-1.5 rounded-[9px] border px-3 text-[12.5px] font-semibold transition"
-          style={focusMode
-            ? { background: 'var(--a-accent-soft)', borderColor: 'var(--a-accent)', color: 'var(--a-accent)' }
-            : { background: 'var(--a-surface)', borderColor: 'var(--a-border-strong)', color: 'var(--a-text-2)' }}
-        >
-          <Maximize className="h-3.5 w-3.5" />
-          {focusMode ? t('obShowAll') : t('obFocusRows')}
-        </button>
-      </div>
-
       {/* Top zone. Mid-year: the compact step bar is the primary progress AND
-          navigation (it drives mode/layer), sat at the very top with History beside
-          it — the mode row is hidden to avoid a redundant second control. Simple
-          strategies keep the mode selector row. Hidden in focus mode. */}
-      {!focusMode && midYear && (
+          navigation (it drives mode/layer), sat at the very top with the document
+          stepper + History beside it — the mode row is hidden to avoid a redundant
+          second control. Simple strategies keep the mode selector row. The global
+          CommandBar (layout) already names the page, so no separate title bar.
+          Hidden in focus mode. */}
+      {!effectiveFocus && midYear && (
         <div className="flex items-start gap-2 pt-2">
           {(() => {
             const steps = [
@@ -893,6 +866,8 @@ export default function OpeningBalancesPage() {
                       </button>
                     </div>
                   ))}
+                  <span className="flex-1" />
+                  <DocStepper step={step} t={t} />
                 </div>
                 <p className="mt-0.5 text-[11px] text-[var(--a-text-3)]">{hint}</p>
               </div>
@@ -911,9 +886,10 @@ export default function OpeningBalancesPage() {
           )}
         </div>
       )}
-      {!focusMode && !midYear && (
+      {!effectiveFocus && !midYear && (
         <div className="flex items-center gap-3 pt-2">
           <OBModeRow mode={mode} onChange={handleModeChange} t={t} />
+          <DocStepper step={step} t={t} />
           <Button variant="default" onClick={() => setShowHistory(true)} className="shrink-0">
             <History className="h-3.5 w-3.5" />
             <span>{t('obHistory')}</span>
@@ -929,9 +905,10 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year subledger step covers both receivables and payables; the mode row
-          is hidden in mid-year, so provide a compact toggle to switch between them. */}
-      {!focusMode && midYear && (mode === 'receivables' || mode === 'payables') && (
-        <div className="mt-2 inline-flex rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5 text-[12.5px]">
+          is hidden in mid-year, so provide a compact toggle to switch between them.
+          On the review step this same toggle renders inside the review meta bar. */}
+      {!effectiveFocus && midYear && (mode === 'receivables' || mode === 'payables') && (step === 'upload' || step === 'parsing') && (
+        <div className="mt-2 inline-flex self-start rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5 text-[12.5px]">
           {(['receivables', 'payables'] as const).map((m) => (
             <button
               key={m}
@@ -947,7 +924,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year: notice after a layer commit, guiding to the next document */}
-      {!focusMode && midYear && midYearNotice && (
+      {!effectiveFocus && midYear && midYearNotice && (
         <div className="mt-2 flex items-start gap-2.5 rounded-[10px] border border-[var(--a-pos)]/30 bg-[var(--a-pos-soft)] px-3.5 py-2 text-[12.5px] text-[var(--a-text)]">
           <span className="text-[var(--a-pos)]">✓</span>
           <span>{midYearNotice}</span>
@@ -955,7 +932,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Turnover: käibeandmik opening (algsaldo) vs year-end balance control (warning) */}
-      {!focusMode && isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
+      {!effectiveFocus && isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3.5 py-2">
           <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverControl.diffs.length })}</div>
           <div className="mt-1 max-h-32 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
@@ -970,7 +947,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
-      {!focusMode && strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
+      {!effectiveFocus && strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-3.5 py-2 text-[12.5px] text-[var(--a-text-2)]">
           {t('obGlNeutralHint')}
           <span className="ml-1 text-[var(--a-text-3)]">{t('obSubledgerIndependentHint')}</span>
@@ -1109,6 +1086,21 @@ export default function OpeningBalancesPage() {
               mode={mode}
               t={t}
               importResult={importResult}
+              modeSwitcher={midYear && (mode === 'receivables' || mode === 'payables') ? (
+                <div className="inline-flex shrink-0 rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5 text-[12px]">
+                  {(['receivables', 'payables'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() => handleModeChange(m)}
+                      className={`rounded-[6px] px-2.5 py-0.5 font-medium transition ${mode === m ? 'bg-[var(--a-surface)] text-[var(--a-text)]' : 'text-[var(--a-text-2)] hover:text-[var(--a-text)]'}`}
+                      style={mode === m ? { border: '1px solid var(--a-border)' } : undefined}
+                    >
+                      {m === 'receivables' ? t('obModeReceivables') : t('obModePayables')}
+                    </button>
+                  ))}
+                </div>
+              ) : undefined}
               sharedFields={sharedFields}
               isDateLocked={isDateLocked}
               glOpeningDate={glOpeningDate}
@@ -1191,10 +1183,30 @@ export default function OpeningBalancesPage() {
 
           <div className="flex-1" />
 
+          {/* Focus toggle lives here so it is always reachable while it has effect. */}
+          <button
+            type="button"
+            onClick={() => setFocusMode((v) => !v)}
+            className="inline-flex h-[32px] shrink-0 items-center gap-1.5 rounded-[9px] border px-3 text-[12.5px] font-semibold transition"
+            style={effectiveFocus
+              ? { background: 'var(--a-accent-soft)', borderColor: 'var(--a-accent)', color: 'var(--a-accent)' }
+              : { background: 'var(--a-surface)', borderColor: 'var(--a-border-strong)', color: 'var(--a-text-2)' }}
+          >
+            <Maximize className="h-3.5 w-3.5" />
+            <span className="hidden lg:inline">{effectiveFocus ? t('obShowAll') : t('obFocusRows')}</span>
+          </button>
+
           {step === 'review' && !canAdvanceToConfirm && blockingReason && (
             <div className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-neg)]">
               <AlertCircle className="h-3.5 w-3.5" />
               <span>{blockingReason}</span>
+            </div>
+          )}
+          {/* Confirm step: say WHY confirming is blocked instead of a mute disabled button */}
+          {step === 'confirm' && !isCommitLoading && (isImported || !canCommit) && (
+            <div className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-neg)]">
+              <AlertCircle className="h-3.5 w-3.5" />
+              <span>{isImported ? t('obMidYearDocImported') : t('obPreviewStale')}</span>
             </div>
           )}
 
@@ -1241,6 +1253,41 @@ export default function OpeningBalancesPage() {
         onApply={(mapping) => accountingApi.applyImportedSystemRoles(mapping)}
         onClose={() => setRoleDialogAccounts(null)}
       />
+    </div>
+  );
+}
+
+// ─── Compact document stepper (Upload › Review › Confirm) ─────────────────────
+// Lives inline in the top row (design: command-bar stepper) instead of its own block.
+function DocStepper({ step, t }: { step: Step; t: ReturnType<typeof useTranslations> }) {
+  const idx = step === 'upload' || step === 'parsing' ? 0 : step === 'review' ? 1 : 2;
+  return (
+    <div className="flex shrink-0 items-center gap-1.5">
+      {[t('obStepUpload'), t('obStepReview'), t('obStepConfirm')].map((label, i) => {
+        const state = i < idx ? 'done' : i === idx ? 'active' : 'todo';
+        return (
+          <div key={label} className="flex items-center gap-1.5">
+            {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-[var(--a-border-strong)]" />}
+            <span
+              title={label}
+              className={`inline-flex items-center gap-1.5 whitespace-nowrap text-[12.5px] font-semibold ${state === 'active' ? 'text-[var(--a-text)]' : state === 'done' ? 'text-[var(--a-text-2)]' : 'text-[var(--a-text-3)]'}`}
+            >
+              <span
+                className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+                style={{
+                  background: state === 'done' ? 'var(--a-pos)' : state === 'active' ? 'var(--a-accent)' : 'var(--a-surface-2)',
+                  color: state === 'todo' ? 'var(--a-text-3)' : '#fff',
+                  border: state === 'todo' ? '1px solid var(--a-border)' : 'none',
+                }}
+              >
+                {state === 'done' ? '✓' : i + 1}
+              </span>
+              {/* label only for the active step keeps the row narrow */}
+              <span className={state === 'active' ? '' : 'hidden xl:inline'}>{label}</span>
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1485,6 +1532,7 @@ function OBReview(props: {
   onSubledgerChange: (rows: SubledgerRow[]) => void;
   onSubledgerAddRow: () => void;
   onCreateAccount: (payload: { code: string; name: string; type: string }) => Promise<AccountOption>;
+  modeSwitcher?: React.ReactNode;
 }) {
   const {
     mode, t, importResult, sharedFields, isDateLocked, glOpeningDate, detectedDate,
@@ -1493,38 +1541,110 @@ function OBReview(props: {
     onToggleCreateList, receivablesOffsetAccountId, payablesOffsetAccountId, onReplace,
     onSharedFieldChange, onOffsetChange, onGeneralChange, onGeneralAddRow,
     onSubledgerChange, onSubledgerAddRow, onCreateAccount, isTurnover, periodStart,
+    modeSwitcher,
   } = props;
+
+  const fileMeta = importResult
+    ? `${importResult.source === 'merit' ? t('sourceMeritUsed') : t('sourceAiUsed', { model: importResult.model })}${importResult.detected_opening_date ? ` · ${importResult.detected_opening_date}` : ''} · ${t('obRowsLabel', { count: mode === 'general' ? generalRows.length : (mode === 'receivables' ? receivableRows.length : payableRows.length) })}`
+    : '';
 
   return (
     <div>
-      {/* source summary card */}
-      {importResult && (
-        <div className="mt-3 flex items-center gap-3 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-2.5">
-          {isExcelResult(importResult.file_name, importResult.model) ? (
-            <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#e6f4ea] text-[8.5px] font-bold text-[#1e7e34]">
-              XLS
+      {/* one compact bar: mode switcher · file chip · meta fields (was two stacked
+          cards — the merge gives the rows a full extra band of height) */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-2">
+        {modeSwitcher}
+        {importResult && (
+          <>
+            <div className="flex min-w-0 items-center gap-2" title={fileMeta}>
+              <div
+                className={`grid h-6 w-6 shrink-0 place-items-center rounded-[6px] text-[8px] font-bold ${isExcelResult(importResult.file_name, importResult.model) ? 'bg-[#e6f4ea] text-[#1e7e34]' : 'bg-[#fbeaea] text-[#c0392b]'}`}
+              >
+                {isExcelResult(importResult.file_name, importResult.model) ? 'XLS' : 'PDF'}
+              </div>
+              <span className="max-w-[240px] truncate text-[12.5px] font-medium text-[var(--a-text)]">{importResult.file_name}</span>
+              <span title={t('obParsed')} className="shrink-0 text-[var(--a-pos)]">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              </span>
+              <button
+                type="button"
+                onClick={onReplace}
+                title={t('obReplace')}
+                className="inline-flex h-[26px] shrink-0 items-center gap-1 rounded-[6px] border border-[var(--a-border)] px-1.5 text-[11.5px] text-[var(--a-text-2)] transition hover:bg-[var(--a-surface-2)]"
+              >
+                <Upload className="h-3 w-3" /> {t('obReplace')}
+              </button>
             </div>
-          ) : (
-            <div className="grid h-[30px] w-[30px] place-items-center rounded-[6px] bg-[#fbeaea] text-[8.5px] font-bold text-[#c0392b]">
-              PDF
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-medium text-[var(--a-text)]">{importResult.file_name}</div>
-            <div className="truncate font-mono text-[11.5px] text-[var(--a-text-3)]">
-              {importResult.source === 'merit' ? t('sourceMeritUsed') : t('sourceAiUsed', { model: importResult.model })}
-              {importResult.detected_opening_date ? ` · ${importResult.detected_opening_date}` : ''}
-              {` · ${t('obRowsLabel', { count: mode === 'general' ? generalRows.length : (mode === 'receivables' ? receivableRows.length : payableRows.length) })}`}
-            </div>
-          </div>
-          <span className="inline-flex items-center gap-1.5 text-[12px] text-[var(--a-pos)]">
-            <CheckCircle2 className="h-3.5 w-3.5" /> {t('obParsed')}
+            <div className="h-5 w-px shrink-0 bg-[var(--a-border)]" />
+          </>
+        )}
+        <label
+          className="flex items-center gap-1.5"
+          title={
+            !isDateLocked && detectedDate
+              ? t('detectedDateFromPdf', { date: detectedDate })
+              : isDateLocked && glOpeningDate
+                ? t('lockedToGlOpeningDate')
+                : t('openingDate')
+          }
+        >
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{isTurnover ? t('obPeriodEnd') : t('openingDate')}</span>
+          <input
+            type="date"
+            value={sharedFields.opening_date}
+            readOnly={isDateLocked}
+            onChange={(event) => {
+              if (isDateLocked) return;
+              onSharedFieldChange({ opening_date: event.target.value });
+            }}
+            className="h-[30px] w-[140px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
+            style={isDateLocked ? { background: 'var(--a-surface-2)', color: 'var(--a-text-3)' } : undefined}
+          />
+          {!isDateLocked && detectedDate && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--a-pos)]" />}
+        </label>
+        {isTurnover && (
+          <span className="text-[11.5px] text-[var(--a-text-3)]">
+            {t('obPeriodRange', { start: periodStart || '—', end: sharedFields.opening_date || '—' })}
           </span>
-          <Button variant="default" onClick={onReplace} className="h-[30px] text-[12px]">
-            <Upload className="h-3 w-3" /> {t('obReplace')}
-          </Button>
-        </div>
-      )}
+        )}
+
+        <label className="flex items-center gap-1.5" title={t('currency')}>
+          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('currency')}</span>
+          <input
+            type="text"
+            value={sharedFields.currency}
+            onChange={(event) => onSharedFieldChange({ currency: event.target.value.toUpperCase() })}
+            className="h-[30px] w-[68px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
+          />
+        </label>
+
+        {(mode === 'receivables' || mode === 'payables') && (
+          <label className="flex min-w-[200px] flex-1 items-center gap-1.5" title={t('obOffsetHint')}>
+            <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obOffsetAccount')}</span>
+            <select
+              value={mode === 'receivables' ? receivablesOffsetAccountId : payablesOffsetAccountId}
+              onChange={(event) => onOffsetChange(event.target.value)}
+              className="h-[30px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
+            >
+              <option value="">{t('selectOffsetAccount')}</option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.code} · {account.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        <input
+          type="text"
+          value={sharedFields.notes}
+          onChange={(event) => onSharedFieldChange({ notes: event.target.value })}
+          placeholder={t('optionalOnboardingNote')}
+          title={t('notes')}
+          className="h-[30px] min-w-[140px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text)]"
+        />
+      </div>
 
       {/* blocking-missing notice */}
       {mode === 'general' && generalMissingCount > 0 && (
@@ -1567,83 +1687,6 @@ function OBReview(props: {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* meta strip — compact; auto-detected detail surfaces on hover */}
-      <div className="mt-3 flex flex-wrap items-center gap-2.5">
-        <label
-          className="flex items-center gap-1.5"
-          title={
-            !isDateLocked && detectedDate
-              ? t('detectedDateFromPdf', { date: detectedDate })
-              : isDateLocked && glOpeningDate
-                ? t('lockedToGlOpeningDate')
-                : t('openingDate')
-          }
-        >
-          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{isTurnover ? t('obPeriodEnd') : t('openingDate')}</span>
-          <input
-            type="date"
-            value={sharedFields.opening_date}
-            readOnly={isDateLocked}
-            onChange={(event) => {
-              if (isDateLocked) return;
-              onSharedFieldChange({ opening_date: event.target.value });
-            }}
-            className="h-[30px] w-[140px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
-            style={isDateLocked ? { background: 'var(--a-surface-2)', color: 'var(--a-text-3)' } : undefined}
-          />
-          {!isDateLocked && detectedDate && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--a-pos)]" />}
-        </label>
-        {isTurnover && (
-          <span className="text-[11.5px] text-[var(--a-text-3)]">
-            {t('obPeriodRange', { start: periodStart || '—', end: sharedFields.opening_date || '—' })}
-          </span>
-        )}
-
-        <label className="flex items-center gap-1.5" title={t('currency')}>
-          <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('currency')}</span>
-          <input
-            type="text"
-            value={sharedFields.currency}
-            onChange={(event) => onSharedFieldChange({ currency: event.target.value.toUpperCase() })}
-            className="h-[30px] w-[68px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
-          />
-        </label>
-
-        {(mode === 'receivables' || mode === 'payables') && (
-          <label className="flex min-w-[220px] flex-1 items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obOffsetAccount')}</span>
-            <select
-              value={mode === 'receivables' ? receivablesOffsetAccountId : payablesOffsetAccountId}
-              onChange={(event) => onOffsetChange(event.target.value)}
-              className="h-[30px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
-            >
-              <option value="">{t('selectOffsetAccount')}</option>
-              {accounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.code} · {account.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-
-        <input
-          type="text"
-          value={sharedFields.notes}
-          onChange={(event) => onSharedFieldChange({ notes: event.target.value })}
-          placeholder={t('optionalOnboardingNote')}
-          title={t('notes')}
-          className="h-[30px] min-w-[160px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[12.5px] text-[var(--a-text)]"
-        />
-      </div>
-
-      {(mode === 'receivables' || mode === 'payables') && (
-        <div className="mt-2 flex items-start gap-2 rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 py-2 text-[12px] text-[var(--a-text-2)]">
-          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--a-text-3)]" />
-          <span>{t('obOffsetHint')}</span>
         </div>
       )}
 

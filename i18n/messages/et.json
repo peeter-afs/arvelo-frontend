@@ -316,6 +316,7 @@
     "obFocusRows": "Keskendu ridadele",
     "obShowAll": "Näita kõike",
     "obLinked": "Seotud",
+    "obPreviewStale": "Andmed on pärast eelvaadet muutunud — mine tagasi ja tee uus eelvaade",
     "obImportsSavedIndependent": "Imporditud kihid on salvestatud ja sellest kontrollist sõltumatud — nõuded ja ostuarved saab importida ka enne kontrolli klappimist. Väikese vahe parandamiseks impordi vastav kiht uuesti.",
     "obReimportLayer": "Impordi see kiht uuesti",
     "obReimportHint": "võtab tagasi ainult selle kihi kande, teised jäävad alles",

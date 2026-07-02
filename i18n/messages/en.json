@@ -316,6 +316,7 @@
     "obFocusRows": "Focus on rows",
     "obShowAll": "Show all",
     "obLinked": "Linked",
+    "obPreviewStale": "Data changed after the preview — go back and preview again",
     "obImportsSavedIndependent": "Imported layers are saved and independent of this check — receivables and payables can be imported before the control reconciles. To fix a small difference, re-import the relevant layer.",
     "obReimportLayer": "Re-import this layer",
     "obReimportHint": "undoes only this layer's entry; the others stay",
