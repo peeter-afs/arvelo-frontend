@@ -18,7 +18,7 @@ import {
   type BankReconciliationSummary,
 } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { SummaryCard } from './shared';
+import { BankFilterRow, BankFooterBar, BankProgress, BankSummaryStrip } from './shared';
 
 type ReconciledFilter = 'all' | 'reconciled' | 'unreconciled';
 
@@ -28,7 +28,13 @@ const EMPTY_SUMMARY: BankReconciliationSummary = {
   reconciled_amount: 0,
   unreconciled_amount: 0,
   net_amount: 0,
+  opening_balance: null,
+  closing_balance: null,
 };
+
+function round2(value: number) {
+  return Math.round(value * 100) / 100;
+}
 
 function formatAmount(value: number, currency: string) {
   return `${value.toFixed(2)} ${currency}`;
@@ -159,11 +165,54 @@ export function ReconcileTab({
     return t('statusUnmatched');
   };
 
-  const difference = useMemo(() => {
+  // Statement balance math. When the backend has statement balances for the
+  // selected account, the difference is automatic (closing vs book position);
+  // otherwise fall back to the manually typed statement balance.
+  const totalCount = summary.reconciled_count + summary.unreconciled_count;
+  const openingBalance = summary.opening_balance ?? null;
+  const statementClosing =
+    summary.closing_balance ?? (openingBalance != null ? round2(openingBalance + summary.net_amount) : null);
+  const usingManualBalance = statementClosing == null;
+
+  const manualClosing = useMemo(() => {
     const parsed = Number(statementBalance.replace(',', '.'));
     if (!statementBalance.trim() || !Number.isFinite(parsed)) return null;
-    return Math.round((parsed - summary.reconciled_amount) * 100) / 100;
-  }, [statementBalance, summary.reconciled_amount]);
+    return round2(parsed);
+  }, [statementBalance]);
+
+  const closingBalance = usingManualBalance ? manualClosing : statementClosing;
+  const bookBalance = usingManualBalance
+    ? summary.reconciled_amount
+    : round2((openingBalance ?? 0) + summary.reconciled_amount);
+  const difference = closingBalance != null ? round2(closingBalance - bookBalance) : null;
+  const balanced = difference !== null && Math.abs(difference) < 0.005;
+
+  const fmt = (value: number | null) => (value == null ? '—' : formatAmount(value, currency));
+
+  // Running statement balance: display rows in chronological order anchored
+  // between the statement opening and closing balances.
+  const showRunningBalance = openingBalance != null;
+  const displayRows = useMemo(() => {
+    if (openingBalance == null) {
+      return items.map((item) => ({ item, running: null as number | null }));
+    }
+    const sorted = [...items].sort((a, b) =>
+      String(a.value_date || a.tx_date || '').localeCompare(String(b.value_date || b.tx_date || ''))
+    );
+    let running = openingBalance;
+    return sorted.map((item) => {
+      running = round2(running + item.amount);
+      return { item, running: running as number | null };
+    });
+  }, [items, openingBalance]);
+
+  const openingRowDate =
+    dateFrom || displayRows[0]?.item.value_date || displayRows[0]?.item.tx_date || '';
+  const closingRowDate =
+    dateTo
+    || displayRows[displayRows.length - 1]?.item.value_date
+    || displayRows[displayRows.length - 1]?.item.tx_date
+    || '';
 
   return (
     <div className="space-y-6">
@@ -185,105 +234,92 @@ export function ReconcileTab({
         </div>
       )}
 
-      <div className="card p-5">
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <label className="space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('bankAccount')}</span>
-            <select
-              value={bankAccountId}
-              onChange={(event) => setBankAccountId(event.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
-            >
-              <option value="">{t('filterAll')}</option>
-              {bankAccounts.map((account) => (
-                <option key={account.id} value={account.id}>
-                  {account.name} {account.iban ? `· ${account.iban}` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('status')}</span>
-            <select
-              value={reconciledFilter}
-              onChange={(event) => setReconciledFilter(event.target.value as ReconciledFilter)}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
-            >
-              <option value="all">{t('filterAll')}</option>
-              <option value="unreconciled">{t('filterUnreconciled')}</option>
-              <option value="reconciled">{t('filterReconciled')}</option>
-            </select>
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('reconDateFrom')}</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(event) => setDateFrom(event.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
-            />
-          </label>
-
-          <label className="space-y-1.5">
-            <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('reconDateTo')}</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(event) => setDateTo(event.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
-            />
-          </label>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          label={t('reconciledCountLabel')}
-          value={String(summary.reconciled_count)}
-          hint={formatAmount(summary.reconciled_amount, currency)}
-          icon={ShieldCheck}
-          tone="success"
-        />
-        <SummaryCard
-          label={t('unreconciledCountLabel')}
-          value={String(summary.unreconciled_count)}
-          hint={formatAmount(summary.unreconciled_amount, currency)}
-          icon={ShieldOff}
-          tone="warning"
-        />
-        <SummaryCard
-          label={t('netAmount')}
-          value={formatAmount(summary.net_amount, currency)}
-          icon={Scale}
-          tone="neutral"
-        />
-        <div className="card p-5">
-          <div className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">{t('statementBalance')}</div>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={statementBalance}
-            onChange={(event) => setStatementBalance(event.target.value)}
-            placeholder="0.00"
-            className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm"
-          />
-          {difference !== null ? (
-            <div className="mt-2 text-sm">
-              <span className="text-slate-500">{t('reconciliationDifference')}: </span>
-              <span className={`font-mono font-semibold ${difference === 0 ? 'text-emerald-600' : 'text-amber-600'}`}>
-                {formatAmount(difference, currency)}
-              </span>
-              {difference === 0 && (
-                <div className="mt-1 text-xs text-emerald-600">{t('reconciliationBalanced')}</div>
-              )}
-            </div>
+      <BankSummaryStrip
+        icon={Scale}
+        tone="neutral"
+        cells={[
+          { label: t('statementClosingBalance'), value: fmt(closingBalance), sub: t('perStatement') },
+          {
+            label: t('bookReconciledBalance'),
+            value: fmt(bookBalance),
+            sub: t('reconciledCountOfTotal', { done: summary.reconciled_count, total: totalCount }),
+          },
+          {
+            label: t('reconciliationDifference'),
+            value: fmt(difference),
+            color: balanced ? 'var(--pos, #0e7b5a)' : 'var(--warning)',
+          },
+        ]}
+        trailing={
+          balanced ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              {t('reconciledStatus')}
+            </span>
           ) : (
-            <div className="mt-2 text-xs text-slate-400">{t('statementBalanceHint')}</div>
-          )}
-        </div>
-      </div>
+            <BankProgress
+              label={t('reconciledStatus')}
+              done={summary.reconciled_count}
+              total={totalCount}
+              tone="accent"
+            />
+          )
+        }
+      />
+
+      <BankFilterRow>
+        <select
+          value={bankAccountId}
+          onChange={(event) => setBankAccountId(event.target.value)}
+          aria-label={t('bankAccount')}
+          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+        >
+          <option value="">{t('filterAll')}</option>
+          {bankAccounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name} {account.iban ? `· ${account.iban}` : ''}
+            </option>
+          ))}
+        </select>
+        <select
+          value={reconciledFilter}
+          onChange={(event) => setReconciledFilter(event.target.value as ReconciledFilter)}
+          aria-label={t('status')}
+          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+        >
+          <option value="all">{t('filterAll')}</option>
+          <option value="unreconciled">{t('filterUnreconciled')}</option>
+          <option value="reconciled">{t('filterReconciled')}</option>
+        </select>
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={(event) => setDateFrom(event.target.value)}
+          aria-label={t('reconDateFrom')}
+          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={(event) => setDateTo(event.target.value)}
+          aria-label={t('reconDateTo')}
+          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+        />
+        {usingManualBalance && (
+          <label className="ml-auto inline-flex items-center gap-2 text-xs text-slate-500">
+            <span>{t('statementBalance')}</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={statementBalance}
+              onChange={(event) => setStatementBalance(event.target.value)}
+              placeholder="0.00"
+              title={t('statementBalanceHint')}
+              className="h-9 w-32 rounded-lg border border-slate-200 px-2.5 text-right font-mono text-sm tabular-nums text-slate-900"
+            />
+          </label>
+        )}
+      </BankFilterRow>
 
       <div className="card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
@@ -294,24 +330,6 @@ export function ReconcileTab({
             ) : (
               <span>{t('bankReconciliation')}</span>
             )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => handleBulk(true)}
-              disabled={selected.size === 0 || isBulkUpdating}
-              className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isBulkUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-              <span>{t('markReconciled')}</span>
-            </button>
-            <button
-              onClick={() => handleBulk(false)}
-              disabled={selected.size === 0 || isBulkUpdating}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <ShieldOff className="h-4 w-4" />
-              <span>{t('markUnreconciled')}</span>
-            </button>
           </div>
         </div>
 
@@ -334,11 +352,28 @@ export function ReconcileTab({
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('reference')}</th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('status')}</th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">{t('amount')}</th>
+                  {showRunningBalance && (
+                    <th className="px-4 py-3 text-right text-xs font-medium text-slate-500">{t('statementRunningBalance')}</th>
+                  )}
                   <th className="px-4 py-3 text-left text-xs font-medium text-slate-500">{t('reconciledStatus')}</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
-                {items.map((item) => (
+                {showRunningBalance && (
+                  <tr className="border-b border-slate-100 bg-slate-50">
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-sm text-slate-600">{openingRowDate || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-slate-700" colSpan={3}>
+                      {t('statementOpeningBalanceRow')}
+                    </td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-right font-mono text-sm tabular-nums text-slate-700">
+                      {fmt(openingBalance)}
+                    </td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                )}
+                {displayRows.map(({ item, running }) => (
                   <tr key={item.transaction_id} className="border-b border-slate-100 align-top">
                     <td className="px-4 py-4">
                       <input
@@ -355,9 +390,14 @@ export function ReconcileTab({
                     </td>
                     <td className="px-4 py-4 text-sm text-slate-600">{item.reference || '-'}</td>
                     <td className="px-4 py-4 text-sm text-slate-600">{statusLabel(item.matched_status)}</td>
-                    <td className="px-4 py-4 text-right font-mono text-sm text-slate-900">
+                    <td className="px-4 py-4 text-right font-mono text-sm tabular-nums text-slate-900">
                       {formatAmount(item.amount, item.currency)}
                     </td>
+                    {showRunningBalance && (
+                      <td className="px-4 py-4 text-right font-mono text-sm tabular-nums text-slate-500">
+                        {running != null ? formatAmount(running, item.currency) : '-'}
+                      </td>
+                    )}
                     <td className="px-4 py-4">
                       <button
                         onClick={() => void handleToggleRow(item)}
@@ -380,11 +420,54 @@ export function ReconcileTab({
                     </td>
                   </tr>
                 ))}
+                {showRunningBalance && (
+                  <tr className="bg-slate-50">
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-sm text-slate-600">{closingRowDate || '-'}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-slate-700" colSpan={3}>
+                      {t('statementClosingBalanceRow')}
+                    </td>
+                    <td className="px-4 py-3" />
+                    <td className="px-4 py-3 text-right font-mono text-sm tabular-nums text-slate-700">
+                      {fmt(closingBalance)}
+                    </td>
+                    <td className="px-4 py-3" />
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      <BankFooterBar
+        status={t('reconciledCountOfTotal', { done: summary.reconciled_count, total: totalCount })}
+      >
+        <button
+          onClick={() => handleBulk(true)}
+          disabled={selected.size === 0 || isBulkUpdating}
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isBulkUpdating ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          <span>{t('markReconciled')}</span>
+        </button>
+        <button
+          onClick={() => handleBulk(false)}
+          disabled={selected.size === 0 || isBulkUpdating}
+          className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ShieldOff className="h-4 w-4" />
+          <span>{t('markUnreconciled')}</span>
+        </button>
+        <button
+          onClick={() => setSuccessMessage(t('reconciliationBalanced'))}
+          disabled={!balanced}
+          className="inline-flex h-9 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <CheckCircle2 className="h-4 w-4" />
+          <span>{t('confirmReconciliation')}</span>
+        </button>
+      </BankFooterBar>
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
 import Link from 'next/link';
 import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow, type DraftableOutgoingItem } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { SummaryCard, formatLabel } from './shared';
+import { BankSummaryStrip, formatLabel } from './shared';
 
 type ImportFormat = 'csv' | 'camt53';
 
@@ -345,6 +345,16 @@ export function ImportTab({
         </div>
       )}
 
+      <BankSummaryStrip
+        icon={TableProperties}
+        tone="neutral"
+        cells={[
+          { label: t('previewRows'), value: counts.total },
+          { label: t('approved'), value: counts.approved, color: 'var(--pos, #0e7b5a)' },
+          { label: t('needsReview'), value: counts.review, color: counts.review > 0 ? 'var(--warning)' : undefined },
+        ]}
+      />
+
       <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-4">
           <div className="card p-5">
@@ -468,12 +478,6 @@ export function ImportTab({
         </aside>
 
         <section className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <SummaryCard label={t('previewRows')} value={counts.total} icon={TableProperties} tone="neutral" />
-            <SummaryCard label={t('approved')} value={counts.approved} icon={ShieldCheck} tone="success" />
-            <SummaryCard label={t('needsReview')} value={counts.review} icon={ShieldAlert} tone="warning" />
-          </div>
-
           {(summary || commitSummary) && (
             <div className="grid gap-4 lg:grid-cols-2">
               {summary && (

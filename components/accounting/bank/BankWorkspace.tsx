@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Landmark, ListChecks, Scale } from 'lucide-react';
+import { FileUp, Info, Landmark, ListChecks, Scale } from 'lucide-react';
 import { BankTabBar, type BankTab } from './BankTabBar';
+import { BankTabNote } from './shared';
 import { ImportTab } from './ImportTab';
 import { ReviewTab } from './ReviewTab';
 import { ReconcileTab } from './ReconcileTab';
@@ -49,29 +50,38 @@ export function BankWorkspace() {
     changeTab('review');
   }, [changeTab]);
 
-  const subtitle =
+  // Per-tab explainer lives beside the tab bar (fixed-height note); the
+  // subtitle under the h1 stays short and generic so the header never moves.
+  const tabNote =
     activeTab === 'import'
-      ? t('bankImportDescription')
+      ? { icon: FileUp, text: t('bankImportHeaderNote') }
       : activeTab === 'review'
-        ? t('bankReviewDescription')
-        : t('bankReconciliationDescription');
+        ? { icon: ListChecks, text: t('bankReviewHeaderNote') }
+        : { icon: Info, text: t('bankReconcileHeaderNote') };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">{t('bankWorkspace')}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">{subtitle}</p>
+        <p className="mt-1 max-w-3xl text-sm text-slate-500">{t('bankWorkspaceSubtitle')}</p>
       </div>
 
-      <BankTabBar
-        active={activeTab}
-        onChange={changeTab}
-        tabs={[
-          { id: 'import', label: t('bankTabImport'), icon: Landmark, count: importReviewCount },
-          { id: 'review', label: t('bankTabReview'), icon: ListChecks, count: reviewCount },
-          { id: 'reconcile', label: t('bankTabReconcile'), icon: Scale, count: reconcileCount },
-        ]}
-      />
+      <div className="flex h-[62px] flex-shrink-0 items-center gap-3.5">
+        <BankTabBar
+          active={activeTab}
+          onChange={changeTab}
+          tabs={[
+            { id: 'import', label: t('bankTabImport'), icon: Landmark, count: importReviewCount },
+            { id: 'review', label: t('bankTabReview'), icon: ListChecks, count: reviewCount },
+            { id: 'reconcile', label: t('bankTabReconcile'), icon: Scale, count: reconcileCount },
+          ]}
+        />
+        <div className="flex min-w-0 flex-1 items-center self-stretch">
+          <div className="min-w-0 flex-1">
+            <BankTabNote icon={tabNote.icon}>{tabNote.text}</BankTabNote>
+          </div>
+        </div>
+      </div>
 
       {/* All tabs stay mounted so in-progress state (e.g. the post-commit draft
           step) survives tab switches and badge counts stay live. */}

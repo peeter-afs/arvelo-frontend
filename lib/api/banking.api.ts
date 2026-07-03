@@ -165,6 +165,8 @@ export type BankReconciliationSummary = {
   reconciled_amount: number;
   unreconciled_amount: number;
   net_amount: number;
+  opening_balance: number | null;   // statement opening balance for the filtered account/period
+  closing_balance: number | null;   // statement closing balance (falls back to opening + net)
 };
 
 export type BankAccountRecord = {

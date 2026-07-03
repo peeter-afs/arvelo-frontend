@@ -5,13 +5,13 @@ import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
-  Loader2,
+  ListChecks,
   RefreshCw,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
-import { SummaryMetric, InfoBox, formatLabel } from './shared';
+import { BankFilterRow, BankProgress, BankSummaryStrip, InfoBox, formatLabel } from './shared';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
@@ -262,54 +262,50 @@ export function ReviewTab({
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-3">
-        <SummaryMetric label={t('queueItems')} value={queueCounts.total} />
-        <SummaryMetric label={t('autoMatchReady')} value={queueCounts.autoReady} tone="success" />
-        <SummaryMetric label={t('reviewed')} value={queueCounts.reviewed} tone="neutral" />
-      </div>
+      <BankSummaryStrip
+        icon={ListChecks}
+        tone="neutral"
+        cells={[
+          { label: t('queueItems'), value: queueCounts.total },
+          { label: t('autoMatchReady'), value: queueCounts.autoReady, color: 'var(--pos, #0e7b5a)' },
+          { label: t('reviewed'), value: queueCounts.reviewed },
+        ]}
+        trailing={
+          <BankProgress label={t('reviewed')} done={queueCounts.reviewed} total={queueCounts.total} tone="accent" />
+        }
+      />
+
+      <BankFilterRow>
+        <select
+          value={reviewFilter}
+          onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)}
+          aria-label={t('reviewState')}
+          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+        >
+          <option value="all">{t('all')}</option>
+          <option value="pending">{t('pending')}</option>
+          <option value="reviewed">{t('reviewed')}</option>
+        </select>
+        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
+          <input
+            type="checkbox"
+            checked={autoMatchableOnly}
+            onChange={(event) => setAutoMatchableOnly(event.target.checked)}
+            className="h-4 w-4"
+          />
+          <span>{t('showOnlyStrongAutoMatch')}</span>
+        </label>
+        <button
+          onClick={() => void refreshQueue(selectedTransactionId)}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+        >
+          <RefreshCw className="h-4 w-4" />
+        </button>
+        <span className="text-xs text-slate-500">{t('queueViewOnly')}</span>
+      </BankFilterRow>
 
       <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-semibold text-slate-900">{t('filters')}</h2>
-                <p className="text-xs text-slate-500">{t('queueViewOnly')}</p>
-              </div>
-              <button
-                onClick={() => void refreshQueue(selectedTransactionId)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-              >
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <label className="space-y-2">
-                <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('reviewState')}</span>
-                <select
-                  value={reviewFilter}
-                  onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)}
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3"
-                >
-                  <option value="all">{t('all')}</option>
-                  <option value="pending">{t('pending')}</option>
-                  <option value="reviewed">{t('reviewed')}</option>
-                </select>
-              </label>
-
-              <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-                <input
-                  type="checkbox"
-                  checked={autoMatchableOnly}
-                  onChange={(event) => setAutoMatchableOnly(event.target.checked)}
-                  className="mt-0.5"
-                />
-                <span>{t('showOnlyStrongAutoMatch')}</span>
-              </label>
-            </div>
-          </div>
-
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">{t('transactions')}</h2>
