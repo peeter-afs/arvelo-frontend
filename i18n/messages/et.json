@@ -421,6 +421,8 @@
     "obCommitCompleted": "Kinnitamine lõpetatud",
     "obCommitBatchLinked": "Partii {batch} seotud pearaamatu kandega {journal}.",
     "obCreatedInvoices": "Loodud arveid: {count}",
+    "obReclassPosted": "Aruandeaasta tulem {amount} kanti kontolt {from} kontole {to} (eelmiste perioodide jaotamata kasum) kuupäevaga {date}.",
+    "obYearEndReclassNote": "Aastavahetuse bilansi puhul kantakse aruandeaasta tulem automaatselt eelmiste perioodide jaotamata kasumisse järgmise majandusaasta esimese päeva seisuga (bilansi kuupäev + 1 päev). Majandusaasta on vaikimisi 1.1–31.12.",
     "businessPartnersTitle": "Äripartnerid",
     "businessPartnersDescription": "Halda kliente ja tarnijaid, hoolda põhiandmeid ning salvesta tarnijate pangakontod, mida kasutatakse maksepakettides.",
     "refreshPartners": "Värskenda",

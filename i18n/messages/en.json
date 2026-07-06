@@ -421,6 +421,8 @@
     "obCommitCompleted": "Commit completed",
     "obCommitBatchLinked": "Batch {batch} linked to journal {journal}.",
     "obCreatedInvoices": "Created invoices: {count}",
+    "obReclassPosted": "Current-year result {amount} moved from {from} to {to} (retained earnings) dated {date}.",
+    "obYearEndReclassNote": "For a year-end balance, the current-year result is automatically carried to retained earnings as of the first day of the next fiscal year (balance date + 1 day). The fiscal year defaults to Jan 1 – Dec 31.",
     "businessPartnersTitle": "Business Partners",
     "businessPartnersDescription": "Manage customers and suppliers, maintain core master data, and store supplier bank accounts used by payment batches.",
     "refreshPartners": "Refresh",

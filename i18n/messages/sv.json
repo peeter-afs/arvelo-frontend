@@ -160,6 +160,8 @@
     "obCommitCompleted": "Bekräftelse slutförd",
     "obCommitBatchLinked": "Parti {batch} kopplat till journal {journal}.",
     "obCreatedInvoices": "Skapade fakturor: {count}",
+    "obReclassPosted": "Årets resultat {amount} flyttat från {from} till {to} (balanserade vinstmedel) daterat {date}.",
+    "obYearEndReclassNote": "Vid en bokslutsbalans förs årets resultat automatiskt till balanserade vinstmedel per räkenskapsårets första dag (balansdatum + 1 dag). Räkenskapsåret är som standard 1.1–31.12.",
     "bankImport": "Bankimport",
     "bankReview": "Bankgranskning",
     "bankWorkspace": "Banktransaktioner",

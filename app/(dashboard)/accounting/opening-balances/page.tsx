@@ -47,6 +47,7 @@ type CommitResult = Record<string, unknown> & {
   batch?: { id?: string };
   journal_entry?: { id?: string; entry_number?: string };
   created_invoice_count?: number;
+  reclass?: { amount: number; from_code: string; to_code: string; date: string } | null;
 };
 type ImportStatusBatch = { batch_type?: string; opening_date?: string };
 
@@ -1177,6 +1178,12 @@ export default function OpeningBalancesPage() {
             />
           )}
 
+          {step === 'review' && mode === 'general' && !midYear && (
+            <div className="mt-3 flex items-start gap-2.5 rounded-[9px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[12.5px] text-[var(--a-text-2)]">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-accent)]" />
+              <span>{t('obYearEndReclassNote')}</span>
+            </div>
+          )}
           {step === 'review' && (
             <OBReview
               mode={mode}
@@ -2729,6 +2736,16 @@ function OBPreview({
               </div>
               {typeof commitResult.created_invoice_count === 'number' && (
                 <div className="text-[var(--a-text-2)]">{t('obCreatedInvoices', { count: commitResult.created_invoice_count })}</div>
+              )}
+              {commitResult.reclass && (
+                <div className="text-[var(--a-text-2)]">
+                  {t('obReclassPosted', {
+                    amount: fmt(Math.abs(commitResult.reclass.amount)),
+                    from: commitResult.reclass.from_code,
+                    to: commitResult.reclass.to_code,
+                    date: commitResult.reclass.date,
+                  })}
+                </div>
               )}
             </div>
           </div>
