@@ -459,6 +459,27 @@ export const accountingApi = {
     return response.data.data;
   },
 
+  // Background business-registry enrichment for parsed AR/AP rows: matches partners
+  // by name/VAT and returns the found registry code, VAT and name per line.
+  async enrichOpeningPartners(payload: {
+    lines: Array<{ id?: string; name?: string; reg_code?: string; vat_number?: string }>;
+  }): Promise<Array<{
+    id?: string;
+    index: number;
+    matched: boolean;
+    reg_code: string | null;
+    vat_number: string | null;
+    name: string | null;
+    address: string | null;
+    postal_code: string | null;
+    city: string | null;
+    country_code: string | null;
+    registry_status: string | null;
+  }>> {
+    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/enrich-partners', payload);
+    return response.data.data;
+  },
+
   async commitOpeningPayables(payload: Record<string, any>) {
     const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/payables/commit', payload);
     return response.data.data;

@@ -63,6 +63,7 @@ type SubledgerRow = {
   partner_id: string;
   partner_name: string;
   reg_code: string;
+  vat_number: string;
   invoice_number: string;
   reference: string;
   description: string;
@@ -86,6 +87,7 @@ const createSubledgerRow = (date = ''): SubledgerRow => ({
   partner_id: '',
   partner_name: '',
   reg_code: '',
+  vat_number: '',
   invoice_number: '',
   reference: '',
   description: '',
@@ -418,38 +420,81 @@ export default function OpeningBalancesPage() {
         }))
       );
     } else if (result.mode === 'receivables') {
-      setReceivableRows(
-        result.suggested_payload.lines.map((line) => ({
-          id: crypto.randomUUID(),
-          partner_id: String(line.partner_id || ''),
-          partner_name: String(line.partner_name || ''),
-          reg_code: String(line.reg_code || ''),
-          invoice_number: String(line.invoice_number || ''),
-          reference: String(line.reference || ''),
-          description: String(line.description || ''),
-          invoice_date: String(line.invoice_date || sharedFields.opening_date),
-          due_date: String(line.due_date || sharedFields.opening_date),
-          amount: String(line.amount || '')
-        }))
-      );
+      const rows = result.suggested_payload.lines.map((line) => ({
+        id: crypto.randomUUID(),
+        partner_id: String(line.partner_id || ''),
+        partner_name: String(line.partner_name || ''),
+        reg_code: String(line.reg_code || ''),
+        vat_number: String((line as Record<string, unknown>).vat_number || ''),
+        invoice_number: String(line.invoice_number || ''),
+        reference: String(line.reference || ''),
+        description: String(line.description || ''),
+        invoice_date: String(line.invoice_date || sharedFields.opening_date),
+        due_date: String(line.due_date || sharedFields.opening_date),
+        amount: String(line.amount || '')
+      }));
+      setReceivableRows(rows);
+      void enrichSubledgerPartners('receivables', rows);
     } else {
-      setPayableRows(
-        result.suggested_payload.lines.map((line) => ({
-          id: crypto.randomUUID(),
-          partner_id: String(line.partner_id || ''),
-          partner_name: String(line.partner_name || ''),
-          reg_code: String(line.reg_code || ''),
-          invoice_number: String(line.invoice_number || ''),
-          reference: String(line.reference || ''),
-          description: String(line.description || ''),
-          invoice_date: String(line.invoice_date || sharedFields.opening_date),
-          due_date: String(line.due_date || sharedFields.opening_date),
-          amount: String(line.amount || '')
-        }))
-      );
+      const rows = result.suggested_payload.lines.map((line) => ({
+        id: crypto.randomUUID(),
+        partner_id: String(line.partner_id || ''),
+        partner_name: String(line.partner_name || ''),
+        reg_code: String(line.reg_code || ''),
+        vat_number: String((line as Record<string, unknown>).vat_number || ''),
+        invoice_number: String(line.invoice_number || ''),
+        reference: String(line.reference || ''),
+        description: String(line.description || ''),
+        invoice_date: String(line.invoice_date || sharedFields.opening_date),
+        due_date: String(line.due_date || sharedFields.opening_date),
+        amount: String(line.amount || '')
+      }));
+      setPayableRows(rows);
+      void enrichSubledgerPartners('payables', rows);
     }
 
     invalidatePreview();
+  };
+
+  // Background äriregister enrichment: for parsed AR/AP rows that have no registry
+  // code (Merit exports often carry only a name + KMKR), look the partner up by
+  // name/VAT and fill in the reg code / VAT / partner name. Best-effort and
+  // non-blocking — the preview is already usable; matches trickle in as they arrive.
+  const enrichSubledgerPartners = async (
+    kind: 'receivables' | 'payables',
+    rows: SubledgerRow[]
+  ) => {
+    const pending = rows
+      .filter((row) => !row.partner_id && !row.reg_code.trim() && row.partner_name.trim().length >= 2)
+      .map((row) => ({ id: row.id, name: row.partner_name, reg_code: row.reg_code, vat_number: row.vat_number }));
+    if (pending.length === 0) return;
+
+    try {
+      const matches = await accountingApi.enrichOpeningPartners({ lines: pending });
+      const byId = new Map(matches.filter((m) => m.matched && m.id).map((m) => [m.id as string, m]));
+      if (byId.size === 0) return;
+
+      const apply = (current: SubledgerRow[]) =>
+        current.map((row) => {
+          const match = byId.get(row.id);
+          if (!match) return row;
+          return {
+            ...row,
+            reg_code: match.reg_code || row.reg_code,
+            vat_number: match.vat_number || row.vat_number,
+            partner_name: match.name || row.partner_name
+          };
+        });
+
+      if (kind === 'receivables') {
+        setReceivableRows(apply);
+      } else {
+        setPayableRows(apply);
+      }
+      invalidatePreview();
+    } catch {
+      // Registry unavailable / disabled — keep the file data as-is.
+    }
   };
 
   // Parsing now begins as soon as a file is chosen (no separate "Parse" button).
@@ -2578,6 +2623,7 @@ function buildPayload(
     partner_id: row.partner_id || undefined,
     partner_name: row.partner_name || undefined,
     reg_code: row.reg_code || undefined,
+    vat_number: row.vat_number || undefined,
     invoice_number: row.invoice_number || undefined,
     reference: row.reference || undefined,
     description: row.description || undefined,
