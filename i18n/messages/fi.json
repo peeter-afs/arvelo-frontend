@@ -162,6 +162,8 @@
     "obCreatedInvoices": "Luotuja laskuja: {count}",
     "obReclassPosted": "Tilikauden tulos {amount} siirretty tililtä {from} tilille {to} (edellisten tilikausien voitto) päivämäärällä {date}.",
     "obYearEndReclassNote": "Tilinpäätöstaseessa tilikauden tulos siirretään automaattisesti edellisten tilikausien voittoon seuraavan tilikauden ensimmäisen päivän mukaan (taseen päivä + 1 päivä). Tilikausi on oletuksena 1.1.–31.12.",
+    "obFiscalYear": "Tilikausi",
+    "obFiscalYearHint": "Avattavan tilikauden alku (johdettu taseen päivästä + 1 päivä) ja loppu. Muuta loppupäivää ei-kalenterivuoden tai aloittavan yrityksen tapauksessa.",
     "bankImport": "Pankin tuonti",
     "bankReview": "Pankkitapahtumien tarkistus",
     "bankWorkspace": "Pankkitapahtumat",

@@ -162,6 +162,8 @@
     "obCreatedInvoices": "Skapade fakturor: {count}",
     "obReclassPosted": "Årets resultat {amount} flyttat från {from} till {to} (balanserade vinstmedel) daterat {date}.",
     "obYearEndReclassNote": "Vid en bokslutsbalans förs årets resultat automatiskt till balanserade vinstmedel per räkenskapsårets första dag (balansdatum + 1 dag). Räkenskapsåret är som standard 1.1–31.12.",
+    "obFiscalYear": "Räkenskapsår",
+    "obFiscalYearHint": "Det öppnade räkenskapsårets början (härledd från balansdatum + 1 dag) och slut. Ändra slutdatum för ett brutet räkenskapsår eller ett nystartat företag.",
     "bankImport": "Bankimport",
     "bankReview": "Bankgranskning",
     "bankWorkspace": "Banktransaktioner",

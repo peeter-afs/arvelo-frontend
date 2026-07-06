@@ -132,6 +132,22 @@ const mapSubledgerLine = (line: Record<string, unknown>, openingDate: string): S
 
 const fmt = (value: number) => `€${value.toFixed(2)}`;
 
+// ISO date helpers (UTC) for the fiscal-year fields on the year-end import.
+const addDaysIso = (iso: string, days: number): string => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return '';
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+};
+// One-year-minus-a-day after a start date (the end of a standard 12-month year).
+const oneYearEndIso = (startIso: string): string => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startIso)) return '';
+  const d = new Date(`${startIso}T00:00:00Z`);
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  d.setUTCDate(d.getUTCDate() - 1);
+  return d.toISOString().slice(0, 10);
+};
+
 // Opening balances accept Merit PDF exports and Merit Excel (käibeandmik /
 // open-items) exports.
 const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -195,7 +211,10 @@ export default function OpeningBalancesPage() {
     opening_date: '',
     currency: 'EUR',
     notes: '',
-    source_document_id: ''
+    source_document_id: '',
+    // Fiscal year END of the year being opened (standard general year-end import).
+    // The start is derived as opening_date + 1 day. Empty = default (12-month year).
+    fiscal_year_end: ''
   });
   const [generalRows, setGeneralRows] = useState<GeneralRow[]>([createGeneralRow(), createGeneralRow()]);
   const [receivableRows, setReceivableRows] = useState<SubledgerRow[]>([createSubledgerRow()]);
@@ -1215,6 +1234,7 @@ export default function OpeningBalancesPage() {
               receivableRows={receivableRows}
               payableRows={payableRows}
               enrich={enrichState.kind === mode && enrichState.total > 0 ? enrichState : null}
+              showFiscalYear={mode === 'general' && !midYear}
               generalTotals={currentGeneralTotals}
               subledgerTotal={currentSubledgerTotal}
               generalMissingCount={generalMissingCount}
@@ -1612,8 +1632,9 @@ function OBReview(props: {
   mode: Mode;
   t: ReturnType<typeof useTranslations>;
   importResult: OpeningBalanceImportResult | null;
-  sharedFields: { opening_date: string; currency: string; notes: string; source_document_id: string };
+  sharedFields: { opening_date: string; currency: string; notes: string; source_document_id: string; fiscal_year_end: string };
   isDateLocked: boolean;
+  showFiscalYear?: boolean;
   glOpeningDate: string | null;
   detectedDate: string | null;
   accounts: AccountOption[];
@@ -1636,7 +1657,7 @@ function OBReview(props: {
   receivablesOffsetAccountId: string;
   payablesOffsetAccountId: string;
   onReplace: () => void;
-  onSharedFieldChange: (patch: Partial<{ opening_date: string; currency: string; notes: string; source_document_id: string }>) => void;
+  onSharedFieldChange: (patch: Partial<{ opening_date: string; currency: string; notes: string; source_document_id: string; fiscal_year_end: string }>) => void;
   onOffsetChange: (value: string) => void;
   onGeneralChange: (rows: GeneralRow[]) => void;
   onGeneralAddRow: () => void;
@@ -1652,7 +1673,7 @@ function OBReview(props: {
     onToggleCreateList, receivablesOffsetAccountId, payablesOffsetAccountId, onReplace,
     onSharedFieldChange, onOffsetChange, onGeneralChange, onGeneralAddRow,
     onSubledgerChange, onSubledgerAddRow, onCreateAccount, isTurnover, periodStart,
-    modeSwitcher, enrich,
+    modeSwitcher, enrich, showFiscalYear,
   } = props;
 
   const fileMeta = importResult
@@ -1713,6 +1734,19 @@ function OBReview(props: {
           />
           {!isDateLocked && detectedDate && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--a-pos)]" />}
         </label>
+        {showFiscalYear && (
+          <label className="flex items-center gap-1.5" title={t('obFiscalYearHint')}>
+            <span className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{t('obFiscalYear')}</span>
+            <span className="font-mono text-[12px] text-[var(--a-text-3)]">{addDaysIso(sharedFields.opening_date, 1) || '—'}</span>
+            <ArrowRight className="h-3 w-3 shrink-0 text-[var(--a-border-strong)]" />
+            <input
+              type="date"
+              value={sharedFields.fiscal_year_end || (addDaysIso(sharedFields.opening_date, 1) ? oneYearEndIso(addDaysIso(sharedFields.opening_date, 1)) : '')}
+              onChange={(event) => onSharedFieldChange({ fiscal_year_end: event.target.value })}
+              className="h-[30px] w-[140px] rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[12.5px] text-[var(--a-text)]"
+            />
+          </label>
+        )}
         {isTurnover && (
           <span className="text-[11.5px] text-[var(--a-text-3)]">
             {t('obPeriodRange', { start: periodStart || '—', end: sharedFields.opening_date || '—' })}
@@ -2843,6 +2877,7 @@ function buildPayload(
     currency: string;
     notes: string;
     source_document_id: string;
+    fiscal_year_end?: string;
   },
   state: {
     generalRows: GeneralRow[];
@@ -2860,8 +2895,17 @@ function buildPayload(
   };
 
   if (mode === 'general') {
+    // Fiscal year being opened: start = balance date + 1 day, end = user value or a
+    // standard 12-month year. Sent for the standard year-end import; commitYearEnd
+    // (mid-year) overrides fiscal_year_start with its own value and ignores the end.
+    const fiscalYearStart = addDaysIso(sharedFields.opening_date, 1) || undefined;
+    const fiscalYearEnd = sharedFields.fiscal_year_end
+      || (fiscalYearStart ? oneYearEndIso(fiscalYearStart) : '')
+      || undefined;
     return {
       ...base,
+      fiscal_year_start: fiscalYearStart,
+      fiscal_year_end: fiscalYearEnd,
       lines: state.generalRows.map((row) => ({
         account_id: row.account_id || undefined,
         account_code: row.account_id ? undefined : (row.account_code || undefined),

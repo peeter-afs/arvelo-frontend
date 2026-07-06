@@ -423,6 +423,8 @@
     "obCreatedInvoices": "Created invoices: {count}",
     "obReclassPosted": "Current-year result {amount} moved from {from} to {to} (retained earnings) dated {date}.",
     "obYearEndReclassNote": "For a year-end balance, the current-year result is automatically carried to retained earnings as of the first day of the next fiscal year (balance date + 1 day). The fiscal year defaults to Jan 1 – Dec 31.",
+    "obFiscalYear": "Fiscal year",
+    "obFiscalYearHint": "Start of the fiscal year being opened (derived from balance date + 1 day) and its end. Adjust the end date for a non-calendar or newly-founded company.",
     "businessPartnersTitle": "Business Partners",
     "businessPartnersDescription": "Manage customers and suppliers, maintain core master data, and store supplier bank accounts used by payment batches.",
     "refreshPartners": "Refresh",
