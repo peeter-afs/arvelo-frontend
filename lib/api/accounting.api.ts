@@ -561,7 +561,10 @@ export const accountingApi = {
         confirm_text: confirmText,
         delete_accounts: options?.deleteAccounts ?? false,
         delete_partners: options?.deletePartners ?? false,
-      }
+      },
+      // Reset hard-deletes every entry/invoice/partner for the tenant — a heavy
+      // maintenance op that can run well past the default 30s on large imports.
+      { timeout: 180000 }
     );
     // A reset can delete accounts and/or partners; drop both caches.
     activeAccountsCache.invalidate();
