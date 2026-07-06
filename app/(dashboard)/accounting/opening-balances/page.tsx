@@ -16,12 +16,14 @@ import {
   Maximize,
   Plus,
   RotateCcw,
+  Search,
   Trash2,
   Upload,
   X
 } from 'lucide-react';
 import Link from 'next/link';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
+import { businessRegistryApi, type BusinessRegistrySearchItem } from '@/lib/api/businessRegistry.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
@@ -70,6 +72,14 @@ type SubledgerRow = {
   invoice_date: string;
   due_date: string;
   amount: string;
+  // Filled by äriregister enrichment / manual lookup so commit can create a fully
+  // registry-linked partner without any commit-time registry I/O.
+  address: string;
+  postal_code: string;
+  city: string;
+  country_code: string;
+  registry_status: string;
+  registry_linked: boolean;
 };
 
 const createGeneralRow = (): GeneralRow => ({
@@ -93,7 +103,30 @@ const createSubledgerRow = (date = ''): SubledgerRow => ({
   description: '',
   invoice_date: date,
   due_date: date,
-  amount: ''
+  amount: '',
+  address: '',
+  postal_code: '',
+  city: '',
+  country_code: '',
+  registry_status: '',
+  registry_linked: false
+});
+
+// Map a parsed subledger line (from the import result) onto a grid row, defaulting
+// dates to the opening date. Registry fields start empty; they are filled in by the
+// background enrichment step once the äriregister lookup returns.
+const mapSubledgerLine = (line: Record<string, unknown>, openingDate: string): SubledgerRow => ({
+  ...createSubledgerRow(),
+  partner_id: String(line.partner_id || ''),
+  partner_name: String(line.partner_name || ''),
+  reg_code: String(line.reg_code || ''),
+  vat_number: String(line.vat_number || ''),
+  invoice_number: String(line.invoice_number || ''),
+  reference: String(line.reference || ''),
+  description: String(line.description || ''),
+  invoice_date: String(line.invoice_date || openingDate),
+  due_date: String(line.due_date || openingDate),
+  amount: String(line.amount || '')
 });
 
 const fmt = (value: number) => `€${value.toFixed(2)}`;
@@ -166,6 +199,8 @@ export default function OpeningBalancesPage() {
   const [generalRows, setGeneralRows] = useState<GeneralRow[]>([createGeneralRow(), createGeneralRow()]);
   const [receivableRows, setReceivableRows] = useState<SubledgerRow[]>([createSubledgerRow()]);
   const [payableRows, setPayableRows] = useState<SubledgerRow[]>([createSubledgerRow()]);
+  // Progress of the background äriregister enrichment for the current AR/AP tab.
+  const [enrichState, setEnrichState] = useState<{ kind: 'receivables' | 'payables' | null; running: boolean; done: number; total: number }>({ kind: null, running: false, done: 0, total: 0 });
   const [receivablesOffsetAccountId, setReceivablesOffsetAccountId] = useState('');
   const [payablesOffsetAccountId, setPayablesOffsetAccountId] = useState('');
   // Configured AR/AP control accounts — used to recommend/prefill the subledger
@@ -420,35 +455,11 @@ export default function OpeningBalancesPage() {
         }))
       );
     } else if (result.mode === 'receivables') {
-      const rows = result.suggested_payload.lines.map((line) => ({
-        id: crypto.randomUUID(),
-        partner_id: String(line.partner_id || ''),
-        partner_name: String(line.partner_name || ''),
-        reg_code: String(line.reg_code || ''),
-        vat_number: String((line as Record<string, unknown>).vat_number || ''),
-        invoice_number: String(line.invoice_number || ''),
-        reference: String(line.reference || ''),
-        description: String(line.description || ''),
-        invoice_date: String(line.invoice_date || sharedFields.opening_date),
-        due_date: String(line.due_date || sharedFields.opening_date),
-        amount: String(line.amount || '')
-      }));
+      const rows = result.suggested_payload.lines.map((line) => mapSubledgerLine(line, sharedFields.opening_date));
       setReceivableRows(rows);
       void enrichSubledgerPartners('receivables', rows);
     } else {
-      const rows = result.suggested_payload.lines.map((line) => ({
-        id: crypto.randomUUID(),
-        partner_id: String(line.partner_id || ''),
-        partner_name: String(line.partner_name || ''),
-        reg_code: String(line.reg_code || ''),
-        vat_number: String((line as Record<string, unknown>).vat_number || ''),
-        invoice_number: String(line.invoice_number || ''),
-        reference: String(line.reference || ''),
-        description: String(line.description || ''),
-        invoice_date: String(line.invoice_date || sharedFields.opening_date),
-        due_date: String(line.due_date || sharedFields.opening_date),
-        amount: String(line.amount || '')
-      }));
+      const rows = result.suggested_payload.lines.map((line) => mapSubledgerLine(line, sharedFields.opening_date));
       setPayableRows(rows);
       void enrichSubledgerPartners('payables', rows);
     }
@@ -456,10 +467,13 @@ export default function OpeningBalancesPage() {
     invalidatePreview();
   };
 
-  // Background äriregister enrichment: for parsed AR/AP rows that have no registry
-  // code (Merit exports often carry only a name + KMKR), look the partner up by
-  // name/VAT and fill in the reg code / VAT / partner name. Best-effort and
-  // non-blocking — the preview is already usable; matches trickle in as they arrive.
+  // Background äriregister enrichment: for parsed AR/AP rows with no registry code
+  // (Merit exports often carry only a name + KMKR), look the partner up by name/VAT
+  // and fill in reg code / VAT / address. Chunked and sequential so each request
+  // stays well under the 30s HTTP timeout even for hundreds of invoices, and so the
+  // grid + progress bar update as results arrive. Best-effort: registry unavailable
+  // just leaves the file data untouched.
+  const ENRICH_CHUNK_SIZE = 8;
   const enrichSubledgerPartners = async (
     kind: 'receivables' | 'payables',
     rows: SubledgerRow[]
@@ -469,31 +483,36 @@ export default function OpeningBalancesPage() {
       .map((row) => ({ id: row.id, name: row.partner_name, reg_code: row.reg_code, vat_number: row.vat_number }));
     if (pending.length === 0) return;
 
+    const setRows = kind === 'receivables' ? setReceivableRows : setPayableRows;
+    const applyMatch = (match: NonNullable<Awaited<ReturnType<typeof accountingApi.enrichOpeningPartners>>>[number]) =>
+      (current: SubledgerRow[]) => current.map((row) => row.id !== match.id ? row : ({
+        ...row,
+        reg_code: match.reg_code || row.reg_code,
+        vat_number: match.vat_number || row.vat_number,
+        partner_name: match.name || row.partner_name,
+        address: match.address || row.address,
+        postal_code: match.postal_code || row.postal_code,
+        city: match.city || row.city,
+        country_code: match.country_code || row.country_code,
+        registry_status: match.registry_status || row.registry_status,
+        registry_linked: true
+      }));
+
+    setEnrichState({ kind, running: true, done: 0, total: pending.length });
     try {
-      const matches = await accountingApi.enrichOpeningPartners({ lines: pending });
-      const byId = new Map(matches.filter((m) => m.matched && m.id).map((m) => [m.id as string, m]));
-      if (byId.size === 0) return;
-
-      const apply = (current: SubledgerRow[]) =>
-        current.map((row) => {
-          const match = byId.get(row.id);
-          if (!match) return row;
-          return {
-            ...row,
-            reg_code: match.reg_code || row.reg_code,
-            vat_number: match.vat_number || row.vat_number,
-            partner_name: match.name || row.partner_name
-          };
-        });
-
-      if (kind === 'receivables') {
-        setReceivableRows(apply);
-      } else {
-        setPayableRows(apply);
+      for (let i = 0; i < pending.length; i += ENRICH_CHUNK_SIZE) {
+        const chunk = pending.slice(i, i + ENRICH_CHUNK_SIZE);
+        const matches = await accountingApi.enrichOpeningPartners({ lines: chunk }).catch(() => []);
+        for (const match of matches) {
+          if (match.matched && match.id) {
+            setRows(applyMatch(match));
+          }
+        }
+        setEnrichState((s) => ({ ...s, done: Math.min(pending.length, i + chunk.length) }));
       }
       invalidatePreview();
-    } catch {
-      // Registry unavailable / disabled — keep the file data as-is.
+    } finally {
+      setEnrichState((s) => ({ ...s, running: false }));
     }
   };
 
@@ -1184,6 +1203,7 @@ export default function OpeningBalancesPage() {
               generalRows={generalRows}
               receivableRows={receivableRows}
               payableRows={payableRows}
+              enrich={enrichState.kind === mode && enrichState.total > 0 ? enrichState : null}
               generalTotals={currentGeneralTotals}
               subledgerTotal={currentSubledgerTotal}
               generalMissingCount={generalMissingCount}
@@ -1585,6 +1605,7 @@ function OBReview(props: {
   generalRows: GeneralRow[];
   receivableRows: SubledgerRow[];
   payableRows: SubledgerRow[];
+  enrich?: { running: boolean; done: number; total: number } | null;
   generalTotals: { debit: number; credit: number; difference: number };
   subledgerTotal: number;
   generalMissingCount: number;
@@ -1614,7 +1635,7 @@ function OBReview(props: {
     onToggleCreateList, receivablesOffsetAccountId, payablesOffsetAccountId, onReplace,
     onSharedFieldChange, onOffsetChange, onGeneralChange, onGeneralAddRow,
     onSubledgerChange, onSubledgerAddRow, onCreateAccount, isTurnover, periodStart,
-    modeSwitcher,
+    modeSwitcher, enrich,
   } = props;
 
   const fileMeta = importResult
@@ -1784,6 +1805,7 @@ function OBReview(props: {
           rows={mode === 'receivables' ? receivableRows : payableRows}
           partners={partners}
           total={subledgerTotal}
+          enrich={enrich}
           onChange={onSubledgerChange}
           onAddRow={onSubledgerAddRow}
         />
@@ -2195,6 +2217,7 @@ function SubledgerTable({
   rows,
   partners,
   total,
+  enrich,
   onChange,
   onAddRow,
 }: {
@@ -2203,13 +2226,39 @@ function SubledgerTable({
   rows: SubledgerRow[];
   partners: PartnerOption[];
   total: number;
+  enrich?: { running: boolean; done: number; total: number } | null;
   onChange: (rows: SubledgerRow[]) => void;
   onAddRow: () => void;
 }) {
+  // Manual äriregister lookup for a single row (opened when auto-match found nothing
+  // and the accountant wants to see the candidates / why).
+  const [lookupRow, setLookupRow] = useState<SubledgerRow | null>(null);
+
   const updateRow = (id: string, key: keyof SubledgerRow, value: string) => {
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
   };
   const removeRow = (id: string) => onChange(rows.length > 1 ? rows.filter((row) => row.id !== id) : rows);
+  // Apply a chosen registry company to a row (fills reg code / VAT / name / address
+  // and marks it registry-linked so commit persists it without a fresh lookup).
+  const applyRegistry = (id: string, company: {
+    registryCode: string | null; name: string | null; vatNumber?: string | null;
+    registryStatus?: string | null; legalAddress?: string | null; postalCode?: string | null;
+    city?: string | null; countryCode?: string | null;
+  }) => {
+    onChange(rows.map((row) => (row.id !== id ? row : {
+      ...row,
+      reg_code: company.registryCode || row.reg_code,
+      vat_number: company.vatNumber || row.vat_number,
+      partner_name: company.name || row.partner_name,
+      address: company.legalAddress || row.address,
+      postal_code: company.postalCode || row.postal_code,
+      city: company.city || row.city,
+      country_code: company.countryCode || row.country_code,
+      registry_status: company.registryStatus || row.registry_status,
+      registry_linked: true,
+    })));
+    setLookupRow(null);
+  };
   // Linking an existing partner also shows their name in the merged partner cell.
   const linkPartner = (id: string, partnerId: string) => {
     const partner = partners.find((p) => p.id === partnerId);
@@ -2230,13 +2279,28 @@ function SubledgerTable({
               {mode === 'receivables' ? t('obReceivableRowHint') : t('obPayableRowHint')}
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onAddRow}
-            className="inline-flex items-center gap-1.5 rounded-[6px] border border-dashed border-[var(--a-border-strong)] bg-transparent px-2.5 py-[5px] text-[12.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
-          >
-            <Plus className="h-3 w-3" /> {t('obAddRow')}
-          </button>
+          <div className="flex items-center gap-3">
+            {enrich && enrich.total > 0 && (
+              <div className="flex items-center gap-2 text-[12px] text-[var(--a-text-2)]" title={t('obRegistryEnrichHint')}>
+                {enrich.running && <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--a-accent)]" />}
+                <span>{enrich.running ? t('obRegistryEnriching') : t('obRegistryEnrichDone')}</span>
+                <span className="font-mono tabular-nums text-[var(--a-text-3)]">{enrich.done}/{enrich.total}</span>
+                <span className="h-1.5 w-24 overflow-hidden rounded-full bg-[var(--a-surface-2)]">
+                  <span
+                    className="block h-full rounded-full bg-[var(--a-accent)] transition-[width]"
+                    style={{ width: `${enrich.total ? Math.round((enrich.done / enrich.total) * 100) : 0}%` }}
+                  />
+                </span>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={onAddRow}
+              className="inline-flex items-center gap-1.5 rounded-[6px] border border-dashed border-[var(--a-border-strong)] bg-transparent px-2.5 py-[5px] text-[12.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+            >
+              <Plus className="h-3 w-3" /> {t('obAddRow')}
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -2297,12 +2361,23 @@ function SubledgerTable({
                 </span>
               </div>
 
-              <input
-                value={row.reg_code}
-                onChange={(e) => updateRow(row.id, 'reg_code', e.target.value)}
-                placeholder={t('obOptional')}
-                className={`${CELL_IN} font-mono text-[12.5px] text-[var(--a-text-2)]`}
-              />
+              <div className="flex min-w-0 items-center gap-1">
+                <input
+                  value={row.reg_code}
+                  onChange={(e) => updateRow(row.id, 'reg_code', e.target.value)}
+                  placeholder={t('obOptional')}
+                  className={`${CELL_IN} min-w-0 flex-1 font-mono text-[12.5px] text-[var(--a-text-2)]`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setLookupRow(row)}
+                  title={t('obRegistryManualSearch')}
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-[6px] border text-[var(--a-text-3)] transition hover:bg-[var(--a-accent-soft)] hover:text-[var(--a-accent)]"
+                  style={row.registry_linked ? { borderColor: '#cfe5dc', color: 'var(--a-pos)' } : { borderColor: 'var(--a-border)' }}
+                >
+                  <Search className="h-3.5 w-3.5" />
+                </button>
+              </div>
 
               <input
                 value={row.invoice_number}
@@ -2363,7 +2438,159 @@ function SubledgerTable({
       <div className="mt-3.5 grid grid-cols-1 sm:max-w-[260px]">
         <OBSummaryCard label={t('obOpenItemTotal')} value={total} />
       </div>
+
+      {lookupRow && (
+        <RegistrySearchModal
+          t={t}
+          initialQuery={lookupRow.partner_name}
+          onClose={() => setLookupRow(null)}
+          onSelect={(company) => applyRegistry(lookupRow.id, company)}
+        />
+      )}
     </>
+  );
+}
+
+// Manual äriregister lookup dialog: searches by name/code, lists all candidates
+// (so the accountant can see near-matches the auto-matcher skipped) and, on select,
+// fetches full company detail and hands it back to fill the row. Surfaces the
+// registry's own error/empty message so it is clear *why* no auto-match appeared.
+function RegistrySearchModal({
+  t,
+  initialQuery,
+  onClose,
+  onSelect,
+}: {
+  t: ReturnType<typeof useTranslations>;
+  initialQuery: string;
+  onClose: () => void;
+  onSelect: (company: {
+    registryCode: string | null; name: string | null; vatNumber?: string | null;
+    registryStatus?: string | null; legalAddress?: string | null; postalCode?: string | null;
+    city?: string | null; countryCode?: string | null;
+  }) => void;
+}) {
+  const [query, setQuery] = useState(initialQuery);
+  const [items, setItems] = useState<BusinessRegistrySearchItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selecting, setSelecting] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [searched, setSearched] = useState(false);
+
+  const runSearch = async (q: string) => {
+    const term = q.trim();
+    if (term.length < 2) {
+      setMessage(t('obRegistryQueryTooShort'));
+      return;
+    }
+    setLoading(true);
+    setMessage(null);
+    setItems([]);
+    try {
+      const result = await businessRegistryApi.searchCompanies(term);
+      setItems(result.items);
+      setSearched(true);
+      if (result.items.length === 0) {
+        setMessage(t('obRegistryNoResults', { query: term }));
+      }
+    } catch (error) {
+      setMessage(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-run once with the prefilled name so the dialog opens on the candidate list.
+  useEffect(() => {
+    void runSearch(initialQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const choose = async (item: BusinessRegistrySearchItem) => {
+    if (!item.registryCode) {
+      onSelect(item as any);
+      return;
+    }
+    setSelecting(item.registryCode);
+    try {
+      const detail = await businessRegistryApi.getCompany(item.registryCode);
+      onSelect(detail.company);
+    } catch {
+      // Detail lookup failed — hand back the search-result fields we already have.
+      onSelect(item as any);
+    } finally {
+      setSelecting(null);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/30 p-4 pt-[12vh]" onClick={onClose}>
+      <div
+        className="w-full max-w-[560px] overflow-hidden rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-[var(--a-border)] px-4 py-3">
+          <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obRegistryManualSearch')}</div>
+          <button type="button" onClick={onClose} className="grid h-7 w-7 place-items-center rounded-[6px] text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form
+          className="flex items-center gap-2 px-4 py-3"
+          onSubmit={(e) => { e.preventDefault(); void runSearch(query); }}
+        >
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t('obRegistrySearchPlaceholder')}
+            className="h-[34px] flex-1 rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex h-[34px] items-center gap-1.5 rounded-[7px] bg-[var(--a-accent)] px-3 text-[13px] font-medium text-white disabled:opacity-60"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+            {t('obRegistrySearchButton')}
+          </button>
+        </form>
+
+        <div className="max-h-[46vh] overflow-y-auto px-2 pb-3">
+          {message && (
+            <div className="mx-2 mb-2 rounded-[8px] border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 py-2 text-[12.5px] text-[var(--a-text-2)]">
+              {message}
+            </div>
+          )}
+          {items.map((item) => (
+            <button
+              key={`${item.registryCode}-${item.name}`}
+              type="button"
+              onClick={() => void choose(item)}
+              disabled={selecting !== null}
+              className="flex w-full items-center justify-between gap-3 rounded-[8px] px-3 py-2 text-left transition hover:bg-[var(--a-surface-2)] disabled:opacity-60"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-[13px] font-medium text-[var(--a-text)]">{item.name || '—'}</div>
+                <div className="mt-0.5 flex items-center gap-2 text-[11.5px] text-[var(--a-text-3)]">
+                  <span className="font-mono">{item.registryCode || '—'}</span>
+                  {item.vatNumber && <span className="font-mono">· {item.vatNumber}</span>}
+                  {item.country && item.country !== 'EE' && <span>· {item.country}</span>}
+                  {item.registryStatus && <span>· {item.registryStatus}</span>}
+                </div>
+              </div>
+              {selecting === item.registryCode
+                ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--a-accent)]" />
+                : <Plus className="h-4 w-4 shrink-0 text-[var(--a-text-3)]" />}
+            </button>
+          ))}
+          {searched && items.length === 0 && !message && (
+            <div className="px-3 py-4 text-center text-[12.5px] text-[var(--a-text-3)]">{t('obRegistryNoResultsShort')}</div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -2624,6 +2851,12 @@ function buildPayload(
     partner_name: row.partner_name || undefined,
     reg_code: row.reg_code || undefined,
     vat_number: row.vat_number || undefined,
+    address: row.address || undefined,
+    postal_code: row.postal_code || undefined,
+    city: row.city || undefined,
+    country_code: row.country_code || undefined,
+    registry_status: row.registry_status || undefined,
+    registry_linked: row.registry_linked || undefined,
     invoice_number: row.invoice_number || undefined,
     reference: row.reference || undefined,
     description: row.description || undefined,

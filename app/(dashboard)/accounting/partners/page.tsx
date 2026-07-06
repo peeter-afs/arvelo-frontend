@@ -119,6 +119,9 @@ export default function BusinessPartnersPage() {
   const [bankAccounts, setBankAccounts] = useState<SupplierBankAccount[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'customer' | 'supplier' | 'both'>('all');
+  // Surfaces partners that were never linked to the business registry (no reg code) —
+  // e.g. the ones the opening-balance import could not auto-match.
+  const [unlinkedOnly, setUnlinkedOnly] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -140,14 +143,20 @@ export default function BusinessPartnersPage() {
   const filteredPartners = useMemo(() => {
     return partners.filter((partner) => {
       const matchesType = typeFilter === 'all' ? true : partner.type === typeFilter;
+      const matchesLinked = !unlinkedOnly || !String(partner.reg_code || '').trim();
       const query = searchQuery.trim().toLowerCase();
       const haystack = [partner.name, partner.email, partner.reg_code, partner.vat_number, partner.city]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      return matchesType && (!query || haystack.includes(query));
+      return matchesType && matchesLinked && (!query || haystack.includes(query));
     });
-  }, [partners, searchQuery, typeFilter]);
+  }, [partners, searchQuery, typeFilter, unlinkedOnly]);
+
+  const unlinkedCount = useMemo(
+    () => partners.filter((partner) => !String(partner.reg_code || '').trim()).length,
+    [partners]
+  );
 
   const selectedPartnerWithBalance = partners.find((partner) => partner.id === selectedPartnerId) || null;
   const customers = partners.filter((partner) => partner.type === 'customer' || partner.type === 'both');
@@ -394,6 +403,19 @@ export default function BusinessPartnersPage() {
               <span className={typeFilter === id ? 'text-white/60' : 'text-[var(--a-text-3)]'}>{count}</span>
             </button>
           ))}
+          <button
+            onClick={() => setUnlinkedOnly((v) => !v)}
+            title={t('partnersUnlinkedHint')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+              unlinkedOnly
+                ? 'bg-[var(--a-accent)] text-white'
+                : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
+            }`}
+          >
+            <AlertCircle className="h-3.5 w-3.5" />
+            {t('partnersUnlinkedFilter')}
+            <span className={unlinkedOnly ? 'text-white/70' : 'text-[var(--a-text-3)]'}>{unlinkedCount}</span>
+          </button>
         </div>
       </div>
 
