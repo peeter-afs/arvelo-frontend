@@ -313,6 +313,7 @@
     "obReconcileDiff": "Diff",
     "obReconcileDetailHint": "\"Opening\" comes from the year-end balance sheet and \"Turnover\" from the käibeandmik, so you can see which document a difference stems from. Rows with no control line (Control balance 0.00) are posted in Arvelo but missing from the old software's balance sheet.",
     "obReconcileRerun": "Re-check",
+    "obControlReplaceFile": "Choose a new file",
     "obFocusRows": "Focus on rows",
     "obShowAll": "Show all",
     "obLinked": "Linked",

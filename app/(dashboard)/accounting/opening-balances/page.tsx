@@ -598,6 +598,11 @@ export default function OpeningBalancesPage() {
 
   const handleReplace = () => {
     setImportResult(null);
+    // Clear any layer-specific result so a stale panel doesn't linger over the new
+    // upload (e.g. picking a new control balance after the wrong one).
+    setReconResult(null);
+    setTurnoverControl(null);
+    setCommitResult(null);
     invalidatePreview();
     setStep('upload');
   };
@@ -1111,6 +1116,13 @@ export default function OpeningBalancesPage() {
               )}
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
+                {/* Wrong file? Go back to upload and pick a new control balance. */}
+                {!locked && (
+                  <Button variant="default" onClick={handleReplace}>
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{t('obControlReplaceFile')}</span>
+                  </Button>
+                )}
                 {/* Accept the control balances → post a movement correction, no re-import */}
                 {!passed && !locked && diffs.length > 0 && (
                   <Button variant="default" disabled={isCorrecting} onClick={() => void handleApplyCorrection()}>

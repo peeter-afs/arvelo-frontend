@@ -313,6 +313,7 @@
     "obReconcileDiff": "Vahe",
     "obReconcileDetailHint": "Algsaldo tuleb aasta lõpu bilansist ja Käive käibeandmikust — nii näed, kummast dokumendist vahe tuleb. Read, kus Kontrollbilanss on 0.00, on Arvelos kirjendatud, kuid vana tarkvara bilansis puuduvad.",
     "obReconcileRerun": "Kontrolli uuesti",
+    "obControlReplaceFile": "Vali uus fail",
     "obFocusRows": "Keskendu ridadele",
     "obShowAll": "Näita kõike",
     "obLinked": "Seotud",
