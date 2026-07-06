@@ -81,7 +81,7 @@
     "obDragHint": "PDF tai Excel · tai raahaa tähän",
     "obNoPdf": "Ei tiedostoa?",
     "obEnterManually": "Syötä avaussaldot käsin →",
-    "obReplace": "Korvaa",
+    "obReplace": "Korvaa tiedosto",
     "obParsed": "Käsitelty",
     "obRowsLabel": "{count} riviä",
     "obRowsNeedAccount": "{count} rivi(ä) tarvitsee tilin.",

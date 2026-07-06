@@ -1116,11 +1116,11 @@ export default function OpeningBalancesPage() {
               )}
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
                 <Button variant="default" onClick={() => void handleReconcile()}>{t('obReconcileRerun')}</Button>
-                {/* Wrong file? Go back to upload and pick a new control balance. */}
+                {/* Wrong file? Same replace action + label as the review header. */}
                 {!locked && (
                   <Button variant="default" onClick={handleReplace}>
                     <Upload className="h-3.5 w-3.5" />
-                    <span>{t('obControlReplaceFile')}</span>
+                    <span>{t('obReplace')}</span>
                   </Button>
                 )}
                 {/* Accept the control balances → post a movement correction, no re-import */}
