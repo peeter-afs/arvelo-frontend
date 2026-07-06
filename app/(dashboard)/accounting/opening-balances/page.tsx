@@ -292,6 +292,10 @@ export default function OpeningBalancesPage() {
     return JSON.stringify(payload);
   };
   const canCommit = previewSnapshot === currentPayloadSnapshot() && !!previewResult;
+  // Block advancing to preview/confirm while the äriregister enrichment for this
+  // AR/AP tab is still running — otherwise the accountant confirms before the reg
+  // codes are filled in and the partners get created unlinked.
+  const enrichBusy = enrichState.running && enrichState.kind === mode;
 
   // Mid-year layers year_end/turnover both use mode 'general', so the per-mode lock
   // must look at the specific committed batch_type instead of the coarse mode.
@@ -1295,6 +1299,12 @@ export default function OpeningBalancesPage() {
               <span>{blockingReason}</span>
             </div>
           )}
+          {step === 'review' && canAdvanceToConfirm && enrichBusy && (
+            <div className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-2)]">
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--a-accent)]" />
+              <span>{t('obRegistryWaitBeforeConfirm')}</span>
+            </div>
+          )}
           {/* Confirm step: say WHY confirming is blocked instead of a mute disabled button */}
           {step === 'confirm' && !isCommitLoading && (isImported || !canCommit) && (
             <div className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-neg)]">
@@ -1307,7 +1317,7 @@ export default function OpeningBalancesPage() {
             <Button
               variant="primary"
               onClick={handlePreview}
-              disabled={!canAdvanceToConfirm || isPreviewLoading || isCommitLoading || isBootLoading || isImported}
+              disabled={!canAdvanceToConfirm || isPreviewLoading || isCommitLoading || isBootLoading || isImported || enrichBusy}
             >
               {isPreviewLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
               <span>{t('preview')}</span>
@@ -1324,7 +1334,7 @@ export default function OpeningBalancesPage() {
                 disabled={!canCommit || isCommitLoading || isPreviewLoading || isImported}
               >
                 {isCommitLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                <span>{t('obConfirm')}</span>
+                <span>{mode === 'receivables' ? t('obConfirmReceivables') : mode === 'payables' ? t('obConfirmPayables') : t('obConfirm')}</span>
               </Button>
             </>
           )}
