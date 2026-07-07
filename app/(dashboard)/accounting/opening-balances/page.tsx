@@ -744,7 +744,8 @@ export default function OpeningBalancesPage() {
     await accountingApi.uploadControlBalance({ transition_date: sharedFields.opening_date || null, expected_balances: expected });
     const recon = await accountingApi.reconcileOpeningBalances(sharedFields.opening_date || undefined);
     setReconResult(recon);
-    setCommitResult({ reconciliation: recon } as CommitResult);
+    // NB: don't set commitResult here — the control layer is a reconciliation, not a
+    // commit, and the generic "Kinnitamine lõpetatud" block keys off commitResult.
     return recon;
   };
 
@@ -1352,7 +1353,11 @@ export default function OpeningBalancesPage() {
             </div>
           )}
 
-          {step === 'review' ? (
+          {/* The control layer isn't a "commit" — it reconciles/locks entirely from
+              the reconciliation panel above (Kontrolli uuesti / Asenda fail / Kinnita
+              ja lukusta). Showing the generic preview/confirm here duplicated it and
+              stayed active after locking, so hide the footer actions for control. */}
+          {isControlLayer ? null : step === 'review' ? (
             <Button
               variant="primary"
               onClick={handlePreview}
