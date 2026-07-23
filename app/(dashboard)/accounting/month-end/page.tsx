@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CalendarCheck, Lock, Unlock, Play, Check, Undo2 } from 'lucide-react';
+import Link from 'next/link';
+import { CalendarCheck, Lock, Unlock, Play, Check, Undo2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   monthEndApi,
+  type MonthEndBlockerKey,
   type MonthEndEntry,
   type MonthEndPeriod,
+  type MonthEndReadiness,
   type MonthEndRuleResult,
 } from '@/lib/api/monthEnd.api';
 import { getErrorMessage } from '@/lib/api/client';
@@ -17,6 +20,52 @@ function defaultMonth(): { year: number; month: number } {
   const now = new Date();
   const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   return { year: prev.getFullYear(), month: prev.getMonth() + 1 };
+}
+
+const BLOCKER_LINKS: Record<MonthEndBlockerKey, string | null> = {
+  draft_journal_entries: '/accounting/journal',
+  draft_sales_invoices: '/invoices/sales',
+  draft_purchase_invoices: '/invoices/purchase',
+  intake_pending_documents: '/invoices/purchase-imports',
+  pending_bank_transactions: '/accounting/bank',
+  rules_not_run: null,
+};
+
+function ReadinessCard({ readiness, t }: { readiness: MonthEndReadiness; t: (key: string) => string }) {
+  return (
+    <div className="card mb-6 p-4">
+      <h3 className="text-sm font-semibold mb-3 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+        {readiness.is_ready ? (
+          <CheckCircle2 className="h-4 w-4" style={{ color: 'var(--success, #16a34a)' }} />
+        ) : (
+          <AlertTriangle className="h-4 w-4" style={{ color: 'var(--warning, #ca8a04)' }} />
+        )}
+        {readiness.is_ready ? t('monthEndReady') : t('monthEndBlockers')}
+      </h3>
+      {readiness.is_ready ? (
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('monthEndReadyMessage')}</p>
+      ) : (
+        <ul className="space-y-1.5">
+          {readiness.blockers.map((b) => {
+            const href = BLOCKER_LINKS[b.key];
+            const label = `${t(`monthEndBlocker_${b.key}`)}: ${b.count}`;
+            return (
+              <li key={b.key} className="text-sm flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ backgroundColor: 'var(--warning, #ca8a04)' }} />
+                {href ? (
+                  <Link href={href} className="hover:underline" style={{ color: 'var(--primary)' }}>
+                    {label}
+                  </Link>
+                ) : (
+                  label
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
 }
 
 function StatusBadge({ status, t }: { status: MonthEndEntry['status']; t: (key: string) => string }) {
@@ -43,6 +92,7 @@ export default function MonthEndPage() {
   const [month, setMonth] = useState(initial.month);
   const [period, setPeriod] = useState<MonthEndPeriod | null>(null);
   const [entries, setEntries] = useState<MonthEndEntry[]>([]);
+  const [readiness, setReadiness] = useState<MonthEndReadiness | null>(null);
   const [runResults, setRunResults] = useState<MonthEndRuleResult[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,12 +102,17 @@ export default function MonthEndPage() {
     setLoading(true);
     setError(null);
     try {
-      const status = await monthEndApi.getStatus(year, month);
+      const [status, readinessResult] = await Promise.all([
+        monthEndApi.getStatus(year, month),
+        monthEndApi.getReadiness(year, month),
+      ]);
       setPeriod(status.period);
       setEntries(status.entries);
+      setReadiness(readinessResult);
     } catch (err) {
       setPeriod(null);
       setEntries([]);
+      setReadiness(null);
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
@@ -164,6 +219,8 @@ export default function MonthEndPage() {
               </span>
             )}
           </div>
+
+          {readiness && <ReadinessCard readiness={readiness} t={t} />}
 
           {runResults && (
             <div className="card mb-6 p-4">

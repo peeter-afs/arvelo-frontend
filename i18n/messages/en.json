@@ -892,7 +892,21 @@
     "monthEndNoPeriodMessage": "No accounting period exists for this month. Create the fiscal year first.",
     "monthEndCreatedAt": "Created",
     "monthEndNoEntries": "No month-end entries",
-    "monthEndNoEntriesMessage": "Run month-end to generate automatic entries for this period."
+    "monthEndNoEntriesMessage": "Run month-end to generate automatic entries for this period.",
+    "monthEndReady": "Ready to close",
+    "monthEndReadyMessage": "All checks passed — nothing blocks closing this month.",
+    "monthEndBlockers": "Blocking the close",
+    "monthEndBlocker_draft_journal_entries": "Unposted draft journal entries",
+    "monthEndBlocker_draft_sales_invoices": "Draft sales invoices",
+    "monthEndBlocker_draft_purchase_invoices": "Unconfirmed purchase invoices",
+    "monthEndBlocker_intake_pending_documents": "Unprocessed incoming documents",
+    "monthEndBlocker_pending_bank_transactions": "Unreviewed bank transactions",
+    "monthEndBlocker_rules_not_run": "Month-end automatic entries not run",
+    "monthEndBannerTitle": "Month {month} is not closed yet",
+    "monthEndBannerBlockers": "{count} items block the close — open the month-end workspace",
+    "monthEndBannerReady": "All checks passed — ready to close",
+    "monthEndCloseWarning": "The following items still block this month:",
+    "monthEndCloseConfirm": "Close the period anyway?"
   },
   "exchangeRates": {
     "title": "Exchange Rates",

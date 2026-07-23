@@ -892,7 +892,21 @@
     "monthEndNoPeriodMessage": "Selle kuu kohta pole raamatupidamisperioodi. Loo esmalt majandusaasta.",
     "monthEndCreatedAt": "Loodud",
     "monthEndNoEntries": "Kuulõpu kandeid pole",
-    "monthEndNoEntriesMessage": "Käivita kuulõpp, et genereerida selle perioodi automaatkanded."
+    "monthEndNoEntriesMessage": "Käivita kuulõpp, et genereerida selle perioodi automaatkanded.",
+    "monthEndReady": "Valmis sulgemiseks",
+    "monthEndReadyMessage": "Kõik kontrollid läbitud — miski ei sega kuu sulgemist.",
+    "monthEndBlockers": "Sulgemist segab",
+    "monthEndBlocker_draft_journal_entries": "Postimata mustandkanded",
+    "monthEndBlocker_draft_sales_invoices": "Mustand-müügiarved",
+    "monthEndBlocker_draft_purchase_invoices": "Kinnitamata ostuarved",
+    "monthEndBlocker_intake_pending_documents": "Töötlemata sisenddokumendid",
+    "monthEndBlocker_pending_bank_transactions": "Läbi vaatamata pangatehingud",
+    "monthEndBlocker_rules_not_run": "Kuulõpu automaatkanded tegemata",
+    "monthEndBannerTitle": "Kuu {month} on sulgemata",
+    "monthEndBannerBlockers": "{count} asja segab sulgemist — ava kuulõpu töölaud",
+    "monthEndBannerReady": "Kõik kontrollid läbitud — valmis sulgemiseks",
+    "monthEndCloseWarning": "Selles kuus on veel lahtisi asju:",
+    "monthEndCloseConfirm": "Kas sulgeda periood siiski?"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

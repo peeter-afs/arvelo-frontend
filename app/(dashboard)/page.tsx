@@ -8,6 +8,7 @@ import { accountingApi } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
+import { MonthEndBanner } from '@/components/accounting/MonthEndBanner';
 import {
   TrendingUp,
   Euro,
@@ -182,6 +183,8 @@ export default function DashboardPage() {
 
   return (
     <div>
+      <MonthEndBanner />
+
       {/* Header */}
       <div className="mb-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

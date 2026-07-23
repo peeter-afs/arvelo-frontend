@@ -58,9 +58,34 @@ export type MonthEndRunResult = {
   results: MonthEndRuleResult[];
 };
 
+export type MonthEndBlockerKey =
+  | 'draft_journal_entries'
+  | 'draft_sales_invoices'
+  | 'draft_purchase_invoices'
+  | 'intake_pending_documents'
+  | 'pending_bank_transactions'
+  | 'rules_not_run';
+
+export type MonthEndBlocker = {
+  key: MonthEndBlockerKey;
+  count: number;
+};
+
+export type MonthEndReadiness = {
+  period: MonthEndPeriod;
+  blockers: MonthEndBlocker[];
+  total: number;
+  is_ready: boolean;
+};
+
 export const monthEndApi = {
   async getStatus(year: number, month: number): Promise<MonthEndStatus> {
     const response = await apiClient.get<ApiResponse<MonthEndStatus>>(`/api/month-end/${year}/${month}`);
+    return response.data.data;
+  },
+
+  async getReadiness(year: number, month: number): Promise<MonthEndReadiness> {
+    const response = await apiClient.get<ApiResponse<MonthEndReadiness>>(`/api/month-end/${year}/${month}/readiness`);
     return response.data.data;
   },
 

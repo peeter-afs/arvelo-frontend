@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Calendar, Lock, Unlock, Plus, ChevronDown, ChevronRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { accountingApi, type FiscalYearWithPeriods, type PeriodItem } from '@/lib/api/accounting.api';
+import { monthEndApi } from '@/lib/api/monthEnd.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -72,6 +73,26 @@ export default function FiscalYearsPage() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // Close with a readiness warning: list what still blocks the month, but let
+  // the accountant close anyway after confirming.
+  const handleClosePeriod = async (period: PeriodItem) => {
+    let confirmMessage: string | null = null;
+    try {
+      const end = new Date(period.date_end);
+      const readiness = await monthEndApi.getReadiness(end.getFullYear(), end.getMonth() + 1);
+      if (!readiness.is_ready) {
+        const lines = readiness.blockers
+          .map((b) => `- ${t(`monthEndBlocker_${b.key}`)}: ${b.count}`)
+          .join('\n');
+        confirmMessage = `${t('monthEndCloseWarning')}\n\n${lines}\n\n${t('monthEndCloseConfirm')}`;
+      }
+    } catch {
+      // Readiness unavailable — fall through to plain close.
+    }
+    if (confirmMessage && !window.confirm(confirmMessage)) return;
+    await handleAction(() => accountingApi.closePeriod(period.id), `close-p-${period.id}`);
   };
 
   const handleCreateYear = async () => {
@@ -250,7 +271,7 @@ export default function FiscalYearsPage() {
                             key={period.id}
                             period={period}
                             actionLoading={actionLoading}
-                            onClose={() => handleAction(() => accountingApi.closePeriod(period.id), `close-p-${period.id}`)}
+                            onClose={() => handleClosePeriod(period)}
                             onReopen={() => handleAction(() => accountingApi.reopenPeriod(period.id), `reopen-p-${period.id}`)}
                             t={t}
                           />
