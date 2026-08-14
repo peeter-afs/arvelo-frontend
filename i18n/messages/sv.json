@@ -39,7 +39,8 @@
     "viewing": "Visar",
     "sync": "Synk",
     "live": "live",
-    "open": "Öppna"
+    "open": "Öppna",
+    "asOfDate": "Per datum"
   },
   "navigation": {
     "dashboard": "Instrumentpanel",
@@ -342,7 +343,13 @@
     "revenue": "Intäkter",
     "expenses": "Kostnader",
     "netIncome": "Nettoresultat",
-    "vatReport": "Momsrapport"
+    "vatReport": "Momsrapport",
+    "noBalanceSheetData": "Det finns inga balansuppgifter för valt datum.",
+    "currentYearEarnings": "Årets resultat",
+    "priorPeriodEarnings": "Balanserat resultat från tidigare perioder",
+    "accountCode": "Kontonummer",
+    "accountName": "Kontonamn",
+    "balanceCheck": "Balanskontroll"
   },
   "invoices": {
     "title": "Fakturor",

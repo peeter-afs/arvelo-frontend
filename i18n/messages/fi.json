@@ -39,7 +39,8 @@
     "viewing": "Näytetään",
     "sync": "Synkronointi",
     "live": "reaaliaikainen",
-    "open": "Avaa"
+    "open": "Avaa",
+    "asOfDate": "Per päivä"
   },
   "navigation": {
     "dashboard": "Hallintapaneeli",
@@ -342,7 +343,13 @@
     "revenue": "Tulot",
     "expenses": "Kulut",
     "netIncome": "Nettotulos",
-    "vatReport": "ALV-raportti"
+    "vatReport": "ALV-raportti",
+    "noBalanceSheetData": "Valitulle päivälle ei ole tasetietoja.",
+    "currentYearEarnings": "Tilikauden voitto (tappio)",
+    "priorPeriodEarnings": "Edellisten tilikausien voitto (tappio)",
+    "accountCode": "Tilinumero",
+    "accountName": "Tilin nimi",
+    "balanceCheck": "Tasetarkistus"
   },
   "invoices": {
     "title": "Laskut",

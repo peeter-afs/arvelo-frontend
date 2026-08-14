@@ -6,6 +6,7 @@ import { Download, Filter, Calendar, BarChart3 } from 'lucide-react';
 import { reportsApi, type BalanceSheetData, type BalanceSheetLine } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
+import { downloadCsv } from '@/lib/utils/csvExport';
 import { getIsoToday } from '@/lib/utils/date';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/ErrorState';
@@ -21,13 +22,21 @@ function formatCurrency(value: number): string {
 }
 
 function SectionLineItems({ items }: { items: BalanceSheetLine[] }) {
+  const t = useTranslations('reports');
+
+  const lineName = (item: BalanceSheetLine) => {
+    if (item.special === 'current_year_earnings') return t('currentYearEarnings');
+    if (item.special === 'prior_period_earnings') return t('priorPeriodEarnings');
+    return item.account_name;
+  };
+
   return (
     <>
       {/* Desktop rows */}
       <div className="hidden sm:block ml-4 space-y-2">
         {items.map((item) => (
           <div
-            key={item.account_code}
+            key={item.special || item.account_code}
             className="flex justify-between pb-2"
             style={{ borderBottom: '1px solid var(--border)' }}
           >
@@ -35,7 +44,7 @@ function SectionLineItems({ items }: { items: BalanceSheetLine[] }) {
               <span className="font-mono text-xs mr-2" style={{ color: 'var(--text-muted)' }}>
                 {item.account_code}
               </span>
-              {item.account_name}
+              {lineName(item)}
             </span>
             <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
               {formatCurrency(item.balance)}
@@ -48,7 +57,7 @@ function SectionLineItems({ items }: { items: BalanceSheetLine[] }) {
       <div className="sm:hidden space-y-2">
         {items.map((item) => (
           <div
-            key={item.account_code}
+            key={item.special || item.account_code}
             className="card p-3"
           >
             <div className="flex justify-between items-start">
@@ -57,7 +66,7 @@ function SectionLineItems({ items }: { items: BalanceSheetLine[] }) {
                   {item.account_code}
                 </p>
                 <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {item.account_name}
+                  {lineName(item)}
                 </p>
               </div>
               <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -154,7 +163,7 @@ export default function BalanceSheetPage() {
               style={{ color: 'var(--text-secondary)' }}
             >
               <Calendar className="inline h-4 w-4 mr-1" />
-              As of Date
+              {tc('asOfDate')}
             </label>
             <input
               type="date"
@@ -179,6 +188,19 @@ export default function BalanceSheetPage() {
             <span>{tc('filter')}</span>
           </button>
           <button
+            onClick={() => {
+              if (!data) return;
+              const rows = [...data.assets, ...data.liabilities, ...data.equity].map((item) => ({
+                account_code: item.account_code,
+                account_name: item.account_name,
+                balance: item.balance,
+              }));
+              downloadCsv(rows, `balance-sheet-${asOfDate}.csv`, [
+                { key: 'account_code', label: t('accountCode') },
+                { key: 'account_name', label: t('accountName') },
+                { key: 'balance', label: tc('amount') },
+              ]);
+            }}
             className="flex-1 sm:flex-initial px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-white hover:opacity-90 transition-opacity"
             style={{ backgroundColor: 'var(--primary)' }}
           >
@@ -196,8 +218,8 @@ export default function BalanceSheetPage() {
       {!loading && !error && isEmpty && (
         <EmptyState
           icon={BarChart3}
-          title="No balance sheet data"
-          message="There is no financial data available for the selected date."
+          title={t('balanceSheet')}
+          message={t('noBalanceSheetData')}
         />
       )}
 
@@ -208,7 +230,7 @@ export default function BalanceSheetPage() {
               {t('balanceSheet')}
             </h2>
             <p style={{ color: 'var(--text-secondary)' }}>
-              As of {data.asOfDate}
+              {tc('asOfDate')} {String(data.asOfDate).slice(0, 10)}
             </p>
           </div>
 
@@ -270,12 +292,21 @@ export default function BalanceSheetPage() {
           />
 
           {/* Balance check */}
-          <div className="mt-4 text-sm text-center" style={{ color: 'var(--text-muted)' }}>
-            <p>
-              Balance Check:{' '}
+          <div className="mt-4 text-sm text-center">
+            <p
+              style={{
+                color:
+                  Math.abs(data.totalAssets - (data.totalLiabilities + data.totalEquity)) < 0.01
+                    ? 'var(--text-muted)'
+                    : 'var(--danger, #dc2626)',
+              }}
+            >
+              {t('balanceCheck')}:{' '}
               {Math.abs(data.totalAssets - (data.totalLiabilities + data.totalEquity)) < 0.01
-                ? 'Balanced'
-                : 'Not Balanced'}
+                ? tc('balanced')
+                : `${tc('notBalanced')} (${formatCurrency(
+                    data.totalAssets - (data.totalLiabilities + data.totalEquity)
+                  )})`}
             </p>
           </div>
         </div>

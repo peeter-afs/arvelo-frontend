@@ -10,6 +10,8 @@ export type BalanceSheetLine = {
   account_name: string;
   account_type: string;
   balance: number;
+  /** Computed (non-ledger) equity lines: open P&L result rolled into equity. */
+  special?: 'current_year_earnings' | 'prior_period_earnings';
 };
 
 export type BalanceSheetData = {

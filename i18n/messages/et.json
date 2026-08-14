@@ -1136,7 +1136,10 @@
     "periodRange": "Periood {startDate} kuni {endDate}",
     "totalCategory": "{category} kokku",
     "accountCode": "Konto kood",
-    "accountName": "Konto nimi"
+    "accountName": "Konto nimi",
+    "noBalanceSheetData": "Valitud kuupäeva kohta bilansi andmed puuduvad.",
+    "currentYearEarnings": "Aruandeaasta kasum (kahjum)",
+    "priorPeriodEarnings": "Eelmiste perioodide jaotamata kasum (kahjum)"
   },
   "annualReport": {
     "title": "Majandusaasta aruanne",

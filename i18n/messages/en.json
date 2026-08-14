@@ -1136,7 +1136,10 @@
     "periodRange": "For the period {startDate} to {endDate}",
     "totalCategory": "Total {category}",
     "accountCode": "Account Code",
-    "accountName": "Account Name"
+    "accountName": "Account Name",
+    "noBalanceSheetData": "There is no balance sheet data for the selected date.",
+    "currentYearEarnings": "Current year profit (loss)",
+    "priorPeriodEarnings": "Retained earnings from prior periods (unclosed)"
   },
   "annualReport": {
     "title": "Annual Report",
