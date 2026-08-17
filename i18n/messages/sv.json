@@ -349,7 +349,18 @@
     "priorPeriodEarnings": "Balanserat resultat från tidigare perioder",
     "accountCode": "Kontonummer",
     "accountName": "Kontonamn",
-    "balanceCheck": "Balanskontroll"
+    "balanceCheck": "Balanskontroll",
+    "comparison": "Jämförelse",
+    "comparisonNone": "Ingen jämförelse",
+    "comparisonPeriod": "Jämförelseperiod",
+    "previousPeriod": "Föregående period",
+    "samePeriodLastYear": "Samma period förra året",
+    "previousYearEnd": "Föregående årsslut",
+    "sameDateLastYear": "Samma datum förra året",
+    "customPeriod": "Anpassad",
+    "change": "Förändring",
+    "totalCategory": "Totalt {category}",
+    "profitLossDescriptionDetailed": "Intäkter, kostnader och resultat för vald period"
   },
   "invoices": {
     "title": "Fakturor",

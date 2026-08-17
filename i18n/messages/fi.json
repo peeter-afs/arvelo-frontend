@@ -349,7 +349,18 @@
     "priorPeriodEarnings": "Edellisten tilikausien voitto (tappio)",
     "accountCode": "Tilinumero",
     "accountName": "Tilin nimi",
-    "balanceCheck": "Tasetarkistus"
+    "balanceCheck": "Tasetarkistus",
+    "comparison": "Vertailu",
+    "comparisonNone": "Ei vertailua",
+    "comparisonPeriod": "Vertailujakso",
+    "previousPeriod": "Edellinen jakso",
+    "samePeriodLastYear": "Sama jakso viime vuonna",
+    "previousYearEnd": "Edellisen vuoden loppu",
+    "sameDateLastYear": "Sama päivä viime vuonna",
+    "customPeriod": "Mukautettu",
+    "change": "Muutos",
+    "totalCategory": "Yhteensä {category}",
+    "profitLossDescriptionDetailed": "Tuotot, kulut ja tulos valitulta jaksolta"
   },
   "invoices": {
     "title": "Laskut",

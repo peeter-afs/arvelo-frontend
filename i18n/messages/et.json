@@ -1139,7 +1139,16 @@
     "accountName": "Konto nimi",
     "noBalanceSheetData": "Valitud kuupäeva kohta bilansi andmed puuduvad.",
     "currentYearEarnings": "Aruandeaasta kasum (kahjum)",
-    "priorPeriodEarnings": "Eelmiste perioodide jaotamata kasum (kahjum)"
+    "priorPeriodEarnings": "Eelmiste perioodide jaotamata kasum (kahjum)",
+    "comparison": "Võrdlus",
+    "comparisonNone": "Ilma võrdluseta",
+    "comparisonPeriod": "Võrdlusperiood",
+    "previousPeriod": "Eelmine periood",
+    "samePeriodLastYear": "Sama periood eelmisel aastal",
+    "previousYearEnd": "Eelmise aasta lõpp",
+    "sameDateLastYear": "Sama kuupäev eelmisel aastal",
+    "customPeriod": "Kohandatud",
+    "change": "Muutus"
   },
   "annualReport": {
     "title": "Majandusaasta aruanne",

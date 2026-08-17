@@ -10,6 +10,8 @@ export type BalanceSheetLine = {
   account_name: string;
   account_type: string;
   balance: number;
+  /** Balance at the comparison date; present only when one was requested. */
+  compare_balance?: number;
   /** Computed (non-ledger) equity lines: open P&L result rolled into equity. */
   special?: 'current_year_earnings' | 'prior_period_earnings';
 };
@@ -21,7 +23,11 @@ export type BalanceSheetData = {
   totalAssets: number;
   totalLiabilities: number;
   totalEquity: number;
+  compareTotalAssets?: number;
+  compareTotalLiabilities?: number;
+  compareTotalEquity?: number;
   asOfDate: string;
+  compareAsOfDate?: string;
 };
 
 export type ProfitLossLine = {
@@ -29,6 +35,8 @@ export type ProfitLossLine = {
   account_name: string;
   account_type: string;
   amount: number;
+  /** Amount in the comparison period; present only when one was requested. */
+  compare_amount?: number;
 };
 
 export type ProfitLossData = {
@@ -37,8 +45,13 @@ export type ProfitLossData = {
   totalRevenue: number;
   totalExpenses: number;
   netIncome: number;
+  compareTotalRevenue?: number;
+  compareTotalExpenses?: number;
+  compareNetIncome?: number;
   startDate: string;
   endDate: string;
+  compareStartDate?: string;
+  compareEndDate?: string;
 };
 
 export type TrialBalanceLine = {
@@ -179,15 +192,23 @@ export type AgingReportData = {
 };
 
 export const reportsApi = {
-  async getBalanceSheet(asOfDate?: string) {
-    const params = asOfDate ? { as_of_date: asOfDate } : undefined;
-    const response = await apiClient.get<ApiResponse<BalanceSheetData>>('/api/reports/balance-sheet', { params });
+  async getBalanceSheet(asOfDate?: string, compareAsOfDate?: string) {
+    const params: Record<string, string> = {};
+    if (asOfDate) params.as_of_date = asOfDate;
+    if (compareAsOfDate) params.compare_as_of_date = compareAsOfDate;
+    const response = await apiClient.get<ApiResponse<BalanceSheetData>>('/api/reports/balance-sheet', {
+      params: Object.keys(params).length ? params : undefined,
+    });
     return response.data.data;
   },
 
-  async getProfitLoss(startDate: string, endDate: string) {
+  async getProfitLoss(startDate: string, endDate: string, compare?: { startDate: string; endDate: string }) {
     const response = await apiClient.get<ApiResponse<ProfitLossData>>('/api/reports/profit-loss', {
-      params: { start_date: startDate, end_date: endDate },
+      params: {
+        start_date: startDate,
+        end_date: endDate,
+        ...(compare ? { compare_start_date: compare.startDate, compare_end_date: compare.endDate } : {}),
+      },
     });
     return response.data.data;
   },
