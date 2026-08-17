@@ -5,6 +5,18 @@ type ApiResponse<T> = {
   data: T;
 };
 
+export type BulkConfirmResult = {
+  confirmed: number;
+  skipped: number;
+  failed: number;
+  results: Array<{
+    invoice_id: string;
+    invoice_number?: string | null;
+    status: 'confirmed' | 'skipped' | 'failed';
+    reason?: string;
+  }>;
+};
+
 export type InvoiceListItem = {
   id: string;
   type: string;
@@ -115,6 +127,15 @@ export const invoicesApi = {
 
   async confirm(id: string) {
     const response = await apiClient.post<ApiResponse<{ invoice: InvoiceListItem; journal_entry_id: string }>>(`/api/invoices/${id}/confirm`);
+    return response.data.data;
+  },
+
+  /** Confirm many drafts at once. Posts each on its own, so the result reports
+   *  per-invoice outcomes instead of failing the whole batch. Max 200 per call. */
+  async bulkConfirm(invoiceIds: string[]) {
+    const response = await apiClient.post<ApiResponse<BulkConfirmResult>>('/api/invoices/bulk-confirm', {
+      invoice_ids: invoiceIds,
+    }, { timeout: 180000 });
     return response.data.data;
   },
 

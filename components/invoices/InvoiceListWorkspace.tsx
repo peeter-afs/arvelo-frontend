@@ -32,6 +32,7 @@ import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
 import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
 import { futursoftApi } from '@/lib/api/futursoft.api';
 import { showToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankGatewayApi, type EinvoiceDispatch } from '@/lib/api/bankGateway.api';
 
 type InvoiceDetail = {
@@ -105,6 +106,8 @@ export default function InvoiceListWorkspace({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
 
@@ -146,6 +149,50 @@ export default function InvoiceListWorkspace({
       return matchesTab && (!query || haystack.includes(query));
     });
   }, [activeTab, invoices, isPurchase, partnerMap, searchQuery]);
+
+  // Drafts among the invoices currently on screen (tab + search applied).
+  const draftsInView = useMemo(
+    () => filteredInvoices.filter((invoice) => invoice.status === 'draft'),
+    [filteredInvoices]
+  );
+
+  const handleBulkConfirm = async () => {
+    setBulkConfirming(true);
+    setErrorMessage(null);
+    try {
+      const ids = draftsInView.map((invoice) => invoice.id);
+      // The endpoint caps a request at 200 invoices; send in chunks and total up.
+      const totals = { confirmed: 0, skipped: 0, failed: 0 };
+      const failures: string[] = [];
+      for (let index = 0; index < ids.length; index += 100) {
+        const result = await invoicesApi.bulkConfirm(ids.slice(index, index + 100));
+        totals.confirmed += result.confirmed;
+        totals.skipped += result.skipped;
+        totals.failed += result.failed;
+        for (const row of result.results) {
+          if (row.status === 'failed' && row.reason && failures.length < 3) {
+            failures.push(`${row.invoice_number || row.invoice_id}: ${row.reason}`);
+          }
+        }
+      }
+
+      if (totals.confirmed > 0) {
+        showToast.success(t('bulkConfirmDone', { count: totals.confirmed }));
+      }
+      if (totals.failed > 0) {
+        // Keep the first reasons on screen — they are what tells the user WHY
+        // (a missing account setting, a closed period), not just how many.
+        showToast.error(t('bulkConfirmFailed', { count: totals.failed }));
+        setErrorMessage(`${t('bulkConfirmFailed', { count: totals.failed })} — ${failures.join(' · ')}`);
+      }
+      await refreshInvoices(selectedInvoiceId);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setBulkConfirming(false);
+      setBulkConfirmOpen(false);
+    }
+  };
 
   const summary = useMemo(() => {
     const draft = invoices.filter((invoice) => invoice.status === 'draft').length;
@@ -479,6 +526,28 @@ export default function InvoiceListWorkspace({
         </label>
       </div>
 
+      {/* Bulk confirm: acts on exactly what the current tab + search show, so the
+          user controls the set by filtering rather than ticking rows. */}
+      {draftsInView.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+          <FileCheck2 className="h-4 w-4 shrink-0 text-[var(--a-text-2)]" />
+          <span className="flex-1 text-[13px] text-[var(--a-text-2)]">
+            {t('bulkConfirmSummary', {
+              count: draftsInView.length,
+              amount: formatMoney(draftsInView.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0)),
+            })}
+          </span>
+          <Button
+            variant="primary"
+            disabled={bulkConfirming}
+            onClick={() => setBulkConfirmOpen(true)}
+          >
+            {bulkConfirming ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Stamp className="h-3.5 w-3.5" />}
+            <span>{t('bulkConfirmAction', { count: draftsInView.length })}</span>
+          </Button>
+        </div>
+      )}
+
       <SplitPane className="flex-1">
         <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
           <div className="grid grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
@@ -593,6 +662,19 @@ export default function InvoiceListWorkspace({
           />
         </SplitPaneDetail>
       </SplitPane>
+
+      <ConfirmDialog
+        open={bulkConfirmOpen}
+        onOpenChange={setBulkConfirmOpen}
+        variant="warning"
+        title={t('bulkConfirmTitle')}
+        description={t('bulkConfirmConfirmation', {
+          count: draftsInView.length,
+          amount: formatMoney(draftsInView.reduce((sum, invoice) => sum + Number(invoice.total || 0), 0)),
+        })}
+        confirmLabel={t('bulkConfirmAction', { count: draftsInView.length })}
+        onConfirm={handleBulkConfirm}
+      />
 
       {aiEnabled && !isPurchase && (
         <AiInvoicePanel
