@@ -351,7 +351,16 @@
     "role_VAT_OUTPUT": "Myynnin ALV",
     "role_VAT_INPUT": "Ostojen ALV",
     "role_SALES": "Myyntitulot",
-    "role_PURCHASE": "Ostokulut"
+    "role_PURCHASE": "Ostokulut",
+    "transactionDetails": "Transaction details",
+    "transactionDetailsDescription": "Imported row fields, warnings and raw data.",
+    "addReviewNote": "Add review note",
+    "selectedCount": "{count} selected",
+    "selectAutoReady": "Select auto-match ready",
+    "confirmAutoMatches": "Confirm auto-matches",
+    "clearSelection": "Clear selection",
+    "bulkAutoMatchResult": "Matched {matched} · skipped {skipped} · failed {failed}",
+    "bulkConfirmProgress": "Confirming… {done}/{total}"
   },
   "reports": {
     "balanceSheet": "Tase",

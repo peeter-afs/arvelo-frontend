@@ -927,7 +927,16 @@
     "role_VAT_OUTPUT": "Müügikäibemaks",
     "role_VAT_INPUT": "Sisendkäibemaks",
     "role_SALES": "Müügitulu",
-    "role_PURCHASE": "Ostukulu"
+    "role_PURCHASE": "Ostukulu",
+    "transactionDetails": "Tehingu andmed",
+    "transactionDetailsDescription": "Imporditud rea väljad, hoiatused ja algandmed.",
+    "addReviewNote": "Lisa ülevaatuse märkus",
+    "selectedCount": "{count} valitud",
+    "selectAutoReady": "Vali automaatseks sobituseks valmis",
+    "confirmAutoMatches": "Kinnita automaatsed sobitused",
+    "clearSelection": "Tühista valik",
+    "bulkAutoMatchResult": "Sobitatud {matched} · vahele jäetud {skipped} · ebaõnnestus {failed}",
+    "bulkConfirmProgress": "Kinnitan… {done}/{total}"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

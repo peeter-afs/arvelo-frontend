@@ -448,6 +448,15 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  async bulkAutoMatch(transactionIds: string[]) {
+    const response = await apiClient.post<ApiResponse<{
+      auto_matched: Array<{ transaction_id: string; invoice_id: string }>;
+      skipped: number;
+      errors: Array<{ transaction_id: string; error: string }>;
+    }>>('/api/banking/transactions/bulk-auto-match', { transaction_ids: transactionIds });
+    return response.data.data;
+  },
+
   async getDraftExclusionRules() {
     const response = await apiClient.get<ApiResponse<{ rules: DraftExclusionRule[] }>>('/api/banking/draft-exclusion-rules');
     return response.data.data.rules;

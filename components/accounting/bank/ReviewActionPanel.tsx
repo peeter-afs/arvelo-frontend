@@ -91,6 +91,17 @@ export function ReviewActionPanel({
   const t = useTranslations('accounting');
   const [showSplit, setShowSplit] = useState(false);
   const [showOther, setShowOther] = useState(false);
+  // The note field stays out of the way by default so the invoice-match list
+  // sits above the fold. Without an explicit toggle it follows the note itself:
+  // open when the selected transaction has one, closed when it does not. The
+  // override resets whenever the selection changes.
+  const [noteOverride, setNoteOverride] = useState<boolean | null>(null);
+  const [noteItemId, setNoteItemId] = useState(selectedItem.transaction_id);
+  if (noteItemId !== selectedItem.transaction_id) {
+    setNoteItemId(selectedItem.transaction_id);
+    setNoteOverride(null);
+  }
+  const showNote = noteOverride ?? !!reviewNote;
 
   const busy = !!actionLoading;
 
@@ -129,12 +140,24 @@ export function ReviewActionPanel({
             </button>
           </div>
 
-          <textarea
-            value={reviewNote}
-            onChange={(event) => setReviewNote(event.target.value)}
-            placeholder={t('reviewNote')}
-            className="min-h-24 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-          />
+          <div>
+            <button
+              onClick={() => setNoteOverride(!showNote)}
+              className="inline-flex items-center gap-2 text-sm font-medium text-slate-700"
+            >
+              <span>{t('addReviewNote')}</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${showNote ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showNote && (
+              <textarea
+                value={reviewNote}
+                onChange={(event) => setReviewNote(event.target.value)}
+                placeholder={t('reviewNote')}
+                className="mt-3 min-h-24 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm"
+              />
+            )}
+          </div>
         </div>
       </div>
 

@@ -1,17 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
   CheckCircle2,
+  ChevronDown,
   ListChecks,
+  Loader2,
   RefreshCw,
+  Sparkles,
+  UserCheck,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
-import { BankFilterRow, BankProgress, BankSummaryStrip, InfoBox, formatLabel } from './shared';
+import { BankFilterRow, BankFooterBar, BankProgress, BankSummaryStrip, InfoBox, formatLabel } from './shared';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
@@ -41,16 +45,34 @@ export function ReviewTab({
   const [manualDescription, setManualDescription] = useState('');
   const [manualAllocations, setManualAllocations] = useState<ManualAllocation[]>([]);
   const [dismissReason, setDismissReason] = useState('');
+  // Bulk selection is a separate axis from the detail selection above: ticking a
+  // checkbox never changes which transaction the right-hand panel shows.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+  const [detailsItemId, setDetailsItemId] = useState<string | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
+
+  // Moving through the queue always lands on the actions, never on a wall of
+  // read-only fields.
+  if (detailsItemId !== selectedTransactionId) {
+    setDetailsItemId(selectedTransactionId);
+    setShowDetails(false);
+  }
 
   const selectedItem = useMemo(
     () => items.find((item) => item.transaction_id === selectedTransactionId) || null,
     [items, selectedTransactionId]
   );
 
+  const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.transaction_id));
+  const someSelected = items.some((item) => selectedIds.has(item.transaction_id));
+
   useEffect(() => {
     const load = async () => {
       setIsQueueLoading(true);
       setErrorMessage(null);
+      setSelectedIds(new Set());
       try {
         const [queueResult, accountResult] = await Promise.all([
           bankingApi.getReviewQueue({
@@ -76,6 +98,12 @@ export function ReviewTab({
   useEffect(() => {
     onCountChange?.(items.length);
   }, [items.length, onCountChange]);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = !allSelected && someSelected;
+    }
+  }, [allSelected, someSelected]);
 
   useEffect(() => {
     if (!selectedItem) {
@@ -236,6 +264,85 @@ export function ReviewTab({
     });
   };
 
+  const toggleSelected = (transactionId: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(transactionId)) {
+        next.delete(transactionId);
+      } else {
+        next.add(transactionId);
+      }
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds((current) => (
+      items.length > 0 && items.every((item) => current.has(item.transaction_id))
+        ? new Set<string>()
+        : new Set(items.map((item) => item.transaction_id))
+    ));
+  };
+
+  const selectAutoReady = () => {
+    setSelectedIds(new Set(items.filter((item) => item.auto_match_ready).map((item) => item.transaction_id)));
+  };
+
+  const showBulkErrors = (errors: Array<{ transaction_id: string; error: string }>) => {
+    if (errors.length === 0) return;
+    setErrorMessage(
+      errors
+        .slice(0, 3)
+        .map((entry) => `${entry.transaction_id.slice(0, 8)}: ${entry.error}`)
+        .join(' · ')
+    );
+  };
+
+  const handleBulkAutoMatch = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    await runAction('bulk-auto-match', async () => {
+      const result = await bankingApi.bulkAutoMatch(ids);
+      setSuccessMessage(t('bulkAutoMatchResult', {
+        matched: result.auto_matched.length,
+        skipped: result.skipped,
+        failed: result.errors.length,
+      }));
+      showBulkErrors(result.errors);
+      setSelectedIds(new Set());
+      await refreshQueue(selectedTransactionId);
+    });
+  };
+
+  // No bulk review endpoint exists, so this loops sequentially and refreshes the
+  // queue once at the end, same accumulate-then-refresh shape as the bulk match.
+  const handleBulkMarkReviewed = async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    await runAction('bulk-review', async () => {
+      const errors: Array<{ transaction_id: string; error: string }> = [];
+      let reviewed = 0;
+      setBulkProgress({ done: 0, total: ids.length });
+      try {
+        for (const id of ids) {
+          try {
+            await bankingApi.reviewTransaction(id, { review_state: 'reviewed' });
+            reviewed += 1;
+          } catch (error) {
+            errors.push({ transaction_id: id, error: getErrorMessage(error) });
+          }
+          setBulkProgress({ done: reviewed + errors.length, total: ids.length });
+        }
+      } finally {
+        setBulkProgress(null);
+      }
+      setSuccessMessage(t('transactionMarkedState', { state: t('reviewed') }));
+      showBulkErrors(errors);
+      setSelectedIds(new Set());
+      await refreshQueue(selectedTransactionId);
+    });
+  };
+
   const queueCounts = {
     total: items.length,
     autoReady: items.filter((item) => item.auto_match_ready).length,
@@ -308,7 +415,28 @@ export function ReviewTab({
         <aside className="space-y-4">
           <div className="card overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">{t('transactions')}</h2>
+              <div className="flex items-center gap-3">
+                <input
+                  ref={selectAllRef}
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  disabled={items.length === 0}
+                  aria-label={t('all')}
+                  className="h-4 w-4 flex-shrink-0"
+                />
+                <h2 className="text-sm font-semibold text-slate-900">
+                  {t('transactions')} · {items.length}
+                </h2>
+              </div>
+              {queueCounts.autoReady > 0 && (
+                <button
+                  onClick={selectAutoReady}
+                  className="mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
+                >
+                  {t('selectAutoReady')}
+                </button>
+              )}
             </div>
             <div className="divide-y divide-slate-100">
               {isQueueLoading ? (
@@ -317,52 +445,65 @@ export function ReviewTab({
                 <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div>
               ) : (
                 items.map((item) => (
-                  <button
+                  <div
                     key={item.transaction_id}
-                    onClick={() => setSelectedTransactionId(item.transaction_id)}
-                    className={`block w-full px-4 py-3 text-left transition-colors ${selectedTransactionId === item.transaction_id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+                    role="row"
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${selectedTransactionId === item.transaction_id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium text-slate-900">
-                          {item.counterparty_name || t('unknownCounterparty')}
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.transaction_id)}
+                      onChange={() => toggleSelected(item.transaction_id)}
+                      onClick={(event) => event.stopPropagation()}
+                      aria-label={item.counterparty_name || t('unknownCounterparty')}
+                      className="mt-1 h-4 w-4 flex-shrink-0"
+                    />
+                    <button
+                      onClick={() => setSelectedTransactionId(item.transaction_id)}
+                      className="min-w-0 flex-1 text-left"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-medium text-slate-900">
+                            {item.counterparty_name || t('unknownCounterparty')}
+                          </div>
+                          <div className="mt-1 truncate text-xs text-slate-500">
+                            {item.reference || item.description || t('noReference')}
+                          </div>
+                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">
+                            {typeof item.import_row_no === 'number' && <span>{t('rowNumber', { row: item.import_row_no })}</span>}
+                            {item.import_file_name && <span>{item.import_file_name}</span>}
+                          </div>
                         </div>
-                        <div className="mt-1 truncate text-xs text-slate-500">
-                          {item.reference || item.description || t('noReference')}
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                          {typeof item.import_row_no === 'number' && <span>{t('rowNumber', { row: item.import_row_no })}</span>}
-                          {item.import_file_name && <span>{item.import_file_name}</span>}
-                        </div>
+                        <span className="font-mono text-sm tabular-nums text-slate-900">
+                          {item.amount.toFixed(2)}
+                        </span>
                       </div>
-                      <span className="font-mono text-sm text-slate-900">
-                        {item.amount.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                      <span>{item.tx_date}</span>
-                      <span>·</span>
-                      <span>{item.currency}</span>
-                      {item.bank_account_name && (
-                        <>
-                          <span>·</span>
-                          <span>{item.bank_account_name}</span>
-                        </>
-                      )}
-                      {item.auto_match_ready && (
-                        <>
-                          <span>·</span>
-                          <span className="font-medium text-emerald-700">{t('autoReady')}</span>
-                        </>
-                      )}
-                      {item.has_missing_receipt_placeholder && (
-                        <>
-                          <span>·</span>
-                          <span className="font-medium text-amber-600">{t('missingReceiptDraft')}</span>
-                        </>
-                      )}
-                    </div>
-                  </button>
+                      <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                        <span>{item.tx_date}</span>
+                        <span>·</span>
+                        <span>{item.currency}</span>
+                        {item.bank_account_name && (
+                          <>
+                            <span>·</span>
+                            <span>{item.bank_account_name}</span>
+                          </>
+                        )}
+                        {item.auto_match_ready && (
+                          <>
+                            <span>·</span>
+                            <span className="font-medium text-emerald-700">{t('autoReady')}</span>
+                          </>
+                        )}
+                        {item.has_missing_receipt_placeholder && (
+                          <>
+                            <span>·</span>
+                            <span className="font-medium text-amber-600">{t('missingReceiptDraft')}</span>
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  </div>
                 ))
               )}
             </div>
@@ -393,60 +534,6 @@ export function ReviewTab({
                     </div>
                   </div>
                 </div>
-
-                <div className="grid gap-4 p-5 lg:grid-cols-2">
-                  <InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
-                  <InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} />
-                  <InfoBox label={t('autoMatch')} value={selectedItem.auto_match_ready ? t('ready') : t('needsReview')} />
-                  <InfoBox label={t('description')} value={selectedItem.description || '-'} />
-                  <InfoBox label={t('reviewNote')} value={selectedItem.review_note || '-'} />
-                  <InfoBox
-                    label={t('manualPostDefault')}
-                    value={
-                      selectedItem.suggested_manual_account_name
-                        ? `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}`
-                        : '-'
-                    }
-                  />
-                  <InfoBox
-                    label={t('importedRow')}
-                    value={typeof selectedItem.import_row_no === 'number' ? t('rowNumber', { row: selectedItem.import_row_no }) : '-'}
-                  />
-                  <InfoBox
-                    label={t('importSource')}
-                    value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'}
-                  />
-                </div>
-
-                {(selectedItem.import_warning_flags?.length || selectedItem.import_parsed_payload) && (
-                  <div className="grid gap-4 border-t border-slate-200 px-5 py-5 lg:grid-cols-2">
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importWarnings')}</div>
-                      {selectedItem.import_warning_flags && selectedItem.import_warning_flags.length > 0 ? (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {selectedItem.import_warning_flags.map((flag) => (
-                            <span key={flag} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">
-                              {formatLabel(flag)}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="mt-3 text-sm text-slate-500">{t('noImportWarningFlags')}</div>
-                      )}
-                    </div>
-
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importedRowPayload')}</div>
-                      {selectedItem.import_parsed_payload ? (
-                        <pre className="mt-3 max-h-56 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
-                          {JSON.stringify(selectedItem.import_parsed_payload, null, 2)}
-                        </pre>
-                      ) : (
-                        <div className="mt-3 text-sm text-slate-500">{t('noParsedImportPayload')}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <ReviewActionPanel
@@ -476,10 +563,113 @@ export function ReviewTab({
                 onSingleMatch={handleSingleMatch}
                 onSplitMatch={handleSplitMatch}
               />
+
+              <div className="card overflow-hidden">
+                <button
+                  onClick={() => setShowDetails((value) => !value)}
+                  className="flex w-full items-center justify-between px-5 py-4 text-left"
+                >
+                  <div>
+                    <h2 className="text-sm font-semibold text-slate-900">{t('transactionDetails')}</h2>
+                    <p className="mt-1 text-sm text-slate-500">{t('transactionDetailsDescription')}</p>
+                  </div>
+                  <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showDetails && (
+                  <>
+                    <div className="grid gap-4 border-t border-slate-200 p-5 lg:grid-cols-2">
+                      <InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
+                      <InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} />
+                      <InfoBox label={t('autoMatch')} value={selectedItem.auto_match_ready ? t('ready') : t('needsReview')} />
+                      <InfoBox label={t('description')} value={selectedItem.description || '-'} />
+                      <InfoBox label={t('reviewNote')} value={selectedItem.review_note || '-'} />
+                      <InfoBox
+                        label={t('manualPostDefault')}
+                        value={
+                          selectedItem.suggested_manual_account_name
+                            ? `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}`
+                            : '-'
+                        }
+                      />
+                      <InfoBox
+                        label={t('importedRow')}
+                        value={typeof selectedItem.import_row_no === 'number' ? t('rowNumber', { row: selectedItem.import_row_no }) : '-'}
+                      />
+                      <InfoBox
+                        label={t('importSource')}
+                        value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'}
+                      />
+                    </div>
+
+                    {(selectedItem.import_warning_flags?.length || selectedItem.import_parsed_payload) && (
+                      <div className="grid gap-4 border-t border-slate-200 px-5 py-5 lg:grid-cols-2">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importWarnings')}</div>
+                          {selectedItem.import_warning_flags && selectedItem.import_warning_flags.length > 0 ? (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {selectedItem.import_warning_flags.map((flag) => (
+                                <span key={flag} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">
+                                  {formatLabel(flag)}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="mt-3 text-sm text-slate-500">{t('noImportWarningFlags')}</div>
+                          )}
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importedRowPayload')}</div>
+                          {selectedItem.import_parsed_payload ? (
+                            <pre className="mt-3 max-h-56 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
+                              {JSON.stringify(selectedItem.import_parsed_payload, null, 2)}
+                            </pre>
+                          ) : (
+                            <div className="mt-3 text-sm text-slate-500">{t('noParsedImportPayload')}</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </>
           )}
         </section>
       </div>
+
+      {selectedIds.size > 0 && (
+        <BankFooterBar status={t('selectedCount', { count: selectedIds.size })}>
+          <button
+            onClick={handleBulkAutoMatch}
+            disabled={!!actionLoading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {actionLoading === 'bulk-auto-match' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            <span>{t('confirmAutoMatches')}</span>
+          </button>
+          <button
+            onClick={handleBulkMarkReviewed}
+            disabled={!!actionLoading}
+            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {actionLoading === 'bulk-review' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
+            <span>
+              {bulkProgress
+                ? t('bulkConfirmProgress', { done: bulkProgress.done, total: bulkProgress.total })
+                : t('markReviewed')}
+            </span>
+          </button>
+          <button
+            onClick={() => setSelectedIds(new Set())}
+            disabled={!!actionLoading}
+            className="inline-flex h-9 items-center rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {t('clearSelection')}
+          </button>
+        </BankFooterBar>
+      )}
     </div>
   );
 }
