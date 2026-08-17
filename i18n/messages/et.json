@@ -906,7 +906,8 @@
     "monthEndBannerBlockers": "{count} asja segab sulgemist — ava kuulõpu töölaud",
     "monthEndBannerReady": "Kõik kontrollid läbitud — valmis sulgemiseks",
     "monthEndCloseWarning": "Selles kuus on veel lahtisi asju:",
-    "monthEndCloseConfirm": "Kas sulgeda periood siiski?"
+    "monthEndCloseConfirm": "Kas sulgeda periood siiski?",
+    "obSourceFile": "Lähtefail"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

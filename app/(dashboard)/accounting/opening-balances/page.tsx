@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronRight,
+  Download,
   Eye,
   History,
   Loader2,
@@ -24,7 +25,7 @@ import {
 import Link from 'next/link';
 import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
 import { businessRegistryApi, type BusinessRegistrySearchItem } from '@/lib/api/businessRegistry.api';
-import { getErrorMessage } from '@/lib/api/client';
+import apiClient, { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
 import { RoleMappingDialog } from '@/components/accounting/RoleMappingDialog';
@@ -49,7 +50,13 @@ type CommitResult = Record<string, unknown> & {
   created_invoice_count?: number;
   reclass?: { amount: number; from_code: string; to_code: string; date: string } | null;
 };
-type ImportStatusBatch = { batch_type?: string; opening_date?: string };
+type ImportStatusBatch = {
+  id?: string;
+  batch_type?: string;
+  opening_date?: string;
+  committed_at?: string;
+  source_document?: { id: string; file_name: string; file_size?: number | null } | null;
+};
 
 type GeneralRow = {
   id: string;
@@ -184,6 +191,9 @@ export default function OpeningBalancesPage() {
   // "already imported" lock is per-mode — committing the balance sheet must not
   // block importing receivables or payables.
   const [committedModes, setCommittedModes] = useState<Set<Mode>>(new Set());
+  // Full committed-batch list from import status — carries the stored source
+  // file of each layer so the user can re-download what was imported.
+  const [committedBatchList, setCommittedBatchList] = useState<ImportStatusBatch[]>([]);
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
   const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | 'mid_year' | null>(null);
   const [savingStrategy, setSavingStrategy] = useState(false);
@@ -364,6 +374,7 @@ export default function OpeningBalancesPage() {
         setPartners(partnerItems);
         setBatches(batchResult.items);
         const committedBatches = importStatus.committed_batches as ImportStatusBatch[];
+        setCommittedBatchList(committedBatches);
         const committed = new Set<Mode>();
         for (const b of committedBatches) {
           if (b.batch_type === 'general' || b.batch_type === 'receivables' || b.batch_type === 'payables') {
@@ -799,6 +810,48 @@ export default function OpeningBalancesPage() {
     return null;
   };
 
+  // Stored source files of the committed batches shown in the current view.
+  const sourceFilesFor = (batchTypes: Array<string | null>) =>
+    committedBatchList.filter(
+      (batch) => batch.source_document && batchTypes.includes(String(batch.batch_type))
+    );
+
+  const handleDownloadSourceFile = async (doc: { id: string; file_name: string }) => {
+    try {
+      const response = await apiClient.get(`/api/import/documents/${doc.id}/download`, { responseType: 'blob' });
+      const url = URL.createObjectURL(response.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = doc.file_name;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    }
+  };
+
+  // Compact "source file: <name>" download chips for an already-imported notice.
+  const sourceFileChips = (batchTypes: Array<string | null>) => {
+    const withFiles = sourceFilesFor(batchTypes);
+    if (withFiles.length === 0) return null;
+    return (
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="text-[11.5px] text-[var(--a-text-3)]">{t('obSourceFile')}:</span>
+        {withFiles.map((batch) => (
+          <button
+            key={batch.id || batch.source_document!.id}
+            type="button"
+            onClick={() => void handleDownloadSourceFile(batch.source_document!)}
+            className="inline-flex items-center gap-1 rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 py-0.5 text-[12px] font-medium text-[var(--a-text)] transition hover:bg-[var(--a-surface-2)]"
+          >
+            <Download className="h-3 w-3" />
+            <span>{batch.source_document!.file_name}</span>
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   // Re-import a single committed layer: undo just this layer (delete its entries /
   // open items), leaving the others, then reopen the upload step. Only offered while
   // the set is not locked (a finalized import must go through the full reset).
@@ -1150,6 +1203,7 @@ export default function OpeningBalancesPage() {
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
           <div className="flex-1 text-[13px] text-[var(--a-text-2)]">
             {t('obMidYearDocImported')}
+            {sourceFileChips([currentLayerBatchType()])}
             {/* Re-import this one layer — only before the set is locked. */}
             {!reconLocked && currentLayerBatchType() && (
               <div className="mt-1.5">
@@ -1172,6 +1226,7 @@ export default function OpeningBalancesPage() {
           <Lock className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-pos)]" />
           <div className="text-[13px]">
             <div className="font-semibold text-[var(--a-text)]">{t('openingBalancesAlreadyImported')}</div>
+            {sourceFileChips([mode])}
             <div className="mt-0.5 text-[var(--a-text-2)]">
               {t('openingBalancesAlreadyImportedDescription')}{' '}
               <Link href="/settings?tab=data-management" className="font-medium text-[var(--a-accent)] hover:underline">

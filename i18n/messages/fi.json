@@ -330,7 +330,8 @@
     "monthEndBannerBlockers": "{count} items block the close — open the month-end workspace",
     "monthEndBannerReady": "All checks passed — ready to close",
     "monthEndCloseWarning": "The following items still block this month:",
-    "monthEndCloseConfirm": "Close the period anyway?"
+    "monthEndCloseConfirm": "Close the period anyway?",
+    "obSourceFile": "Lähdetiedosto"
   },
   "reports": {
     "balanceSheet": "Tase",

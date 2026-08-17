@@ -530,7 +530,13 @@ export const accountingApi = {
       reset_reference_date: string | null;
       reset_window_months: number;
       opening_balances_strategy: 'with_general' | 'subledger_only' | 'mid_year' | null;
-      committed_batches: Array<{ id: string; batch_type: string; opening_date: string; committed_at: string }>;
+      committed_batches: Array<{
+        id: string;
+        batch_type: string;
+        opening_date: string;
+        committed_at: string;
+        source_document: { id: string; file_name: string; file_size: number | null } | null;
+      }>;
       reconciliation?: any;
     }>>('/api/accounting/opening-balances/import-status');
     return response.data.data;
