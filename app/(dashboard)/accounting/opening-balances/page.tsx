@@ -1907,6 +1907,25 @@ function OBReview(props: {
         </div>
       )}
 
+      {/* What the parser did with the file: rows skipped as fully paid, credit
+          notes, entry-number-only rows. The first thing to read when the
+          imported total does not match the control account. */}
+      {(importResult?.warnings?.length ?? 0) > 0 && (
+        <div className="mt-3 rounded-[10px] border border-[var(--a-warn,#d97706)]/30 bg-[var(--a-warn-soft,#fffbeb)] px-3.5 py-2.5">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[var(--a-warn,#d97706)]" />
+            <div className="text-[12.5px] text-[var(--a-text-2)]">
+              <div className="font-semibold text-[var(--a-text)]">{t('obParseNotes')}</div>
+              <ul className="mt-1 list-disc space-y-0.5 pl-4">
+                {importResult!.warnings!.map((warning, index) => (
+                  <li key={index}>{warning}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {mode === 'general' ? (
         <GeneralTable
           t={t}
@@ -2317,14 +2336,19 @@ function GeneralTable({
   );
 }
 
-function OBSummaryCard({ label, value, check, ok }: { label: string; value: number; check?: boolean; ok?: boolean }) {
+function OBSummaryCard({ label, value, check, ok, count, hint }: {
+  label: string; value?: number; check?: boolean; ok?: boolean;
+  // count renders a plain integer instead of a money value (invoice counts).
+  count?: number; hint?: string;
+}) {
   const tone = check ? (ok ? 'var(--a-pos)' : 'var(--a-neg)') : 'var(--a-text)';
   return (
     <div className="rounded-[9px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3.5 py-3">
       <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{label}</div>
       <div className="mt-1.5 font-mono text-[18px] font-semibold tabular-nums" style={{ color: tone }}>
-        {check && ok ? '€0.00 ✓' : fmt(Math.abs(value))}
+        {typeof count === 'number' ? count : check && ok ? '€0.00 ✓' : fmt(Math.abs(value ?? 0))}
       </div>
+      {hint && <div className="mt-0.5 text-[11px] text-[var(--a-text-3)]">{hint}</div>}
     </div>
   );
 }
@@ -2356,6 +2380,11 @@ function SubledgerTable({
   // Manual äriregister lookup for a single row (opened when auto-match found nothing
   // and the accountant wants to see the candidates / why).
   const [lookupRow, setLookupRow] = useState<SubledgerRow | null>(null);
+
+  // Rows that will actually become invoices (a zero/blank amount is not an open
+  // item), and how many of them are credit notes / prepayments.
+  const importableRows = rows.filter((row) => Number(row.amount || 0) !== 0);
+  const creditRowCount = importableRows.filter((row) => Number(row.amount) < 0).length;
 
   const updateRow = (id: string, key: keyof SubledgerRow, value: string) => {
     onChange(rows.map((row) => (row.id === id ? { ...row, [key]: value } : row)));
@@ -2558,8 +2587,15 @@ function SubledgerTable({
         </div>
       </div>
 
-      <div className="mt-3.5 grid grid-cols-1 sm:max-w-[260px]">
+      {/* Count next to the total: when the sum does not match the control
+          account, the first thing to check is whether every invoice came in. */}
+      <div className="mt-3.5 grid grid-cols-2 gap-3 sm:max-w-[540px]">
         <OBSummaryCard label={t('obOpenItemTotal')} value={total} />
+        <OBSummaryCard
+          label={t('obOpenItemCount')}
+          count={importableRows.length}
+          hint={creditRowCount > 0 ? t('obCreditRowsHint', { count: creditRowCount }) : undefined}
+        />
       </div>
 
       {lookupRow && (
@@ -2758,6 +2794,9 @@ function OBPreview({
             ) : (
               <OBPreviewTotal label={t('obLineTotal')} value={lineTotal} />
             )}
+            {/* How many invoices this import will create — the count to check
+                first when the total does not match the control account. */}
+            {mode !== 'general' && <OBPreviewTotal label={t('obOpenItemCount')} count={lines.length} />}
             <div className="flex flex-1 items-center gap-2.5 rounded-[10px] border border-[var(--a-pos)]/40 bg-[var(--a-pos-soft)] px-4 py-3.5">
               <CheckCircle2 className="h-[18px] w-[18px] text-[var(--a-pos)]" />
               <div>
@@ -2861,11 +2900,13 @@ function OBPreview({
   );
 }
 
-function OBPreviewTotal({ label, value }: { label: string; value: number }) {
+function OBPreviewTotal({ label, value, count }: { label: string; value?: number; count?: number }) {
   return (
     <div className="flex-1 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-4.5 py-3.5">
       <div className="text-[10px] uppercase tracking-[0.08em] text-[var(--a-text-3)]">{label}</div>
-      <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-[var(--a-text)]">{fmt(value)}</div>
+      <div className="mt-1 font-mono text-[22px] font-semibold tabular-nums text-[var(--a-text)]">
+        {typeof count === 'number' ? count : fmt(value ?? 0)}
+      </div>
     </div>
   );
 }
