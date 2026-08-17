@@ -1973,8 +1973,10 @@ const OB_COLS = (showPartner: boolean) =>
 
 // Ghost cell input (design .cell-in): reads as text until hovered/focused, so a
 // full table of inputs scans like a list instead of a wall of form fields.
+// min-w-0 matters: a bare input's intrinsic width (~170px) otherwise overflows
+// a narrower grid track and its text paints over the neighbouring column.
 const CELL_IN =
-  'h-[34px] w-full rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] text-[var(--a-text)] transition-colors hover:border-[var(--a-border)] hover:bg-[var(--a-surface)] focus:border-[var(--a-accent)] focus:bg-white focus:shadow-[0_0_0_3px_var(--a-accent-soft)] focus:outline-none';
+  'h-[34px] w-full min-w-0 rounded-[8px] border border-transparent bg-transparent px-2.5 text-[13px] text-[var(--a-text)] transition-colors hover:border-[var(--a-border)] hover:bg-[var(--a-surface)] focus:border-[var(--a-accent)] focus:bg-white focus:shadow-[0_0_0_3px_var(--a-accent-soft)] focus:outline-none';
 // Zebra stripe for even rows (design --row-alt).
 const ROW_ALT = '#faf8f3';
 // Index chip (design .idx .n).
@@ -2355,7 +2357,9 @@ function OBSummaryCard({ label, value, check, ok, count, hint }: {
 
 // Merged partner cell (name + link chip) and a paired date cell keep each open
 // item on ONE readable line (design: .partner-cell / .dates).
-const SUB_GRID = '34px minmax(240px,1.6fr) 128px 96px 96px minmax(120px,1fr) 236px 112px 36px';
+// Wider number/reference/description tracks: invoice numbers like "2026-1055"
+// and Merit references (MA-198) need ~9ch; description gets the leftover space.
+const SUB_GRID = '34px minmax(220px,1.5fr) 120px 116px 116px minmax(160px,1.3fr) 236px 108px 36px';
 
 // ─── Subledger table ──────────────────────────────────────────────────────────
 function SubledgerTable({
@@ -2457,7 +2461,7 @@ function SubledgerTable({
 
         <div className="overflow-x-auto">
           <div
-            className="grid min-w-[1140px] items-center gap-3 bg-[var(--a-surface-2)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
+            className="grid min-w-[1250px] items-center gap-3 bg-[var(--a-surface-2)] px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.05em] text-[var(--a-text-3)]"
             style={{ gridTemplateColumns: SUB_GRID }}
           >
             <div>#</div>
@@ -2474,7 +2478,7 @@ function SubledgerTable({
           {rows.map((row, index) => (
             <div
               key={row.id}
-              className="grid min-w-[1140px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-1.5"
+              className="grid min-w-[1250px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-1.5"
               style={{ gridTemplateColumns: SUB_GRID, background: index % 2 === 1 ? ROW_ALT : 'transparent' }}
             >
               <div className={IDX_CHIP}>{index + 1}</div>
