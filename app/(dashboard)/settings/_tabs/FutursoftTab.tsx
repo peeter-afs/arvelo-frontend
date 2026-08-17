@@ -457,16 +457,30 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
             )}
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
-            <div className="font-medium text-slate-900">{t('status')}</div>
-            <div className="mt-2 space-y-1 text-xs text-slate-600">
-              <div>{t('lastSyncAt')}: {futursoftSettings?.last_sync_at ? new Date(futursoftSettings.last_sync_at).toLocaleString() : t('notRun')}</div>
-              <div>{t('lastSyncStatus')}: {futursoftSettings?.last_sync_status || t('notRun')}</div>
-              <div>{t('lastImportedCount')}: {futursoftSettings?.last_imported_count ?? t('na')}</div>
-              <div>{t('lastTestStatus')}: {futursoftSettings?.last_test_status || t('notRun')}</div>
-              <div>{t('lastError')}: {futursoftSettings?.last_error_message || t('none')}</div>
-            </div>
-          </div>
+          {/* A run that imported only part of its batch must not look like a
+              clean success — that is how 129 unposted invoices went unnoticed. */}
+          {(() => {
+            const syncStatus = futursoftSettings?.last_sync_status || null;
+            const hasProblem = syncStatus === 'failed' || syncStatus === 'partial' || !!futursoftSettings?.last_error_message;
+            return (
+              <div
+                className={`rounded-lg border p-4 text-sm ${
+                  hasProblem ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-slate-200 bg-slate-50 text-slate-700'
+                }`}
+              >
+                <div className={`font-medium ${hasProblem ? 'text-amber-900' : 'text-slate-900'}`}>{t('status')}</div>
+                <div className={`mt-2 space-y-1 text-xs ${hasProblem ? 'text-amber-900' : 'text-slate-600'}`}>
+                  <div>{t('lastSyncAt')}: {futursoftSettings?.last_sync_at ? new Date(futursoftSettings.last_sync_at).toLocaleString() : t('notRun')}</div>
+                  <div>{t('lastSyncStatus')}: {syncStatus || t('notRun')}</div>
+                  <div>{t('lastImportedCount')}: {futursoftSettings?.last_imported_count ?? t('na')}</div>
+                  <div>{t('lastTestStatus')}: {futursoftSettings?.last_test_status || t('notRun')}</div>
+                  <div className={futursoftSettings?.last_error_message ? 'font-medium' : undefined}>
+                    {t('lastError')}: {futursoftSettings?.last_error_message || t('none')}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="flex flex-wrap gap-3">
             <button
