@@ -360,7 +360,10 @@
     "customPeriod": "Mukautettu",
     "change": "Muutos",
     "totalCategory": "Yhteensä {category}",
-    "profitLossDescriptionDetailed": "Tuotot, kulut ja tulos valitulta jaksolta"
+    "profitLossDescriptionDetailed": "Tuotot, kulut ja tulos valitulta jaksolta",
+    "turnoverReport": "Tilikohtainen erittely",
+    "agingReport": "Erääntymisraportti",
+    "annualReport": "Tilinpäätös"
   },
   "invoices": {
     "title": "Laskut",

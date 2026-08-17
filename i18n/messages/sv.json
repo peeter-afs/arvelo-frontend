@@ -360,7 +360,10 @@
     "customPeriod": "Anpassad",
     "change": "Förändring",
     "totalCategory": "Totalt {category}",
-    "profitLossDescriptionDetailed": "Intäkter, kostnader och resultat för vald period"
+    "profitLossDescriptionDetailed": "Intäkter, kostnader och resultat för vald period",
+    "turnoverReport": "Kontoomsättning",
+    "agingReport": "Åldersanalys",
+    "annualReport": "Årsredovisning"
   },
   "invoices": {
     "title": "Fakturor",
