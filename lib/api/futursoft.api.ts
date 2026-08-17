@@ -33,6 +33,8 @@ export type FutursoftSyncResult = {
   imported_count: number;
   skipped_count: number;
   failed_count: number;
+  /** Gross total of the invoices imported by this run. */
+  imported_total?: number;
 };
 
 export type FutursoftAccountRule = {

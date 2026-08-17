@@ -29,6 +29,8 @@ import apiClient, { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { importApi, type OpeningBalanceImportResult } from '@/lib/api/import.api';
 import { RoleMappingDialog } from '@/components/accounting/RoleMappingDialog';
+import { OpeningSystemRolesStep } from '@/components/accounting/OpeningSystemRolesStep';
+import { SYSTEM_ROLES } from '@/lib/constants/systemRoles';
 import { Button } from '@/components/ui/Button';
 import { getIsoToday } from '@/lib/utils/date';
 
@@ -186,6 +188,10 @@ export default function OpeningBalancesPage() {
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
   const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
+  // System-account (role) mapping: shown as its own step right after the balance
+  // sheet is committed, and as a banner for as long as any role is unset.
+  const [showSystemRoles, setShowSystemRoles] = useState(false);
+  const [unsetRoleCount, setUnsetRoleCount] = useState(0);
   const [importSource, setImportSource] = useState<'auto' | 'merit' | 'generic'>('auto');
   // Each type (general / receivables / payables) is imported independently, so the
   // "already imported" lock is per-mode — committing the balance sheet must not
@@ -406,6 +412,11 @@ export default function OpeningBalancesPage() {
           if (arId) setReceivablesOffsetAccountId((prev) => prev || arId);
           if (apId) setPayablesOffsetAccountId((prev) => prev || apId);
         }
+        // An unset system role only fails much later, deep inside posting
+        // ("vat_output_account_id is not configured"), so surface it here.
+        setUnsetRoleCount(
+          SYSTEM_ROLES.filter((role) => !(settings as Record<string, unknown> | null)?.[role.setting_key]).length
+        );
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -708,6 +719,11 @@ export default function OpeningBalancesPage() {
       }
 
       setCommitResult(result);
+      // The chart of accounts now exists, so this is the moment to bind the
+      // system roles to it — before any invoice tries to post against them.
+      if (mode === 'general' && unsetRoleCount > 0) {
+        setShowSystemRoles(true);
+      }
       // Mid-year general layers share mode 'general'; their lock is tracked by
       // batch_type (isImported), so don't coarsely mark the whole 'general' mode.
       if (!(strategy === 'mid_year' && mode === 'general')) {
@@ -1085,6 +1101,36 @@ export default function OpeningBalancesPage() {
               {m === 'receivables' ? t('obModeReceivables') : t('obModePayables')}
             </button>
           ))}
+        </div>
+      )}
+
+      {/* System accounts (roles). Shown as its own step right after the balance
+          sheet is committed, and kept reachable by a banner until every role is
+          bound — an unset role only surfaces much later, as a posting failure. */}
+      {!effectiveFocus && showSystemRoles && (
+        <OpeningSystemRolesStep
+          accounts={accounts}
+          onDone={() => {
+            setUnsetRoleCount(0);
+            setShowSystemRoles(false);
+          }}
+          onSkip={() => setShowSystemRoles(false)}
+        />
+      )}
+
+      {!effectiveFocus && !showSystemRoles && unsetRoleCount > 0 && (
+        <div className="mt-2 flex flex-wrap items-center gap-2.5 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3.5 py-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-[var(--a-warn)]" />
+          <span className="flex-1 text-[12.5px] text-[var(--a-text)]">
+            {t('obSystemRolesBanner', { count: unsetRoleCount })}
+          </span>
+          <button
+            type="button"
+            onClick={() => setShowSystemRoles(true)}
+            className="inline-flex h-8 items-center rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[12.5px] font-medium text-[var(--a-text)] transition hover:bg-[var(--a-surface-2)]"
+          >
+            {t('obSystemRolesOpen')}
+          </button>
         </div>
       )}
 

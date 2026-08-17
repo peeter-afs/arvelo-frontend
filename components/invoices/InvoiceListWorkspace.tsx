@@ -31,6 +31,7 @@ import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
 import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
 import { futursoftApi } from '@/lib/api/futursoft.api';
+import { showToast } from '@/components/ui/Toast';
 import { bankGatewayApi, type EinvoiceDispatch } from '@/lib/api/bankGateway.api';
 
 type InvoiceDetail = {
@@ -208,8 +209,20 @@ export default function InvoiceListWorkspace({
     futursoftApi
       .sync({ trigger: 'on_access' })
       .then((result) => {
-        if (!cancelled && result.status === 'success' && result.imported_count > 0) {
+        if (cancelled || result.status !== 'success') return;
+        // Tell the user what just changed under them — an import that silently
+        // adds invoices to the list is impossible to distinguish from stale data.
+        if (result.imported_count > 0) {
+          showToast.success(
+            t('futursoftImported', {
+              count: result.imported_count,
+              amount: formatMoney(result.imported_total ?? 0),
+            })
+          );
           void refreshInvoices();
+        }
+        if (result.failed_count > 0) {
+          showToast.error(t('futursoftImportFailed', { count: result.failed_count }));
         }
       })
       .catch(() => {});
