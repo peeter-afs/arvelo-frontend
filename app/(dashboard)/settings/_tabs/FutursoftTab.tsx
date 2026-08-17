@@ -21,6 +21,7 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
     default_page_size: 100,
     start_date: '',
     line_grouping: 'itemized' as 'itemized' | 'by_account' | 'by_type',
+    auto_post: false,
   });
   const [futursoftLoading, setFutursoftLoading] = useState(false);
   const [futursoftSaving, setFutursoftSaving] = useState(false);
@@ -55,6 +56,7 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
           default_page_size: settings.default_page_size ?? 100,
           start_date: settings.start_date || '',
           line_grouping: (settings.line_grouping as 'itemized' | 'by_account' | 'by_type') || 'itemized',
+          auto_post: settings.auto_post ?? false,
         });
         setFutursoftRules(rules);
         const revenue = accounts.filter((a) => a.type === 'revenue' && a.is_active);
@@ -81,6 +83,7 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
         default_page_size: futursoftForm.default_page_size,
         start_date: futursoftForm.start_date || null,
         line_grouping: futursoftForm.line_grouping,
+        auto_post: futursoftForm.auto_post,
       });
       setFutursoftSettings(updated);
       setFutursoftForm((current) => ({ ...current, api_key: '' }));
@@ -244,6 +247,21 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
               </div>
             </label>
 
+            <label className="flex items-center gap-3 rounded-lg border border-slate-200 p-4">
+              <input
+                type="checkbox"
+                checked={futursoftForm.auto_post}
+                onChange={(event) => setFutursoftForm((current) => ({ ...current, auto_post: event.target.checked }))}
+                className="h-4 w-4"
+              />
+              <div>
+                <div className="text-sm font-medium text-slate-900">{t('futursoftAutoPost')}</div>
+                <div className="text-xs text-slate-500">{t('futursoftAutoPostDescription')}</div>
+              </div>
+            </label>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
             <div className="rounded-lg border border-slate-200 p-4">
               <div className="text-sm font-medium text-slate-900">{t('futursoftApiKey')}</div>
               <div className="mt-2 text-xs text-slate-500">

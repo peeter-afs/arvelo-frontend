@@ -1822,6 +1822,8 @@
     "futursoftConfigureAccountsWarning": "Enne lubamist seadista vaikimisi müügikontod (tarneliikide kaupa) ja veendu, et arvete kuupäevad jäävad avatud perioodi — vastasel juhul ei õnnestu arveid automaatselt kanda.",
     "futursoftEnabled": "Integratsioon lubatud",
     "futursoftEnabledDescription": "Lülitab Futursoft müügiarvete impordi sisse või välja.",
+    "futursoftAutoPost": "Kinnita arved automaatselt",
+    "futursoftAutoPostDescription": "Väljas: imporditud arved jäävad mustandiks ja ootavad sinu kinnitust. Sees: arved kinnitatakse ja kantakse pearaamatusse kohe impordil.",
     "futursoftApiKey": "API võti",
     "futursoftApiKeyStored": "API võti (salvestatud)",
     "futursoftBaseUrl": "API baas-URL",

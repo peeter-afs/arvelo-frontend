@@ -1822,6 +1822,8 @@
     "futursoftConfigureAccountsWarning": "Before enabling, configure default sales accounts (per supply type) and make sure invoice dates fall in an open period — otherwise invoices cannot be posted automatically.",
     "futursoftEnabled": "Integration enabled",
     "futursoftEnabledDescription": "Turns the Futursoft sales invoice import on or off.",
+    "futursoftAutoPost": "Confirm invoices automatically",
+    "futursoftAutoPostDescription": "Off: imported invoices stay as drafts awaiting your confirmation. On: invoices are confirmed and posted to the ledger as they are imported.",
     "futursoftApiKey": "API key",
     "futursoftApiKeyStored": "API key (stored)",
     "futursoftBaseUrl": "API base URL",

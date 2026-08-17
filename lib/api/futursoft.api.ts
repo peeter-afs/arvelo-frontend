@@ -17,6 +17,7 @@ export type FutursoftSettings = {
   internal_sales: number;
   start_date: string | null;
   line_grouping: string;
+  auto_post: boolean;
   last_sync_at: string | null;
   last_sync_status: string | null;
   last_imported_count: number | null;
@@ -71,6 +72,7 @@ export const futursoftApi = {
     internal_sales?: number;
     start_date?: string | null;
     line_grouping?: 'itemized' | 'by_account' | 'by_type';
+    auto_post?: boolean;
   }) {
     const response = await apiClient.put<ApiResponse<FutursoftSettings>>('/api/tenant-admin/integrations/futursoft', payload);
     return response.data.data;
