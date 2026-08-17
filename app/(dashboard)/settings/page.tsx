@@ -33,6 +33,9 @@ const KNOWN_TAB_IDS = [
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
+  // System-role labels live in the accounting namespace (shared with the
+  // opening-balance import), not in settings.
+  const tAccounting = useTranslations('accounting');
   const { user, tenant, role, setTenant } = useAuthStore();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -912,6 +915,7 @@ export default function SettingsPage() {
                     creatingDefaults={creatingDefaults}
                     onSave={handleSaveSystemRoles}
                     onCreateDefaults={handleCreateDefaultChart}
+                    roleLabel={(systemCode) => tAccounting(`role_${systemCode}`)}
                     labels={{
                       title: t('systemRolesTitle'),
                       description: t('systemRolesDescription'),

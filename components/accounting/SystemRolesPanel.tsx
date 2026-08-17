@@ -12,6 +12,8 @@ type SystemRolesPanelProps = {
   creatingDefaults?: boolean;
   onSave: (mapping: SystemRoleMapping) => Promise<void> | void;
   onCreateDefaults: () => Promise<void> | void;
+  /** Translates a role's system_code. Falls back to the English constant. */
+  roleLabel?: (systemCode: string) => string;
   labels: {
     title: string;
     description: string;
@@ -31,6 +33,7 @@ export function SystemRolesPanel({
   creatingDefaults = false,
   onSave,
   onCreateDefaults,
+  roleLabel,
   labels,
 }: SystemRolesPanelProps) {
   const [mapping, setMapping] = useState<SystemRoleMapping>({});
@@ -74,7 +77,9 @@ export function SystemRolesPanel({
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {SYSTEM_ROLES.map((role) => (
               <label key={role.system_code} className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">{role.label}</span>
+                <span className="mb-1 block text-sm font-medium text-slate-700">
+                  {roleLabel ? roleLabel(role.system_code) : role.label}
+                </span>
                 <select
                   value={mapping[role.setting_key] || ''}
                   onChange={(event) =>

@@ -101,7 +101,7 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
                 const isSkipped = !!skipped[role.setting_key];
                 return (
                   <div key={role.system_code} className="grid grid-cols-[140px_1fr_auto] items-center gap-3">
-                    <span className="text-sm font-medium text-slate-700">{role.label}</span>
+                    <span className="text-sm font-medium text-slate-700">{t(`role_${role.system_code}`)}</span>
                     <select
                       value={selection[role.setting_key] || ''}
                       disabled={isSkipped}
