@@ -1071,7 +1071,9 @@ function matchesInvoiceTab(invoice: InvoiceListItem, activeTab: string, isPurcha
 }
 
 function isOpenInvoice(invoice: InvoiceListItem) {
-  return Number(invoice.open_amount || 0) > 0 && !['paid', 'cancelled'].includes(invoice.status);
+  // Credit notes / prepayments have a negative open amount and are still open
+  // items — excluding them made the outstanding totals too high.
+  return Math.abs(Number(invoice.open_amount || 0)) > 0.005 && !['paid', 'cancelled'].includes(invoice.status);
 }
 
 function isOverdue(invoice: InvoiceListItem) {

@@ -46,7 +46,11 @@ function periodRange(period: Period) {
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
 const openAmt = (inv: InvoiceListItem) => num(inv.open_amount ?? inv.total);
-const isUnpaid = (inv: InvoiceListItem) => inv.status !== 'draft' && openAmt(inv) > 0.005;
+// Credit notes and prepayments carry a NEGATIVE open amount and must stay in:
+// they reduce what is still collectible. Requiring > 0 dropped them entirely,
+// which overstated the outstanding total by the whole credit amount.
+const isUnpaid = (inv: InvoiceListItem) =>
+  inv.status !== 'draft' && inv.status !== 'cancelled' && Math.abs(openAmt(inv)) > 0.005;
 function daysSince(isoDate: string) {
   return (new Date().getTime() - new Date(isoDate).getTime()) / 86400000;
 }
