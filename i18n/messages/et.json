@@ -614,7 +614,7 @@
     "draftsCreatedSummary": "Loodud {created} draft ostuarvet, vahele jäetud {skipped}.",
     "draftLinkLabel": "Mustand {n}",
     "excludedByRule": "Välistatud: {rule}",
-    "createDraftsButton": "Loo draftid ({count})",
+    "createDraftsButton": "Loo mustandid ({count})",
     "noReceiptExpected": "Kviitungit pole oodata",
     "noReceiptExpectedDescription": "See makse ei vaja kviitungit. Peata aktiivsed meeldetuletused.",
     "dismissReason": "Põhjus (valikuline)",

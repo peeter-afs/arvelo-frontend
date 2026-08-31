@@ -401,7 +401,8 @@
     "draftsRemovedCount": "Removed {count} draft(s)",
     "autoCreateDraftsLabel": "Create missing purchase invoice drafts automatically",
     "autoCreateDraftsDescription": "Committing a bank import creates a draft purchase invoice for every unmatched outgoing payment. The exclusion rules below decide what is skipped.",
-    "ruleFieldPrivatePerson": "Payee is a private person (no registry code)"
+    "ruleFieldPrivatePerson": "Payee is a private person (no registry code)",
+    "createDraftsButton": "Create drafts ({count})"
   },
   "reports": {
     "balanceSheet": "Tase",

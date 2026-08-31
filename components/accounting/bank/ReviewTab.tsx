@@ -6,6 +6,7 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  FileQuestion,
   Loader2,
   RefreshCw,
 } from 'lucide-react';
@@ -315,6 +316,29 @@ export function ReviewTab({
     setSelectedIds(new Set(items.filter((item) => item.auto_match_ready).map((item) => item.transaction_id)));
   };
 
+  const draftableSelected = items.filter(
+    (item) => selectedIds.has(item.transaction_id) && item.amount < 0 && !item.has_missing_receipt_placeholder
+  );
+
+  // Manual fallback for rows the import did not draft -- an exclusion rule caught
+  // them, auto-create was off, or they arrived before the feature existed.
+  const handleBulkCreateDrafts = async () => {
+    const ids = draftableSelected.map((item) => item.transaction_id);
+    if (ids.length === 0) return;
+    await runAction('bulk-drafts', async () => {
+      const result = await bankingApi.bulkMarkMissingReceipt(ids);
+      setLastDraftTxIds(result.created.map((entry) => entry.transaction_id));
+      setSelectedIds(new Set());
+      if (result.errors.length > 0) {
+        const details = result.errors.slice(0, 3).map((entry) => `${entry.transaction_id.slice(0, 8)}: ${entry.error}`).join(' · ');
+        setErrorMessage(`${t('draftsCreatedCount', { count: result.created.length })}\n${details}`);
+      } else {
+        setSuccessMessage(t('draftsCreatedCount', { count: result.created.length }));
+      }
+      await refreshQueue(selectedTransactionId);
+    });
+  };
+
   const handleBulkAutoMatch = async () => {
     const ids = items
       .filter((item) => selectedIds.has(item.transaction_id) && item.auto_match_summary && !droppedIds.has(item.transaction_id))
@@ -517,6 +541,7 @@ export function ReviewTab({
 
       <BankFooterBar status={bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : selectedIds.size > 0 ? `${t('selectedCount', { count: selectedIds.size })} · ${autoReadySelected.length} ${t('autoReady')}` : t('autoReadyCount', { count: queueCounts.autoReady })}>
         {bulkConfirmOpen ? <button onClick={() => setBulkConfirmOpen(false)} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('back')}</button> : selectedIds.size > 0 ? <button onClick={() => setSelectedIds(new Set())} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('clearSelection')}</button> : queueCounts.autoReady > 0 ? <button onClick={selectAutoReady} className="h-8 rounded-lg px-3 text-xs text-[var(--primary)] hover:bg-orange-50">{t('selectAllAutoReady')}</button> : null}
+        {!bulkConfirmOpen && draftableSelected.length > 0 && <button onClick={handleBulkCreateDrafts} disabled={!!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{actionLoading === 'bulk-drafts' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />} {t('createDraftsButton', { count: draftableSelected.length })}</button>}
         <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>
       </BankFooterBar>
 
