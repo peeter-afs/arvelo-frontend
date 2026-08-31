@@ -117,6 +117,8 @@ export type BankReviewQueueItem = {
   auto_match_summary?: BankAutoMatchSummary;
   // >1 when the payment settles several invoices at once.
   auto_match_invoice_count?: number;
+  // Counter accounts used before for this counterparty, most recent first.
+  suggested_accounts?: Array<{ account_id: string; code: string; name: string; reason?: string }>;
   top_candidates: BankMatchCandidate[];
   has_missing_receipt_placeholder: boolean;
   placeholder_invoice_id: string | null;

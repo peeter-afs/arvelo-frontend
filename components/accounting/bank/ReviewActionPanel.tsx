@@ -136,15 +136,16 @@ export function ReviewActionPanel({
   const pickedInvoice = suggestedCandidates.find((candidate) => candidate.invoice_id === selectedInvoiceId);
   const pickedAccount = accounts.find((account) => account.id === manualAccountId);
 
-  const suggestedAccounts: SuggestedAccount[] = useMemo(() => (
-    selectedItem.suggested_manual_account_id
+  const suggestedAccounts: SuggestedAccount[] = useMemo(() => {
+    if (selectedItem.suggested_accounts?.length) return selectedItem.suggested_accounts;
+    return selectedItem.suggested_manual_account_id
       ? [{
           account_id: selectedItem.suggested_manual_account_id,
           code: selectedItem.suggested_manual_account_code || '',
           name: selectedItem.suggested_manual_account_name || '',
         }]
-      : []
-  ), [selectedItem]);
+      : [];
+  }, [selectedItem]);
 
   const routes: Array<{ key: Route; label: string; count?: number; hidden?: boolean }> = [
     { key: 'match', label: t('routeMatch'), hidden: !autoMatchPlan },
