@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { FileUp, Info, Landmark, ListChecks, Scale } from 'lucide-react';
+import { FileUp, Landmark, ListChecks, Scale } from 'lucide-react';
 import { BankTabBar, type BankTab } from './BankTabBar';
-import { BankTabNote } from './shared';
+import { BankInlineSummary, type BankInlineSummaryData } from './shared';
 import { ImportTab } from './ImportTab';
 import { ReviewTab } from './ReviewTab';
 import { ReconcileTab } from './ReconcileTab';
@@ -27,6 +27,7 @@ export function BankWorkspace() {
   const [importReviewCount, setImportReviewCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
   const [reconcileCount, setReconcileCount] = useState(0);
+  const [summaries, setSummaries] = useState<Partial<Record<BankTab, BankInlineSummaryData>>>({});
 
   // Keep the active tab in sync with the URL (back/forward, refresh, deep links).
   useEffect(() => {
@@ -50,49 +51,47 @@ export function BankWorkspace() {
     changeTab('review');
   }, [changeTab]);
 
-  // Per-tab explainer lives beside the tab bar (fixed-height note); the
-  // subtitle under the h1 stays short and generic so the header never moves.
-  const tabNote =
-    activeTab === 'import'
-      ? { icon: FileUp, text: t('bankImportHeaderNote') }
-      : activeTab === 'review'
-        ? { icon: ListChecks, text: t('bankReviewHeaderNote') }
-        : { icon: Info, text: t('bankReconcileHeaderNote') };
+  const updateSummary = useCallback((tab: BankTab, summary: BankInlineSummaryData) => {
+    setSummaries((current) => ({ ...current, [tab]: summary }));
+  }, []);
+  const updateImportSummary = useCallback((summary: BankInlineSummaryData) => updateSummary('import', summary), [updateSummary]);
+  const updateReviewSummary = useCallback((summary: BankInlineSummaryData) => updateSummary('review', summary), [updateSummary]);
+  const updateReconcileSummary = useCallback((summary: BankInlineSummaryData) => updateSummary('reconcile', summary), [updateSummary]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('bankWorkspace')}</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-500">{t('bankWorkspaceSubtitle')}</p>
+    <div className="flex h-full min-h-[520px] flex-col gap-2 overflow-hidden">
+      <div className="flex h-[30px] flex-shrink-0 items-baseline gap-2">
+        <h1 className="text-[17px] font-bold text-slate-900">{t('bankWorkspace')}</h1>
+        <p className="truncate text-xs text-slate-500">{t('bankWorkspaceSubtitle')}</p>
+        <button onClick={() => changeTab('import')} className="ml-auto inline-flex h-[30px] items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]">
+          <FileUp className="h-4 w-4" />
+          {t('importStatement')}
+        </button>
       </div>
 
-      <div className="flex h-[62px] flex-shrink-0 items-center gap-3.5">
+      <div className="flex h-[42px] flex-shrink-0 items-center gap-3 border-y border-slate-200">
         <BankTabBar
           active={activeTab}
           onChange={changeTab}
           tabs={[
-            { id: 'import', label: t('bankTabImport'), icon: Landmark, count: importReviewCount },
-            { id: 'review', label: t('bankTabReview'), icon: ListChecks, count: reviewCount },
-            { id: 'reconcile', label: t('bankTabReconcile'), icon: Scale, count: reconcileCount },
+            { id: 'import', label: t('bankTabImport'), icon: Landmark, count: importReviewCount, title: t('bankImportHeaderNote') },
+            { id: 'review', label: t('bankTabReview'), icon: ListChecks, count: reviewCount, title: t('bankReviewHeaderNote') },
+            { id: 'reconcile', label: t('bankTabReconcile'), icon: Scale, count: reconcileCount, title: t('bankReconcileHeaderNote') },
           ]}
         />
-        <div className="flex min-w-0 flex-1 items-center self-stretch">
-          <div className="min-w-0 flex-1">
-            <BankTabNote icon={tabNote.icon}>{tabNote.text}</BankTabNote>
-          </div>
-        </div>
+        <div className="ml-auto min-w-0"><BankInlineSummary data={summaries[activeTab]} /></div>
       </div>
 
       {/* All tabs stay mounted so in-progress state (e.g. the post-commit draft
           step) survives tab switches and badge counts stay live. */}
-      <div className={activeTab === 'import' ? '' : 'hidden'}>
-        <ImportTab onCommitted={handleCommitted} onReviewCountChange={setImportReviewCount} />
+      <div className={`min-h-0 flex-1 ${activeTab === 'import' ? '' : 'hidden'}`}>
+        <ImportTab onCommitted={handleCommitted} onReviewCountChange={setImportReviewCount} onSummaryChange={updateImportSummary} />
       </div>
-      <div className={activeTab === 'review' ? '' : 'hidden'}>
-        <ReviewTab refreshKey={reviewRefreshKey} onCountChange={setReviewCount} />
+      <div className={`min-h-0 flex-1 ${activeTab === 'review' ? '' : 'hidden'}`}>
+        <ReviewTab refreshKey={reviewRefreshKey} onCountChange={setReviewCount} onSummaryChange={updateReviewSummary} />
       </div>
-      <div className={activeTab === 'reconcile' ? '' : 'hidden'}>
-        <ReconcileTab onUnreconciledCountChange={setReconcileCount} />
+      <div className={`min-h-0 flex-1 ${activeTab === 'reconcile' ? '' : 'hidden'}`}>
+        <ReconcileTab onUnreconciledCountChange={setReconcileCount} onSummaryChange={updateReconcileSummary} />
       </div>
     </div>
   );

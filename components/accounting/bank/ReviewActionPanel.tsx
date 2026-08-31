@@ -3,6 +3,7 @@
 import { useState, type Dispatch, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
 import {
+  ArrowRight,
   CheckCircle2,
   ChevronDown,
   FileQuestion,
@@ -16,7 +17,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import type { AccountOption } from '@/lib/api/accounting.api';
-import type { BankMatchCandidate, BankReviewQueueItem } from '@/lib/api/banking.api';
+import type { BankAutoMatchPlan, BankAutoMatchReason, BankMatchCandidate, BankReviewQueueItem } from '@/lib/api/banking.api';
 import { formatLabel } from './shared';
 
 export type ManualAllocation = {
@@ -37,6 +38,8 @@ type Props = {
   selectedItem: BankReviewQueueItem;
   accounts: AccountOption[];
   suggestedCandidates: BankMatchCandidate[];
+  autoMatchPlan?: BankAutoMatchPlan;
+  autoMatchReason?: BankAutoMatchReason;
   isCandidateLoading: boolean;
   actionLoading: string | null;
   reviewNote: string;
@@ -65,6 +68,8 @@ export function ReviewActionPanel({
   selectedItem,
   accounts,
   suggestedCandidates,
+  autoMatchPlan,
+  autoMatchReason,
   isCandidateLoading,
   actionLoading,
   reviewNote,
@@ -107,36 +112,83 @@ export function ReviewActionPanel({
 
   return (
     <div className="space-y-4">
-      {/* Primary action row */}
-      <div className="card p-5">
-        <h2 className="text-sm font-semibold text-slate-900">{t('quickActions')}</h2>
-        <p className="mt-1 text-sm text-slate-500">{t('quickActionsDescription')}</p>
-        <div className="mt-4 grid gap-3">
-          <button
-            onClick={onAutoMatch}
-            disabled={!selectedItem.auto_match_ready || busy}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {actionLoading === 'auto' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            <span>{t('autoMatch')}</span>
-          </button>
+      {/* The primary decision is shown as a concrete, reviewable posting plan. */}
+      <div className="card p-4">
+        <div className="flex items-center gap-2 text-[10.5px] font-bold uppercase tracking-[0.11em] text-slate-500">
+          <Sparkles className="h-4 w-4" />
+          <span>{autoMatchPlan ? t('whatAutoMatchDoes') : t('noAutoMatch')}</span>
+        </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            <button
-              onClick={() => onReview('reviewed')}
-              disabled={busy}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {actionLoading === 'review-reviewed' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-              <span>{t('markReviewed')}</span>
+        {autoMatchPlan ? (
+          <div className="mt-3 grid items-stretch gap-2 lg:grid-cols-[minmax(0,1fr)_20px_minmax(0,1.15fr)]">
+            <div className="rounded-lg border border-slate-200 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{t('linksToInvoice')}</div>
+              <div className="mt-1 text-[13px] font-bold text-slate-900">{autoMatchPlan.invoice.invoice_number}</div>
+              <div className="truncate text-xs text-slate-600">{autoMatchPlan.invoice.partner_name || t('unknownPartner')}</div>
+              <div className="mt-0.5 text-[11px] text-slate-500">{t('dueDate')}: {autoMatchPlan.invoice.due_date}</div>
+              <div className="my-2 border-t border-dashed border-slate-200" />
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-[11.5px]">
+                <span className="text-slate-500">{t('invoiceOpenBefore')}</span>
+                <span className="font-mono font-semibold tabular-nums">{autoMatchPlan.invoice.open_amount_before.toFixed(2)}</span>
+                <span className="text-slate-500">{t('invoiceOpenAfter')}</span>
+                <span className="font-mono font-semibold tabular-nums">
+                  {autoMatchPlan.invoice.open_amount_after.toFixed(2)}
+                  {autoMatchPlan.invoice.settles_invoice && <span className="ml-1 text-emerald-700">· {t('invoiceSettled')}</span>}
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                {autoMatchPlan.match_reasons.map((reason) => (
+                  <span key={reason} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] text-slate-600">{formatLabel(reason)}</span>
+                ))}
+              </div>
+            </div>
+            <div className="hidden items-center justify-center lg:flex"><ArrowRight className="h-4 w-4 text-slate-400" /></div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-800">
+                {t('createsEntry', { date: autoMatchPlan.journal_preview?.entry_date || selectedItem.value_date || selectedItem.tx_date })}
+              </div>
+              {autoMatchPlan.journal_preview ? (
+                <div className="mt-2 space-y-1.5">
+                  {autoMatchPlan.journal_preview.lines.map((line, index) => (
+                    <div key={`${line.account_code}-${index}`} className="grid grid-cols-[52px_minmax(0,1fr)_auto] gap-2 text-[11.5px]">
+                      <span className="font-mono text-slate-500">{line.account_code}</span>
+                      <span className="truncate text-slate-700">{line.account_name}</span>
+                      <span className="font-mono font-semibold tabular-nums text-slate-900">{line.amount > 0 ? '+' : ''}{line.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-2 text-xs text-slate-500">{t('noInvoiceCandidates')}</div>
+              )}
+              <p className="mt-3 text-[11.5px] leading-4 text-slate-500">{t('entryPostedNote')}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 rounded-lg border border-[var(--primary)]/25 bg-orange-50 px-3 py-2 text-xs text-slate-700">
+            {autoMatchReason ? t(`autoMatchReason_${autoMatchReason}`) : t('noClearAutoMatchCandidate')}
+          </div>
+        )}
+
+        <div className="mt-3 flex min-h-9 flex-wrap items-center gap-2">
+          {autoMatchPlan && (
+            <button onClick={onAutoMatch} disabled={busy} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+              {actionLoading === 'auto' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {t('confirmMatch')} <kbd className="rounded border border-white/30 px-1 text-[10px]">↵</kbd>
             </button>
-            <button
-              onClick={() => onReview('pending')}
-              disabled={busy}
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {actionLoading === 'review-pending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />}
-              <span>{t('resetPending')}</span>
+          )}
+          <button onClick={() => document.getElementById('invoice-match-candidates')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50">{t('matchOtherInvoice')}</button>
+          <button onClick={() => { setShowOther(true); requestAnimationFrame(() => document.getElementById('other-bank-actions')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); }} className="h-9 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50">{t('postToAccount')}</button>
+          <div className="flex-1" />
+          <button onClick={onIgnore} disabled={busy} className="h-9 rounded-lg px-3 text-xs font-medium text-red-700 hover:bg-red-50 disabled:opacity-50">{t('ignoreTransaction')}</button>
+        </div>
+
+        <div className="mt-3 border-t border-slate-200 pt-3">
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => onReview('reviewed')} disabled={busy} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {actionLoading === 'review-reviewed' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}{t('markReviewed')}
+            </button>
+            <button onClick={() => onReview('pending')} disabled={busy} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {actionLoading === 'review-pending' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Filter className="h-4 w-4" />}{t('resetPending')}
             </button>
           </div>
 
@@ -162,7 +214,7 @@ export function ReviewActionPanel({
       </div>
 
       {/* Match to invoice (suggested matches + split) */}
-      <div className="card overflow-hidden">
+      <div id="invoice-match-candidates" className="card scroll-mt-3 overflow-hidden">
         <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
           <h2 className="text-base font-semibold text-slate-900">{t('matchToInvoice')}</h2>
           <p className="mt-1 text-sm text-slate-500">{t('suggestedInvoiceMatchesDescription')}</p>
@@ -265,7 +317,7 @@ export function ReviewActionPanel({
       </div>
 
       {/* Other actions (collapsed by default) */}
-      <div className="card overflow-hidden">
+      <div id="other-bank-actions" className="card scroll-mt-3 overflow-hidden">
         <button
           onClick={() => setShowOther((value) => !value)}
           className="flex w-full items-center justify-between px-5 py-4 text-left"

@@ -4,18 +4,15 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   AlertCircle,
-  CheckCircle2,
   ChevronDown,
-  ListChecks,
+  ChevronUp,
   Loader2,
   RefreshCw,
-  Sparkles,
-  UserCheck,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
-import { bankingApi, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
-import { BankFilterRow, BankFooterBar, BankProgress, BankSummaryStrip, InfoBox, formatLabel } from './shared';
+import { bankingApi, type BankAutoMatchPlan, type BankAutoMatchReason, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
+import { BankFooterBar, InfoBox, type BankInlineSummaryData } from './shared';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
@@ -23,15 +20,19 @@ type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 export function ReviewTab({
   refreshKey = 0,
   onCountChange,
+  onSummaryChange,
 }: {
   refreshKey?: number;
   onCountChange?: (count: number) => void;
+  onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
   const t = useTranslations('accounting');
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
   const [suggestedCandidates, setSuggestedCandidates] = useState<BankMatchCandidate[]>([]);
+  const [autoMatchPlan, setAutoMatchPlan] = useState<BankAutoMatchPlan | undefined>();
+  const [autoMatchReason, setAutoMatchReason] = useState<BankAutoMatchReason | undefined>();
   const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [isCandidateLoading, setIsCandidateLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -48,7 +49,9 @@ export function ReviewTab({
   // Bulk selection is a separate axis from the detail selection above: ticking a
   // checkbox never changes which transaction the right-hand panel shows.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null);
+  const [droppedIds, setDroppedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const [lastBulkMatchedIds, setLastBulkMatchedIds] = useState<string[]>([]);
   const [showDetails, setShowDetails] = useState(false);
   const [detailsItemId, setDetailsItemId] = useState<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -73,6 +76,8 @@ export function ReviewTab({
       setIsQueueLoading(true);
       setErrorMessage(null);
       setSelectedIds(new Set());
+      setDroppedIds(new Set());
+      setBulkConfirmOpen(false);
       try {
         const [queueResult, accountResult] = await Promise.all([
           bankingApi.getReviewQueue({
@@ -106,18 +111,26 @@ export function ReviewTab({
   }, [allSelected, someSelected]);
 
   useEffect(() => {
+    let cancelled = false;
     if (!selectedItem) {
       setSuggestedCandidates([]);
+      setAutoMatchPlan(undefined);
+      setAutoMatchReason(undefined);
       setManualAllocations([]);
       return;
     }
 
     const loadCandidates = async () => {
       setIsCandidateLoading(true);
+      setAutoMatchPlan(undefined);
+      setAutoMatchReason(undefined);
       setErrorMessage(null);
       try {
         const result = await bankingApi.suggestMatches(selectedItem.transaction_id);
+        if (cancelled) return;
         setSuggestedCandidates(result.candidates);
+        setAutoMatchPlan(result.auto_match_plan);
+        setAutoMatchReason(result.auto_match_reason);
         setManualAllocations(
           result.candidates.slice(0, 2).map((candidate) => ({
             invoice_id: candidate.invoice_id,
@@ -133,13 +146,15 @@ export function ReviewTab({
           || ''
         );
       } catch (error) {
+        if (cancelled) return;
         setErrorMessage(getErrorMessage(error));
       } finally {
-        setIsCandidateLoading(false);
+        if (!cancelled) setIsCandidateLoading(false);
       }
     };
 
     void loadCandidates();
+    return () => { cancelled = true; };
   }, [selectedItem]);
 
   const refreshQueue = async (preferredTransactionId?: string | null) => {
@@ -169,15 +184,12 @@ export function ReviewTab({
   };
 
   const handleAutoMatch = async () => {
-    if (!selectedItem) return;
+    if (!selectedItem || !autoMatchPlan) return;
+    const currentIndex = items.findIndex((item) => item.transaction_id === selectedItem.transaction_id);
+    const nextId = items[currentIndex + 1]?.transaction_id || items[currentIndex - 1]?.transaction_id || null;
     await runAction('auto', async () => {
-      const result = await bankingApi.autoMatch(selectedItem.transaction_id);
-      if (result.auto_matched) {
-        setSuccessMessage(t('transactionAutoMatchedAndPosted'));
-      } else {
-        setSuccessMessage(t('noClearAutoMatchCandidate'));
-      }
-      await refreshQueue(selectedItem.transaction_id);
+      await bankingApi.autoMatch(selectedItem.transaction_id);
+      await refreshQueue(nextId);
     });
   };
 
@@ -188,7 +200,6 @@ export function ReviewTab({
         review_state: state,
         note: reviewNote || undefined,
       });
-      setSuccessMessage(t('transactionMarkedState', { state: t(state) }));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -197,7 +208,6 @@ export function ReviewTab({
     if (!selectedItem) return;
     await runAction('ignore', async () => {
       await bankingApi.ignoreTransaction(selectedItem.transaction_id, { reason: ignoreReason || undefined });
-      setSuccessMessage(t('transactionIgnored'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -206,7 +216,6 @@ export function ReviewTab({
     if (!selectedItem) return;
     await runAction('mark-missing-receipt', async () => {
       await bankingApi.markMissingReceipt(selectedItem.transaction_id);
-      setSuccessMessage(t('receiptPlaceholderCreated'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -218,7 +227,6 @@ export function ReviewTab({
         reason: dismissReason || undefined,
       });
       setDismissReason('');
-      setSuccessMessage(t('receiptPlaceholderDismissed'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -230,7 +238,6 @@ export function ReviewTab({
         counter_account_id: manualAccountId,
         description: manualDescription || undefined,
       });
-      setSuccessMessage(t('manualPostingCreated'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -242,7 +249,6 @@ export function ReviewTab({
         invoice_id: candidate.invoice_id,
         reference: selectedItem.reference || undefined,
       });
-      setSuccessMessage(t('transactionMatchedToInvoice'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -259,7 +265,6 @@ export function ReviewTab({
             amount: Number(allocation.amount || 0),
           })),
       });
-      setSuccessMessage(t('transactionMatchedAcrossInvoices'));
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -288,58 +293,41 @@ export function ReviewTab({
     setSelectedIds(new Set(items.filter((item) => item.auto_match_ready).map((item) => item.transaction_id)));
   };
 
-  const showBulkErrors = (errors: Array<{ transaction_id: string; error: string }>) => {
-    if (errors.length === 0) return;
-    setErrorMessage(
-      errors
-        .slice(0, 3)
-        .map((entry) => `${entry.transaction_id.slice(0, 8)}: ${entry.error}`)
-        .join(' · ')
-    );
-  };
-
   const handleBulkAutoMatch = async () => {
-    const ids = Array.from(selectedIds);
+    const ids = items
+      .filter((item) => selectedIds.has(item.transaction_id) && item.auto_match_summary && !droppedIds.has(item.transaction_id))
+      .map((item) => item.transaction_id);
     if (ids.length === 0) return;
     await runAction('bulk-auto-match', async () => {
       const result = await bankingApi.bulkAutoMatch(ids);
-      setSuccessMessage(t('bulkAutoMatchResult', {
-        matched: result.auto_matched.length,
-        skipped: result.skipped,
-        failed: result.errors.length,
-      }));
-      showBulkErrors(result.errors);
+      if (result.errors.length > 0 || result.skipped > 0) {
+        const summary = t('bulkAutoMatchResult', {
+          matched: result.auto_matched.length,
+          skipped: result.skipped,
+          failed: result.errors.length,
+        });
+        const details = result.errors.slice(0, 3).map((entry) => `${entry.transaction_id.slice(0, 8)}: ${entry.error}`).join(' · ');
+        setErrorMessage(details ? `${summary}\n${details}` : summary);
+      } else {
+        const matchedIds = new Set(result.auto_matched.map((entry) => entry.transaction_id));
+        const matchedTotal = items.filter((item) => matchedIds.has(item.transaction_id)).reduce((sum, item) => sum + Math.abs(item.amount), 0);
+        setSuccessMessage(`${t('bulkEntriesCreated', { count: result.auto_matched.length })}\n${t('bulkSettledSummary', { count: result.auto_matched.length, sum: matchedTotal.toFixed(2) })}`);
+      }
+      setLastBulkMatchedIds(result.auto_matched.map((entry) => entry.transaction_id));
       setSelectedIds(new Set());
-      await refreshQueue(selectedTransactionId);
+      setDroppedIds(new Set());
+      setBulkConfirmOpen(false);
+      await refreshQueue();
     });
   };
 
-  // No bulk review endpoint exists, so this loops sequentially and refreshes the
-  // queue once at the end, same accumulate-then-refresh shape as the bulk match.
-  const handleBulkMarkReviewed = async () => {
-    const ids = Array.from(selectedIds);
-    if (ids.length === 0) return;
-    await runAction('bulk-review', async () => {
-      const errors: Array<{ transaction_id: string; error: string }> = [];
-      let reviewed = 0;
-      setBulkProgress({ done: 0, total: ids.length });
-      try {
-        for (const id of ids) {
-          try {
-            await bankingApi.reviewTransaction(id, { review_state: 'reviewed' });
-            reviewed += 1;
-          } catch (error) {
-            errors.push({ transaction_id: id, error: getErrorMessage(error) });
-          }
-          setBulkProgress({ done: reviewed + errors.length, total: ids.length });
-        }
-      } finally {
-        setBulkProgress(null);
-      }
-      setSuccessMessage(t('transactionMarkedState', { state: t('reviewed') }));
-      showBulkErrors(errors);
-      setSelectedIds(new Set());
-      await refreshQueue(selectedTransactionId);
+  const handleUndoBulk = async () => {
+    if (lastBulkMatchedIds.length === 0) return;
+    await runAction('undo-bulk', async () => {
+      await Promise.all(lastBulkMatchedIds.map((id) => bankingApi.unmatch(id, { reason: 'Bulk auto-match undo' })));
+      setLastBulkMatchedIds([]);
+      setSuccessMessage(t('matchReverted'));
+      await refreshQueue();
     });
   };
 
@@ -349,327 +337,157 @@ export function ReviewTab({
     reviewed: items.filter((item) => item.review_state === 'reviewed').length,
   };
 
+  const selectedIndex = selectedItem
+    ? items.findIndex((item) => item.transaction_id === selectedItem.transaction_id)
+    : -1;
+  const autoReadySelected = items.filter((item) => selectedIds.has(item.transaction_id) && item.auto_match_summary);
+  const bulkItems = autoReadySelected;
+  const bulkConfirmCount = bulkItems.filter((item) => !droppedIds.has(item.transaction_id)).length;
+
+  useEffect(() => {
+    if (!successMessage) return;
+    const timeout = window.setTimeout(() => {
+      setSuccessMessage(null);
+      setLastBulkMatchedIds([]);
+    }, lastBulkMatchedIds.length > 0 ? 6000 : 3200);
+    return () => window.clearTimeout(timeout);
+  }, [lastBulkMatchedIds.length, successMessage]);
+
+  useEffect(() => {
+    onSummaryChange?.({
+      cells: [
+        { label: t('queueItems'), value: queueCounts.total },
+        { label: t('autoMatchReady'), value: queueCounts.autoReady, color: 'var(--pos, #0e7b5a)' },
+        { label: t('needsReview'), value: queueCounts.total - queueCounts.autoReady },
+        { label: t('reviewed'), value: `${queueCounts.reviewed}/${queueCounts.total}` },
+      ],
+      progress: { label: t('reviewed'), done: queueCounts.reviewed, total: queueCounts.total },
+    });
+  }, [onSummaryChange, queueCounts.autoReady, queueCounts.reviewed, queueCounts.total, t]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLElement && event.target.matches('input, select, textarea')) return;
+      if ((event.key === 'j' || event.key === 'J' || event.key === 'ArrowDown') && selectedIndex < items.length - 1) {
+        event.preventDefault();
+        setSelectedTransactionId(items[selectedIndex + 1].transaction_id);
+      } else if ((event.key === 'k' || event.key === 'K' || event.key === 'ArrowUp') && selectedIndex > 0) {
+        event.preventDefault();
+        setSelectedTransactionId(items[selectedIndex - 1].transaction_id);
+      } else if (event.key === 'Enter' && autoMatchPlan && !actionLoading && !bulkConfirmOpen) {
+        event.preventDefault();
+        void handleAutoMatch();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
+  const openBulkConfirm = () => {
+    if (selectedIds.size === 0) selectAutoReady();
+    setDroppedIds(new Set());
+    setBulkConfirmOpen(true);
+  };
+
+  const reviewCount = selectedIds.size > 0 ? autoReadySelected.length : queueCounts.autoReady;
+  const bulkTotal = bulkItems
+    .filter((item) => !droppedIds.has(item.transaction_id))
+    .reduce((sum, item) => sum + Math.abs(item.amount), 0);
+
   return (
-    <div className="space-y-6">
-      {errorMessage && (
-        <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{errorMessage}</span>
+    <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-hidden">
+      <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[420px_minmax(0,1fr)]">
+        <aside className="card flex min-h-0 flex-col overflow-hidden">
+          <div className="flex h-[38px] flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-[11px]">
+            <input ref={selectAllRef} type="checkbox" checked={allSelected} onChange={toggleSelectAll} disabled={items.length === 0} aria-label={t('all')} className="h-4 w-4 flex-shrink-0" />
+            <h2 className="whitespace-nowrap text-[12.5px] font-bold text-slate-900">{t('transactions')} · {items.length}</h2>
+            <div className="flex-1" />
+            <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
+              <option value="all">{t('all')}</option><option value="pending">{t('pending')}</option><option value="reviewed">{t('reviewed')}</option>
+            </select>
+            <button onClick={() => setAutoMatchableOnly((value) => !value)} aria-pressed={autoMatchableOnly} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${autoMatchableOnly ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>{t('onlyAutoReady')}</button>
+            <button onClick={() => void refreshQueue(selectedTransactionId)} aria-label="Refresh" className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><RefreshCw className="h-4 w-4" /></button>
           </div>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="card border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-        </div>
-      )}
-
-      <BankSummaryStrip
-        icon={ListChecks}
-        tone="neutral"
-        cells={[
-          { label: t('queueItems'), value: queueCounts.total },
-          { label: t('autoMatchReady'), value: queueCounts.autoReady, color: 'var(--pos, #0e7b5a)' },
-          { label: t('reviewed'), value: queueCounts.reviewed },
-        ]}
-        trailing={
-          <BankProgress label={t('reviewed')} done={queueCounts.reviewed} total={queueCounts.total} tone="accent" />
-        }
-      />
-
-      <BankFilterRow>
-        <select
-          value={reviewFilter}
-          onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)}
-          aria-label={t('reviewState')}
-          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
-        >
-          <option value="all">{t('all')}</option>
-          <option value="pending">{t('pending')}</option>
-          <option value="reviewed">{t('reviewed')}</option>
-        </select>
-        <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={autoMatchableOnly}
-            onChange={(event) => setAutoMatchableOnly(event.target.checked)}
-            className="h-4 w-4"
-          />
-          <span>{t('showOnlyStrongAutoMatch')}</span>
-        </label>
-        <button
-          onClick={() => void refreshQueue(selectedTransactionId)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
-        >
-          <RefreshCw className="h-4 w-4" />
-        </button>
-        <span className="text-xs text-slate-500">{t('queueViewOnly')}</span>
-      </BankFilterRow>
-
-      <div className="grid gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-3">
-              <div className="flex items-center gap-3">
-                <input
-                  ref={selectAllRef}
-                  type="checkbox"
-                  checked={allSelected}
-                  onChange={toggleSelectAll}
-                  disabled={items.length === 0}
-                  aria-label={t('all')}
-                  className="h-4 w-4 flex-shrink-0"
-                />
-                <h2 className="text-sm font-semibold text-slate-900">
-                  {t('transactions')} · {items.length}
-                </h2>
-              </div>
-              {queueCounts.autoReady > 0 && (
-                <button
-                  onClick={selectAutoReady}
-                  className="mt-2 text-xs font-medium text-[var(--primary)] hover:underline"
-                >
-                  {t('selectAutoReady')}
-                </button>
-              )}
-            </div>
-            <div className="divide-y divide-slate-100">
-              {isQueueLoading ? (
-                <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div>
-              ) : items.length === 0 ? (
-                <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div>
-              ) : (
-                items.map((item) => (
-                  <div
-                    key={item.transaction_id}
-                    role="row"
-                    className={`flex items-start gap-3 px-4 py-3 transition-colors ${selectedTransactionId === item.transaction_id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(item.transaction_id)}
-                      onChange={() => toggleSelected(item.transaction_id)}
-                      onClick={(event) => event.stopPropagation()}
-                      aria-label={item.counterparty_name || t('unknownCounterparty')}
-                      className="mt-1 h-4 w-4 flex-shrink-0"
-                    />
-                    <button
-                      onClick={() => setSelectedTransactionId(item.transaction_id)}
-                      className="min-w-0 flex-1 text-left"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="truncate text-sm font-medium text-slate-900">
-                            {item.counterparty_name || t('unknownCounterparty')}
-                          </div>
-                          <div className="mt-1 truncate text-xs text-slate-500">
-                            {item.reference || item.description || t('noReference')}
-                          </div>
-                          <div className="mt-1 flex flex-wrap gap-2 text-[11px] uppercase tracking-[0.14em] text-slate-400">
-                            {typeof item.import_row_no === 'number' && <span>{t('rowNumber', { row: item.import_row_no })}</span>}
-                            {item.import_file_name && <span>{item.import_file_name}</span>}
-                          </div>
-                        </div>
-                        <span className="font-mono text-sm tabular-nums text-slate-900">
-                          {item.amount.toFixed(2)}
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
-                        <span>{item.tx_date}</span>
-                        <span>·</span>
-                        <span>{item.currency}</span>
-                        {item.bank_account_name && (
-                          <>
-                            <span>·</span>
-                            <span>{item.bank_account_name}</span>
-                          </>
-                        )}
-                        {item.auto_match_ready && (
-                          <>
-                            <span>·</span>
-                            <span className="font-medium text-emerald-700">{t('autoReady')}</span>
-                          </>
-                        )}
-                        {item.has_missing_receipt_placeholder && (
-                          <>
-                            <span>·</span>
-                            <span className="font-medium text-amber-600">{t('missingReceiptDraft')}</span>
-                          </>
-                        )}
-                      </div>
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {isQueueLoading ? <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div> : items.length === 0 ? <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div> : items.map((item, rowIndex) => {
+              const posted = item.matched_status !== 'unmatched';
+              return (
+                <div key={item.transaction_id} role="row" className={`grid min-h-[46px] grid-cols-[18px_minmax(0,1fr)] gap-2 border-b border-slate-100 px-[11px] py-2 transition-colors ${rowIndex % 2 ? 'bg-slate-50/55' : ''} ${selectedTransactionId === item.transaction_id ? '!bg-blue-50' : 'hover:bg-slate-50'} ${posted ? 'opacity-55' : ''}`}>
+                  <input type="checkbox" checked={selectedIds.has(item.transaction_id)} onChange={() => toggleSelected(item.transaction_id)} onClick={(event) => event.stopPropagation()} aria-label={item.counterparty_name || t('unknownCounterparty')} className="mt-0.5 h-4 w-4" />
+                  <button onClick={() => setSelectedTransactionId(item.transaction_id)} className="min-w-0 text-left">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</span>
+                      <span className={`flex-shrink-0 font-mono text-[12.5px] font-semibold tabular-nums ${item.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{item.amount.toFixed(2)} {item.currency}</span>
+                    </div>
+                    <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] text-slate-500">
+                      <span className="min-w-0 truncate">{item.reference || item.description || t('noReference')}</span><span className="flex-shrink-0">· {item.tx_date}</span>
+                      <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? t('matchTag', { invoice: item.auto_match_summary.invoice_number }) : t('awaitingDecision')}
+                      </span>
+                    </div>
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </aside>
 
-        <section className="space-y-4">
-          {!selectedItem ? (
-            <div className="card p-8 text-sm text-slate-500">{t('selectQueueItem')}</div>
+        <section className="card flex min-h-0 flex-col overflow-hidden">
+          {bulkConfirmOpen ? (
+            <>
+              <div className="flex flex-shrink-0 items-start gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-3">
+                <div><h2 className="text-base font-bold text-slate-900">{t('bulkConfirmTitle', { count: bulkConfirmCount })}</h2><p className="mt-0.5 text-xs text-slate-500">{t('bulkConfirmDescription')}</p></div>
+                <div className="ml-auto text-right"><div className="font-mono text-[19px] font-bold tabular-nums text-slate-900">{bulkTotal.toFixed(2)} EUR</div><div className="text-[11px] text-slate-500">{t('invoicesToSettle', { count: bulkConfirmCount })}</div></div>
+              </div>
+              <div className="grid flex-shrink-0 grid-cols-[18px_1.15fr_88px_1fr_110px_54px] gap-2 border-b border-slate-200 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                <span /><span>{t('transactions')}</span><span>{t('amount')}</span><span>{t('linksToInvoice')}</span><span>{t('invoiceOpenAfter')}</span><span>{t('matchScore')}</span>
+              </div>
+              <div className="min-h-0 flex-1 overflow-y-auto">
+                {bulkItems.map((item) => {
+                  const summary = item.auto_match_summary!; const dropped = droppedIds.has(item.transaction_id);
+                  return <div key={item.transaction_id} className={`grid grid-cols-[18px_1.15fr_88px_1fr_110px_54px] items-center gap-2 border-b border-slate-100 px-4 py-2 text-[11.5px] ${dropped ? 'opacity-40' : ''}`}>
+                    <input type="checkbox" checked={!dropped} onChange={() => setDroppedIds((current) => { const next = new Set(current); if (next.has(item.transaction_id)) next.delete(item.transaction_id); else next.add(item.transaction_id); return next; })} className="h-4 w-4" />
+                    <div className="min-w-0"><div className="truncate font-semibold text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</div><div className="truncate font-mono text-[10.5px] text-slate-500">{item.reference || t('noReference')} · {item.tx_date}</div></div>
+                    <span className="font-mono font-semibold tabular-nums">{item.amount.toFixed(2)}</span>
+                    <div className="min-w-0"><div className="truncate font-semibold">{summary.invoice_number}</div><div className="truncate text-[10.5px] text-slate-500">{summary.partner_name}</div></div>
+                    <span className="font-mono text-[10.5px] tabular-nums">{summary.open_amount_before.toFixed(2)} → {summary.open_amount_after.toFixed(2)}</span>
+                    <span className="font-mono font-semibold tabular-nums">{summary.score}%</span>
+                  </div>;
+                })}
+              </div>
+              <div className="flex-shrink-0 border-t border-slate-200 px-5 py-2 text-[11.5px] text-slate-500">{t('bulkEntriesNote', { count: bulkConfirmCount })}</div>
+            </>
+          ) : !selectedItem ? (
+            <div className="p-8 text-sm text-slate-500">{t('selectQueueItem')}</div>
           ) : (
             <>
-              <div className="card overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-base font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-mono text-lg font-semibold text-slate-900">
-                        {selectedItem.amount.toFixed(2)} {selectedItem.currency}
-                      </div>
-                      <div className="mt-1 text-xs text-slate-500">
-                        {t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}
-                      </div>
-                    </div>
-                  </div>
+              <div className="flex flex-shrink-0 items-center gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-2.5">
+                <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2><p className="truncate text-[11.5px] text-slate-500">{selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}</p></div>
+                <div className="ml-auto flex items-center gap-2">
+                  <button onClick={() => selectedIndex > 0 && setSelectedTransactionId(items[selectedIndex - 1].transaction_id)} disabled={selectedIndex <= 0} className="inline-flex h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><ChevronUp className="h-4 w-4" /><kbd>K</kbd></button>
+                  <span className="font-mono text-xs tabular-nums text-slate-500">{selectedIndex + 1} / {items.length}</span>
+                  <button onClick={() => selectedIndex < items.length - 1 && setSelectedTransactionId(items[selectedIndex + 1].transaction_id)} disabled={selectedIndex < 0 || selectedIndex >= items.length - 1} className="inline-flex h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><kbd>J</kbd><ChevronDown className="h-4 w-4" /></button>
                 </div>
+                <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
-
-              <ReviewActionPanel
-                selectedItem={selectedItem}
-                accounts={accounts}
-                suggestedCandidates={suggestedCandidates}
-                isCandidateLoading={isCandidateLoading}
-                actionLoading={actionLoading}
-                reviewNote={reviewNote}
-                setReviewNote={setReviewNote}
-                ignoreReason={ignoreReason}
-                setIgnoreReason={setIgnoreReason}
-                manualAccountId={manualAccountId}
-                setManualAccountId={setManualAccountId}
-                manualDescription={manualDescription}
-                setManualDescription={setManualDescription}
-                manualAllocations={manualAllocations}
-                setManualAllocations={setManualAllocations}
-                dismissReason={dismissReason}
-                setDismissReason={setDismissReason}
-                onAutoMatch={handleAutoMatch}
-                onReview={handleReview}
-                onIgnore={handleIgnore}
-                onMarkMissingReceipt={handleMarkMissingReceipt}
-                onDismissMissingReceipt={handleDismissMissingReceipt}
-                onManualPost={handleManualPost}
-                onSingleMatch={handleSingleMatch}
-                onSplitMatch={handleSplitMatch}
-              />
-
-              <div className="card overflow-hidden">
-                <button
-                  onClick={() => setShowDetails((value) => !value)}
-                  className="flex w-full items-center justify-between px-5 py-4 text-left"
-                >
-                  <div>
-                    <h2 className="text-sm font-semibold text-slate-900">{t('transactionDetails')}</h2>
-                    <p className="mt-1 text-sm text-slate-500">{t('transactionDetailsDescription')}</p>
-                  </div>
-                  <ChevronDown className={`h-5 w-5 text-slate-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showDetails && (
-                  <>
-                    <div className="grid gap-4 border-t border-slate-200 p-5 lg:grid-cols-2">
-                      <InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
-                      <InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} />
-                      <InfoBox label={t('autoMatch')} value={selectedItem.auto_match_ready ? t('ready') : t('needsReview')} />
-                      <InfoBox label={t('description')} value={selectedItem.description || '-'} />
-                      <InfoBox label={t('reviewNote')} value={selectedItem.review_note || '-'} />
-                      <InfoBox
-                        label={t('manualPostDefault')}
-                        value={
-                          selectedItem.suggested_manual_account_name
-                            ? `${selectedItem.suggested_manual_account_code || '-'} · ${selectedItem.suggested_manual_account_name}`
-                            : '-'
-                        }
-                      />
-                      <InfoBox
-                        label={t('importedRow')}
-                        value={typeof selectedItem.import_row_no === 'number' ? t('rowNumber', { row: selectedItem.import_row_no }) : '-'}
-                      />
-                      <InfoBox
-                        label={t('importSource')}
-                        value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'}
-                      />
-                    </div>
-
-                    {(selectedItem.import_warning_flags?.length || selectedItem.import_parsed_payload) && (
-                      <div className="grid gap-4 border-t border-slate-200 px-5 py-5 lg:grid-cols-2">
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importWarnings')}</div>
-                          {selectedItem.import_warning_flags && selectedItem.import_warning_flags.length > 0 ? (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {selectedItem.import_warning_flags.map((flag) => (
-                                <span key={flag} className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-amber-700">
-                                  {formatLabel(flag)}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="mt-3 text-sm text-slate-500">{t('noImportWarningFlags')}</div>
-                          )}
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('importedRowPayload')}</div>
-                          {selectedItem.import_parsed_payload ? (
-                            <pre className="mt-3 max-h-56 overflow-auto rounded-xl bg-slate-950 p-3 text-xs text-slate-100">
-                              {JSON.stringify(selectedItem.import_parsed_payload, null, 2)}
-                            </pre>
-                          ) : (
-                            <div className="mt-3 text-sm text-slate-500">{t('noParsedImportPayload')}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={setManualDescription} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} />
+                <div className="card overflow-hidden">
+                  <button onClick={() => setShowDetails((value) => !value)} className="flex w-full items-center justify-between px-4 py-3 text-left"><div><h2 className="text-sm font-semibold text-slate-900">{t('transactionDetails')}</h2><p className="text-xs text-slate-500">{t('transactionDetailsDescription')}</p></div><ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} /></button>
+                  {showDetails && <div className="grid gap-3 border-t border-slate-200 p-4 lg:grid-cols-2"><InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} /><InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} /><InfoBox label={t('description')} value={selectedItem.description || '-'} /><InfoBox label={t('importSource')} value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'} /></div>}
+                </div>
               </div>
             </>
           )}
         </section>
       </div>
 
-      {selectedIds.size > 0 && (
-        <BankFooterBar status={t('selectedCount', { count: selectedIds.size })}>
-          <button
-            onClick={handleBulkAutoMatch}
-            disabled={!!actionLoading}
-            className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {actionLoading === 'bulk-auto-match' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            <span>{t('confirmAutoMatches')}</span>
-          </button>
-          <button
-            onClick={handleBulkMarkReviewed}
-            disabled={!!actionLoading}
-            className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {actionLoading === 'bulk-review' ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserCheck className="h-4 w-4" />}
-            <span>
-              {bulkProgress
-                ? t('bulkConfirmProgress', { done: bulkProgress.done, total: bulkProgress.total })
-                : t('markReviewed')}
-            </span>
-          </button>
-          <button
-            onClick={() => setSelectedIds(new Set())}
-            disabled={!!actionLoading}
-            className="inline-flex h-9 items-center rounded-lg px-3 text-sm text-slate-500 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {t('clearSelection')}
-          </button>
-        </BankFooterBar>
-      )}
+      <BankFooterBar status={bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : selectedIds.size > 0 ? `${t('selectedCount', { count: selectedIds.size })} · ${autoReadySelected.length} ${t('autoReady')}` : t('autoReadyCount', { count: queueCounts.autoReady })}>
+        {bulkConfirmOpen ? <button onClick={() => setBulkConfirmOpen(false)} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('back')}</button> : selectedIds.size > 0 ? <button onClick={() => setSelectedIds(new Set())} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('clearSelection')}</button> : queueCounts.autoReady > 0 ? <button onClick={selectAutoReady} className="h-8 rounded-lg px-3 text-xs text-[var(--primary)] hover:bg-orange-50">{t('selectAllAutoReady')}</button> : null}
+        <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>
+      </BankFooterBar>
+
+      {(errorMessage || successMessage) && <div className={`fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-40px))] border-l-4 p-3 shadow-lg ${errorMessage ? 'border-red-500 bg-red-50 text-red-800' : 'border-emerald-500 bg-white text-slate-800'}`}><div className="flex items-start gap-2">{errorMessage && <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span className="whitespace-pre-line text-sm">{errorMessage || successMessage}</span>{successMessage && lastBulkMatchedIds.length > 0 && <button onClick={handleUndoBulk} className="ml-auto text-xs font-semibold text-[var(--primary)]">{t('undo')}</button>}</div></div>}
     </div>
   );
 }

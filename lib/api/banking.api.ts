@@ -57,6 +57,30 @@ export type BankMatchCandidate = {
   score: number;
 };
 
+export type BankAutoMatchSummary = {
+  invoice_id: string;
+  invoice_number: string;
+  partner_name: string;
+  open_amount_before: number;
+  open_amount_after: number;
+  score: number;
+};
+
+export type BankAutoMatchPlan = {
+  invoice: BankAutoMatchSummary & {
+    due_date: string;
+    settles_invoice: boolean;
+  };
+  score: number;
+  match_reasons: string[];
+  journal_preview?: {
+    entry_date: string;
+    lines: Array<{ account_code: string; account_name: string; amount: number }>;
+  };
+};
+
+export type BankAutoMatchReason = 'no_document_candidate' | 'amount_requires_split' | 'ambiguous_candidates' | 'low_confidence';
+
 export type BankReviewQueueItem = {
   transaction_id: string;
   bank_account_id: string;
@@ -86,6 +110,7 @@ export type BankReviewQueueItem = {
   suggested_manual_account_name?: string | null;
   is_reconciled: boolean;
   auto_match_ready: boolean;
+  auto_match_summary?: BankAutoMatchSummary;
   top_candidates: BankMatchCandidate[];
   has_missing_receipt_placeholder: boolean;
   placeholder_invoice_id: string | null;
@@ -294,6 +319,8 @@ export const bankingApi = {
     const response = await apiClient.get<ApiResponse<{
       transaction_id: string;
       candidates: BankMatchCandidate[];
+      auto_match_plan?: BankAutoMatchPlan;
+      auto_match_reason?: BankAutoMatchReason;
     }>>(`/api/banking/transactions/${id}/suggest-matches`);
     return response.data.data;
   },

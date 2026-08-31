@@ -9,7 +9,6 @@ import {
   Loader2,
   ShieldCheck,
   ShieldOff,
-  Scale,
 } from 'lucide-react';
 import {
   bankingApi,
@@ -18,7 +17,7 @@ import {
   type BankReconciliationSummary,
 } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { BankFilterRow, BankFooterBar, BankProgress, BankSummaryStrip } from './shared';
+import { BankFilterRow, BankFooterBar, type BankInlineSummaryData } from './shared';
 
 type ReconciledFilter = 'all' | 'reconciled' | 'unreconciled';
 
@@ -42,8 +41,10 @@ function formatAmount(value: number, currency: string) {
 
 export function ReconcileTab({
   onUnreconciledCountChange,
+  onSummaryChange,
 }: {
   onUnreconciledCountChange?: (count: number) => void;
+  onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
   const t = useTranslations('accounting');
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
@@ -189,6 +190,17 @@ export function ReconcileTab({
 
   const fmt = (value: number | null) => (value == null ? '—' : formatAmount(value, currency));
 
+  useEffect(() => {
+    onSummaryChange?.({
+      cells: [
+        { label: t('statementClosingBalance'), value: closingBalance == null ? '—' : formatAmount(closingBalance, currency) },
+        { label: t('bookReconciledBalance'), value: formatAmount(bookBalance, currency) },
+        { label: t('reconciliationDifference'), value: difference == null ? '—' : formatAmount(difference, currency), color: balanced ? 'var(--pos, #0e7b5a)' : 'var(--warning)' },
+      ],
+      progress: { label: t('reconciledStatus'), done: summary.reconciled_count, total: totalCount },
+    });
+  }, [balanced, bookBalance, closingBalance, currency, difference, onSummaryChange, summary.reconciled_count, t, totalCount]);
+
   // Running statement balance: display rows in chronological order anchored
   // between the statement opening and closing balances.
   const showRunningBalance = openingBalance != null;
@@ -233,39 +245,6 @@ export function ReconcileTab({
           </div>
         </div>
       )}
-
-      <BankSummaryStrip
-        icon={Scale}
-        tone="neutral"
-        cells={[
-          { label: t('statementClosingBalance'), value: fmt(closingBalance), sub: t('perStatement') },
-          {
-            label: t('bookReconciledBalance'),
-            value: fmt(bookBalance),
-            sub: t('reconciledCountOfTotal', { done: summary.reconciled_count, total: totalCount }),
-          },
-          {
-            label: t('reconciliationDifference'),
-            value: fmt(difference),
-            color: balanced ? 'var(--pos, #0e7b5a)' : 'var(--warning)',
-          },
-        ]}
-        trailing={
-          balanced ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-700">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              {t('reconciledStatus')}
-            </span>
-          ) : (
-            <BankProgress
-              label={t('reconciledStatus')}
-              done={summary.reconciled_count}
-              total={totalCount}
-              tone="accent"
-            />
-          )
-        }
-      />
 
       <BankFilterRow>
         <select

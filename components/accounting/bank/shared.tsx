@@ -4,6 +4,33 @@ type Tone = 'neutral' | 'success' | 'warning';
 
 type IconComponent = ComponentType<{ className?: string }>;
 
+export type BankInlineSummaryData = {
+  cells: Array<{ label: string; value: string | number; color?: string }>;
+  progress?: { label: string; done: number; total: number };
+};
+
+export function BankInlineSummary({ data }: { data?: BankInlineSummaryData }) {
+  if (!data) return null;
+  return (
+    <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+      {data.cells.map((cell, index) => (
+        <div key={`${cell.label}-${index}`} className={`flex items-baseline gap-1.5 whitespace-nowrap ${index > 0 ? 'border-l border-slate-200 pl-3' : ''}`}>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">{cell.label}</span>
+          <span className="font-mono text-[15px] font-bold tabular-nums text-slate-900" style={cell.color ? { color: cell.color } : undefined}>{cell.value}</span>
+        </div>
+      ))}
+      {data.progress && (
+        <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+          <span className="whitespace-nowrap font-mono text-[12px] font-semibold tabular-nums text-slate-700">{data.progress.done}/{data.progress.total}</span>
+          <div className="h-1 w-[120px] overflow-hidden rounded-full bg-slate-200">
+            <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${data.progress.total ? Math.round((data.progress.done / data.progress.total) * 100) : 0}%` }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const ICON_TONE: Record<Tone, string> = {
   success: 'bg-emerald-50 text-emerald-600',
   warning: 'bg-amber-50 text-amber-600',
@@ -159,7 +186,7 @@ export function BankFilterRow({ children }: { children: ReactNode }) {
 // Bottom action bar: status text on the left, action buttons on the right.
 export function BankFooterBar({ status, children }: { status: ReactNode; children: ReactNode }) {
   return (
-    <div className="card flex items-center gap-3 px-5 py-3">
+    <div className="card flex h-11 flex-shrink-0 items-center gap-3 px-4">
       <div className="text-xs text-slate-500">{status}</div>
       <div className="flex-1" />
       {children}

@@ -15,7 +15,7 @@ import {
 import Link from 'next/link';
 import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow, type DraftableOutgoingItem } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { BankSummaryStrip, formatLabel } from './shared';
+import { formatLabel, type BankInlineSummaryData } from './shared';
 
 type ImportFormat = 'csv' | 'camt53';
 
@@ -45,9 +45,11 @@ function detectStatementIban(fileContent: string): string | null {
 export function ImportTab({
   onCommitted,
   onReviewCountChange,
+  onSummaryChange,
 }: {
   onCommitted: () => void;
   onReviewCountChange?: (count: number) => void;
+  onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
   const t = useTranslations('accounting');
   const [file, setFile] = useState<File | null>(null);
@@ -98,6 +100,16 @@ export function ImportTab({
       reviewable: previewRows.filter((row) => row.needs_review && row.can_approve).length,
     };
   }, [previewRows]);
+
+  useEffect(() => {
+    onSummaryChange?.({
+      cells: [
+        { label: t('previewRows'), value: counts.total },
+        { label: t('approved'), value: counts.approved, color: 'var(--pos, #0e7b5a)' },
+        { label: t('needsReview'), value: counts.review, color: counts.review > 0 ? 'var(--warning)' : undefined },
+      ],
+    });
+  }, [counts, onSummaryChange, t]);
 
   useEffect(() => {
     onReviewCountChange?.(counts.review);
@@ -344,16 +356,6 @@ export function ImportTab({
           </div>
         </div>
       )}
-
-      <BankSummaryStrip
-        icon={TableProperties}
-        tone="neutral"
-        cells={[
-          { label: t('previewRows'), value: counts.total },
-          { label: t('approved'), value: counts.approved, color: 'var(--pos, #0e7b5a)' },
-          { label: t('needsReview'), value: counts.review, color: counts.review > 0 ? 'var(--warning)' : undefined },
-        ]}
-      />
 
       <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-4">
