@@ -402,7 +402,9 @@
     "autoCreateDraftsLabel": "Create missing purchase invoice drafts automatically",
     "autoCreateDraftsDescription": "Committing a bank import creates a draft purchase invoice for every unmatched outgoing payment. The exclusion rules below decide what is skipped.",
     "ruleFieldPrivatePerson": "Payee is a private person (no registry code)",
-    "createDraftsButton": "Create drafts ({count})"
+    "createDraftsButton": "Create drafts ({count})",
+    "linksToNInvoices": "Links to {count} invoices",
+    "matchTagMulti": "MATCH → {count} invoices"
   },
   "reports": {
     "balanceSheet": "Balansräkning",

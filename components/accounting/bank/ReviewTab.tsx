@@ -9,6 +9,7 @@ import {
   FileQuestion,
   Loader2,
   RefreshCw,
+  X,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
@@ -47,6 +48,9 @@ export function ReviewTab({
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Kept apart from errorMessage: reselecting a row reruns the candidate load,
+  // which used to clear whatever error the last bulk action had just reported.
+  const [candidateError, setCandidateError] = useState<string | null>(null);
   const [reviewFilter, setReviewFilter] = useState<ReviewStateFilter>('all');
   const [autoMatchableOnly, setAutoMatchableOnly] = useState(false);
   const [reviewNote, setReviewNote] = useState('');
@@ -147,7 +151,7 @@ export function ReviewTab({
       setIsCandidateLoading(true);
       setAutoMatchPlan(undefined);
       setAutoMatchReason(undefined);
-      setErrorMessage(null);
+      setCandidateError(null);
       try {
         const result = await bankingApi.suggestMatches(selectedItem.transaction_id);
         if (cancelled) return;
@@ -170,7 +174,7 @@ export function ReviewTab({
         );
       } catch (error) {
         if (cancelled) return;
-        setErrorMessage(getErrorMessage(error));
+        setCandidateError(getErrorMessage(error));
       } finally {
         if (!cancelled) setIsCandidateLoading(false);
       }
@@ -406,7 +410,7 @@ export function ReviewTab({
     const timeout = window.setTimeout(() => {
       setSuccessMessage(null);
       setLastBulkMatchedIds([]);
-    }, lastBulkMatchedIds.length > 0 ? 6000 : 3200);
+    }, lastBulkMatchedIds.length > 0 ? 15000 : 8000);
     return () => window.clearTimeout(timeout);
   }, [lastBulkMatchedIds.length, successMessage]);
 
@@ -479,7 +483,7 @@ export function ReviewTab({
                     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] text-slate-500">
                       <span className="min-w-0 truncate">{item.reference || item.description || t('noReference')}</span><span className="flex-shrink-0">· {item.tx_date}</span>
                       <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? t('matchTag', { invoice: item.auto_match_summary.invoice_number }) : t('awaitingDecision')}
+                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? ((item.auto_match_invoice_count || 1) > 1 ? t('matchTagMulti', { count: item.auto_match_invoice_count || 1 }) : t('matchTag', { invoice: item.auto_match_summary.invoice_number })) : t('awaitingDecision')}
                       </span>
                     </div>
                   </button>
@@ -545,7 +549,31 @@ export function ReviewTab({
         <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>
       </BankFooterBar>
 
-      {(errorMessage || successMessage) && <div className={`fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-40px))] border-l-4 p-3 shadow-lg ${errorMessage ? 'border-red-500 bg-red-50 text-red-800' : 'border-emerald-500 bg-white text-slate-800'}`}><div className="flex items-start gap-2">{errorMessage && <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span className="whitespace-pre-line text-sm">{errorMessage || successMessage}</span>{successMessage && lastBulkMatchedIds.length > 0 && <button onClick={handleUndoBulk} className="ml-auto text-xs font-semibold text-[var(--primary)]">{t('undo')}</button>}{successMessage && lastBulkMatchedIds.length === 0 && lastDraftTxIds.length > 0 && <button onClick={handleUndoDrafts} disabled={!!actionLoading} className="ml-auto text-xs font-semibold text-[var(--primary)] disabled:opacity-50">{t('undo')}</button>}</div></div>}
+      {(errorMessage || candidateError || successMessage) && (() => {
+        const toastError = errorMessage || candidateError;
+        return (
+          <div className={`fixed bottom-5 right-5 z-50 w-[min(420px,calc(100vw-40px))] border-l-4 p-3 shadow-lg ${toastError ? 'border-red-500 bg-red-50 text-red-800' : 'border-emerald-500 bg-white text-slate-800'}`}>
+            <div className="flex items-start gap-2">
+              {toastError && <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}
+              <span className="whitespace-pre-line text-sm">{toastError || successMessage}</span>
+              {!toastError && lastBulkMatchedIds.length > 0 && (
+                <button onClick={handleUndoBulk} className="ml-auto flex-shrink-0 text-xs font-semibold text-[var(--primary)]">{t('undo')}</button>
+              )}
+              {!toastError && lastBulkMatchedIds.length === 0 && lastDraftTxIds.length > 0 && (
+                <button onClick={handleUndoDrafts} disabled={!!actionLoading} className="ml-auto flex-shrink-0 text-xs font-semibold text-[var(--primary)] disabled:opacity-50">{t('undo')}</button>
+              )}
+              {/* Errors stay until dismissed -- they are the ones worth reading. */}
+              <button
+                onClick={() => { setErrorMessage(null); setCandidateError(null); setSuccessMessage(null); }}
+                aria-label={t('close')}
+                className={`${(!toastError && (lastBulkMatchedIds.length > 0 || lastDraftTxIds.length > 0)) ? '' : 'ml-auto'} flex-shrink-0 text-slate-400 hover:text-slate-600`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

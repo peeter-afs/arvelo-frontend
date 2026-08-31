@@ -976,7 +976,9 @@
     "draftsRemovedCount": "{count} mustandit eemaldatud",
     "autoCreateDraftsLabel": "Loo puuduvate ostuarvete mustandid automaatselt",
     "autoCreateDraftsDescription": "Panga impordi kinnitamisel tekib igale sobimata väljaminevale maksele mustand-ostuarve. Allolevad välistusreeglid otsustavad, mis vahele jäetakse.",
-    "ruleFieldPrivatePerson": "Saaja on eraisik (registrikoodita)"
+    "ruleFieldPrivatePerson": "Saaja on eraisik (registrikoodita)",
+    "linksToNInvoices": "Seob {count} arvega",
+    "matchTagMulti": "VASTE → {count} arvet"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

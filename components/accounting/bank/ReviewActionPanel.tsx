@@ -109,6 +109,11 @@ export function ReviewActionPanel({
   const showNote = noteOverride ?? !!reviewNote;
 
   const busy = !!actionLoading;
+  // Older payloads carried only `invoice`; fall back so a response cached from
+  // before the multi-invoice change still renders.
+  const planInvoices = autoMatchPlan
+    ? (autoMatchPlan.invoices?.length ? autoMatchPlan.invoices : [autoMatchPlan.invoice])
+    : [];
 
   return (
     <div className="space-y-4">
@@ -122,20 +127,28 @@ export function ReviewActionPanel({
         {autoMatchPlan ? (
           <div className="mt-3 grid items-stretch gap-2 lg:grid-cols-[minmax(0,1fr)_20px_minmax(0,1.15fr)]">
             <div className="rounded-lg border border-slate-200 p-3">
-              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{t('linksToInvoice')}</div>
-              <div className="mt-1 text-[13px] font-bold text-slate-900">{autoMatchPlan.invoice.invoice_number}</div>
-              <div className="truncate text-xs text-slate-600">{autoMatchPlan.invoice.partner_name || t('unknownPartner')}</div>
-              <div className="mt-0.5 text-[11px] text-slate-500">{t('dueDate')}: {autoMatchPlan.invoice.due_date}</div>
-              <div className="my-2 border-t border-dashed border-slate-200" />
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-[11.5px]">
-                <span className="text-slate-500">{t('invoiceOpenBefore')}</span>
-                <span className="font-mono font-semibold tabular-nums">{autoMatchPlan.invoice.open_amount_before.toFixed(2)}</span>
-                <span className="text-slate-500">{t('invoiceOpenAfter')}</span>
-                <span className="font-mono font-semibold tabular-nums">
-                  {autoMatchPlan.invoice.open_amount_after.toFixed(2)}
-                  {autoMatchPlan.invoice.settles_invoice && <span className="ml-1 text-emerald-700">· {t('invoiceSettled')}</span>}
-                </span>
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">
+                {planInvoices.length > 1 ? t('linksToNInvoices', { count: planInvoices.length }) : t('linksToInvoice')}
               </div>
+              {/* Every invoice the payment settles, so the preview can never
+                  understate what confirming actually does. */}
+              {planInvoices.map((planInvoice, index) => (
+                <div key={planInvoice.invoice_id} className={index > 0 ? 'mt-3 border-t border-dashed border-slate-200 pt-2' : ''}>
+                  <div className="mt-1 text-[13px] font-bold text-slate-900">{planInvoice.invoice_number}</div>
+                  <div className="truncate text-xs text-slate-600">{planInvoice.partner_name || t('unknownPartner')}</div>
+                  <div className="mt-0.5 text-[11px] text-slate-500">{t('dueDate')}: {planInvoice.due_date}</div>
+                  <div className="my-2 border-t border-dashed border-slate-200" />
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-[11.5px]">
+                    <span className="text-slate-500">{t('invoiceOpenBefore')}</span>
+                    <span className="font-mono font-semibold tabular-nums">{planInvoice.open_amount_before.toFixed(2)}</span>
+                    <span className="text-slate-500">{t('invoiceOpenAfter')}</span>
+                    <span className="font-mono font-semibold tabular-nums">
+                      {planInvoice.open_amount_after.toFixed(2)}
+                      {planInvoice.settles_invoice && <span className="ml-1 text-emerald-700">· {t('invoiceSettled')}</span>}
+                    </span>
+                  </div>
+                </div>
+              ))}
               <div className="mt-2 flex flex-wrap gap-1">
                 {autoMatchPlan.match_reasons.map((reason) => (
                   <span key={reason} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10.5px] text-slate-600">{formatLabel(reason)}</span>

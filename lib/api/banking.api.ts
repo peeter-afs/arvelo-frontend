@@ -66,11 +66,15 @@ export type BankAutoMatchSummary = {
   score: number;
 };
 
+export type BankAutoMatchPlanInvoice = BankAutoMatchSummary & {
+  due_date: string;
+  settles_invoice: boolean;
+};
+
 export type BankAutoMatchPlan = {
-  invoice: BankAutoMatchSummary & {
-    due_date: string;
-    settles_invoice: boolean;
-  };
+  // More than one entry means a single payment settles them all.
+  invoices: BankAutoMatchPlanInvoice[];
+  invoice: BankAutoMatchPlanInvoice;
   score: number;
   match_reasons: string[];
   journal_preview?: {
@@ -111,6 +115,8 @@ export type BankReviewQueueItem = {
   is_reconciled: boolean;
   auto_match_ready: boolean;
   auto_match_summary?: BankAutoMatchSummary;
+  // >1 when the payment settles several invoices at once.
+  auto_match_invoice_count?: number;
   top_candidates: BankMatchCandidate[];
   has_missing_receipt_placeholder: boolean;
   placeholder_invoice_id: string | null;
