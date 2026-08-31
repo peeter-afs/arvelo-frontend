@@ -17,14 +17,22 @@ import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 
+// Stable identity so the "new draft batch?" check below cannot loop when the
+// prop is omitted.
+const NO_DRAFT_IDS: string[] = [];
+
 export function ReviewTab({
   refreshKey = 0,
   onCountChange,
   onSummaryChange,
+  autoDraftTxIds = NO_DRAFT_IDS,
+  onAutoDraftsHandled,
 }: {
   refreshKey?: number;
   onCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
+  autoDraftTxIds?: string[];
+  onAutoDraftsHandled?: () => void;
 }) {
   const t = useTranslations('accounting');
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
@@ -52,6 +60,10 @@ export function ReviewTab({
   const [droppedIds, setDroppedIds] = useState<Set<string>>(new Set());
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [lastBulkMatchedIds, setLastBulkMatchedIds] = useState<string[]>([]);
+  // Drafts the import commit created for us; reported here because the import
+  // tab is already hidden by the time we land.
+  const [lastDraftTxIds, setLastDraftTxIds] = useState<string[]>([]);
+  const [seenDraftBatch, setSeenDraftBatch] = useState<string[]>(autoDraftTxIds);
   const [showDetails, setShowDetails] = useState(false);
   const [detailsItemId, setDetailsItemId] = useState<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
@@ -61,6 +73,16 @@ export function ReviewTab({
   if (detailsItemId !== selectedTransactionId) {
     setDetailsItemId(selectedTransactionId);
     setShowDetails(false);
+  }
+
+  // A fresh batch of auto-created drafts arrived from the import commit. Compared
+  // by identity, which is stable because the parent holds it in state.
+  if (autoDraftTxIds !== seenDraftBatch) {
+    setSeenDraftBatch(autoDraftTxIds);
+    if (autoDraftTxIds.length > 0) {
+      setLastDraftTxIds(autoDraftTxIds);
+      setSuccessMessage(t('draftsCreatedCount', { count: autoDraftTxIds.length }));
+    }
   }
 
   const selectedItem = useMemo(
@@ -321,6 +343,17 @@ export function ReviewTab({
     });
   };
 
+  const handleUndoDrafts = async () => {
+    if (lastDraftTxIds.length === 0) return;
+    await runAction('undo-drafts', async () => {
+      const result = await bankingApi.undoAutoDrafts(lastDraftTxIds);
+      setLastDraftTxIds([]);
+      onAutoDraftsHandled?.();
+      setSuccessMessage(t('draftsRemovedCount', { count: result.deleted }));
+      await refreshQueue(selectedTransactionId);
+    });
+  };
+
   const handleUndoBulk = async () => {
     if (lastBulkMatchedIds.length === 0) return;
     await runAction('undo-bulk', async () => {
@@ -487,7 +520,7 @@ export function ReviewTab({
         <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>
       </BankFooterBar>
 
-      {(errorMessage || successMessage) && <div className={`fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-40px))] border-l-4 p-3 shadow-lg ${errorMessage ? 'border-red-500 bg-red-50 text-red-800' : 'border-emerald-500 bg-white text-slate-800'}`}><div className="flex items-start gap-2">{errorMessage && <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span className="whitespace-pre-line text-sm">{errorMessage || successMessage}</span>{successMessage && lastBulkMatchedIds.length > 0 && <button onClick={handleUndoBulk} className="ml-auto text-xs font-semibold text-[var(--primary)]">{t('undo')}</button>}</div></div>}
+      {(errorMessage || successMessage) && <div className={`fixed bottom-5 right-5 z-50 w-[min(380px,calc(100vw-40px))] border-l-4 p-3 shadow-lg ${errorMessage ? 'border-red-500 bg-red-50 text-red-800' : 'border-emerald-500 bg-white text-slate-800'}`}><div className="flex items-start gap-2">{errorMessage && <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />}<span className="whitespace-pre-line text-sm">{errorMessage || successMessage}</span>{successMessage && lastBulkMatchedIds.length > 0 && <button onClick={handleUndoBulk} className="ml-auto text-xs font-semibold text-[var(--primary)]">{t('undo')}</button>}{successMessage && lastBulkMatchedIds.length === 0 && lastDraftTxIds.length > 0 && <button onClick={handleUndoDrafts} disabled={!!actionLoading} className="ml-auto text-xs font-semibold text-[var(--primary)] disabled:opacity-50">{t('undo')}</button>}</div></div>}
     </div>
   );
 }

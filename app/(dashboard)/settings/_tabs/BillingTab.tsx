@@ -68,6 +68,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
   });
   const [missingReceiptForm, setMissingReceiptForm] = useState({
     is_enabled: false,
+    auto_create_drafts: true,
     responsible_email: '',
     frequency_days: '7',
     start_after_days: '0',
@@ -84,6 +85,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
       if (data) {
         setMissingReceiptForm({
           is_enabled: data.is_enabled ?? false,
+          auto_create_drafts: data.auto_create_drafts ?? true,
           responsible_email: data.responsible_email || '',
           frequency_days: String(data.frequency_days ?? 7),
           start_after_days: String(data.start_after_days ?? 0),
@@ -209,6 +211,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
     try {
       await bankingApi.updateMissingReceiptSettings({
         is_enabled: missingReceiptForm.is_enabled,
+        auto_create_drafts: missingReceiptForm.auto_create_drafts,
         responsible_email: missingReceiptForm.responsible_email || null,
         frequency_days: Number(missingReceiptForm.frequency_days || 7),
         start_after_days: Number(missingReceiptForm.start_after_days || 0),
@@ -590,6 +593,13 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             <p className="mt-1 text-sm text-slate-500">
               {t('missingReceiptRemindersDescription')}
             </p>
+            <label className="mt-4 flex items-start gap-3">
+              <input type="checkbox" className="mt-0.5" checked={missingReceiptForm.auto_create_drafts} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, auto_create_drafts: event.target.checked }))} />
+              <span>
+                <span className="block text-sm text-slate-700">{t('autoCreateDraftsLabel')}</span>
+                <span className="block text-xs text-slate-500">{t('autoCreateDraftsDescription')}</span>
+              </span>
+            </label>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <label className="flex items-center gap-3 pt-2">
                 <input type="checkbox" checked={missingReceiptForm.is_enabled} onChange={(event) => setMissingReceiptForm((c) => ({ ...c, is_enabled: event.target.checked }))} />
@@ -673,6 +683,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                     <option value="counterparty_account">{t('ruleFieldCounterpartyAccount')}</option>
                     <option value="reference">{t('ruleFieldReference')}</option>
                     <option value="description">{t('ruleFieldDescription')}</option>
+                    <option value="counterparty_is_private_person">{t('ruleFieldPrivatePerson')}</option>
                   </select>
                   <select
                     value={rule.match}

@@ -12,8 +12,7 @@ import {
   TableProperties,
   Upload,
 } from 'lucide-react';
-import Link from 'next/link';
-import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow, type DraftableOutgoingItem } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { formatLabel, type BankInlineSummaryData } from './shared';
 
@@ -47,7 +46,7 @@ export function ImportTab({
   onReviewCountChange,
   onSummaryChange,
 }: {
-  onCommitted: () => void;
+  onCommitted: (draftTxIds?: string[]) => void;
   onReviewCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
@@ -72,10 +71,6 @@ export function ImportTab({
   const [isBulkApproving, setIsBulkApproving] = useState(false);
   const [showReference, setShowReference] = useState(false);
   // Post-commit bulk step: draft purchase invoices from unmatched outgoing.
-  const [draftable, setDraftable] = useState<DraftableOutgoingItem[]>([]);
-  const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
-  const [isCreatingDrafts, setIsCreatingDrafts] = useState(false);
-  const [draftResult, setDraftResult] = useState<{ created: Array<{ transaction_id: string; invoice_id: string }>; skipped: number; errors: Array<{ transaction_id: string; error: string }> } | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -282,49 +277,13 @@ export function ImportTab({
       setJob(result.job);
       setCommitSummary(result.summary);
       setSuccessMessage(t('approvedBankRowsImported'));
-      // Offer to create draft purchase invoices for unmatched outgoing payments.
-      try {
-        const draftableResult = await bankingApi.listDraftableOutgoing(job.id);
-        setDraftable(draftableResult.items);
-        setSelectedTxIds(new Set(draftableResult.items.filter((item) => !item.excluded).map((item) => item.transaction_id)));
-        setDraftResult(null);
-      } catch {
-        /* non-fatal — the bulk step just won't show */
-      }
-      // Advance the workspace to the review queue now that rows are imported.
-      onCommitted();
+      // The commit already created drafts for unmatched outgoing payments; hand
+      // the ids to the review tab, which is where the user lands next.
+      onCommitted(result.summary?.draft_transaction_ids || []);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsCommitting(false);
-    }
-  };
-
-  const toggleTxSelected = (transactionId: string) => {
-    setSelectedTxIds((current) => {
-      const next = new Set(current);
-      if (next.has(transactionId)) next.delete(transactionId);
-      else next.add(transactionId);
-      return next;
-    });
-  };
-
-  const handleCreateDrafts = async () => {
-    const ids = Array.from(selectedTxIds);
-    if (ids.length === 0) return;
-
-    setIsCreatingDrafts(true);
-    setErrorMessage(null);
-    try {
-      const result = await bankingApi.bulkMarkMissingReceipt(ids);
-      setDraftResult(result);
-      const handled = new Set(result.created.map((row) => row.transaction_id));
-      setDraftable((current) => current.filter((item) => !handled.has(item.transaction_id)));
-      setSelectedTxIds(new Set());
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setIsCreatingDrafts(false);
     }
   };
 
@@ -524,66 +483,6 @@ export function ImportTab({
                     <div>{t('approvedRowsSent')}: {commitSummary.approved_row_count}</div>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
-
-          {(draftable.length > 0 || draftResult) && (
-            <div className="card p-5">
-              <h2 className="text-sm font-semibold text-slate-900">{t('draftFromOutgoingTitle')}</h2>
-              <p className="mt-1 text-sm text-slate-500">{t('draftFromOutgoingDescription')}</p>
-
-              {draftResult && (
-                <div className="mt-3 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-                  {t('draftsCreatedSummary', { created: draftResult.created.length, skipped: draftResult.skipped })}
-                  {draftResult.created.length > 0 && (
-                    <span className="ml-1 inline-flex flex-wrap gap-2">
-                      {draftResult.created.map((row, index) => (
-                        <Link key={row.invoice_id} href={`/invoices/${row.invoice_id}/edit`} className="font-medium underline">
-                          {t('draftLinkLabel', { n: index + 1 })}
-                        </Link>
-                      ))}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {draftable.length > 0 && (
-                <>
-                  <div className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-md border border-slate-200">
-                    {draftable.map((item) => (
-                      <label key={item.transaction_id} className="flex items-center gap-3 px-3 py-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={selectedTxIds.has(item.transaction_id)}
-                          onChange={() => toggleTxSelected(item.transaction_id)}
-                          className="h-4 w-4 shrink-0"
-                        />
-                        <span className="w-24 shrink-0 font-mono text-xs text-slate-500">{item.tx_date}</span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-slate-700">{item.counterparty_name || '—'}</span>
-                          {item.description && <span className="block truncate text-xs text-slate-400">{item.description}</span>}
-                        </span>
-                        {item.excluded && (
-                          <span className="shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-[11px] text-amber-700">
-                            {t('excludedByRule', { rule: item.excluded_by || '' })}
-                          </span>
-                        )}
-                        <span className="w-28 shrink-0 text-right font-mono tabular-nums text-slate-700">
-                          {item.amount.toFixed(2)} {item.currency}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    onClick={handleCreateDrafts}
-                    disabled={isCreatingDrafts || selectedTxIds.size === 0}
-                    className="mt-3 inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-4 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {isCreatingDrafts && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {t('createDraftsButton', { count: selectedTxIds.size })}
-                  </button>
-                </>
               )}
             </div>
           )}

@@ -971,7 +971,12 @@
     "autoMatchReason_no_document_candidate": "Sobivat avatud arvet ei leitud.",
     "autoMatchReason_amount_requires_split": "Tehingu summa ei võrdu arve jäägiga; vaja on jaotust.",
     "autoMatchReason_ambiguous_candidates": "Mitu arvet on sarnase vastega; vali õige arve.",
-    "autoMatchReason_low_confidence": "Viide või partneri andmed ei anna piisavalt kindlat vastet."
+    "autoMatchReason_low_confidence": "Viide või partneri andmed ei anna piisavalt kindlat vastet.",
+    "draftsCreatedCount": "Loodi {count} mustand-ostuarvet puuduva kuludokumendi kohta",
+    "draftsRemovedCount": "{count} mustandit eemaldatud",
+    "autoCreateDraftsLabel": "Loo puuduvate ostuarvete mustandid automaatselt",
+    "autoCreateDraftsDescription": "Panga impordi kinnitamisel tekib igale sobimata väljaminevale maksele mustand-ostuarve. Allolevad välistusreeglid otsustavad, mis vahele jäetakse.",
+    "ruleFieldPrivatePerson": "Saaja on eraisik (registrikoodita)"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

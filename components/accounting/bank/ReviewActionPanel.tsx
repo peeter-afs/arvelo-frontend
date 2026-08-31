@@ -213,6 +213,43 @@ export function ReviewActionPanel({
         </div>
       </div>
 
+      {/* Missing purchase invoice, surfaced rather than buried in "other
+          actions": for an outgoing payment this is the everyday state, and the
+          draft is now usually created for you at import. Only money out — a
+          draft purchase invoice makes no sense for money in. */}
+      {selectedItem.amount < 0 && (
+        <div className="card flex flex-wrap items-center gap-3 p-4">
+          {selectedItem.has_missing_receipt_placeholder ? (
+            <>
+              <span className="inline-flex items-center gap-2 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                {t('receiptPlaceholderCreated')}
+              </span>
+              {selectedItem.placeholder_invoice_id && (
+                <Link
+                  href={`/invoices/${selectedItem.placeholder_invoice_id}/edit`}
+                  className="text-sm font-medium text-[var(--primary)] underline"
+                >
+                  {t('openDraftInvoice')}
+                </Link>
+              )}
+            </>
+          ) : (
+            <>
+              <span className="text-sm text-slate-500">{t('markMissingReceiptDescription')}</span>
+              <button
+                onClick={onMarkMissingReceipt}
+                disabled={busy}
+                className="ml-auto inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {actionLoading === 'mark-missing-receipt' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />}
+                <span>{t('markMissingReceipt')}</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {/* Match to invoice (suggested matches + split) */}
       <div id="invoice-match-candidates" className="card scroll-mt-3 overflow-hidden">
         <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">

@@ -475,6 +475,14 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  async undoAutoDrafts(transactionIds: string[]) {
+    const response = await apiClient.post<ApiResponse<{
+      deleted: number;
+      skipped: number;
+    }>>('/api/banking/transactions/undo-auto-drafts', { transaction_ids: transactionIds });
+    return response.data.data;
+  },
+
   async bulkAutoMatch(transactionIds: string[]) {
     const response = await apiClient.post<ApiResponse<{
       auto_matched: Array<{ transaction_id: string; invoice_id: string }>;

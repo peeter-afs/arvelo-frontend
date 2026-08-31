@@ -28,6 +28,9 @@ export function BankWorkspace() {
   const [reviewCount, setReviewCount] = useState(0);
   const [reconcileCount, setReconcileCount] = useState(0);
   const [summaries, setSummaries] = useState<Partial<Record<BankTab, BankInlineSummaryData>>>({});
+  // Drafts the commit auto-created, handed to the review tab so it can report
+  // them and offer an undo. The import tab is hidden by then.
+  const [autoDraftTxIds, setAutoDraftTxIds] = useState<string[]>([]);
 
   // Keep the active tab in sync with the URL (back/forward, refresh, deep links).
   useEffect(() => {
@@ -46,7 +49,8 @@ export function BankWorkspace() {
   );
 
   // After an import commit, move the user to the review queue and force a refetch.
-  const handleCommitted = useCallback(() => {
+  const handleCommitted = useCallback((draftTxIds: string[] = []) => {
+    setAutoDraftTxIds(draftTxIds);
     setReviewRefreshKey((key) => key + 1);
     changeTab('review');
   }, [changeTab]);
@@ -88,7 +92,13 @@ export function BankWorkspace() {
         <ImportTab onCommitted={handleCommitted} onReviewCountChange={setImportReviewCount} onSummaryChange={updateImportSummary} />
       </div>
       <div className={`min-h-0 flex-1 ${activeTab === 'review' ? '' : 'hidden'}`}>
-        <ReviewTab refreshKey={reviewRefreshKey} onCountChange={setReviewCount} onSummaryChange={updateReviewSummary} />
+        <ReviewTab
+          refreshKey={reviewRefreshKey}
+          onCountChange={setReviewCount}
+          onSummaryChange={updateReviewSummary}
+          autoDraftTxIds={autoDraftTxIds}
+          onAutoDraftsHandled={() => setAutoDraftTxIds([])}
+        />
       </div>
       <div className={`min-h-0 flex-1 ${activeTab === 'reconcile' ? '' : 'hidden'}`}>
         <ReconcileTab onUnreconciledCountChange={setReconcileCount} onSummaryChange={updateReconcileSummary} />

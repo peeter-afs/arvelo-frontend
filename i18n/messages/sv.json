@@ -396,7 +396,12 @@
     "autoMatchReason_no_document_candidate": "No suitable open invoice was found.",
     "autoMatchReason_amount_requires_split": "The transaction amount does not equal the invoice balance; an allocation is required.",
     "autoMatchReason_ambiguous_candidates": "Several invoices have a similar match; choose the correct invoice.",
-    "autoMatchReason_low_confidence": "The reference or partner details do not provide a confident match."
+    "autoMatchReason_low_confidence": "The reference or partner details do not provide a confident match.",
+    "draftsCreatedCount": "Created {count} draft purchase invoice(s) for missing receipts",
+    "draftsRemovedCount": "Removed {count} draft(s)",
+    "autoCreateDraftsLabel": "Create missing purchase invoice drafts automatically",
+    "autoCreateDraftsDescription": "Committing a bank import creates a draft purchase invoice for every unmatched outgoing payment. The exclusion rules below decide what is skipped.",
+    "ruleFieldPrivatePerson": "Payee is a private person (no registry code)"
   },
   "reports": {
     "balanceSheet": "Balansräkning",
