@@ -24,11 +24,18 @@ async function fetchActivePartners(): Promise<PartnerOption[]> {
 }
 const activePartnersCache = createCachedFetcher(fetchActivePartners, ACTIVE_LISTS_TTL_MS);
 
+export type AccountClass = 'expense' | 'income' | 'asset' | 'liability' | 'equity';
+
 export type AccountOption = {
   id: string;
   code: string;
   name: string;
   type: string;
+  // Derived server-side: class is 'type' with revenue renamed to income, group
+  // is the parent account's name. Optional because older cached payloads and
+  // other endpoints returning AccountRecord do not carry them.
+  account_class?: AccountClass;
+  group_name?: string;
   is_active: boolean;
   system_code?: string | null;
 };
@@ -229,8 +236,8 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async createAccount(payload: { code: string; name: string; type: string; parent_id?: string }) {
-    const response = await apiClient.post<ApiResponse<AccountRecord>>('/api/accounting/accounts', payload);
+  async createAccount(payload: { code: string; name: string; type?: string; account_class?: AccountClass; parent_id?: string }) {
+    const response = await apiClient.post<ApiResponse<AccountOption>>('/api/accounting/accounts', payload);
     activeAccountsCache.invalidate();
     return response.data.data;
   },

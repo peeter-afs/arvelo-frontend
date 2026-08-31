@@ -14,7 +14,7 @@ import {
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankAutoMatchPlan, type BankAutoMatchReason, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
-import { BankFooterBar, InfoBox, type BankInlineSummaryData } from './shared';
+import { BankFooterBar, type BankInlineSummaryData } from './shared';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
@@ -69,16 +69,7 @@ export function ReviewTab({
   // tab is already hidden by the time we land.
   const [lastDraftTxIds, setLastDraftTxIds] = useState<string[]>([]);
   const [seenDraftBatch, setSeenDraftBatch] = useState<string[]>(autoDraftTxIds);
-  const [showDetails, setShowDetails] = useState(false);
-  const [detailsItemId, setDetailsItemId] = useState<string | null>(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
-
-  // Moving through the queue always lands on the actions, never on a wall of
-  // read-only fields.
-  if (detailsItemId !== selectedTransactionId) {
-    setDetailsItemId(selectedTransactionId);
-    setShowDetails(false);
-  }
 
   // A fresh batch of auto-created drafts arrived from the import commit. Compared
   // by identity, which is stable because the parent holds it in state.
@@ -531,12 +522,8 @@ export function ReviewTab({
                 </div>
                 <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
-              <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={setManualDescription} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} />
-                <div className="card overflow-hidden">
-                  <button onClick={() => setShowDetails((value) => !value)} className="flex w-full items-center justify-between px-4 py-3 text-left"><div><h2 className="text-sm font-semibold text-slate-900">{t('transactionDetails')}</h2><p className="text-xs text-slate-500">{t('transactionDetailsDescription')}</p></div><ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} /></button>
-                  {showDetails && <div className="grid gap-3 border-t border-slate-200 p-4 lg:grid-cols-2"><InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} /><InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} /><InfoBox label={t('description')} value={selectedItem.description || '-'} /><InfoBox label={t('importSource')} value={selectedItem.import_file_name || selectedItem.import_job_id?.slice(0, 8) || '-'} /></div>}
-                </div>
+              <div className="flex min-h-0 flex-1 flex-col px-3 pb-1">
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={setManualDescription} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
               </div>
             </>
           )}
