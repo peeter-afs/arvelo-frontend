@@ -159,4 +159,32 @@ export const authApi = {
   async resendVerification(email: string): Promise<void> {
     await apiClient.post('/api/auth/resend-verification', { email });
   },
+
+  /**
+   * Validate an invite link token (does not consume it)
+   */
+  async getInvite(token: string): Promise<
+    | { status: 'valid'; email: string; tenantName: string; role: string }
+    | { status: 'expired' | 'cancelled' | 'accepted' | 'invalid' }
+  > {
+    const response = await apiClient.get<ApiResponse<
+      | { status: 'valid'; email: string; tenantName: string; role: string }
+      | { status: 'expired' | 'cancelled' | 'accepted' | 'invalid' }
+    >>(`/api/auth/invite/${encodeURIComponent(token)}`);
+    return response.data.data!;
+  },
+
+  /**
+   * Accept an invite: set password and join the company
+   */
+  async acceptInvite(payload: { token: string; password: string; name?: string }): Promise<{
+    email: string;
+    existingAccount: boolean;
+  }> {
+    const response = await apiClient.post<ApiResponse<{ email: string; existingAccount: boolean }>>(
+      '/api/auth/accept-invite',
+      payload
+    );
+    return response.data.data!;
+  },
 };

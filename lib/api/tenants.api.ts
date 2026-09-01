@@ -20,6 +20,20 @@ export type TenantMember = {
   is_default: boolean;
 };
 
+export type PendingInvite = {
+  id: string;
+  email: string;
+  role: UserRole;
+  expires_at: string;
+  is_expired: boolean;
+  created_at: string;
+  invited_by_name: string | null;
+};
+
+export type InviteUserResult =
+  | { mode: 'added'; member: { id: string; email: string; name: string | null; role: UserRole } }
+  | { mode: 'invited'; invite: PendingInvite };
+
 export const tenantsApi = {
   async getMembers(tenantId: string) {
     const response = await apiClient.get<ApiResponse<TenantMember[]>>(`/api/tenants/${tenantId}/members`);
@@ -34,11 +48,37 @@ export const tenantsApi = {
     return response.data.data;
   },
 
+  /** @deprecated Superseded by inviteUser (unified invite flow). */
   async inviteMember(tenantId: string, payload: { email: string; role: UserRole }) {
     const response = await apiClient.post<ApiResponse<{ message: string }>>(
       `/api/tenants/${tenantId}/members`,
       payload
     );
+    return response.data;
+  },
+
+  async inviteUser(tenantId: string, payload: { email: string; role: UserRole }) {
+    const response = await apiClient.post<ApiResponse<InviteUserResult>>(
+      `/api/tenants/${tenantId}/invites`,
+      payload
+    );
+    return response.data.data;
+  },
+
+  async listInvites(tenantId: string) {
+    const response = await apiClient.get<ApiResponse<PendingInvite[]>>(`/api/tenants/${tenantId}/invites`);
+    return response.data.data;
+  },
+
+  async resendInvite(tenantId: string, inviteId: string) {
+    const response = await apiClient.post<ApiResponse<PendingInvite>>(
+      `/api/tenants/${tenantId}/invites/${inviteId}/resend`
+    );
+    return response.data.data;
+  },
+
+  async cancelInvite(tenantId: string, inviteId: string) {
+    const response = await apiClient.delete<ApiResponse<void>>(`/api/tenants/${tenantId}/invites/${inviteId}`);
     return response.data;
   },
 

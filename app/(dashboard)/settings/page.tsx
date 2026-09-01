@@ -5,7 +5,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark, Send } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type AccountingSettings, type OpeningBalanceImportStatus, type OpeningBalanceResetBackup, type SystemRoleMapping } from '@/lib/api/accounting.api';
@@ -19,7 +19,7 @@ import { FutursoftTab } from './_tabs/FutursoftTab';
 import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
-import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
+import { tenantsApi, type TenantMember, type PendingInvite } from '@/lib/api/tenants.api';
 import type { UserRole } from '@/lib/types/auth.types';
 import { BusinessRegistryTab } from './_tabs/BusinessRegistryTab';
 
@@ -1052,8 +1052,10 @@ function TeamTab({
 }) {
   const t = useTranslations('settings');
   const [members, setMembers] = useState<TenantMember[]>([]);
+  const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [formEmail, setFormEmail] = useState('');
   const [formName, setFormName] = useState('');
@@ -1068,6 +1070,8 @@ function TeamTab({
   const [editPassword, setEditPassword] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<PendingInvite | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   const canManage = currentRole === 'owner' || currentRole === 'admin';
 
@@ -1075,14 +1079,18 @@ function TeamTab({
     setLoading(true);
     setError(null);
     try {
-      const data = await tenantsApi.getMembers(tenantId);
-      setMembers(data);
+      const [memberData, inviteData] = await Promise.all([
+        tenantsApi.getMembers(tenantId),
+        canManage ? tenantsApi.listInvites(tenantId) : Promise.resolve([]),
+      ]);
+      setMembers(memberData);
+      setInvites(inviteData);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, canManage]);
 
   useEffect(() => {
     void load();
@@ -1130,13 +1138,39 @@ function TeamTab({
     setSaving(true);
     setFormError(null);
     try {
-      await tenantsApi.inviteMember(tenantId, { email: formEmail, role: formRole });
+      const result = await tenantsApi.inviteUser(tenantId, { email: formEmail, role: formRole });
+      setNotice(result.mode === 'added' ? t('memberAdded', { email: formEmail }) : t('inviteSent', { email: formEmail }));
       await load();
       resetForm();
     } catch (err) {
       setFormError(getErrorMessage(err));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleResendInvite = async (invite: PendingInvite) => {
+    setResendingId(invite.id);
+    setError(null);
+    try {
+      const refreshed = await tenantsApi.resendInvite(tenantId, invite.id);
+      setInvites((prev) => prev.map((i) => (i.id === invite.id ? refreshed : i)));
+      setNotice(t('inviteResent', { email: invite.email }));
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const handleCancelInvite = async (invite: PendingInvite) => {
+    setError(null);
+    try {
+      await tenantsApi.cancelInvite(tenantId, invite.id);
+      setInvites((prev) => prev.filter((i) => i.id !== invite.id));
+      setCancelTarget(null);
+    } catch (err) {
+      setError(getErrorMessage(err));
     }
   };
 
@@ -1184,16 +1218,16 @@ function TeamTab({
         {canManage && !addMode && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setAddMode('invite')}
+              onClick={() => setAddMode('create')}
               className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors"
             >
-              <UserPlus className="h-3.5 w-3.5" /> {t('inviteExisting')}
+              <KeyRound className="h-3.5 w-3.5" /> {t('createWithPassword')}
             </button>
             <button
-              onClick={() => setAddMode('create')}
+              onClick={() => setAddMode('invite')}
               className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[13px] font-medium text-white hover:bg-[var(--primary-hover)] transition-colors"
             >
-              <KeyRound className="h-3.5 w-3.5" /> {t('createUser')}
+              <UserPlus className="h-3.5 w-3.5" /> {t('inviteUser')}
             </button>
           </div>
         )}
@@ -1203,17 +1237,24 @@ function TeamTab({
         <div className="rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-4 py-3 text-[13px] text-[var(--a-neg)]">{error}</div>
       )}
 
+      {notice && (
+        <div className="flex items-center justify-between rounded-lg border border-[var(--a-pos)]/40 bg-[var(--a-pos-soft,rgba(16,185,129,0.08))] px-4 py-3 text-[13px] text-[var(--a-pos)]">
+          <span>{notice}</span>
+          <button onClick={() => setNotice(null)} className="text-[var(--a-pos)] hover:opacity-70">✕</button>
+        </div>
+      )}
+
       {addMode && (
         <div className="rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-[14px] font-semibold text-[var(--a-text)]">
-              {addMode === 'invite' ? t('inviteExisting') : t('createUser')}
+              {addMode === 'invite' ? t('inviteUser') : t('createUser')}
             </h3>
             <button onClick={resetForm} className="text-[var(--a-text-3)] hover:text-[var(--a-text)]">✕</button>
           </div>
 
           {addMode === 'invite' ? (
-            <p className="mb-4 text-[12.5px] text-[var(--a-text-2)]">{t('inviteExistingHint')}</p>
+            <p className="mb-4 text-[12.5px] text-[var(--a-text-2)]">{t('inviteUserHint')}</p>
           ) : (
             <p className="mb-4 text-[12.5px] text-[var(--a-text-2)]">{t('createUserHint')}</p>
           )}
@@ -1263,7 +1304,7 @@ function TeamTab({
                   onChange={(e) => setFormRole(e.target.value as UserRole)}
                   className="h-[34px] w-full rounded-[7px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-[13px] text-[var(--a-text)]"
                 >
-                  {roles.filter((r) => currentRole === 'owner' || r !== 'owner').map((r) => (
+                  {roles.filter((r) => (addMode === 'invite' ? r !== 'owner' : currentRole === 'owner' || r !== 'owner')).map((r) => (
                     <option key={r} value={r}>{roleLabel(r)}</option>
                   ))}
                 </select>
@@ -1356,6 +1397,80 @@ function TeamTab({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {canManage && invites.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-[14px] font-semibold text-[var(--a-text)]">{t('pendingInvites')}</h3>
+          <div className="overflow-hidden rounded-xl border border-[var(--a-border)]">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
+                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('email')}</th>
+                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
+                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('inviteExpires')}</th>
+                  <th className="w-10 px-4 py-2.5" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--a-border)] bg-[var(--a-surface)]">
+                {invites.map((invite) => (
+                  <tr key={invite.id}>
+                    <td className="px-4 py-3 font-medium text-[var(--a-text)]">{invite.email}</td>
+                    <td className="px-4 py-3 text-[var(--a-text-2)]">{roleLabel(invite.role)}</td>
+                    <td className="px-4 py-3">
+                      {invite.is_expired ? (
+                        <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--a-neg)]">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[var(--a-neg)]" />
+                          {t('inviteExpired')}
+                        </span>
+                      ) : (
+                        <span className="text-[var(--a-text-2)]">{new Date(invite.expires_at).toLocaleDateString()}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => void handleResendInvite(invite)}
+                          disabled={resendingId === invite.id}
+                          title={t('resendInvite')}
+                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] disabled:opacity-50 transition-colors"
+                        >
+                          {resendingId === invite.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                        </button>
+                        <button
+                          onClick={() => setCancelTarget(invite)}
+                          title={t('cancelInvite')}
+                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {cancelTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setCancelTarget(null)}>
+          <div className="w-[380px] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-[15px] font-semibold text-[var(--a-text)]">{t('cancelInvite')}</h3>
+            <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
+              {t('cancelInviteConfirm', { email: cancelTarget.email })}
+            </p>
+            <div className="mt-5 flex gap-2 justify-end">
+              <button onClick={() => setCancelTarget(null)} className="rounded-lg border border-[var(--a-border)] px-4 py-1.5 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
+                {t('teamCancel')}
+              </button>
+              <button onClick={() => void handleCancelInvite(cancelTarget)} className="rounded-lg bg-[var(--danger)] px-4 py-1.5 text-[13px] font-medium text-white hover:opacity-90">
+                {t('cancelInviteButton')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

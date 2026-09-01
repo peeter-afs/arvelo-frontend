@@ -2136,7 +2136,20 @@
     "bankGatewayContractStatusActive": "Aktiivne",
     "bankGatewayContractStatusFailed": "Ebaõnnestus",
     "bankGatewayContractStartDate": "Lepingu alguskuupäev",
-    "bankGatewayContractServices": "Lubatud teenused"
+    "bankGatewayContractServices": "Lubatud teenused",
+    "inviteUser": "Kutsu kasutaja",
+    "inviteUserHint": "Sisesta e-post ja roll. Kui inimesel on juba Arvelo konto, lisatakse ta kohe; muul juhul saab ta e-postile kutse oma parooli seadmiseks. Kutse link kehtib 7 päeva.",
+    "createWithPassword": "Loo parooliga",
+    "memberAdded": "{email} lisati ettevõttesse.",
+    "inviteSent": "Kutse saadetud aadressile {email}.",
+    "inviteResent": "Kutse saadeti uuesti aadressile {email}.",
+    "pendingInvites": "Ootel kutsed",
+    "inviteExpires": "Aegub",
+    "inviteExpired": "Aegunud",
+    "resendInvite": "Saada kutse uuesti",
+    "cancelInvite": "Tühista kutse",
+    "cancelInviteConfirm": "Kas tühistada aadressile {email} saadetud kutse? E-kirjaga saadetud link lõpetab töötamise.",
+    "cancelInviteButton": "Tühista kutse"
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",
@@ -2286,7 +2299,22 @@
       "passwordMinLengthWithPeriod": "Parool peab olema vähemalt 8 tähemärki.",
       "resetTokenMissing": "Parooli lähtestamise tunnus puudub.",
       "verificationTokenMissing": "Kinnitamise tunnus puudub"
-    }
+    },
+    "acceptInviteTitle": "Liitu ettevõttega Arvelos",
+    "acceptInviteSubtitle": "Sind on kutsutud liituma ettevõttega {tenantName}. Konto aktiveerimiseks sea parool.",
+    "acceptInviteNameLabel": "Sinu nimi",
+    "acceptInviteNamePlaceholder": "Täisnimi (valikuline)",
+    "acceptInviteButton": "Sea parool ja liitu",
+    "acceptInviteJoining": "Liitumine...",
+    "acceptInviteSuccessTitle": "Konto aktiveeritud",
+    "acceptInviteSuccessMessage": "Sinu konto on valmis. Saad nüüd sisse logida oma e-posti ja uue parooliga.",
+    "acceptInviteSuccessExistingTitle": "Sind lisati ettevõttesse",
+    "acceptInviteSuccessExisting": "Sul on Arvelo konto juba olemas, seega lisati sind ettevõttesse. Logi sisse oma senise parooliga.",
+    "inviteErrorTitle": "Seda kutselinki ei saa kasutada",
+    "inviteErrorExpired": "See kutse on aegunud. Palu administraatoril saata uus kutse.",
+    "inviteErrorCancelled": "See kutse on tühistatud. Kui arvad, et tegu on eksitusega, võta ühendust administraatoriga.",
+    "inviteErrorUsed": "See kutse on juba kasutatud. Saad oma kontoga sisse logida.",
+    "inviteErrorInvalid": "See kutselink on vigane või asendatud uuemaga. Kasuta kõige uuemat kutse-e-kirja või palu administraatoril kutse uuesti saata."
   },
   "aiInvoice": {
     "title": "AI arve",

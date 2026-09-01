@@ -2136,7 +2136,20 @@
     "bankGatewayContractStatusActive": "Active",
     "bankGatewayContractStatusFailed": "Failed",
     "bankGatewayContractStartDate": "Contract start date",
-    "bankGatewayContractServices": "Enabled services"
+    "bankGatewayContractServices": "Enabled services",
+    "inviteUser": "Invite user",
+    "inviteUserHint": "Enter an email and role. If the person already has an Arvelo account they are added immediately; otherwise they receive an email invitation to set their own password. The invite link is valid for 7 days.",
+    "createWithPassword": "Create with password",
+    "memberAdded": "{email} was added to the company.",
+    "inviteSent": "Invitation sent to {email}.",
+    "inviteResent": "Invitation resent to {email}.",
+    "pendingInvites": "Pending invites",
+    "inviteExpires": "Expires",
+    "inviteExpired": "Expired",
+    "resendInvite": "Resend invite",
+    "cancelInvite": "Cancel invite",
+    "cancelInviteConfirm": "Cancel the invitation sent to {email}? The emailed link will stop working.",
+    "cancelInviteButton": "Cancel invite"
   },
   "dashboard": {
     "welcomeBack": "Welcome back",
@@ -2286,7 +2299,22 @@
       "passwordMinLengthWithPeriod": "Password must be at least 8 characters.",
       "resetTokenMissing": "Password reset token is missing.",
       "verificationTokenMissing": "Verification token is missing"
-    }
+    },
+    "acceptInviteTitle": "Join a company on Arvelo",
+    "acceptInviteSubtitle": "You've been invited to join {tenantName}. Set a password to activate your account.",
+    "acceptInviteNameLabel": "Your name",
+    "acceptInviteNamePlaceholder": "Full name (optional)",
+    "acceptInviteButton": "Set password & join",
+    "acceptInviteJoining": "Joining...",
+    "acceptInviteSuccessTitle": "Account activated",
+    "acceptInviteSuccessMessage": "Your account is ready. You can now sign in with your email and new password.",
+    "acceptInviteSuccessExistingTitle": "You've been added",
+    "acceptInviteSuccessExisting": "You already have an Arvelo account, so you've been added to the company. Sign in with your existing password.",
+    "inviteErrorTitle": "This invite link can't be used",
+    "inviteErrorExpired": "This invitation has expired. Ask your administrator to send a new one.",
+    "inviteErrorCancelled": "This invitation has been cancelled. Contact your administrator if you think this is a mistake.",
+    "inviteErrorUsed": "This invitation has already been used. You can sign in with your account.",
+    "inviteErrorInvalid": "This invite link is invalid or has been replaced by a newer one. Use the most recent invitation email, or ask your administrator to resend it."
   },
   "aiInvoice": {
     "title": "AI Invoice",
