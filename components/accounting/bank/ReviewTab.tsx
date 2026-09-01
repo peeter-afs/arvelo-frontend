@@ -22,6 +22,13 @@ type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 // Stable identity so the "new draft batch?" check below cannot loop when the
 // prop is omitted.
 const NO_DRAFT_IDS: string[] = [];
+const REVIEW_PAGE_SIZE = 50;
+
+function mergeQueueItems(current: BankReviewQueueItem[], incoming: BankReviewQueueItem[]) {
+  const byId = new Map(current.map((item) => [item.transaction_id, item]));
+  for (const item of incoming) byId.set(item.transaction_id, item);
+  return Array.from(byId.values());
+}
 
 /** Default posting description: the counterparty when we have one, else what the bank sent. */
 function buildManualDescription(item: BankReviewQueueItem, partnerName: string): string {
@@ -52,6 +59,11 @@ export function ReviewTab({
   const [autoMatchPlan, setAutoMatchPlan] = useState<BankAutoMatchPlan | undefined>();
   const [autoMatchReason, setAutoMatchReason] = useState<BankAutoMatchReason | undefined>();
   const [isQueueLoading, setIsQueueLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [queueTotal, setQueueTotal] = useState(0);
+  // Number of backend rows already scanned. This differs from items.length when
+  // the client-side "auto ready" filter removes rows from a fetched page.
+  const [scannedCount, setScannedCount] = useState(0);
   const [isCandidateLoading, setIsCandidateLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -111,15 +123,22 @@ export function ReviewTab({
       try {
         const [queueResult, accountResult] = await Promise.all([
           bankingApi.getReviewQueue({
-            limit: 50,
+            limit: REVIEW_PAGE_SIZE,
+            offset: 0,
             auto_matchable_only: autoMatchableOnly || undefined,
             review_state: reviewFilter === 'all' ? undefined : reviewFilter,
           }),
           accountingApi.getAccounts(),
         ]);
         setItems(queueResult.items);
+        setQueueTotal(queueResult.total);
+        setScannedCount(Math.min(REVIEW_PAGE_SIZE, queueResult.total));
         setAccounts(accountResult);
-        setSelectedTransactionId((current) => current || queueResult.items[0]?.transaction_id || null);
+        setSelectedTransactionId((current) => (
+          current && queueResult.items.some((item) => item.transaction_id === current)
+            ? current
+            : queueResult.items[0]?.transaction_id || null
+        ));
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -131,8 +150,8 @@ export function ReviewTab({
   }, [autoMatchableOnly, reviewFilter, refreshKey]);
 
   useEffect(() => {
-    onCountChange?.(items.length);
-  }, [items.length, onCountChange]);
+    onCountChange?.(queueTotal);
+  }, [onCountChange, queueTotal]);
 
   useEffect(() => {
     if (selectAllRef.current) {
@@ -192,16 +211,52 @@ export function ReviewTab({
   }, [selectedItem]);
 
   const refreshQueue = async (preferredTransactionId?: string | null) => {
-    const result = await bankingApi.getReviewQueue({
-      limit: 50,
-      auto_matchable_only: autoMatchableOnly || undefined,
-      review_state: reviewFilter === 'all' ? undefined : reviewFilter,
-    });
-    setItems(result.items);
-    const nextSelected = preferredTransactionId && result.items.some((item) => item.transaction_id === preferredTransactionId)
+    const targetScannedCount = Math.max(REVIEW_PAGE_SIZE, scannedCount);
+    let offset = 0;
+    let total = 0;
+    let refreshedItems: BankReviewQueueItem[] = [];
+
+    do {
+      const result = await bankingApi.getReviewQueue({
+        limit: REVIEW_PAGE_SIZE,
+        offset,
+        auto_matchable_only: autoMatchableOnly || undefined,
+        review_state: reviewFilter === 'all' ? undefined : reviewFilter,
+      });
+      refreshedItems = mergeQueueItems(refreshedItems, result.items);
+      total = result.total;
+      offset += REVIEW_PAGE_SIZE;
+    } while (offset < targetScannedCount && offset < total);
+
+    setItems(refreshedItems);
+    setQueueTotal(total);
+    setScannedCount(Math.min(offset, total));
+    const nextSelected = preferredTransactionId && refreshedItems.some((item) => item.transaction_id === preferredTransactionId)
       ? preferredTransactionId
-      : result.items[0]?.transaction_id || null;
+      : refreshedItems[0]?.transaction_id || null;
     setSelectedTransactionId(nextSelected);
+  };
+
+  const handleLoadMore = async () => {
+    if (isLoadingMore || scannedCount >= queueTotal) return;
+    setIsLoadingMore(true);
+    setErrorMessage(null);
+    try {
+      const result = await bankingApi.getReviewQueue({
+        limit: REVIEW_PAGE_SIZE,
+        offset: scannedCount,
+        auto_matchable_only: autoMatchableOnly || undefined,
+        review_state: reviewFilter === 'all' ? undefined : reviewFilter,
+      });
+      setItems((current) => mergeQueueItems(current, result.items));
+      setQueueTotal(result.total);
+      setScannedCount(Math.min(scannedCount + REVIEW_PAGE_SIZE, result.total));
+      setSelectedTransactionId((current) => current || result.items[0]?.transaction_id || null);
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   const runAction = async (key: string, fn: () => Promise<void>) => {
@@ -249,7 +304,10 @@ export function ReviewTab({
   const handleMarkMissingReceipt = async () => {
     if (!selectedItem) return;
     await runAction('mark-missing-receipt', async () => {
-      await bankingApi.markMissingReceipt(selectedItem.transaction_id);
+      await bankingApi.markMissingReceipt(selectedItem.transaction_id, {
+        partner_id: manualPartnerId || undefined,
+        description: manualDescription || undefined,
+      });
       await refreshQueue(selectedItem.transaction_id);
     });
   };
@@ -476,6 +534,8 @@ export function ReviewTab({
   };
 
   const reviewCount = selectedIds.size > 0 ? autoReadySelected.length : queueCounts.autoReady;
+  const hasMoreQueueItems = scannedCount < queueTotal;
+  const remainingQueueItems = Math.max(queueTotal - items.length, 0);
   const bulkTotal = bulkItems
     .filter((item) => !droppedIds.has(item.transaction_id))
     .reduce((sum, item) => sum + Math.abs(item.amount), 0);
@@ -486,7 +546,9 @@ export function ReviewTab({
         <aside className="card flex min-h-0 flex-col overflow-hidden">
           <div className="flex h-[38px] flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-[11px]">
             <input ref={selectAllRef} type="checkbox" checked={allSelected} onChange={toggleSelectAll} disabled={items.length === 0} aria-label={t('all')} className="h-4 w-4 flex-shrink-0" />
-            <h2 className="whitespace-nowrap text-[12.5px] font-bold text-slate-900">{t('transactions')} · {items.length}</h2>
+            <h2 className="whitespace-nowrap text-[12.5px] font-bold text-slate-900">
+              {t('transactions')} · {items.length < queueTotal ? `${items.length}/${queueTotal}` : items.length}
+            </h2>
             <div className="flex-1" />
             <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
               <option value="all">{t('all')}</option><option value="pending">{t('pending')}</option><option value="reviewed">{t('reviewed')}</option>
@@ -495,7 +557,9 @@ export function ReviewTab({
             <button onClick={() => void refreshQueue(selectedTransactionId)} aria-label="Refresh" className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><RefreshCw className="h-4 w-4" /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {isQueueLoading ? <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div> : items.length === 0 ? <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div> : items.map((item, rowIndex) => {
+            {isQueueLoading ? <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div> : <>
+              {items.length === 0 && <div className="p-4 text-sm text-slate-500">{t('noUnmatchedTransactions')}</div>}
+              {items.map((item, rowIndex) => {
               const posted = item.matched_status !== 'unmatched';
               return (
                 <div key={item.transaction_id} role="row" className={`grid min-h-[46px] grid-cols-[18px_minmax(0,1fr)] gap-2 border-b border-slate-100 px-[11px] py-2 transition-colors ${rowIndex % 2 ? 'bg-slate-50/55' : ''} ${selectedTransactionId === item.transaction_id ? '!bg-blue-50' : 'hover:bg-slate-50'} ${posted ? 'opacity-55' : ''}`}>
@@ -514,7 +578,20 @@ export function ReviewTab({
                   </button>
                 </div>
               );
-            })}
+              })}
+              {hasMoreQueueItems && (
+                <div className="flex justify-center border-t border-slate-200 bg-slate-50/80 p-2">
+                  <button
+                    onClick={() => void handleLoadMore()}
+                    disabled={isLoadingMore}
+                    className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {autoMatchableOnly ? t('loadMore') : t('loadMoreCount', { count: remainingQueueItems })}
+                  </button>
+                </div>
+              )}
+            </>}
           </div>
         </aside>
 

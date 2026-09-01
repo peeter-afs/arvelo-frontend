@@ -557,6 +557,8 @@
     "reviewed": "Reviewed",
     "showOnlyStrongAutoMatch": "Show only transactions with one strong auto-match candidate.",
     "transactions": "Transactions",
+    "loadMore": "Load more",
+    "loadMoreCount": "Load more ({count})",
     "loadingQueue": "Loading queue...",
     "noUnmatchedTransactions": "No unmatched transactions for this filter.",
     "unknownCounterparty": "Unknown counterparty",

@@ -463,6 +463,8 @@
     "willPostToAccountWithPartner": "Kirjaa tilille {code} · {name} · vastapuoli {partner}",
     "postedToAccount": "Kirjattu tilille {code} · {name}.",
     "postedToAccountWithPartner": "Kirjattu tilille {code} · {name} · vastapuoli {partner}.",
+    "loadMore": "Lataa lisää",
+    "loadMoreCount": "Lataa lisää ({count})",
     "bankImportStepTitle1": "Valitse pankkitiedosto",
     "bankImportStepTitle2": "Tarkista rivit",
     "bankImportStepTitle3": "Vahvista ja lähetä tarkistukseen",

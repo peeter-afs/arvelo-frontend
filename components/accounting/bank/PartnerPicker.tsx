@@ -89,8 +89,8 @@ export const PartnerPicker = forwardRef<PartnerPickerHandle, {
     if (!open) return;
     const trimmed = query.trim();
     if (trimmed.length < 2) return;
-    setIsLoading(true);
     const handle = window.setTimeout(() => {
+      setIsLoading(true);
       void accountingApi
         .listPartners({ search: trimmed, is_active: true })
         .then((list) => {

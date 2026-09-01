@@ -128,11 +128,21 @@ export function ReviewActionPanel({
   }
 
   const isOutgoing = selectedItem.amount < 0;
+  const hasKnownCounterparty = Boolean(
+    selectedItem.counterparty_name?.trim()
+    || selectedItem.counterparty_partner_id
+  );
   const hasDraft = selectedItem.has_missing_receipt_placeholder;
   const gross = Math.abs(selectedItem.amount);
 
   const activeRoute: Route = route
-    ?? (autoMatchPlan ? 'match' : suggestedCandidates.length > 0 ? 'invoice' : 'account');
+    ?? (autoMatchPlan
+      ? 'match'
+      : suggestedCandidates.length > 0
+        ? 'invoice'
+        : isOutgoing && !hasKnownCounterparty
+          ? 'doc'
+          : 'account');
 
   const busy = !!actionLoading;
   const planInvoices = autoMatchPlan
@@ -467,8 +477,28 @@ export function ReviewActionPanel({
             <p className="text-xs text-slate-600">
               {hasDraft ? t('receiptPlaceholderCreated') : t('markMissingReceiptDescription')}
             </p>
+            <div>
+              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+                {t('counterparty')}
+              </label>
+              <PartnerPicker
+                ref={partnerPickerRef}
+                value={manualPartnerId}
+                onChange={setManualPartnerId}
+                onRequestCreate={(query) => { setCreateQuery(query); setPartnerModalOpen(true); }}
+                initialQuery={selectedItem.counterparty_name || ''}
+                fallbackLabel={manualPartnerName || selectedItem.counterparty_partner_name}
+                disabled={busy || hasDraft}
+              />
+              {bankLineText && (
+                <div className="mt-1.5 text-[11px] text-slate-500">
+                  {t('counterpartyRaw')}{' '}
+                  <span className="break-all font-mono text-slate-600">{bankLineText}</span>
+                </div>
+              )}
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
-              <InfoBox label={t('counterparty')} value={selectedItem.counterparty_name || t('unknownCounterparty')} />
+              <InfoBox label={t('counterparty')} value={pickedPartnerName || selectedItem.counterparty_name || t('unknownCounterparty')} />
               <InfoBox label={t('amount')} value={`${gross.toFixed(2)} ${selectedItem.currency}`} />
             </div>
             {hasDraft ? (

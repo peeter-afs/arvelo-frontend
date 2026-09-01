@@ -463,6 +463,8 @@
     "willPostToAccountWithPartner": "Bokför på {code} · {name} · motpart {partner}",
     "postedToAccount": "Bokfört på {code} · {name}.",
     "postedToAccountWithPartner": "Bokfört på {code} · {name} · motpart {partner}.",
+    "loadMore": "Ladda fler",
+    "loadMoreCount": "Ladda fler ({count})",
     "bankImportStepTitle1": "Välj bankfil",
     "bankImportStepTitle2": "Granska raderna",
     "bankImportStepTitle3": "Bekräfta och skicka till granskning",

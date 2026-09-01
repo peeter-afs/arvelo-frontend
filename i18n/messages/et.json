@@ -557,6 +557,8 @@
     "reviewed": "Üle vaadatud",
     "showOnlyStrongAutoMatch": "Kuva ainult tehingud, millel on üks tugev automaatse sobituse kandidaat.",
     "transactions": "Tehingud",
+    "loadMore": "Laadi veel",
+    "loadMoreCount": "Laadi veel ({count})",
     "loadingQueue": "Järjekorra laadimine...",
     "noUnmatchedTransactions": "Selle filtri jaoks sobitamata tehinguid ei leitud.",
     "unknownCounterparty": "Tundmatu vastaspool",
