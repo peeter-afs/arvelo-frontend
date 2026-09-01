@@ -2206,7 +2206,8 @@
     "resendInvite": "Resend invite",
     "cancelInvite": "Cancel invite",
     "cancelInviteConfirm": "Cancel the invitation sent to {email}? The emailed link will stop working.",
-    "cancelInviteButton": "Cancel invite"
+    "cancelInviteButton": "Cancel invite",
+    "inviteEmailFailed": "Invite for {email} was saved, but the email could not be sent. Check the mail settings and use resend."
   },
   "dashboard": {
     "welcomeBack": "Welcome back",

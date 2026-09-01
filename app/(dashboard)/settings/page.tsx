@@ -1055,7 +1055,7 @@ function TeamTab({
   const [invites, setInvites] = useState<PendingInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ text: string; tone: 'ok' | 'warn' } | null>(null);
   const [addMode, setAddMode] = useState<AddMode>(null);
   const [formEmail, setFormEmail] = useState('');
   const [formName, setFormName] = useState('');
@@ -1139,7 +1139,15 @@ function TeamTab({
     setFormError(null);
     try {
       const result = await tenantsApi.inviteUser(tenantId, { email: formEmail, role: formRole });
-      setNotice(result.mode === 'added' ? t('memberAdded', { email: formEmail }) : t('inviteSent', { email: formEmail }));
+      if (!result.email_sent) {
+        // The invite itself was stored — say so, and point at resend.
+        setNotice({ text: t('inviteEmailFailed', { email: formEmail }), tone: 'warn' });
+      } else {
+        setNotice({
+          text: result.mode === 'added' ? t('memberAdded', { email: formEmail }) : t('inviteSent', { email: formEmail }),
+          tone: 'ok',
+        });
+      }
       await load();
       resetForm();
     } catch (err) {
@@ -1155,7 +1163,11 @@ function TeamTab({
     try {
       const refreshed = await tenantsApi.resendInvite(tenantId, invite.id);
       setInvites((prev) => prev.map((i) => (i.id === invite.id ? refreshed : i)));
-      setNotice(t('inviteResent', { email: invite.email }));
+      setNotice(
+        refreshed.email_sent
+          ? { text: t('inviteResent', { email: invite.email }), tone: 'ok' }
+          : { text: t('inviteEmailFailed', { email: invite.email }), tone: 'warn' }
+      );
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -1238,9 +1250,15 @@ function TeamTab({
       )}
 
       {notice && (
-        <div className="flex items-center justify-between rounded-lg border border-[var(--a-pos)]/40 bg-[var(--a-pos-soft,rgba(16,185,129,0.08))] px-4 py-3 text-[13px] text-[var(--a-pos)]">
-          <span>{notice}</span>
-          <button onClick={() => setNotice(null)} className="text-[var(--a-pos)] hover:opacity-70">✕</button>
+        <div
+          className={`flex items-center justify-between rounded-lg px-4 py-3 text-[13px] ${
+            notice.tone === 'ok'
+              ? 'border border-[var(--a-pos)]/40 bg-[var(--a-pos-soft,rgba(16,185,129,0.08))] text-[var(--a-pos)]'
+              : 'border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft,rgba(245,158,11,0.10))] text-[var(--a-warn)]'
+          }`}
+        >
+          <span>{notice.text}</span>
+          <button onClick={() => setNotice(null)} className="hover:opacity-70">✕</button>
         </div>
       )}
 

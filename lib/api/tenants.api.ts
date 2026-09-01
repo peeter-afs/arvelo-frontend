@@ -30,9 +30,17 @@ export type PendingInvite = {
   invited_by_name: string | null;
 };
 
-export type InviteUserResult =
-  | { mode: 'added'; member: { id: string; email: string; name: string | null; role: UserRole } }
-  | { mode: 'invited'; invite: PendingInvite };
+type EmailOutcome = {
+  /** False when the invite was stored but the notification could not be delivered. */
+  email_sent: boolean;
+  email_error?: string;
+};
+
+export type InviteUserResult = EmailOutcome &
+  (
+    | { mode: 'added'; member: { id: string; email: string; name: string | null; role: UserRole } }
+    | { mode: 'invited'; invite: PendingInvite }
+  );
 
 export const tenantsApi = {
   async getMembers(tenantId: string) {
@@ -71,7 +79,7 @@ export const tenantsApi = {
   },
 
   async resendInvite(tenantId: string, inviteId: string) {
-    const response = await apiClient.post<ApiResponse<PendingInvite>>(
+    const response = await apiClient.post<ApiResponse<PendingInvite & EmailOutcome>>(
       `/api/tenants/${tenantId}/invites/${inviteId}/resend`
     );
     return response.data.data;

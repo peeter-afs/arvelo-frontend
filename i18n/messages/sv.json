@@ -768,7 +768,8 @@
     "resendInvite": "Skicka inbjudan igen",
     "cancelInvite": "Avbryt inbjudan",
     "cancelInviteConfirm": "Vill du avbryta inbjudan som skickats till {email}? Länken i e-postmeddelandet slutar fungera.",
-    "cancelInviteButton": "Avbryt inbjudan"
+    "cancelInviteButton": "Avbryt inbjudan",
+    "inviteEmailFailed": "Inbjudan till {email} sparades, men e-postmeddelandet kunde inte skickas. Kontrollera e-postinställningarna och skicka igen."
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",

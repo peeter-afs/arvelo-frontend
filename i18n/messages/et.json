@@ -2206,7 +2206,8 @@
     "resendInvite": "Saada kutse uuesti",
     "cancelInvite": "Tühista kutse",
     "cancelInviteConfirm": "Kas tühistada aadressile {email} saadetud kutse? E-kirjaga saadetud link lõpetab töötamise.",
-    "cancelInviteButton": "Tühista kutse"
+    "cancelInviteButton": "Tühista kutse",
+    "inviteEmailFailed": "{email} kutse salvestati, aga e-kirja ei õnnestunud saata. Kontrolli meiliseadeid ja kasuta \"Saada uuesti\"."
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",

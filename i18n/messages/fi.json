@@ -768,7 +768,8 @@
     "resendInvite": "Lähetä kutsu uudelleen",
     "cancelInvite": "Peruuta kutsu",
     "cancelInviteConfirm": "Peruutetaanko osoitteeseen {email} lähetetty kutsu? Sähköpostilla lähetetty linkki lakkaa toimimasta.",
-    "cancelInviteButton": "Peruuta kutsu"
+    "cancelInviteButton": "Peruuta kutsu",
+    "inviteEmailFailed": "Kutsu osoitteelle {email} tallennettiin, mutta sähköpostia ei voitu lähettää. Tarkista sähköpostiasetukset ja käytä uudelleenlähetystä."
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",
