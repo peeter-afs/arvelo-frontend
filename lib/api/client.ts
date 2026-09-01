@@ -83,6 +83,17 @@ apiClient.interceptors.response.use(
 
     // Handle other errors
     if (error.response?.status === 403) {
+      const code = (error.response.data as { error?: { code?: string } } | undefined)?.error?.code;
+
+      // The tenant requires 2FA and this user is past their grace period:
+      // every route but /api/auth is closed until they set it up.
+      if (code === 'TWO_FACTOR_REQUIRED' && typeof window !== 'undefined') {
+        if (!window.location.pathname.endsWith('/settings/security')) {
+          window.location.href = '/settings/security?two_factor_required=1';
+        }
+        return Promise.reject(error);
+      }
+
       // No access to resource
       console.error('Access denied:', error.response.data);
     }

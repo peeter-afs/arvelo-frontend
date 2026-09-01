@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import MobileNav from '@/components/layout/MobileNav';
 import { CommandBar } from '@/components/layout/CommandBar';
 import { StatusFooter } from '@/components/layout/StatusFooter';
+import { TwoFactorNotice } from '@/components/layout/TwoFactorNotice';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
@@ -51,6 +52,7 @@ export default function DashboardLayout({
             <main className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0">
               <CommandBar />
               <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6 lg:px-7">
+                <TwoFactorNotice />
                 {children}
               </div>
               <StatusFooter />

@@ -1697,7 +1697,16 @@
     "emailBackup": {
       "title": "Email backup code",
       "description": "If your authenticator app or passkey is unavailable, you can request a one-time code to your email address during sign-in."
-    }
+    },
+    "companyPolicyTitle": "Company-wide two-factor requirement",
+    "companyPolicyDescription": "When required, everyone in this company must use an authenticator app or a passkey. Email codes stay a backup only.",
+    "companyPolicyToggle": "Require two-factor authentication",
+    "companyPolicyScheduled": "Switches on automatically on {date}.",
+    "companyPolicyGraceLabel": "Grace period (days)",
+    "companyPolicyGraceHint": "How long each person has to set 2FA up, counted from the requirement start or the day they joined — whichever is later.",
+    "noticeGrace": "Your company requires two-factor authentication. Set it up by {date}.",
+    "noticeBlocked": "Your company requires two-factor authentication. Set it up to continue working.",
+    "noticeAction": "Set up now"
   },
   "settings": {
     "title": "Settings",

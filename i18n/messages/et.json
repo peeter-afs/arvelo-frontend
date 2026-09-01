@@ -1697,7 +1697,16 @@
     "emailBackup": {
       "title": "E-posti varukood",
       "description": "Kui autentimisrakendus või turvavõti pole käepärast, saad sisselogimisel tellida ühekordse koodi oma e-posti aadressile."
-    }
+    },
+    "companyPolicyTitle": "Ettevõtte kaheastmelise autentimise nõue",
+    "companyPolicyDescription": "Kui nõue on sees, peavad kõik selle ettevõtte kasutajad kasutama autentimisrakendust või passkey'd. E-posti koodid jäävad ainult varuvariandiks.",
+    "companyPolicyToggle": "Nõua kaheastmelist autentimist",
+    "companyPolicyScheduled": "Lülitub automaatselt sisse {date}.",
+    "companyPolicyGraceLabel": "Ajapikendus (päevades)",
+    "companyPolicyGraceHint": "Kui kaua on igal kasutajal aega 2FA seadistada — arvestatakse nõude jõustumisest või liitumise päevast, kumb hilisem.",
+    "noticeGrace": "Sinu ettevõte nõuab kaheastmelist autentimist. Seadista see hiljemalt {date}.",
+    "noticeBlocked": "Sinu ettevõte nõuab kaheastmelist autentimist. Töö jätkamiseks seadista see ära.",
+    "noticeAction": "Seadista kohe"
   },
   "settings": {
     "title": "Seaded",

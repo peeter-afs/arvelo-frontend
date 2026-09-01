@@ -6,6 +6,8 @@ import { useTranslations } from 'next-intl';
 import { QRCodeSVG } from 'qrcode.react';
 import { startRegistration } from '@simplewebauthn/browser';
 import apiClient from '@/lib/api/client';
+import { useAuthStore } from '@/lib/stores/auth.store';
+import { TenantTwoFactorPolicyCard } from '@/components/settings/TenantTwoFactorPolicyCard';
 import { getErrorMessage } from '@/lib/api/client';
 
 type ApiResponse<T> = { success: boolean; data: T };
@@ -20,6 +22,8 @@ type PasskeyRow = {
 export default function SecuritySettingsPage() {
   const t = useTranslations('twoFactor');
   const tc = useTranslations('common');
+  const role = useAuthStore((state) => state.role);
+  const canManagePolicy = role === 'owner' || role === 'admin';
 
   const [enabled, setEnabled] = useState(false);
   const [totpEnabled, setTotpEnabled] = useState(false);
@@ -160,6 +164,8 @@ export default function SecuritySettingsPage() {
         <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('title')}</h1>
         <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{t('description')}</p>
       </div>
+
+      {canManagePolicy && <TenantTwoFactorPolicyCard />}
 
       {/* Status Card */}
       <div className="card p-6 mb-6">
