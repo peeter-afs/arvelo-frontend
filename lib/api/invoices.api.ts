@@ -62,7 +62,25 @@ export type InvoiceLineInput = {
   discount_percent?: number;
   tax_rate?: number;
   supply_type?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
+};
+
+export type InvoiceLine = {
+  id: string;
+  description: string;
+  quantity: number;
+  unit_price: number | string;
+  discount_percent?: number | string | null;
+  tax_rate?: number | string | null;
+  line_total: number | string;
+  account_id?: string | null;
+  supply_type?: string | null;
+  meta?: Record<string, unknown> | null;
+};
+
+export type InvoiceDetail = {
+  invoice: InvoiceListItem;
+  lines: InvoiceLine[];
 };
 
 export type InvoiceDraftPayload = {
@@ -90,21 +108,7 @@ export const invoicesApi = {
   },
 
   async getInvoice(id: string) {
-    const response = await apiClient.get<ApiResponse<{
-      invoice: InvoiceListItem;
-      lines: Array<{
-        id: string;
-        description: string;
-        quantity: number;
-        unit_price: number | string;
-        discount_percent?: number | string | null;
-        tax_rate?: number | string | null;
-        line_total: number | string;
-        account_id?: string | null;
-        supply_type?: string | null;
-        meta?: Record<string, any> | null;
-      }>;
-    }>>(`/api/invoices/${id}`);
+    const response = await apiClient.get<ApiResponse<InvoiceDetail>>(`/api/invoices/${id}`);
     return response.data.data;
   },
 
@@ -140,38 +144,12 @@ export const invoicesApi = {
   },
 
   async createInvoice(payload: InvoiceDraftPayload) {
-    const response = await apiClient.post<ApiResponse<{
-      invoice: InvoiceListItem;
-      lines: Array<{
-        id: string;
-        description: string;
-        quantity: number;
-        unit_price: number | string;
-        discount_percent?: number | string | null;
-        tax_rate?: number | string | null;
-        line_total: number | string;
-        account_id?: string | null;
-        meta?: Record<string, any> | null;
-      }>;
-    }>>('/api/invoices', payload);
+    const response = await apiClient.post<ApiResponse<InvoiceDetail>>('/api/invoices', payload);
     return response.data.data;
   },
 
   async updateInvoice(id: string, payload: InvoiceDraftPayload) {
-    const response = await apiClient.put<ApiResponse<{
-      invoice: InvoiceListItem;
-      lines: Array<{
-        id: string;
-        description: string;
-        quantity: number;
-        unit_price: number | string;
-        discount_percent?: number | string | null;
-        tax_rate?: number | string | null;
-        line_total: number | string;
-        account_id?: string | null;
-        meta?: Record<string, any> | null;
-      }>;
-    }>>(`/api/invoices/${id}`, payload);
+    const response = await apiClient.put<ApiResponse<InvoiceDetail>>(`/api/invoices/${id}`, payload);
     return response.data.data;
   },
 

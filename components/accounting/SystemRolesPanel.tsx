@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Plus } from 'lucide-react';
 import { SYSTEM_ROLES } from '@/lib/constants/systemRoles';
 import type { AccountOption, AccountingSettings, SystemRoleMapping } from '@/lib/api/accounting.api';
@@ -26,6 +26,15 @@ type SystemRolesPanelProps = {
   };
 };
 
+function mappingFromSettings(settings: AccountingSettings | null): SystemRoleMapping {
+  const mapping: SystemRoleMapping = {};
+  for (const role of SYSTEM_ROLES) {
+    const id = settings?.[role.setting_key] || undefined;
+    if (id) mapping[role.setting_key] = id;
+  }
+  return mapping;
+}
+
 export function SystemRolesPanel({
   accounts,
   settings,
@@ -36,17 +45,11 @@ export function SystemRolesPanel({
   roleLabel,
   labels,
 }: SystemRolesPanelProps) {
-  const [mapping, setMapping] = useState<SystemRoleMapping>({});
-
-  // Seed the selects from current settings whenever they load/change.
-  useEffect(() => {
-    const next: SystemRoleMapping = {};
-    for (const role of SYSTEM_ROLES) {
-      const id = settings?.[role.setting_key] || undefined;
-      if (id) next[role.setting_key] = id;
-    }
-    setMapping(next);
-  }, [settings]);
+  const [draft, setDraft] = useState<{
+    source: AccountingSettings | null;
+    mapping: SystemRoleMapping;
+  }>(() => ({ source: settings, mapping: mappingFromSettings(settings) }));
+  const mapping = draft.source === settings ? draft.mapping : mappingFromSettings(settings);
 
   const hasAccounts = accounts.length > 0;
   const allRolesUnset = SYSTEM_ROLES.every((role) => !settings?.[role.setting_key]);
@@ -83,7 +86,10 @@ export function SystemRolesPanel({
                 <select
                   value={mapping[role.setting_key] || ''}
                   onChange={(event) =>
-                    setMapping((current) => ({ ...current, [role.setting_key]: event.target.value || undefined }))
+                    setDraft({
+                      source: settings,
+                      mapping: { ...mapping, [role.setting_key]: event.target.value || undefined },
+                    })
                   }
                   className="h-11 w-full rounded-lg border border-slate-200 px-3"
                 >

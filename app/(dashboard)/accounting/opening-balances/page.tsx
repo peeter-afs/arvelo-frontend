@@ -347,7 +347,6 @@ export default function OpeningBalancesPage() {
       return;
     }
 
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSharedFields((current) => (
       current.opening_date ? current : { ...current, opening_date: today }
     ));

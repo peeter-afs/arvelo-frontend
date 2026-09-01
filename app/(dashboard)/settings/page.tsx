@@ -1086,7 +1086,6 @@ function TeamTab({
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
     void load();
   }, [tenantId]);
 
@@ -1445,5 +1444,4 @@ function SettingsField({ label, children }: { label: string; children: ReactNode
     </label>
   );
 }
-
 

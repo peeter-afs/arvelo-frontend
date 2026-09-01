@@ -7,7 +7,6 @@ import { accountingApi, type FiscalYearWithPeriods, type PeriodItem } from '@/li
 import { monthEndApi } from '@/lib/api/monthEnd.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
-import { ErrorState } from '@/components/ui/ErrorState';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 function formatDate(d: string) {
@@ -63,7 +62,7 @@ export default function FiscalYearsPage() {
     });
   };
 
-  const handleAction = async (action: () => Promise<any>, loadingKey: string) => {
+  const handleAction = async (action: () => Promise<unknown>, loadingKey: string) => {
     setActionLoading(loadingKey);
     try {
       await action();

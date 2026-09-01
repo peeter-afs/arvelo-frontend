@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { BookOpen, Calendar } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { reportsApi, type GeneralLedgerData } from '@/lib/api/reports.api';
 import { getErrorMessage } from '@/lib/api/client';

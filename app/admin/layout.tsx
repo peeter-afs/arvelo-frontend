@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
@@ -43,17 +44,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               Platform Admin
             </span>
             <nav className="mt-1 flex gap-4 text-sm font-medium">
-              <a href="/admin" className="text-slate-700 hover:text-slate-900">
+              <Link href="/admin" className="text-slate-700 hover:text-slate-900">
                 Tenants
-              </a>
-              <a href="/admin/users" className="text-slate-700 hover:text-slate-900">
+              </Link>
+              <Link href="/admin/users" className="text-slate-700 hover:text-slate-900">
                 Users
-              </a>
+              </Link>
             </nav>
           </div>
-          <a href="/" className="text-sm text-slate-500 hover:text-slate-700">
+          <Link href="/" className="text-sm text-slate-500 hover:text-slate-700">
             Back to app
-          </a>
+          </Link>
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>

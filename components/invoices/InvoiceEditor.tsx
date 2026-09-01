@@ -159,7 +159,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     };
 
     void loadInvoice();
-  }, [invoiceId, mode]);
+  }, [invoiceId, mode, setInvoiceDate]);
 
   // When the tenant is not VAT-liable, strip VAT from every line.
   useEffect(() => {

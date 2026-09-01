@@ -54,7 +54,7 @@ export const annualReportApi = {
   },
 
   async checkStatus(id: string) {
-    const response = await apiClient.get<ApiResponse<{ rik_status: string; details: any }>>(`/api/annual-reports/${id}/status`);
+    const response = await apiClient.get<ApiResponse<{ rik_status: string; details: unknown }>>(`/api/annual-reports/${id}/status`);
     return response.data.data;
   },
 };

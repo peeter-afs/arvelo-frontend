@@ -184,7 +184,6 @@ export default function BusinessPartnersPage() {
 
   useEffect(() => {
     if (!selectedPartnerId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPartner(null);
       setRoles([]);
       setBankAccounts([]);

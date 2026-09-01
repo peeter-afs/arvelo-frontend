@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Download, TrendingDown, DollarSign, Wallet, ChevronDown, ChevronRight, Calendar, X } from 'lucide-react';
+import { Plus, Search, Download, TrendingDown, DollarSign, Wallet, ChevronDown, ChevronRight, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { fixedAssetsApi, type FixedAsset, type AssetCategory, type DepreciationEntry } from '@/lib/api/fixedAssets.api';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';

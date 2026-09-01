@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { PartnerRecord } from './accounting.api';
 
 type ApiResponse<T> = {
   success: boolean;
@@ -56,10 +57,16 @@ export type PartnerRegistrySyncLogItem = {
   error_code?: string | null;
   error_message?: string | null;
   duration_ms?: number | null;
-  meta?: Record<string, any> | null;
+  meta?: Record<string, unknown> | null;
   performed_at: string;
   performed_by?: string | null;
 };
+
+export type TaxArrearsInfo = {
+  status?: string | null;
+  arrearsAmount?: number | string | null;
+  note?: string | null;
+} & Record<string, unknown>;
 
 export const businessRegistryApi = {
   async getSettings() {
@@ -109,9 +116,9 @@ export const businessRegistryApi = {
 
   async refreshPartner(partnerId: string, payload?: { include_tax_arrears?: boolean; request_source?: string }) {
     const response = await apiClient.post<ApiResponse<{
-      partner: Record<string, any>;
+      partner: PartnerRecord;
       company: BusinessRegistryCompany;
-      tax_arrears?: Record<string, any> | null;
+      tax_arrears?: TaxArrearsInfo | null;
     }>>(`/api/business-registry/refresh/${partnerId}`, payload || {});
     return response.data.data;
   },

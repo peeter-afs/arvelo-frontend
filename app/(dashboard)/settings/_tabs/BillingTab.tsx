@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
 import { bankingApi, type DraftExclusionRule } from '@/lib/api/banking.api';
-import { billingApi, type BillingInvoice, type BillingPlan, type BillingSubscription, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
+import { billingApi, type BillingInvoice, type BillingPlan, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { BillingField, ReportStat, TabFeedback } from '../_components/fields';
 
@@ -19,7 +19,6 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
   const [billingSaving, setBillingSaving] = useState(false);
   const [billingAction, setBillingAction] = useState<string | null>(null);
   const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
-  const [billingSubscription, setBillingSubscription] = useState<BillingSubscription | null>(null);
   const [billingInvoices, setBillingInvoices] = useState<BillingInvoice[]>([]);
   const [billingReminderOperations, setBillingReminderOperations] = useState<BillingReminderOperationItem[]>([]);
   const [billingReminderHistory, setBillingReminderHistory] = useState<BillingReminderHistoryItem[]>([]);
@@ -112,7 +111,6 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
       try {
         const overview = await billingApi.getOverview();
         setBillingPlans(overview.plans);
-        setBillingSubscription(overview.subscription);
         setBillingInvoices(overview.invoices);
         setBillingReminderOperations(overview.reminder_operations || []);
         setBillingReminderHistory(overview.reminder_history || []);
@@ -162,12 +160,11 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
     };
 
     void load();
-  }, [canManage, tenant?.base_currency]);
+  }, [canManage, tenant?.base_currency, tenant?.email, tenant?.name]);
 
   const reloadBilling = async () => {
     const overview = await billingApi.getOverview();
     setBillingPlans(overview.plans);
-    setBillingSubscription(overview.subscription);
     setBillingInvoices(overview.invoices);
     setBillingReminderOperations(overview.reminder_operations || []);
     setBillingReminderHistory(overview.reminder_history || []);
@@ -231,7 +228,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
     setError(null);
     setSuccess(null);
     try {
-      const result = await billingApi.upsertSubscription({
+      await billingApi.upsertSubscription({
         plan_id: billingForm.plan_id,
         status: billingForm.status,
         billing_day: Number(billingForm.billing_day || 1),
@@ -245,7 +242,6 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
         next_invoice_date: billingForm.next_invoice_date,
         cancel_at_period_end: billingForm.cancel_at_period_end,
       });
-      setBillingSubscription(result.subscription);
       await reloadBilling();
       setSuccess(t('billingSubscriptionSaved'));
     } catch (error) {

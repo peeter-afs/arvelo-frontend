@@ -38,7 +38,7 @@ export default function ExchangeRatesPage() {
   const handleFetchEcb = async () => {
     setFetching(true);
     try {
-      const result = await exchangeRatesApi.fetchEcb();
+      await exchangeRatesApi.fetchEcb();
       setError(null);
       fetchData();
     } catch (err) {

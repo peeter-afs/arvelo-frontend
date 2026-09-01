@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -46,7 +46,7 @@ export default function PaymentsPage() {
     );
   }, [payments]);
 
-  const loadPayments = async (preferredId?: string | null) => {
+  const loadPayments = useCallback(async (preferredId?: string | null) => {
     const result = await paymentsApi.listPayments({
       invoice_id: invoiceFilter,
       status: searchParams.get('status') || undefined,
@@ -57,7 +57,7 @@ export default function PaymentsPage() {
       ? preferredId
       : result[0]?.id || null;
     setSelectedPaymentId(nextId);
-  };
+  }, [invoiceFilter, searchParams]);
 
   useEffect(() => {
     const load = async () => {
@@ -73,7 +73,7 @@ export default function PaymentsPage() {
     };
 
     void load();
-  }, [invoiceFilter, searchParams, selectedPaymentId]);
+  }, [loadPayments, selectedPaymentId]);
 
   useEffect(() => {
     if (!selectedPaymentId) {

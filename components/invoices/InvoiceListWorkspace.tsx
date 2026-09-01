@@ -29,7 +29,7 @@ import { Stat } from '@/components/ui/Stat';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { SplitPane, SplitPaneDetail } from '@/components/layout/SplitPane';
 import AiInvoicePanel from '@/components/invoices/AiInvoicePanel';
-import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
+import { aiInvoiceApi } from '@/lib/api/aiInvoice.api';
 import { futursoftApi } from '@/lib/api/futursoft.api';
 import { showToast } from '@/components/ui/Toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -281,7 +281,6 @@ export default function InvoiceListWorkspace({
 
   useEffect(() => {
     if (!selectedInvoiceId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedInvoiceDetail(null);
       return;
     }
@@ -308,7 +307,6 @@ export default function InvoiceListWorkspace({
 
   useEffect(() => {
     if (!selectedInvoiceId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaymentHistory([]);
       return;
     }

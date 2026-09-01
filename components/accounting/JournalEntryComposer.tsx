@@ -366,7 +366,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
     } finally {
       setIsSaving(false);
     }
-  }, [buildPayload, savedId, router]);
+  }, [buildPayload, savedId, router, t]);
 
   // ── Post entry ────────────────────────────────────────────────────────────────
   const handlePost = useCallback(async () => {
@@ -395,7 +395,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
       setErrorMessage(getErrorMessage(err));
       setIsPosting(false);
     }
-  }, [lines, isBalanced, difference, handleSaveDraft, router]);
+  }, [lines, isBalanced, difference, handleSaveDraft, router, t]);
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {

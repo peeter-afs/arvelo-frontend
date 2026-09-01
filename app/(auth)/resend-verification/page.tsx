@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { Loader2, Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import { Loader2, Mail, AlertCircle } from 'lucide-react';
 
 export default function ResendVerificationPage() {
   const t = useTranslations('auth');

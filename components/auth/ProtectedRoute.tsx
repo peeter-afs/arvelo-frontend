@@ -27,9 +27,10 @@ export default function ProtectedRoute({
         setLoadingTime(prev => prev + 1);
       }, 1000);
       return () => clearInterval(timer);
-    } else {
-      setLoadingTime(0);
     }
+
+    const resetTimer = setTimeout(() => setLoadingTime(0), 0);
+    return () => clearTimeout(resetTimer);
   }, [isLoading]);
 
   useEffect(() => {

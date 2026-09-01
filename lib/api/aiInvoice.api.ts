@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { InvoiceDetail } from './invoices.api';
 
 type ApiResponse<T> = {
   success: boolean;
@@ -55,10 +56,8 @@ export const aiInvoiceApi = {
   async confirm(input: {
     parsed: ParsedInvoiceDraft;
     partner_id: string;
-  }): Promise<{ invoice: any; lines: any[] }> {
-    const response = await apiClient.post<
-      ApiResponse<{ invoice: any; lines: any[] }>
-    >('/api/ai-invoice/confirm', input);
+  }): Promise<InvoiceDetail> {
+    const response = await apiClient.post<ApiResponse<InvoiceDetail>>('/api/ai-invoice/confirm', input);
     return response.data.data;
   },
 

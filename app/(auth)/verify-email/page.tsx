@@ -26,8 +26,20 @@ function VerifyEmailContent() {
       return;
     }
 
-    verifyEmail();
-  }, [token]);
+    const verifyEmail = async () => {
+      try {
+        await authApi.verifyEmail(token);
+        setIsVerified(true);
+        setError('');
+      } catch (err) {
+        setError(getErrorMessage(err));
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
+    void verifyEmail();
+  }, [t, token]);
 
   useEffect(() => {
     if (isVerified && countdown > 0) {
@@ -39,18 +51,6 @@ function VerifyEmailContent() {
       router.push('/login?verified=true');
     }
   }, [isVerified, countdown, router]);
-
-  const verifyEmail = async () => {
-    try {
-      await authApi.verifyEmail(token!);
-      setIsVerified(true);
-      setError('');
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setIsVerifying(false);
-    }
-  };
 
   if (isVerifying) {
     return (

@@ -75,7 +75,6 @@ export default function ChartOfAccountsPage() {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadAccounts();
   }, []);
 
@@ -300,7 +299,6 @@ function AccountDetailPanel({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsEditing(false);
     setEditName(account?.name || '');
     setEditType(account?.type || 'asset');

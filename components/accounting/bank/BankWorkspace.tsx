@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FileUp, Landmark, ListChecks, Scale } from 'lucide-react';
@@ -22,7 +22,7 @@ export function BankWorkspace() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const [activeTab, setActiveTab] = useState<BankTab>(() => parseTab(searchParams.get('tab')));
+  const activeTab = parseTab(searchParams.get('tab'));
   const [reviewRefreshKey, setReviewRefreshKey] = useState(0);
   const [importReviewCount, setImportReviewCount] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
@@ -32,15 +32,8 @@ export function BankWorkspace() {
   // them and offer an undo. The import tab is hidden by then.
   const [autoDraftTxIds, setAutoDraftTxIds] = useState<string[]>([]);
 
-  // Keep the active tab in sync with the URL (back/forward, refresh, deep links).
-  useEffect(() => {
-    const urlTab = parseTab(searchParams.get('tab'));
-    setActiveTab((current) => (current === urlTab ? current : urlTab));
-  }, [searchParams]);
-
   const changeTab = useCallback(
     (tab: BankTab) => {
-      setActiveTab(tab);
       const params = new URLSearchParams(searchParams.toString());
       params.set('tab', tab);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });

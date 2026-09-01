@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Loader2, Save } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AccountOption, AccountingSettings, SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
@@ -19,19 +19,23 @@ type Props = {
   onSave: (mapping: SupplyTypeSalesDefaults) => Promise<void> | void;
 };
 
+function mappingFromSettings(settings: AccountingSettings | null): SupplyTypeSalesDefaults {
+  const mapping: SupplyTypeSalesDefaults = {};
+  for (const supply of SUPPLY_KEYS) {
+    const id = settings?.[supply.key];
+    if (id) mapping[supply.key] = id;
+  }
+  return mapping;
+}
+
 export function SupplyTypeSalesAccountsPanel({ accounts, settings, saving = false, onSave }: Props) {
   const tA = useTranslations('accounting');
   const tI = useTranslations('invoices');
-  const [mapping, setMapping] = useState<SupplyTypeSalesDefaults>({});
-
-  useEffect(() => {
-    const next: SupplyTypeSalesDefaults = {};
-    for (const s of SUPPLY_KEYS) {
-      const id = settings?.[s.key];
-      if (id) (next as Record<string, string>)[s.key] = id;
-    }
-    setMapping(next);
-  }, [settings]);
+  const [draft, setDraft] = useState<{
+    source: AccountingSettings | null;
+    mapping: SupplyTypeSalesDefaults;
+  }>(() => ({ source: settings, mapping: mappingFromSettings(settings) }));
+  const mapping = draft.source === settings ? draft.mapping : mappingFromSettings(settings);
 
   // Sales defaults should be revenue accounts; fall back to all active if none are typed yet.
   const revenue = accounts.filter((a) => a.is_active && a.type === 'revenue');
@@ -49,7 +53,10 @@ export function SupplyTypeSalesAccountsPanel({ accounts, settings, saving = fals
             <select
               value={(mapping as Record<string, string>)[s.key] || ''}
               onChange={(event) =>
-                setMapping((current) => ({ ...current, [s.key]: event.target.value || null }))
+                setDraft({
+                  source: settings,
+                  mapping: { ...mapping, [s.key]: event.target.value || null },
+                })
               }
               className="h-11 w-full rounded-lg border border-slate-200 px-3"
             >

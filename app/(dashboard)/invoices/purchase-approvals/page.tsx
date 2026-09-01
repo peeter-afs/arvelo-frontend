@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, ExternalLink, FileCheck2, FileX2, Loader2, RefreshCw, Send, Stamp } from 'lucide-react';
@@ -19,7 +19,7 @@ type InvoiceDetail = {
     tax_rate?: number | string | null;
     line_total: number | string;
     account_id?: string | null;
-    meta?: Record<string, any> | null;
+    meta?: Record<string, unknown> | null;
   }>;
 };
 
@@ -60,7 +60,7 @@ export default function PurchaseApprovalQueuePage() {
 
   const selectedPartner = partners.find((partner) => partner.id === selectedInvoiceDetail?.invoice.partner_id) || null;
 
-  const loadInvoices = async (preferredId?: string | null) => {
+  const loadInvoices = useCallback(async (preferredId?: string | null) => {
     const [invoiceItems, partnerItems] = await Promise.all([
       invoicesApi.listInvoices({ type: 'purchase_invoice', limit: 200 }),
       accountingApi.listPartners(),
@@ -73,14 +73,14 @@ export default function PurchaseApprovalQueuePage() {
         || invoiceItems[0]?.id
         || null;
     setSelectedInvoiceId(nextSelected);
-  };
+  }, [queueFilter]);
 
   useEffect(() => {
     const load = async () => {
       setIsBootLoading(true);
       setErrorMessage(null);
       try {
-        await loadInvoices(selectedInvoiceId);
+        await loadInvoices(null);
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
       } finally {
@@ -89,7 +89,7 @@ export default function PurchaseApprovalQueuePage() {
     };
 
     void load();
-  }, []);
+  }, [loadInvoices]);
 
   useEffect(() => {
     if (!selectedInvoiceId) {

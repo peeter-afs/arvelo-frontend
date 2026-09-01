@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { recurringExpensesApi, type BudgetSummary, type ExpenseStatus, type MonitorRow } from '@/lib/api/recurringExpenses.api';
@@ -8,7 +8,6 @@ import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api
 import { getErrorMessage } from '@/lib/api/client';
 import { Stat } from '@/components/ui/Stat';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { Button } from '@/components/ui/Button';
 
 type View = 'monitor' | 'budget';
 
@@ -24,17 +23,20 @@ const STATUS_TONE: Record<ExpenseStatus, StatusTone> = {
   not_due: 'neutral',
 };
 
+const STATUS_TRANSLATION_KEY: Record<ExpenseStatus, `status.${ExpenseStatus}`> = {
+  received: 'status.received',
+  over_budget: 'status.over_budget',
+  due_soon: 'status.due_soon',
+  missing: 'status.missing',
+  not_due: 'status.not_due',
+};
+
 function fmt(value: number, currency = 'EUR') {
   return new Intl.NumberFormat('et-EE', {
     style: 'currency',
     currency,
     minimumFractionDigits: 2,
   }).format(value);
-}
-
-function formatPeriod(key: string) {
-  const [year, month] = key.split('-').map(Number);
-  return new Intl.DateTimeFormat('et-EE', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1));
 }
 
 // ─── Page ──────────────────────────────────────────────────────────────
@@ -58,7 +60,7 @@ export default function RecurringExpensesPage() {
   const partnerMap = useMemo(() => new Map(partners.map(p => [p.id, p.name])), [partners]);
   const accountMap = useMemo(() => new Map(accounts.map(a => [a.id, `${a.code} ${a.name}`])), [accounts]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
@@ -77,11 +79,11 @@ export default function RecurringExpensesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period]);
 
   useEffect(() => {
     void loadData();
-  }, [period]);
+  }, [loadData]);
 
   const handleReconcile = async () => {
     setIsReconciling(true);
@@ -199,7 +201,7 @@ export default function RecurringExpensesPage() {
           Loading...
         </div>
       ) : view === 'monitor' ? (
-        <MonitorView rows={rows} partnerMap={partnerMap} period={period} t={t} />
+        <MonitorView rows={rows} partnerMap={partnerMap} t={t} />
       ) : (
         <BudgetView budget={budget} accountMap={accountMap} t={t} />
       )}
@@ -212,12 +214,10 @@ export default function RecurringExpensesPage() {
 function MonitorView({
   rows,
   partnerMap,
-  period,
   t,
 }: {
   rows: MonitorRow[];
   partnerMap: Map<string, string>;
-  period: string;
   t: ReturnType<typeof useTranslations<'recurringExpenses'>>;
 }) {
   const received = rows.filter(r => r.status === 'received').length;
@@ -271,7 +271,7 @@ function MonitorView({
                 </td>
                 <td className="px-5 py-3.5 text-right">
                   <StatusPill tone={STATUS_TONE[row.status]}>
-                    {t(`status.${row.status}` as any)}
+                    {t(STATUS_TRANSLATION_KEY[row.status])}
                   </StatusPill>
                 </td>
               </tr>
@@ -287,7 +287,7 @@ function MonitorView({
             <div className="flex items-center justify-between">
               <span className="font-medium text-[var(--a-text)]">{row.entry.label}</span>
               <StatusPill tone={STATUS_TONE[row.status]}>
-                {t(`status.${row.status}` as any)}
+                {t(STATUS_TRANSLATION_KEY[row.status])}
               </StatusPill>
             </div>
             <div className="mt-1 text-[13px] text-[var(--a-text-2)]">
