@@ -51,7 +51,10 @@
     "reports": "Rapporter",
     "fixedAssets": "Anläggningstillgångar",
     "settings": "Inställningar",
-    "security": "Säkerhet"
+    "security": "Säkerhet",
+    "auditLog": "Granskningslogg",
+    "autoCollapse": "Minimera menyn under en uppgift",
+    "autoCollapseHint": "När du öppnar en uppgift minimeras menyn till ett ikonfält. Stäng av inställningen om du alltid vill behålla den breda menyn."
   },
   "accounting": {
     "chartOfAccounts": "Kontoplan",

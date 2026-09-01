@@ -51,7 +51,10 @@
     "reports": "Raportit",
     "fixedAssets": "Käyttöomaisuus",
     "settings": "Asetukset",
-    "security": "Turvallisuus"
+    "security": "Turvallisuus",
+    "auditLog": "Tarkastusloki",
+    "autoCollapse": "Pienennä valikko tehtävässä",
+    "autoCollapseHint": "Kun avaat tehtävän, valikko pienenee kuvakepalkiksi. Poista asetus käytöstä, jos haluat pitää valikon aina leveänä."
   },
   "accounting": {
     "chartOfAccounts": "Tilikartta",

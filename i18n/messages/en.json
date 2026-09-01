@@ -78,7 +78,9 @@
     "fixedAssets": "Fixed Assets",
     "settings": "Settings",
     "auditLog": "Audit Log",
-    "security": "Security"
+    "security": "Security",
+    "autoCollapse": "Minimize menu during a task",
+    "autoCollapseHint": "When you open a task (for example, Bank transactions), the menu collapses to an icon bar. Turn this off to keep the menu expanded."
   },
   "accounting": {
     "chartOfAccounts": "Chart of Accounts",

@@ -78,7 +78,9 @@
     "fixedAssets": "Põhivara",
     "settings": "Seaded",
     "auditLog": "Auditilogi",
-    "security": "Turvalisus"
+    "security": "Turvalisus",
+    "autoCollapse": "Minimeeri menüü toimingus",
+    "autoCollapseHint": "Toimingu avamisel (nt Pangatehingud) tõmbub menüü ikooniribaks. Lülita välja, kui soovid menüü alati laiana hoida."
   },
   "accounting": {
     "chartOfAccounts": "Kontoplaan",
