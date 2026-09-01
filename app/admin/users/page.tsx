@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { adminApi, UserMeta } from '@/lib/api/admin.api';
+import { getErrorMessage } from '@/lib/api/client';
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserMeta[]>([]);
@@ -57,8 +58,8 @@ export default function AdminUsersPage() {
     try {
       await adminApi.deleteUser(id);
       await load(search || undefined);
-    } catch (err: any) {
-      alert(err?.response?.data?.error?.message || 'Failed to delete user');
+    } catch (error) {
+      alert(getErrorMessage(error) || 'Failed to delete user');
     } finally {
       setActionInProgress(null);
     }

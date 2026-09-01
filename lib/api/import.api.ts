@@ -12,9 +12,9 @@ export type PurchaseInvoiceImportListItem = {
   file_name?: string | null;
   file_size?: number | null;
   mime_type?: string | null;
-  preview_data?: Record<string, any> | null;
-  supplier_resolution?: Record<string, any> | null;
-  duplicate_check?: Record<string, any> | null;
+  preview_data?: PurchaseInvoicePreviewData | null;
+  supplier_resolution?: { selected_partner_id?: string | null; [key: string]: unknown } | null;
+  duplicate_check?: { is_likely_duplicate?: boolean; max_score?: number | string; [key: string]: unknown } | null;
   warning_flags?: string[] | null;
   confidence_score?: number | null;
   document_id?: string | null;
@@ -26,7 +26,7 @@ export type PurchaseInvoiceImportListItem = {
 export type PurchaseInvoiceImportDetail = {
   import: PurchaseInvoiceImportListItem & {
     extracted_text?: string | null;
-    parsed_data?: Record<string, any> | null;
+    parsed_data?: Record<string, unknown> | null;
   };
   supplier_match_candidates: Array<{
     id: string;
@@ -34,7 +34,7 @@ export type PurchaseInvoiceImportDetail = {
     match_score: number;
     is_selected?: boolean;
     is_existing_partner?: boolean;
-    candidate_payload?: Record<string, any> | null;
+    candidate_payload?: { matched_partner_name?: string; name?: string; [key: string]: unknown } | null;
     match_reasons?: string[] | null;
     status?: string;
   }>;
@@ -82,11 +82,21 @@ export type OpeningBalanceImportResult = {
     opening_date: string;
     currency: string;
     source_document_id: string;
-    lines: Array<Record<string, any>>;
+    lines: Array<Record<string, unknown>>;
     offset_account_id?: string | null;
   };
-  import_summary?: Record<string, any>;
+  import_summary?: Record<string, unknown>;
+  lines?: Array<Record<string, unknown>>;
   warnings?: string[];
+};
+
+export type PurchaseInvoicePreviewData = Record<string, unknown> & {
+  lines?: unknown[];
+};
+
+export type DraftInvoiceCreationResult = {
+  draft_invoice?: { invoice?: { id: string } };
+  [key: string]: unknown;
 };
 
 export type AccountImportRow = {
@@ -176,7 +186,7 @@ export const importApi = {
     return response.data.data;
   },
 
-  async updatePurchaseInvoicePreview(id: string, previewData: Record<string, any>) {
+  async updatePurchaseInvoicePreview(id: string, previewData: PurchaseInvoicePreviewData) {
     const response = await apiClient.put<ApiResponse<{ import: PurchaseInvoiceImportListItem }>>(
       `/api/import/purchase-invoices/${id}/preview`,
       { preview_data: previewData }
@@ -184,7 +194,7 @@ export const importApi = {
     return response.data.data;
   },
 
-  async resolveSupplier(id: string, payload: Record<string, any>) {
+  async resolveSupplier(id: string, payload: { candidate_id?: string; selected_partner_id?: string }) {
     const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail>>(
       `/api/import/purchase-invoices/${id}/resolve-supplier`,
       payload
@@ -197,11 +207,11 @@ export const importApi = {
     payload: {
       confirm_duplicate_warning?: boolean;
       selected_partner_id?: string;
-      preview_data?: Record<string, any>;
-      lines?: Array<Record<string, any>>;
+      preview_data?: PurchaseInvoicePreviewData;
+      lines?: Array<Record<string, unknown>>;
     }
   ) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/import/purchase-invoices/${id}/create-draft`, payload);
+    const response = await apiClient.post<ApiResponse<DraftInvoiceCreationResult>>(`/api/import/purchase-invoices/${id}/create-draft`, payload);
     return response.data.data;
   },
 

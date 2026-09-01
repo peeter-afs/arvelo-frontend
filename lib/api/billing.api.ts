@@ -229,6 +229,23 @@ export type BillingAnnualBalanceReport = {
   rows: BillingAnnualBalanceReportRow[];
 };
 
+export type BillingSubscriptionInput = {
+  plan_id: string;
+  status: string;
+  billing_day: number;
+  unit_price: number;
+  quantity: number;
+  discount_percent: number;
+  vat_rate: number | null;
+  currency: string;
+  current_period_start: string;
+  current_period_end: string;
+  next_invoice_date: string;
+  cancel_at_period_end: boolean;
+};
+
+export type BillingSettingsInput = Partial<Omit<BillingSettings, 'tenant_id' | 'invoice_next_no'>>;
+
 export const billingApi = {
   async getOverview() {
     const response = await apiClient.get<ApiResponse<{
@@ -246,12 +263,12 @@ export const billingApi = {
     return response.data.data;
   },
 
-  async upsertSubscription(payload: Record<string, any>) {
+  async upsertSubscription(payload: BillingSubscriptionInput) {
     const response = await apiClient.put<ApiResponse<{ subscription: BillingSubscription }>>('/api/billing/subscription', payload);
     return response.data.data;
   },
 
-  async updateSettings(payload: Record<string, any>) {
+  async updateSettings(payload: BillingSettingsInput) {
     const response = await apiClient.put<ApiResponse<{ settings: BillingSettings }>>('/api/billing/settings', payload);
     return response.data.data;
   },
@@ -287,12 +304,12 @@ export const billingApi = {
     return response.data.data;
   },
 
-  async previewReminder(payload?: { invoice_id?: string; reminder_index?: number; settings_override?: Record<string, any> }) {
+  async previewReminder(payload?: { invoice_id?: string; reminder_index?: number; settings_override?: BillingSettingsInput }) {
     const response = await apiClient.post<ApiResponse<BillingMessagePreview>>('/api/billing/jobs/preview-reminder', payload || {});
     return response.data.data;
   },
 
-  async previewAnnualBalance(payload?: { reference_date?: string; settings_override?: Record<string, any> }) {
+  async previewAnnualBalance(payload?: { reference_date?: string; settings_override?: BillingSettingsInput }) {
     const response = await apiClient.post<ApiResponse<BillingMessagePreview>>('/api/billing/jobs/preview-annual-balance', payload || {});
     return response.data.data;
   },

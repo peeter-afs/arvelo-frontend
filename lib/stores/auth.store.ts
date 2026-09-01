@@ -35,52 +35,52 @@ export const useAuthStore = create<AuthState>()(
 
       // Set user
       setUser: (user) =>
-        set((state) => ({
+        set({
           user,
           isAuthenticated: true,
-        })),
+        }),
 
       // Set tenant and role
       setTenant: (tenant, role = null) =>
-        set((state) => ({
+        set({
           tenant,
           role,
-        })),
+        }),
 
       // Set tokens
       setTokens: (accessToken, refreshToken) =>
-        set((state) => ({
+        set({
           accessToken,
           refreshToken,
-        })),
+        }),
 
       // Set full session
       setSession: (user, tenant, role, accessToken, refreshToken) =>
-        set((state) => ({
+        set({
           user,
           tenant,
           role,
           accessToken,
           refreshToken,
           isAuthenticated: true,
-        })),
+        }),
 
       // Logout
       logout: () =>
-        set((state) => ({
+        set({
           user: null,
           tenant: null,
           role: null,
           accessToken: null,
           refreshToken: null,
           isAuthenticated: false,
-        })),
+        }),
 
       // Set loading state
       setLoading: (loading) =>
-        set((state) => ({
+        set({
           isLoading: loading,
-        })),
+        }),
     }),
     {
       name: 'auth-storage',

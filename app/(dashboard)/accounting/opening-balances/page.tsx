@@ -23,7 +23,7 @@ import {
   X
 } from 'lucide-react';
 import Link from 'next/link';
-import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type PartnerOption } from '@/lib/api/accounting.api';
+import { accountingApi, type AccountOption, type OpeningBalanceBatchListItem, type OpeningBalanceCommitResult, type OpeningBalancePayload, type OpeningBalancePreviewResult, type OpeningBalanceReconciliation, type PartnerOption } from '@/lib/api/accounting.api';
 import { businessRegistryApi, type BusinessRegistrySearchItem } from '@/lib/api/businessRegistry.api';
 import apiClient, { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
@@ -40,24 +40,18 @@ type Step = 'upload' | 'parsing' | 'review' | 'confirm';
 // The preview/commit endpoints return loosely-shaped, mode-dependent payloads
 // (normalized GL lines vs. open-item previews). We read a handful of optional
 // fields off them defensively rather than modelling every variant.
-type PreviewResult = Record<string, unknown> & {
-  totals?: Record<string, number>;
-  lines?: Array<Record<string, unknown>>;
-  control_account?: { code?: string; name?: string };
-  offset_account?: { code?: string; name?: string };
-};
-type CommitResult = Record<string, unknown> & {
-  batch?: { id?: string };
-  journal_entry?: { id?: string; entry_number?: string };
-  created_invoice_count?: number;
-  reclass?: { amount: number; from_code: string; to_code: string; date: string } | null;
-};
+type PreviewResult = OpeningBalancePreviewResult;
+type CommitResult = OpeningBalanceCommitResult;
 type ImportStatusBatch = {
   id?: string;
   batch_type?: string;
   opening_date?: string;
   committed_at?: string;
   source_document?: { id: string; file_name: string; file_size?: number | null } | null;
+};
+
+type TurnoverControl = {
+  diffs?: Array<{ account_code: string; kaibeandmik: number; bilanss: number }>;
 };
 
 type GeneralRow = {
@@ -205,14 +199,14 @@ export default function OpeningBalancesPage() {
   const [savingStrategy, setSavingStrategy] = useState(false);
   // Mid-year: which general-side document the grid is currently for.
   const [generalLayer, setGeneralLayer] = useState<'year_end' | 'turnover' | 'control'>('year_end');
-  const [reconResult, setReconResult] = useState<any>(null);
+  const [reconResult, setReconResult] = useState<OpeningBalanceReconciliation | null>(null);
   const [isLocking, setIsLocking] = useState(false);
   const [isCorrecting, setIsCorrecting] = useState(false);
   const [midYearNotice, setMidYearNotice] = useState<string | null>(null);
   // Käibeandmik opening balances (algsaldo) parsed from the turnover file, kept for
   // the vs-year-end-balance control comparison.
   const [turnoverOpening, setTurnoverOpening] = useState<Array<{ account_code: string; opening_net: number }>>([]);
-  const [turnoverControl, setTurnoverControl] = useState<any>(null);
+  const [turnoverControl, setTurnoverControl] = useState<TurnoverControl | null>(null);
   const [detectedDate, setDetectedDate] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showCreateList, setShowCreateList] = useState(false);
@@ -242,8 +236,6 @@ export default function OpeningBalancesPage() {
   // Configured AR/AP control accounts — used to recommend/prefill the subledger
   // offset so open items don't double-count the AR/AP already in a committed
   // balance sheet / käibeandmik.
-  const [arControlAccountId, setArControlAccountId] = useState('');
-  const [apControlAccountId, setApControlAccountId] = useState('');
 
   const currentGeneralTotals = useMemo(() => {
     return generalRows.reduce(
@@ -302,7 +294,7 @@ export default function OpeningBalancesPage() {
   // The käibeandmik covers a period start..end. Start comes from the year-end
   // balance (fiscal-year start); the end (transition date) must be entered — the
   // file has no period, so import isn't possible without it.
-  const periodStart = batches.find((b: any) => b.status === 'committed' && b.batch_type === 'year_end_balance')?.opening_date || glOpeningDate || '';
+  const periodStart = batches.find((batch) => batch.status === 'committed' && batch.batch_type === 'year_end_balance')?.opening_date || glOpeningDate || '';
   // Whether the form is allowed to advance to the Confirm (preview) step.
   const canAdvanceToConfirm =
     mode === 'general'
@@ -315,7 +307,7 @@ export default function OpeningBalancesPage() {
   // gl_neutral flag), otherwise the snapshot never matches and Confirm stays
   // disabled on the mid-year receivables/payables preview.
   const currentPayloadSnapshot = () => {
-    const payload: Record<string, any> = buildPayload(mode, sharedFields, {
+    const payload = buildPayload(mode, sharedFields, {
       generalRows,
       receivableRows,
       payableRows,
@@ -336,7 +328,7 @@ export default function OpeningBalancesPage() {
   // Mid-year layers year_end/turnover both use mode 'general', so the per-mode lock
   // must look at the specific committed batch_type instead of the coarse mode.
   const midYearLayerCommitted = (layer: 'year_end' | 'turnover') =>
-    batches.some((b: any) => b.status === 'committed' && b.batch_type === (layer === 'year_end' ? 'year_end_balance' : 'period_turnover'));
+    batches.some((batch) => batch.status === 'committed' && batch.batch_type === (layer === 'year_end' ? 'year_end_balance' : 'period_turnover'));
   const isImported = strategy === 'mid_year' && mode === 'general'
     ? (generalLayer === 'control' ? false : midYearLayerCommitted(generalLayer as 'year_end' | 'turnover'))
     : committedModes.has(mode);
@@ -371,7 +363,7 @@ export default function OpeningBalancesPage() {
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | 'mid_year' | null, committed_batches: [] as ImportStatusBatch[] })),
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | 'mid_year' | null, committed_batches: [] as ImportStatusBatch[], reconciliation: undefined })),
           accountingApi.getAccountingSettings().catch(() => null)
         ]);
 
@@ -388,9 +380,9 @@ export default function OpeningBalancesPage() {
         }
         setCommittedModes(committed);
         setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | null }).opening_balances_strategy) ?? null);
-        setReconResult((importStatus as { reconciliation?: any }).reconciliation ?? null);
+        setReconResult(importStatus.reconciliation ?? null);
         // Mid-year: resume on the first not-yet-imported general-side layer.
-        if ((importStatus as any).opening_balances_strategy === 'mid_year') {
+        if (importStatus.opening_balances_strategy === 'mid_year') {
           const hasYearEnd = committedBatches.some((b) => b.batch_type === 'year_end_balance');
           const hasTurnover = committedBatches.some((b) => b.batch_type === 'period_turnover');
           setGeneralLayer(!hasYearEnd ? 'year_end' : !hasTurnover ? 'turnover' : 'control');
@@ -402,8 +394,6 @@ export default function OpeningBalancesPage() {
 
         const arId = settings?.accounts_receivable_account_id || '';
         const apId = settings?.accounts_payable_account_id || '';
-        setArControlAccountId(arId);
-        setApControlAccountId(apId);
         // When the balance sheet / käibeandmik is already committed, its AR/AP
         // totals are in the books — prefill the subledger offset with the control
         // account so importing open items nets to zero in the GL (no double-count).
@@ -585,9 +575,9 @@ export default function OpeningBalancesPage() {
       applyImportedRows(result);
       // Turnover: keep the parsed opening balances (algsaldo) for the control check.
       if (isTurnover) {
-        const opening = ((result as any).lines || [])
-          .filter((l: any) => l.opening_net !== undefined && (l.account_code || '').trim())
-          .map((l: any) => ({ account_code: String(l.account_code).trim(), opening_net: Number(l.opening_net) }));
+        const opening = (result.lines || [])
+          .filter((line) => line.opening_net !== undefined && String(line.account_code || '').trim())
+          .map((line) => ({ account_code: String(line.account_code).trim(), opening_net: Number(line.opening_net) }));
         setTurnoverOpening(opening);
       }
       // Control layer: reconcile immediately against the ledger — the accountant just
@@ -641,7 +631,7 @@ export default function OpeningBalancesPage() {
         const localPayload = buildPayload(mode, sharedFields, {
           generalRows, receivableRows, payableRows, receivablesOffsetAccountId, payablesOffsetAccountId
         });
-        const lines = (localPayload as any).lines as Array<{ side: string; amount: number }>;
+        const lines = localPayload.lines;
         const debit = lines.filter((l) => l.side === 'debit').reduce((s, l) => s + Number(l.amount || 0), 0);
         const credit = lines.filter((l) => l.side === 'credit').reduce((s, l) => s + Number(l.amount || 0), 0);
         setPreviewResult({ lines, totals: { debit_total: debit, credit_total: credit, difference: Math.round((debit - credit) * 100) / 100 } });
@@ -649,7 +639,7 @@ export default function OpeningBalancesPage() {
         setStep('confirm');
         return;
       }
-      const payload: Record<string, any> = buildPayload(mode, sharedFields, {
+      const payload = buildPayload(mode, sharedFields, {
         generalRows,
         receivableRows,
         payableRows,
@@ -684,7 +674,7 @@ export default function OpeningBalancesPage() {
     setErrorMessage(null);
 
     try {
-      const payload: Record<string, any> = buildPayload(mode, sharedFields, {
+      const payload = buildPayload(mode, sharedFields, {
         generalRows,
         receivableRows,
         payableRows,
@@ -708,7 +698,7 @@ export default function OpeningBalancesPage() {
         result = await accountingApi.commitYearEndBalance({ ...payload, fiscal_year_start: payload.opening_date });
       } else if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover') {
         result = await accountingApi.commitPeriodTurnover({ ...payload, transition_date: payload.opening_date, control_opening: turnoverOpening });
-        setTurnoverControl((result as any)?.control || null);
+        setTurnoverControl(result.control || null);
       } else if (mode === 'general') {
         result = await accountingApi.commitOpeningBalances(payload);
       } else if (mode === 'receivables') {
@@ -948,11 +938,12 @@ export default function OpeningBalancesPage() {
   const skipBalanceCheck = isControlLayer || isTurnoverLayer;
   // Mid-year progress (from committed batch types + reconciliation status).
   const midYear = strategy === 'mid_year';
-  const hasYearEnd = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'year_end_balance');
-  const hasTurnover = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'period_turnover');
-  const hasReceivables = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'receivables');
-  const hasPayables = batches.some((b: any) => b.status === 'committed' && b.batch_type === 'payables');
+  const hasYearEnd = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'year_end_balance');
+  const hasTurnover = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'period_turnover');
+  const hasReceivables = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'receivables');
+  const hasPayables = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'payables');
   const reconLocked = reconResult?.status === 'locked' || !!reconResult?.locked;
+  const turnoverDiffs = turnoverControl?.diffs ?? [];
   const blockingReason = (() => {
     if (mode === 'general') {
       if (generalMissingCount > 0 && !isControlLayer) return t('obRowsNeedAccount', { count: generalMissingCount });
@@ -1025,7 +1016,7 @@ export default function OpeningBalancesPage() {
       {!effectiveFocus && midYear && (
         <div className="flex items-start gap-2 pt-2">
           {(() => {
-            const steps = [
+            const steps: Array<{ done: boolean; partial?: boolean; title: string; active: boolean; go: () => void }> = [
               { done: hasYearEnd, title: t('obMidYearStep1'), active: mode === 'general' && generalLayer === 'year_end', go: () => { setMode('general'); setGeneralLayer('year_end'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
               { done: hasTurnover, title: t('obMidYearStep2'), active: mode === 'general' && generalLayer === 'turnover', go: () => { setMode('general'); setGeneralLayer('turnover'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
               { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), active: mode === 'receivables' || mode === 'payables', go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
@@ -1041,7 +1032,7 @@ export default function OpeningBalancesPage() {
                     <div key={i} className="flex items-center">
                       {i > 0 && <span className="px-1 text-[12px] text-[var(--a-text-3)]">›</span>}
                       <button type="button" onClick={s.go} className={`flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] transition hover:bg-[var(--a-surface-2)] ${s.active ? 'bg-[var(--a-surface-2)] font-semibold text-[var(--a-text)]' : 'text-[var(--a-text-2)]'}`}>
-                        <span className="grid place-items-center rounded-full text-[10px] font-semibold" style={{ height: '16px', width: '16px', background: s.done ? 'var(--a-pos)' : (s as any).partial ? 'var(--a-warn-soft)' : 'var(--a-surface-2)', color: s.done ? '#fff' : (s as any).partial ? 'var(--a-warn)' : 'var(--a-text-3)' }}>{s.done ? '✓' : i + 1}</span>
+                        <span className="grid place-items-center rounded-full text-[10px] font-semibold" style={{ height: '16px', width: '16px', background: s.done ? 'var(--a-pos)' : s.partial ? 'var(--a-warn-soft)' : 'var(--a-surface-2)', color: s.done ? '#fff' : s.partial ? 'var(--a-warn)' : 'var(--a-text-3)' }}>{s.done ? '✓' : i + 1}</span>
                         <span>{s.title.replace(/^\d+\.\s*/, '')}</span>
                       </button>
                     </div>
@@ -1142,14 +1133,14 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Turnover: käibeandmik opening (algsaldo) vs year-end balance control (warning) */}
-      {!effectiveFocus && isTurnoverLayer && turnoverControl?.diffs?.length > 0 && (
+      {!effectiveFocus && isTurnoverLayer && turnoverDiffs.length > 0 && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft)] px-3.5 py-2">
-          <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverControl.diffs.length })}</div>
+          <div className="text-[12.5px] font-medium text-[var(--a-warn)]">{t('obTurnoverControlWarn', { count: turnoverDiffs.length })}</div>
           <div className="mt-1 max-h-32 overflow-y-auto text-[11.5px] text-[var(--a-text-2)]">
-            {turnoverControl.diffs.slice(0, 20).map((d: any, i: number) => (
-              <div key={i} className="flex justify-between gap-3 font-mono">
-                <span>{d.account_code}</span>
-                <span>{t('obTurnoverControlRow', { kaibeandmik: Number(d.kaibeandmik).toFixed(2), bilanss: Number(d.bilanss).toFixed(2) })}</span>
+            {turnoverDiffs.slice(0, 20).map((diff, index) => (
+              <div key={index} className="flex justify-between gap-3 font-mono">
+                <span>{diff.account_code}</span>
+                <span>{t('obTurnoverControlRow', { kaibeandmik: Number(diff.kaibeandmik).toFixed(2), bilanss: Number(diff.bilanss).toFixed(2) })}</span>
               </div>
             ))}
           </div>
@@ -1165,11 +1156,11 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year reconciliation + lock panel (control layer) */}
-      {strategy === 'mid_year' && mode === 'general' && generalLayer === 'control' && (reconResult || (commitResult as any)?.reconciliation) && (
+      {strategy === 'mid_year' && mode === 'general' && generalLayer === 'control' && (reconResult || commitResult?.reconciliation) && (
         (() => {
-          const recon = reconResult || (commitResult as any)?.reconciliation;
+          const recon = reconResult || commitResult?.reconciliation;
           const passed = !!recon?.passed || recon?.status === 'passed' || recon?.status === 'locked';
-          const diffs: Array<any> = recon?.diffs || recon?.diff_result?.diffs || [];
+          const diffs = recon?.diffs || recon?.diff_result?.diffs || [];
           const locked = recon?.status === 'locked' || recon?.locked;
           return (
             <div className="mt-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
@@ -2716,7 +2707,7 @@ function RegistrySearchModal({
 
   const choose = async (item: BusinessRegistrySearchItem) => {
     if (!item.registryCode) {
-      onSelect(item as any);
+      onSelect(item);
       return;
     }
     setSelecting(item.registryCode);
@@ -2725,7 +2716,7 @@ function RegistrySearchModal({
       onSelect(detail.company);
     } catch {
       // Detail lookup failed — hand back the search-result fields we already have.
-      onSelect(item as any);
+      onSelect(item);
     } finally {
       setSelecting(null);
     }
@@ -3048,7 +3039,7 @@ function buildPayload(
     receivablesOffsetAccountId: string;
     payablesOffsetAccountId: string;
   }
-) {
+): OpeningBalancePayload {
   const base = {
     opening_date: sharedFields.opening_date,
     currency: sharedFields.currency,

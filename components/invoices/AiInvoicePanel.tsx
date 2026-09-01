@@ -23,12 +23,38 @@ import {
   type AiInvoicePreview,
   type AiInvoiceLine,
   type ParsedInvoiceDraft,
-  type PartnerMatch,
 } from '@/lib/api/aiInvoice.api';
 import { showToast } from '@/components/ui/Toast';
 
 type Step = 'capture' | 'preview';
 type InvoiceKind = 'regular' | 'recurring';
+
+type SpeechRecognitionResultEventLike = {
+  results: ArrayLike<{
+    readonly isFinal: boolean;
+    readonly [index: number]: { transcript: string };
+  }>;
+};
+
+type SpeechRecognitionLike = {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: SpeechRecognitionResultEventLike) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+
+declare global {
+  interface Window {
+    SpeechRecognition?: SpeechRecognitionConstructor;
+    webkitSpeechRecognition?: SpeechRecognitionConstructor;
+  }
+}
 
 type Props = {
   open: boolean;
@@ -62,12 +88,22 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const [speechLang, setSpeechLang] = useState('');
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // Accumulates finalized (isFinal=true) segments so interim results don't duplicate them
   const finalizedTextRef = useRef('');
 
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      // Null the ref FIRST so onend knows not to auto-restart
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+      try { recognition.stop(); } catch { /* already stopped */ }
+    }
+    setIsListening(false);
+  }, []);
+
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     setSpeechSupported(Boolean(SR));
     // Priority: browser locale → app locale → et-EE
     setSpeechLang(navigator.language || appLocale || 'et-EE');
@@ -85,17 +121,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
       finalizedTextRef.current = '';
       stopListening();
     }
-  }, [open]);
-
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      // Null the ref FIRST so onend knows not to auto-restart
-      const r = recognitionRef.current;
-      recognitionRef.current = null;
-      try { r.stop(); } catch { /* already stopped */ }
-    }
-    setIsListening(false);
-  }, []);
+  }, [open, stopListening]);
 
   const toggleListening = useCallback(() => {
     if (isListening) {
@@ -103,7 +129,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
       return;
     }
 
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) return;
 
     const recognition = new SR();
@@ -114,7 +140,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
 
     finalizedTextRef.current = '';
 
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event) => {
       // Always read only the very last result to avoid re-processing old ones
       const latest = event.results[event.results.length - 1];
       const segment = latest[0].transcript.trim();
@@ -132,7 +158,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
       }
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       // 'no-speech' is normal on mobile — just restart rather than stopping
       if (event.error === 'no-speech') return;
       stopListening();
@@ -150,7 +176,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     recognitionRef.current = recognition;
     recognition.start();
     setIsListening(true);
-  }, [isListening, stopListening]);
+  }, [isListening, speechLang, stopListening]);
 
   const handleGenerate = async () => {
     if (!text.trim()) return;

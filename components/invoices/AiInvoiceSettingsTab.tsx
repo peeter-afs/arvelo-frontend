@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { aiInvoiceApi, type AiSettings } from '@/lib/api/aiInvoice.api';
+import { aiInvoiceApi } from '@/lib/api/aiInvoice.api';
 
 const CLAUDE_MODELS = [
   { id: 'claude-opus-4-8', label: 'Claude Opus 4.8' },

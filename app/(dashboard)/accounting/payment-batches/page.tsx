@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
-import { bankingApi, type BankAccountRecord, type PaymentBatchLine, type PaymentBatchListItem } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type PaymentBatchLine, type PaymentBatchListItem, type PaymentBatchSummary } from '@/lib/api/banking.api';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getIsoToday } from '@/lib/utils/date';
@@ -42,7 +42,7 @@ export default function PaymentBatchesPage() {
   const [selectedBatch, setSelectedBatch] = useState<{
     batch: PaymentBatchListItem;
     lines: PaymentBatchLine[];
-    summary: Record<string, any>;
+    summary: PaymentBatchSummary;
   } | null>(null);
   const [draftLines, setDraftLines] = useState<DraftLine[]>([]);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);

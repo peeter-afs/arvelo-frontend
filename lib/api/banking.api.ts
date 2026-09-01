@@ -12,8 +12,8 @@ export type BankImportJob = {
   bank_account_id?: string | null;
   file_name?: string | null;
   file_size?: number | null;
-  parsed_data?: Record<string, any> | null;
-  original_data?: Record<string, any> | null;
+  parsed_data?: Record<string, unknown> | null;
+  original_data?: Record<string, unknown> | null;
   error_message?: string | null;
   created_at: string;
   updated_at: string;
@@ -35,7 +35,7 @@ export type BankImportPreviewRow = {
   is_approved: boolean;
   manually_approved?: boolean;
   can_approve?: boolean;
-  parsed_payload: Record<string, any>;
+  parsed_payload: Record<string, unknown>;
 };
 
 export type BankMatchCandidate = {
@@ -95,7 +95,7 @@ export type BankReviewQueueItem = {
   import_file_name?: string | null;
   import_row_no?: number | null;
   import_warning_flags?: string[];
-  import_parsed_payload?: Record<string, any> | null;
+  import_parsed_payload?: Record<string, unknown> | null;
   tx_date: string;
   value_date?: string | null;
   amount: number;
@@ -217,6 +217,62 @@ export type BankAccountRecord = {
   updated_at: string;
 };
 
+export type BankImportSummary = {
+  source_type?: string;
+  parsed_row_count?: number;
+  approved_row_count?: number;
+  review_row_count?: number;
+  detected_statement_iban?: string | null;
+  statement_date_from?: string | null;
+  statement_date_to?: string | null;
+  statement_period_warning?: (
+    | { kind: 'overlap'; from?: string; to?: string }
+    | { kind: 'gap'; previous_to: string; from: string; missing_days: number }
+  ) | null;
+};
+
+export type BankImportCommitSummary = {
+  imported_count?: number;
+  skipped_duplicate_count?: number;
+  approved_row_count?: number;
+  draft_transaction_ids?: string[];
+};
+
+export type PaymentBatchSummary = {
+  line_count?: number;
+  total_amount?: number | string;
+  [key: string]: unknown;
+};
+
+export type PaymentBatchPrefillLine = {
+  invoice_id: string | null;
+  amount: number | string;
+  payee_name?: string | null;
+  payee_iban?: string | null;
+  payee_bic?: string | null;
+  reference?: string | null;
+  description?: string | null;
+  warning_flags?: string[];
+};
+
+export type PaymentBatchMutationResult = {
+  batch: PaymentBatchListItem;
+  payments_created?: number;
+  [key: string]: unknown;
+};
+
+export type MissingReceiptSettings = {
+  is_enabled?: boolean;
+  auto_create_drafts?: boolean;
+  responsible_email?: string | null;
+  frequency_days?: number | null;
+  start_after_days?: number | null;
+  weekday?: number | null;
+  max_reminders?: number | null;
+  email_subject?: string | null;
+  email_body?: string | null;
+};
+
 export const bankingApi = {
   async listBankAccounts() {
     const response = await apiClient.get<ApiResponse<BankAccountRecord[]>>('/api/banking/bank-accounts');
@@ -264,7 +320,7 @@ export const bankingApi = {
     const response = await apiClient.post<ApiResponse<{
       job: BankImportJob;
       preview_rows: BankImportPreviewRow[];
-      summary: Record<string, any>;
+      summary: BankImportSummary;
     }>>(`/api/banking/import-jobs/${id}/parse`);
     return response.data.data;
   },
@@ -273,7 +329,7 @@ export const bankingApi = {
     const response = await apiClient.post<ApiResponse<{
       job: BankImportJob;
       preview_rows: BankImportPreviewRow[];
-      summary: Record<string, any>;
+      summary: BankImportSummary;
     }>>(`/api/banking/import-jobs/${id}/rows/approval`, { updates });
     return response.data.data;
   },
@@ -281,7 +337,7 @@ export const bankingApi = {
   async commitImportJob(id: string) {
     const response = await apiClient.post<ApiResponse<{
       job: BankImportJob;
-      summary: Record<string, any>;
+      summary: BankImportCommitSummary;
     }>>(`/api/banking/import-jobs/${id}/commit`);
     return response.data.data;
   },
@@ -334,37 +390,37 @@ export const bankingApi = {
   },
 
   async autoMatch(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/auto-match`);
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/auto-match`);
     return response.data.data;
   },
 
   async reviewTransaction(id: string, payload: { review_state?: 'pending' | 'reviewed'; note?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/review`, payload);
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/review`, payload);
     return response.data.data;
   },
 
   async ignoreTransaction(id: string, payload?: { reason?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/ignore`, payload || {});
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/ignore`, payload || {});
     return response.data.data;
   },
 
   async matchInvoice(id: string, payload: { invoice_id: string; reference?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/match-invoice`, payload);
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/match-invoice`, payload);
     return response.data.data;
   },
 
   async matchInvoices(id: string, payload: { allocations: Array<{ invoice_id: string; amount?: number }>; reference?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/match-invoices`, payload);
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/match-invoices`, payload);
     return response.data.data;
   },
 
   async manualPost(id: string, payload: { counter_account_id: string; description?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/manual-post`, payload);
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/manual-post`, payload);
     return response.data.data;
   },
 
   async unmatch(id: string, payload?: { reason?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${id}/unmatch`, payload || {});
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/unmatch`, payload || {});
     return response.data.data;
   },
 
@@ -382,14 +438,14 @@ export const bankingApi = {
     const response = await apiClient.get<ApiResponse<{
       batch: PaymentBatchListItem;
       lines: PaymentBatchLine[];
-      summary: Record<string, any>;
+      summary: PaymentBatchSummary;
     }>>(`/api/banking/payment-batches/${id}`);
     return response.data.data;
   },
 
   async getPaymentBatchPrefillLines(payload: { invoice_ids: string[]; currency?: string }) {
     const response = await apiClient.post<ApiResponse<{
-      lines: Array<Record<string, any>>;
+      lines: PaymentBatchPrefillLine[];
       missing_supplier_bank_account_invoice_ids: string[];
     }>>('/api/banking/payment-batches/helpers/prefill-lines', payload);
     return response.data.data;
@@ -411,7 +467,7 @@ export const bankingApi = {
       counterpart_account_id?: string | null;
     }>;
   }) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/banking/payment-batches', payload);
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>('/api/banking/payment-batches', payload);
     return response.data.data;
   },
 
@@ -423,47 +479,47 @@ export const bankingApi = {
   },
 
   async generatePaymentBatch(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/generate`);
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/generate`);
     return response.data.data;
   },
 
   async generatePaymentBatchPain001(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/generate-pain001`);
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/generate-pain001`);
     return response.data.data;
   },
 
   async confirmPaymentBatchUploaded(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/confirm-uploaded`);
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/confirm-uploaded`);
     return response.data.data;
   },
 
   async confirmPaymentBatchExecuted(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/confirm-executed`);
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/confirm-executed`);
     return response.data.data;
   },
 
   async voidPaymentBatch(id: string, payload?: { reason?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/payment-batches/${id}/void`, payload || {});
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/void`, payload || {});
     return response.data.data;
   },
 
   async markMissingReceipt(transactionId: string, payload?: { partner_id?: string; description?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${transactionId}/mark-missing-receipt`, payload || {});
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${transactionId}/mark-missing-receipt`, payload || {});
     return response.data.data;
   },
 
   async dismissMissingReceipt(transactionId: string, payload?: { reason?: string }) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/banking/transactions/${transactionId}/dismiss-missing-receipt`, payload || {});
+    const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${transactionId}/dismiss-missing-receipt`, payload || {});
     return response.data.data;
   },
 
   async getMissingReceiptSettings() {
-    const response = await apiClient.get<ApiResponse<any>>('/api/banking/missing-receipt-settings');
+    const response = await apiClient.get<ApiResponse<MissingReceiptSettings | null>>('/api/banking/missing-receipt-settings');
     return response.data.data;
   },
 
-  async updateMissingReceiptSettings(data: Record<string, any>) {
-    const response = await apiClient.put<ApiResponse<any>>('/api/banking/missing-receipt-settings', data);
+  async updateMissingReceiptSettings(data: MissingReceiptSettings) {
+    const response = await apiClient.put<ApiResponse<MissingReceiptSettings>>('/api/banking/missing-receipt-settings', data);
     return response.data.data;
   },
 

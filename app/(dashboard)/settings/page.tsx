@@ -5,10 +5,10 @@ import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
 import Link from 'next/link';
-import { Settings, User, Building, CreditCard, Bell, Shield, Globe, ChevronRight, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark } from 'lucide-react';
+import { Settings, User, Building, CreditCard, Bell, Shield, Globe, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
-import { accountingApi, type AccountOption, type AccountingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
+import { accountingApi, type AccountOption, type AccountingSettings, type OpeningBalanceImportStatus, type OpeningBalanceResetBackup, type SystemRoleMapping } from '@/lib/api/accounting.api';
 import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
 import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyTypeSalesAccountsPanel';
 import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
@@ -18,7 +18,6 @@ import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { FutursoftTab } from './_tabs/FutursoftTab';
 import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
-import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import type { UserRole } from '@/lib/types/auth.types';
@@ -108,8 +107,8 @@ export default function SettingsPage() {
 
   // Data Management tab state
   const [dataManagementLoading, setDataManagementLoading] = useState(false);
-  const [importStatus, setImportStatus] = useState<{ is_imported: boolean; can_reset?: boolean; reset_reference_date?: string | null; reset_window_months?: number; committed_batches: any[] } | null>(null);
-  const [resetBackups, setResetBackups] = useState<any[]>([]);
+  const [importStatus, setImportStatus] = useState<OpeningBalanceImportStatus | null>(null);
+  const [resetBackups, setResetBackups] = useState<OpeningBalanceResetBackup[]>([]);
   const [resetDialogOpen, setResetDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState<string | null>(null);
   const [dataManagementAction, setDataManagementAction] = useState<string | null>(null);
@@ -853,12 +852,12 @@ export default function SettingsPage() {
                       {importStatus?.is_imported && importStatus.committed_batches.length > 0 && (
                         <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
                           <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">{t('committedBatches')}</div>
-                          {importStatus.committed_batches.map((b: any) => (
-                            <div key={b.id} className="flex items-center gap-3 text-sm text-slate-700 py-1">
-                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 capitalize">{b.batch_type}</span>
-                              <span>{b.opening_date}</span>
+                          {importStatus.committed_batches.map((batch) => (
+                            <div key={batch.id} className="flex items-center gap-3 text-sm text-slate-700 py-1">
+                              <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 capitalize">{batch.batch_type}</span>
+                              <span>{batch.opening_date}</span>
                               <span className="text-slate-400">|</span>
-                              <span className="text-xs text-slate-400">{new Date(b.committed_at).toLocaleDateString()}</span>
+                              <span className="text-xs text-slate-400">{new Date(batch.committed_at).toLocaleDateString()}</span>
                             </div>
                           ))}
                         </div>
@@ -943,7 +942,7 @@ export default function SettingsPage() {
                     <h3 className="text-base font-semibold text-slate-900">{t('resetHistory')}</h3>
                     <p className="mt-1 text-sm text-slate-500">{t('resetHistoryDescription')}</p>
                     <div className="mt-4 space-y-3">
-                      {resetBackups.map((backup: any) => (
+                      {resetBackups.map((backup) => (
                         <div key={backup.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-4">
                           <div>
                             <div className="text-sm font-medium text-slate-800">
@@ -1072,7 +1071,7 @@ function TeamTab({
 
   const canManage = currentRole === 'owner' || currentRole === 'admin';
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -1083,11 +1082,11 @@ function TeamTab({
     } finally {
       setLoading(false);
     }
-  };
+  }, [tenantId]);
 
   useEffect(() => {
     void load();
-  }, [tenantId]);
+  }, [load]);
 
   const resetForm = () => {
     setFormEmail('');
@@ -1444,4 +1443,3 @@ function SettingsField({ label, children }: { label: string; children: ReactNode
     </label>
   );
 }
-

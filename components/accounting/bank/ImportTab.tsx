@@ -12,7 +12,7 @@ import {
   TableProperties,
   Upload,
 } from 'lucide-react';
-import { bankingApi, type BankAccountRecord, type BankImportJob, type BankImportPreviewRow } from '@/lib/api/banking.api';
+import { bankingApi, type BankAccountRecord, type BankImportCommitSummary, type BankImportJob, type BankImportPreviewRow, type BankImportSummary } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { formatLabel, type BankInlineSummaryData } from './shared';
 
@@ -56,8 +56,8 @@ export function ImportTab({
   const [bankAccountId, setBankAccountId] = useState('');
   const [job, setJob] = useState<BankImportJob | null>(null);
   const [previewRows, setPreviewRows] = useState<BankImportPreviewRow[]>([]);
-  const [summary, setSummary] = useState<Record<string, any> | null>(null);
-  const [commitSummary, setCommitSummary] = useState<Record<string, any> | null>(null);
+  const [summary, setSummary] = useState<BankImportSummary | null>(null);
+  const [commitSummary, setCommitSummary] = useState<BankImportCommitSummary | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
@@ -213,7 +213,7 @@ export function ImportTab({
     }
   };
 
-  const applyApprovalResult = (result: { job: BankImportJob; preview_rows: BankImportPreviewRow[]; summary: Record<string, any> }) => {
+  const applyApprovalResult = (result: { job: BankImportJob; preview_rows: BankImportPreviewRow[]; summary: BankImportSummary }) => {
     setJob(result.job);
     setPreviewRows(result.preview_rows);
     setSummary(result.summary);

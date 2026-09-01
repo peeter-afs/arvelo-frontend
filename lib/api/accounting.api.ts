@@ -150,7 +150,7 @@ export type OpeningBalanceBatchListItem = {
   id: string;
   opening_date: string;
   currency: string;
-  batch_type?: 'general' | 'receivables' | 'payables';
+  batch_type?: 'general' | 'year_end_balance' | 'period_turnover' | 'receivables' | 'payables';
   status: 'draft' | 'committed';
   journal_entry_id?: string | null;
   journal_entry_number?: string | null;
@@ -219,6 +219,99 @@ export type JournalLineRecord = {
   description?: string | null;
 };
 
+export type OpeningBalancePayloadLine = {
+  account_id?: string;
+  account_code?: string;
+  partner_id?: string;
+  partner_name?: string;
+  reg_code?: string;
+  vat_number?: string;
+  address?: string;
+  postal_code?: string;
+  city?: string;
+  country_code?: string;
+  registry_status?: string;
+  registry_linked?: boolean;
+  invoice_number?: string;
+  reference?: string;
+  description?: string;
+  invoice_date?: string;
+  due_date?: string;
+  side?: 'debit' | 'credit';
+  amount: number;
+};
+
+export type OpeningBalancePayload = {
+  opening_date: string;
+  currency: string;
+  notes?: string;
+  source_document_id?: string;
+  fiscal_year_start?: string;
+  fiscal_year_end?: string;
+  offset_account_id?: string;
+  gl_neutral?: boolean;
+  transition_date?: string;
+  control_opening?: Array<{ account_code: string; opening_net: number }>;
+  lines: OpeningBalancePayloadLine[];
+};
+
+export type OpeningBalanceDiff = {
+  account_code: string;
+  account_name?: string;
+  opening?: number;
+  movement?: number;
+  actual: number;
+  expected: number;
+  diff: number;
+};
+
+export type OpeningBalanceReconciliation = {
+  status?: string;
+  locked?: boolean;
+  passed?: boolean;
+  diffs?: OpeningBalanceDiff[];
+  diff_result?: { diffs?: OpeningBalanceDiff[] };
+};
+
+export type OpeningBalancePreviewResult = Record<string, unknown> & {
+  totals?: Record<string, number>;
+  lines?: Array<Record<string, unknown>>;
+  control_account?: { code?: string; name?: string };
+  offset_account?: { code?: string; name?: string };
+};
+
+export type OpeningBalanceCommitResult = Record<string, unknown> & {
+  batch?: { id?: string };
+  journal_entry?: { id?: string; entry_number?: string };
+  created_invoice_count?: number;
+  reclass?: { amount: number; from_code: string; to_code: string; date: string } | null;
+  control?: { diffs?: Array<{ account_code: string; kaibeandmik: number; bilanss: number }> } | null;
+  reconciliation?: OpeningBalanceReconciliation | null;
+};
+
+export type OpeningBalanceResetBackup = {
+  id: string;
+  reset_at: string;
+  restored_at?: string | null;
+  batch_snapshots?: unknown[];
+};
+
+export type OpeningBalanceImportStatus = {
+  is_imported: boolean;
+  can_reset: boolean;
+  reset_reference_date: string | null;
+  reset_window_months: number;
+  opening_balances_strategy: 'with_general' | 'subledger_only' | 'mid_year' | null;
+  committed_batches: Array<{
+    id: string;
+    batch_type: string;
+    opening_date: string;
+    committed_at: string;
+    source_document: { id: string; file_name: string; file_size: number | null } | null;
+  }>;
+  reconciliation?: OpeningBalanceReconciliation;
+};
+
 export const accountingApi = {
   async getAccounts(options?: { force?: boolean }) {
     // Return a shallow copy so a caller that sorts/filters in place can't
@@ -242,7 +335,7 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async updateAccount(id: string, payload: Record<string, any>) {
+  async updateAccount(id: string, payload: Partial<Pick<AccountRecord, 'code' | 'name' | 'type' | 'parent_id' | 'is_active'>>) {
     const response = await apiClient.put<ApiResponse<AccountRecord>>(`/api/accounting/accounts/${id}`, payload);
     activeAccountsCache.invalidate();
     return response.data.data;
@@ -374,13 +467,13 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async createPartner(payload: Record<string, any>) {
+  async createPartner(payload: Partial<Omit<PartnerRecord, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>> & Pick<PartnerRecord, 'name' | 'type'>) {
     const response = await apiClient.post<ApiResponse<PartnerRecord>>('/api/accounting/partners', payload);
     activePartnersCache.invalidate();
     return response.data.data;
   },
 
-  async updatePartner(id: string, payload: Record<string, any>) {
+  async updatePartner(id: string, payload: Partial<Omit<PartnerRecord, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>>) {
     const response = await apiClient.put<ApiResponse<PartnerRecord>>(`/api/accounting/partners/${id}`, payload);
     activePartnersCache.invalidate();
     return response.data.data;
@@ -416,12 +509,12 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async createSupplierBankAccount(id: string, payload: Record<string, any>) {
+  async createSupplierBankAccount(id: string, payload: Partial<Omit<SupplierBankAccount, 'id' | 'partner_id' | 'created_at' | 'updated_at'>> & Pick<SupplierBankAccount, 'iban'>) {
     const response = await apiClient.post<ApiResponse<SupplierBankAccount>>(`/api/accounting/partners/${id}/supplier-bank-accounts`, payload);
     return response.data.data;
   },
 
-  async updateSupplierBankAccount(id: string, bankAccountId: string, payload: Record<string, any>) {
+  async updateSupplierBankAccount(id: string, bankAccountId: string, payload: Partial<Omit<SupplierBankAccount, 'id' | 'partner_id' | 'created_at' | 'updated_at'>>) {
     const response = await apiClient.put<ApiResponse<SupplierBankAccount>>(
       `/api/accounting/partners/${id}/supplier-bank-accounts/${bankAccountId}`,
       payload
@@ -441,28 +534,28 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async previewOpeningBalances(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/preview', payload);
+  async previewOpeningBalances(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalancePreviewResult>>('/api/accounting/opening-balances/preview', payload);
     return response.data.data;
   },
 
-  async commitOpeningBalances(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/commit', payload);
+  async commitOpeningBalances(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalanceCommitResult>>('/api/accounting/opening-balances/commit', payload);
     return response.data.data;
   },
 
-  async previewOpeningReceivables(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/receivables/preview', payload);
+  async previewOpeningReceivables(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalancePreviewResult>>('/api/accounting/opening-balances/receivables/preview', payload);
     return response.data.data;
   },
 
-  async commitOpeningReceivables(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/receivables/commit', payload);
+  async commitOpeningReceivables(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalanceCommitResult>>('/api/accounting/opening-balances/receivables/commit', payload);
     return response.data.data;
   },
 
-  async previewOpeningPayables(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/payables/preview', payload);
+  async previewOpeningPayables(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalancePreviewResult>>('/api/accounting/opening-balances/payables/preview', payload);
     return response.data.data;
   },
 
@@ -483,69 +576,67 @@ export const accountingApi = {
     country_code: string | null;
     registry_status: string | null;
   }>> {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/enrich-partners', payload);
+    const response = await apiClient.post<ApiResponse<Array<{
+      id?: string;
+      index: number;
+      matched: boolean;
+      reg_code: string | null;
+      vat_number: string | null;
+      name: string | null;
+      address: string | null;
+      postal_code: string | null;
+      city: string | null;
+      country_code: string | null;
+      registry_status: string | null;
+    }>>>('/api/accounting/opening-balances/enrich-partners', payload);
     return response.data.data;
   },
 
-  async commitOpeningPayables(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/payables/commit', payload);
+  async commitOpeningPayables(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalanceCommitResult>>('/api/accounting/opening-balances/payables/commit', payload);
     return response.data.data;
   },
 
   // Mid-year transition: two-layer general (year-end balance + period turnover)
-  async commitYearEndBalance(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/year-end/commit', payload);
+  async commitYearEndBalance(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalanceCommitResult>>('/api/accounting/opening-balances/year-end/commit', payload);
     return response.data.data;
   },
 
-  async commitPeriodTurnover(payload: Record<string, any>) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/turnover/commit', payload);
+  async commitPeriodTurnover(payload: OpeningBalancePayload) {
+    const response = await apiClient.post<ApiResponse<OpeningBalanceCommitResult>>('/api/accounting/opening-balances/turnover/commit', payload);
     return response.data.data;
   },
 
   // Reconciliation against the old software's transition-date balance sheet
   async getOpeningBalanceReconciliation() {
-    const response = await apiClient.get<ApiResponse<any>>('/api/accounting/opening-balances/reconciliation');
+    const response = await apiClient.get<ApiResponse<OpeningBalanceReconciliation>>('/api/accounting/opening-balances/reconciliation');
     return response.data.data;
   },
 
   async uploadControlBalance(payload: { transition_date?: string | null; source_document_id?: string | null; expected_balances: Array<{ account_code: string; account_name?: string; balance: number }> }) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/control', payload);
+    const response = await apiClient.post<ApiResponse<OpeningBalanceReconciliation>>('/api/accounting/opening-balances/control', payload);
     return response.data.data;
   },
 
   async reconcileOpeningBalances(asOfDate?: string) {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/reconcile', { as_of_date: asOfDate });
+    const response = await apiClient.post<ApiResponse<OpeningBalanceReconciliation>>('/api/accounting/opening-balances/reconcile', { as_of_date: asOfDate });
     return response.data.data;
   },
 
   async lockOpeningBalances() {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/lock', {});
+    const response = await apiClient.post<ApiResponse<OpeningBalanceReconciliation>>('/api/accounting/opening-balances/lock', {});
     return response.data.data;
   },
 
   async applyReconciliationCorrection() {
-    const response = await apiClient.post<ApiResponse<any>>('/api/accounting/opening-balances/reconcile/correct', {});
+    const response = await apiClient.post<ApiResponse<OpeningBalanceReconciliation>>('/api/accounting/opening-balances/reconcile/correct', {});
     return response.data.data;
   },
 
   // Opening balance import lock / reset
   async getOpeningBalanceImportStatus() {
-    const response = await apiClient.get<ApiResponse<{
-      is_imported: boolean;
-      can_reset: boolean;
-      reset_reference_date: string | null;
-      reset_window_months: number;
-      opening_balances_strategy: 'with_general' | 'subledger_only' | 'mid_year' | null;
-      committed_batches: Array<{
-        id: string;
-        batch_type: string;
-        opening_date: string;
-        committed_at: string;
-        source_document: { id: string; file_name: string; file_size: number | null } | null;
-      }>;
-      reconciliation?: any;
-    }>>('/api/accounting/opening-balances/import-status');
+    const response = await apiClient.get<ApiResponse<OpeningBalanceImportStatus>>('/api/accounting/opening-balances/import-status');
     return response.data.data;
   },
 
@@ -594,7 +685,7 @@ export const accountingApi = {
   },
 
   async listResetBackups() {
-    const response = await apiClient.get<ApiResponse<any[]>>('/api/accounting/opening-balances/reset-backups');
+    const response = await apiClient.get<ApiResponse<OpeningBalanceResetBackup[]>>('/api/accounting/opening-balances/reset-backups');
     return response.data.data;
   },
 
@@ -617,22 +708,22 @@ export const accountingApi = {
   },
 
   async closeFiscalYear(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/fiscal-years/${id}/close`);
+    const response = await apiClient.post<ApiResponse<FiscalYearWithPeriods>>(`/api/accounting/fiscal-years/${id}/close`);
     return response.data.data;
   },
 
   async reopenFiscalYear(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/fiscal-years/${id}/reopen`);
+    const response = await apiClient.post<ApiResponse<FiscalYearWithPeriods>>(`/api/accounting/fiscal-years/${id}/reopen`);
     return response.data.data;
   },
 
   async closePeriod(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/periods/${id}/close`);
+    const response = await apiClient.post<ApiResponse<PeriodItem>>(`/api/accounting/periods/${id}/close`);
     return response.data.data;
   },
 
   async reopenPeriod(id: string) {
-    const response = await apiClient.post<ApiResponse<any>>(`/api/accounting/periods/${id}/reopen`);
+    const response = await apiClient.post<ApiResponse<PeriodItem>>(`/api/accounting/periods/${id}/reopen`);
     return response.data.data;
   },
 };

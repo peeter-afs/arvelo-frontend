@@ -26,7 +26,7 @@ type EditableLine = {
   account_id?: string | null;
 };
 
-type PreviewDraft = Record<string, string | number | null | undefined | unknown[]>;
+type PreviewDraft = Record<string, unknown>;
 
 type DraftInvoiceResult = {
   draft_invoice?: {
