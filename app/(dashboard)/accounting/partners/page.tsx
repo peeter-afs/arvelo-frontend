@@ -110,6 +110,15 @@ function initials(name?: string | null) {
   return `${parts[0]?.[0] || ''}${parts[1]?.[0] || ''}`.toUpperCase() || name.slice(0, 2).toUpperCase();
 }
 
+// data_source values written when a partner was created by the bank import
+// rather than by a person — card-payment merchants resolved via the business
+// registry end up here, so they can be reviewed or merged in bulk.
+const AUTO_CREATED_SOURCES = ['bank_card_import', 'bank_import'];
+
+function isAutoCreatedPartner(partner: PartnerRecord) {
+  return AUTO_CREATED_SOURCES.includes(String(partner.data_source || ''));
+}
+
 export default function BusinessPartnersPage() {
   const t = useTranslations('accounting');
   const [partners, setPartners] = useState<PartnerWithBalance[]>([]);
@@ -122,6 +131,7 @@ export default function BusinessPartnersPage() {
   // Surfaces partners that were never linked to the business registry (no reg code) —
   // e.g. the ones the opening-balance import could not auto-match.
   const [unlinkedOnly, setUnlinkedOnly] = useState(false);
+  const [autoCreatedOnly, setAutoCreatedOnly] = useState(false);
   const [isBootLoading, setIsBootLoading] = useState(true);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -144,19 +154,22 @@ export default function BusinessPartnersPage() {
     return partners.filter((partner) => {
       const matchesType = typeFilter === 'all' ? true : partner.type === typeFilter;
       const matchesLinked = !unlinkedOnly || !String(partner.reg_code || '').trim();
+      const matchesAutoCreated = !autoCreatedOnly || isAutoCreatedPartner(partner);
       const query = searchQuery.trim().toLowerCase();
       const haystack = [partner.name, partner.email, partner.reg_code, partner.vat_number, partner.city]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-      return matchesType && matchesLinked && (!query || haystack.includes(query));
+      return matchesType && matchesLinked && matchesAutoCreated && (!query || haystack.includes(query));
     });
-  }, [partners, searchQuery, typeFilter, unlinkedOnly]);
+  }, [partners, searchQuery, typeFilter, unlinkedOnly, autoCreatedOnly]);
 
   const unlinkedCount = useMemo(
     () => partners.filter((partner) => !String(partner.reg_code || '').trim()).length,
     [partners]
   );
+
+  const autoCreatedCount = useMemo(() => partners.filter(isAutoCreatedPartner).length, [partners]);
 
   const selectedPartnerWithBalance = partners.find((partner) => partner.id === selectedPartnerId) || null;
   const customers = partners.filter((partner) => partner.type === 'customer' || partner.type === 'both');
@@ -415,6 +428,18 @@ export default function BusinessPartnersPage() {
             {t('partnersUnlinkedFilter')}
             <span className={unlinkedOnly ? 'text-white/70' : 'text-[var(--a-text-3)]'}>{unlinkedCount}</span>
           </button>
+          <button
+            onClick={() => setAutoCreatedOnly((v) => !v)}
+            title={t('autoCreatedFromBankImport')}
+            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+              autoCreatedOnly
+                ? 'bg-[var(--a-accent)] text-white'
+                : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
+            }`}
+          >
+            {t('autoCreatedPartners')}
+            <span className={autoCreatedOnly ? 'text-white/70' : 'text-[var(--a-text-3)]'}>{autoCreatedCount}</span>
+          </button>
         </div>
       </div>
 
@@ -454,6 +479,7 @@ export default function BusinessPartnersPage() {
                       <span className="block truncate font-medium text-[var(--a-text)]">{partner.name}</span>
                       <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">
                         {partner.vat_number || partner.reg_code || t('noIdentifier')} · {partner.country_code || 'EE'}
+                        {isAutoCreatedPartner(partner) && ` · ${t('autoCreatedFromBankImport')}`}
                       </span>
                     </span>
                     <PartnerTypeBadge type={partner.type} />

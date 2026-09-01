@@ -1050,7 +1050,22 @@
     "broughtBackHint": "Can be brought back later with the “Ignored” filter.",
     "actionReverted": "Action reverted",
     "scopeEquity": "Equity",
-    "derivedFromCardDescriptor": "Derived from card descriptor"
+    "derivedFromCardDescriptor": "Derived from card descriptor",
+    "cardMerchant": "Card merchant",
+    "autoCreatedPartners": "Auto-created",
+    "autoCreatedFromBankImport": "Created from bank import",
+    "counterpartyPlaceholder": "Pick a counterparty or add a new one…",
+    "counterpartySearch": "Search by name or registry code",
+    "counterpartyRaw": "Bank line:",
+    "counterpartyUnknownWarning": "The bank sent no counterparty. Pick a partner or add a new one — otherwise the entry is posted without a counterparty and reports cannot group it.",
+    "counterpartyUndefined": "not set",
+    "addPartnerHint": "Opens the “Create partner” dialog",
+    "noPartnerMatch": "No match: {query}",
+    "partnerCreatedAndSelected": "Partner created · {name} — added to the partner list and selected",
+    "partnerSource": "Source",
+    "willPostToAccountWithPartner": "Posts to {code} · {name} · counterparty {partner}",
+    "postedToAccount": "Posted to {code} · {name}.",
+    "postedToAccountWithPartner": "Posted to {code} · {name} · counterparty {partner}."
   },
   "exchangeRates": {
     "title": "Exchange Rates",

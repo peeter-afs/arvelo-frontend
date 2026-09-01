@@ -32,11 +32,33 @@ export type BankImportPreviewRow = {
   external_id: string;
   warning_flags: string[];
   needs_review: boolean;
+  is_duplicate?: boolean;
   is_approved: boolean;
   manually_approved?: boolean;
   can_approve?: boolean;
-  parsed_payload: Record<string, unknown>;
+  parsed_payload: BankParsedPayload;
 };
+
+/**
+ * Card/POS rows carry no counterparty in the statement, so the backend recovers
+ * the merchant from the free-text descriptor and records that here — the import
+ * preview and the review panel use it to flag a derived name as derived.
+ */
+export type BankCardDescriptorPayload = {
+  counterparty_source?: 'card_descriptor';
+  card_descriptor?: {
+    merchant: string;
+    city: string | null;
+    card_mask: string | null;
+    descriptor_date: string | null;
+    currency_conversion: { amount: number; currency: string } | null;
+    confidence: 'high' | 'medium';
+    matched_pattern: string;
+    raw: string | null;
+  };
+};
+
+export type BankParsedPayload = Record<string, unknown> & BankCardDescriptorPayload;
 
 export type BankMatchCandidate = {
   invoice_id: string;
@@ -95,13 +117,16 @@ export type BankReviewQueueItem = {
   import_file_name?: string | null;
   import_row_no?: number | null;
   import_warning_flags?: string[];
-  import_parsed_payload?: Record<string, unknown> | null;
+  import_parsed_payload?: BankParsedPayload | null;
   tx_date: string;
   value_date?: string | null;
   amount: number;
   currency: string;
   counterparty_name?: string | null;
   counterparty_account?: string | null;
+  /** Partner the card-import enrichment already resolved, if any. */
+  counterparty_partner_id?: string | null;
+  counterparty_partner_name?: string | null;
   description?: string | null;
   reference?: string | null;
   matched_status: string;
@@ -225,6 +250,7 @@ export type BankImportSummary = {
   detected_statement_iban?: string | null;
   statement_date_from?: string | null;
   statement_date_to?: string | null;
+  balance_check_ok?: boolean;
   statement_period_warning?: (
     | { kind: 'overlap'; from?: string; to?: string }
     | { kind: 'gap'; previous_to: string; from: string; missing_days: number }
@@ -414,7 +440,7 @@ export const bankingApi = {
     return response.data.data;
   },
 
-  async manualPost(id: string, payload: { counter_account_id: string; description?: string }) {
+  async manualPost(id: string, payload: { counter_account_id: string; description?: string; partner_id?: string }) {
     const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/manual-post`, payload);
     return response.data.data;
   },

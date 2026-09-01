@@ -66,9 +66,15 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onCreated: (partner: PartnerRecord) => void;
+  /** Partner type to start on. Defaults to customer, as on the partners page. */
+  defaultType?: PartnerFormState['type'];
+  /** Seeds both the registry search and the form name (e.g. a bank counterparty). */
+  prefillName?: string;
+  /** Where the prefill came from — shown as one extra line in the header. */
+  sourceNote?: string;
 };
 
-export function AddPartnerModal({ open, onClose, onCreated }: Props) {
+export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefillName, sourceNote }: Props) {
   const t = useTranslations('accounting');
   const [step, setStep] = useState<1 | 2>(1);
   const [registryQuery, setRegistryQuery] = useState('');
@@ -95,17 +101,26 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
     }
   }, [open]);
 
+  // The caller's prefill, read through a ref so the reset effect below stays
+  // keyed on `open` alone — a prefill that changes while the modal is open must
+  // not wipe what the user has typed.
+  const seedRef = useRef({ defaultType, prefillName });
+  seedRef.current = { defaultType, prefillName };
+
   // Reset to a clean form every time the modal opens, so the previously
   // created partner's data never carries over to the next one. (The close
   // branch above can't do this: the component returns null while closed, so
   // the dialog ref is gone and the effect would never run.)
   useEffect(() => {
     if (!open) return;
+    const seededName = seedRef.current.prefillName?.trim() || '';
     setStep(1);
-    setRegistryQuery('');
+    // Seed the registry query too: with a name in hand the accountant is one
+    // click from pulling the reg code and address out of the registry.
+    setRegistryQuery(seededName);
     setRegistryResults([]);
     setSelectedCompany(null);
-    setForm(emptyForm());
+    setForm({ ...emptyForm(), type: seedRef.current.defaultType ?? 'customer', name: seededName });
     setDuplicateWarnings([]);
     setErrorMessage(null);
   }, [open]);
@@ -164,7 +179,13 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
 
   const handleCreateManually = () => {
     setSelectedCompany(null);
-    setForm(emptyForm());
+    // Keep whatever the caller seeded (type + name); only registry-derived
+    // fields are cleared, since we are explicitly not using the registry.
+    setForm({
+      ...emptyForm(),
+      type: seedRef.current.defaultType ?? 'customer',
+      name: seedRef.current.prefillName?.trim() || '',
+    });
     setStep(2);
   };
 
@@ -256,6 +277,11 @@ export function AddPartnerModal({ open, onClose, onCreated }: Props) {
                   ? t('prefilledFromCompany', { company: selectedCompany.name || selectedCompany.registryCode || '' })
                   : t('fillPartnerDetailsBelow')}
             </p>
+            {sourceNote && (
+              <p className="mt-1 truncate font-mono text-[11.5px] text-[var(--a-text-3)]" title={sourceNote}>
+                {t('partnerSource')} · {sourceNote}
+              </p>
+            )}
           </div>
           <button
             onClick={onClose}

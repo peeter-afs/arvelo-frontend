@@ -23,6 +23,14 @@ type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 // prop is omitted.
 const NO_DRAFT_IDS: string[] = [];
 
+/** Default posting description: the counterparty when we have one, else what the bank sent. */
+function buildManualDescription(item: BankReviewQueueItem, partnerName: string): string {
+  if (partnerName) {
+    return item.reference ? `${partnerName} · ${item.reference}` : partnerName;
+  }
+  return item.description || item.reference || item.counterparty_name || '';
+}
+
 export function ReviewTab({
   refreshKey = 0,
   onCountChange,
@@ -57,6 +65,10 @@ export function ReviewTab({
   const [ignoreReason, setIgnoreReason] = useState('');
   const [manualAccountId, setManualAccountId] = useState('');
   const [manualDescription, setManualDescription] = useState('');
+  // Once the accountant edits the description we stop regenerating it.
+  const [manualDescriptionDirty, setManualDescriptionDirty] = useState(false);
+  const [manualPartnerId, setManualPartnerId] = useState('');
+  const [manualPartnerName, setManualPartnerName] = useState('');
   const [manualAllocations, setManualAllocations] = useState<ManualAllocation[]>([]);
   const [dismissReason, setDismissReason] = useState('');
   // Bulk selection is a separate axis from the detail selection above: ticking a
@@ -138,6 +150,18 @@ export function ReviewTab({
       return;
     }
 
+    // Seed the manual-posting fields before the request, not after: if
+    // suggestMatches fails, values from the previous row would otherwise stay
+    // put — and a leaked counterparty would land on a real journal entry.
+    setReviewNote(selectedItem.review_note || '');
+    setManualAccountId(selectedItem.suggested_manual_account_id || '');
+    setManualPartnerId(selectedItem.counterparty_partner_id || '');
+    setManualPartnerName(selectedItem.counterparty_partner_name || '');
+    setManualDescriptionDirty(false);
+    setManualDescription(
+      buildManualDescription(selectedItem, selectedItem.counterparty_partner_name || '')
+    );
+
     const loadCandidates = async () => {
       setIsCandidateLoading(true);
       setAutoMatchPlan(undefined);
@@ -154,14 +178,6 @@ export function ReviewTab({
             invoice_id: candidate.invoice_id,
             amount: String(candidate.open_amount),
           }))
-        );
-        setReviewNote(selectedItem.review_note || '');
-        setManualAccountId(selectedItem.suggested_manual_account_id || '');
-        setManualDescription(
-          selectedItem.description
-          || selectedItem.reference
-          || selectedItem.counterparty_name
-          || ''
         );
       } catch (error) {
         if (cancelled) return;
@@ -251,13 +267,31 @@ export function ReviewTab({
 
   const handleManualPost = async () => {
     if (!selectedItem || !manualAccountId) return;
+    const account = accounts.find((option) => option.id === manualAccountId);
     await runAction('manual-post', async () => {
       await bankingApi.manualPost(selectedItem.transaction_id, {
         counter_account_id: manualAccountId,
         description: manualDescription || undefined,
+        partner_id: manualPartnerId || undefined,
       });
       await refreshQueue(selectedItem.transaction_id);
+      const labels = { code: account?.code || '', name: account?.name || '' };
+      setSuccessMessage(
+        manualPartnerName
+          ? t('postedToAccountWithPartner', { ...labels, partner: manualPartnerName })
+          : t('postedToAccount', labels)
+      );
     });
+  };
+
+  // Picking a counterparty re-seeds the description, unless the accountant has
+  // already typed their own.
+  const handlePartnerChange = (partnerId: string, partnerName: string) => {
+    setManualPartnerId(partnerId);
+    setManualPartnerName(partnerName);
+    if (!manualDescriptionDirty && selectedItem) {
+      setManualDescription(buildManualDescription(selectedItem, partnerName));
+    }
   };
 
   const handleSingleMatch = async (candidate: BankMatchCandidate) => {
@@ -514,7 +548,20 @@ export function ReviewTab({
           ) : (
             <>
               <div className="flex flex-shrink-0 items-center gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-2.5">
-                <div className="min-w-0"><h2 className="truncate text-sm font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2><p className="truncate text-[11.5px] text-slate-500">{selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}</p></div>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h2 className="truncate text-sm font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2>
+                    {selectedItem.import_parsed_payload?.counterparty_source === 'card_descriptor' && (
+                      // The statement carried no counterparty; this name was read
+                      // out of the card descriptor, so say so rather than implying
+                      // the bank sent it.
+                      <span title={selectedItem.import_parsed_payload.card_descriptor?.raw || undefined} className="flex-shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-slate-500">
+                        {t('derivedFromCardDescriptor')}
+                      </span>
+                    )}
+                  </div>
+                  <p className="truncate text-[11.5px] text-slate-500">{selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}</p>
+                </div>
                 <div className="ml-auto flex items-center gap-2">
                   <button onClick={() => selectedIndex > 0 && setSelectedTransactionId(items[selectedIndex - 1].transaction_id)} disabled={selectedIndex <= 0} className="inline-flex h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><ChevronUp className="h-4 w-4" /><kbd>K</kbd></button>
                   <span className="font-mono text-xs tabular-nums text-slate-500">{selectedIndex + 1} / {items.length}</span>
@@ -523,7 +570,7 @@ export function ReviewTab({
                 <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
               <div className="flex min-h-0 flex-1 flex-col px-3 pb-1">
-                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={setManualDescription} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} setManualPartnerId={handlePartnerChange} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} onPartnerCreated={(message) => setSuccessMessage(message)} />
               </div>
             </>
           )}

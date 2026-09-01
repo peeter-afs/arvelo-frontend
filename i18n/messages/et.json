@@ -1050,7 +1050,22 @@
     "broughtBackHint": "Saab hiljem järjekorda tagasi tuua filtriga „Tähelepanuta jäetud”.",
     "actionReverted": "Tegevus tagasi võetud",
     "scopeEquity": "Omakapital",
-    "derivedFromCardDescriptor": "Tuletatud kaardimakse kirjeldusest"
+    "derivedFromCardDescriptor": "Tuletatud kaardimakse kirjeldusest",
+    "cardMerchant": "Kaupmees (kaardimakse)",
+    "autoCreatedPartners": "Automaatselt loodud",
+    "autoCreatedFromBankImport": "Loodud pangaimpordist",
+    "counterpartyPlaceholder": "Vali vastaspool või lisa uus…",
+    "counterpartySearch": "Otsi nime või registrikoodi järgi",
+    "counterpartyRaw": "Pangarea selgitus:",
+    "counterpartyUnknownWarning": "Pank ei edastanud vastaspoolt. Vali partner või lisa uus — muidu tekib kanne ilma vastaspooleta ja aruannetes seda ei rühmitata.",
+    "counterpartyUndefined": "määramata",
+    "addPartnerHint": "Avab „Loo partner“ akna",
+    "noPartnerMatch": "Vastet ei leitud: {query}",
+    "partnerCreatedAndSelected": "Partner loodud · {name} — lisatud partnerite nimekirja ja valitud",
+    "partnerSource": "Allikas",
+    "willPostToAccountWithPartner": "Kannab kontole {code} · {name} · vastaspool {partner}",
+    "postedToAccount": "Kantud kontole {code} · {name}.",
+    "postedToAccountWithPartner": "Kantud kontole {code} · {name} · vastaspool {partner}."
   },
   "exchangeRates": {
     "title": "Vahetuskursid",
