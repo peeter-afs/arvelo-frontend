@@ -1,15 +1,12 @@
 'use client';
 
-import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { useTranslations } from 'next-intl';
-import { ArrowRight, ChevronDown, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, ChevronDown, Info, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import type { AccountOption } from '@/lib/api/accounting.api';
 import type { BankAutoMatchPlan, BankAutoMatchReason, BankMatchCandidate, BankReviewQueueItem } from '@/lib/api/banking.api';
 import { AccountPicker, type SuggestedAccount } from './AccountPicker';
-import { PartnerPicker, type PartnerPickerHandle } from './PartnerPicker';
-import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
-import { accountingApi } from '@/lib/api/accounting.api';
 import { InfoBox, formatLabel } from './shared';
 
 export type ManualAllocation = {
@@ -57,7 +54,6 @@ type Props = {
   setManualDescription: (value: string) => void;
   manualPartnerId: string;
   manualPartnerName: string;
-  setManualPartnerId: (partnerId: string, partnerName: string) => void;
   manualAllocations: ManualAllocation[];
   setManualAllocations: Dispatch<SetStateAction<ManualAllocation[]>>;
   dismissReason: string;
@@ -71,8 +67,21 @@ type Props = {
   onSingleMatch: (candidate: BankMatchCandidate) => void;
   onSplitMatch: () => void;
   onAccountCreated?: (message: string) => void;
-  onPartnerCreated?: (message: string) => void;
 };
+
+function PanelNotice({ tone = 'neutral', children }: { tone?: 'neutral' | 'warning'; children: ReactNode }) {
+  const Icon = tone === 'warning' ? AlertTriangle : Info;
+  return (
+    <div className={`mb-[9px] flex items-start gap-1.5 border-l-2 pl-2 text-[11.5px] leading-[1.35] ${
+      tone === 'warning'
+        ? 'border-[#e6c98a] text-[#8a5a12]'
+        : 'border-[var(--a-accent-soft)] text-[var(--a-text-3)]'
+    }`}>
+      <Icon className="mt-px h-[13px] w-[13px] flex-shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
+}
 
 export function ReviewActionPanel({
   selectedItem,
@@ -92,7 +101,6 @@ export function ReviewActionPanel({
   setManualDescription,
   manualPartnerId,
   manualPartnerName,
-  setManualPartnerId,
   onAutoMatch,
   onReview,
   onIgnore,
@@ -101,7 +109,6 @@ export function ReviewActionPanel({
   onManualPost,
   onSingleMatch,
   onAccountCreated,
-  onPartnerCreated,
 }: Props) {
   const t = useTranslations('accounting');
 
@@ -112,10 +119,7 @@ export function ReviewActionPanel({
   const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [partnerModalOpen, setPartnerModalOpen] = useState(false);
-  const [createQuery, setCreateQuery] = useState('');
   const [itemId, setItemId] = useState(selectedItem.transaction_id);
-  const partnerPickerRef = useRef<PartnerPickerHandle>(null);
 
   if (itemId !== selectedItem.transaction_id) {
     setItemId(selectedItem.transaction_id);
@@ -124,7 +128,6 @@ export function ReviewActionPanel({
     setSelectedInvoiceId('');
     setShowNoteInput(false);
     setShowDetails(false);
-    setPartnerModalOpen(false);
   }
 
   const isOutgoing = selectedItem.amount < 0;
@@ -178,9 +181,6 @@ export function ReviewActionPanel({
     ? selectedItem.import_parsed_payload.card_descriptor
     : undefined;
 
-  // What the bank actually wrote on the line — for card rows the raw descriptor,
-  // otherwise the joined description.
-  const bankLineText = cardDescriptor?.raw || selectedItem.description || '';
   const pickedPartnerName = manualPartnerId
     ? manualPartnerName || selectedItem.counterparty_partner_name || ''
     : '';
@@ -272,6 +272,9 @@ export function ReviewActionPanel({
 
       {/* Workspace — exactly one route at a time. This is the only scroller. */}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto py-3">
+        {!selectedItem.counterparty_partner_id && !manualPartnerId && (
+          <PanelNotice tone="warning">{t('counterpartyUnknownWarning')}</PanelNotice>
+        )}
         {activeRoute === 'match' && (
           autoMatchPlan ? (
             <div className="grid items-stretch gap-2 lg:grid-cols-[minmax(0,1fr)_20px_minmax(0,1.15fr)]">
@@ -324,9 +327,7 @@ export function ReviewActionPanel({
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-[var(--primary)]/25 bg-orange-50 px-3 py-2 text-xs text-slate-700">
-              {autoMatchReason ? t(AUTO_MATCH_REASON_KEY[autoMatchReason]) : t('noClearAutoMatchCandidate')}
-            </div>
+            <PanelNotice>{autoMatchReason ? t(AUTO_MATCH_REASON_KEY[autoMatchReason]) : t('noClearAutoMatchCandidate')}</PanelNotice>
           )
         )}
 
@@ -393,33 +394,6 @@ export function ReviewActionPanel({
 
         {activeRoute === 'account' && (
           <div className="space-y-3">
-            <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                {t('counterparty')}
-              </label>
-              <PartnerPicker
-                ref={partnerPickerRef}
-                value={manualPartnerId}
-                onChange={setManualPartnerId}
-                onRequestCreate={(query) => { setCreateQuery(query); setPartnerModalOpen(true); }}
-                initialQuery={selectedItem.counterparty_name || ''}
-                fallbackLabel={manualPartnerName || selectedItem.counterparty_partner_name}
-                disabled={busy}
-              />
-              {/* The raw statement line, so the accountant can tell who this
-                  actually was before picking a partner. */}
-              {bankLineText && (
-                <div className="mt-1.5 text-[11px] text-slate-500">
-                  {t('counterpartyRaw')}{' '}
-                  <span className="break-all font-mono text-slate-600">{bankLineText}</span>
-                </div>
-              )}
-              {!manualPartnerId && (
-                <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11.5px] text-amber-800">
-                  {t('counterpartyUnknownWarning')}
-                </div>
-              )}
-            </div>
             <AccountPicker
               accounts={accounts}
               value={manualAccountId}
@@ -477,29 +451,15 @@ export function ReviewActionPanel({
             <p className="text-xs text-slate-600">
               {hasDraft ? t('receiptPlaceholderCreated') : t('markMissingReceiptDescription')}
             </p>
-            <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">
-                {t('counterparty')}
-              </label>
-              <PartnerPicker
-                ref={partnerPickerRef}
-                value={manualPartnerId}
-                onChange={setManualPartnerId}
-                onRequestCreate={(query) => { setCreateQuery(query); setPartnerModalOpen(true); }}
-                initialQuery={selectedItem.counterparty_name || ''}
-                fallbackLabel={manualPartnerName || selectedItem.counterparty_partner_name}
-                disabled={busy || hasDraft}
-              />
-              {bankLineText && (
-                <div className="mt-1.5 text-[11px] text-slate-500">
-                  {t('counterpartyRaw')}{' '}
-                  <span className="break-all font-mono text-slate-600">{bankLineText}</span>
-                </div>
-              )}
-            </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <InfoBox label={t('counterparty')} value={pickedPartnerName || selectedItem.counterparty_name || t('unknownCounterparty')} />
-              <InfoBox label={t('amount')} value={`${gross.toFixed(2)} ${selectedItem.currency}`} />
+            <div className="rounded-lg border border-slate-200 p-3 text-[11.5px]">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-slate-500">{t('supplier')}</span>
+                <span className="font-medium text-slate-800">{pickedPartnerName || t('counterpartyUnsetPickInHeader')}</span>
+              </div>
+              <div className="mt-1 flex items-baseline justify-between gap-3">
+                <span className="text-slate-500">{t('amount')}</span>
+                <span className="font-mono font-semibold tabular-nums text-slate-900">{gross.toFixed(2)} {selectedItem.currency}</span>
+              </div>
             </div>
             {hasDraft ? (
               // The draft already exists (usually auto-created at import), so the
@@ -523,10 +483,7 @@ export function ReviewActionPanel({
                 </button>
               </div>
             ) : (
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11.5px] text-slate-600">
-                <div>{t('willCreateDraft')}</div>
-                <div className="mt-1 font-semibold text-slate-700">{t('noEntryYet')}</div>
-              </div>
+              <PanelNotice>{t('willCreateDraft')} {t('noEntryYet')}</PanelNotice>
             )}
           </div>
         )}
@@ -539,10 +496,7 @@ export function ReviewActionPanel({
               placeholder={t('reasonPlaceholder')}
               className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
             />
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11.5px] text-slate-600">
-              <div>{t('willIgnore')}</div>
-              <div className="mt-1">{t('broughtBackHint')}</div>
-            </div>
+            <PanelNotice>{t('willIgnore')} {t('broughtBackHint')}</PanelNotice>
           </div>
         )}
 
@@ -628,23 +582,6 @@ export function ReviewActionPanel({
         </button>
       </div>
 
-      {/* The shared "Loo partner" modal, unchanged apart from the prefill. It
-          lives here rather than inside the picker because it is a native
-          <dialog> and the picker is an inline expander. */}
-      <AddPartnerModal
-        open={partnerModalOpen}
-        onClose={() => { setPartnerModalOpen(false); partnerPickerRef.current?.focus(); }}
-        onCreated={(partner) => {
-          accountingApi.invalidatePartnersCache();
-          setManualPartnerId(partner.id, partner.name);
-          setPartnerModalOpen(false);
-          onPartnerCreated?.(t('partnerCreatedAndSelected', { name: partner.name }));
-          partnerPickerRef.current?.focus();
-        }}
-        defaultType="supplier"
-        prefillName={createQuery || selectedItem.counterparty_name || ''}
-        sourceNote={bankLineText || undefined}
-      />
     </div>
   );
 }

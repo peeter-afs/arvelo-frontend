@@ -78,9 +78,22 @@ export type PartnerOption = {
   id: string;
   name: string;
   type: string;
+  roles?: Array<{ role: 'customer' | 'supplier'; is_active?: boolean }>;
   reg_code?: string | null;
   is_active: boolean;
 };
+
+export type PartnerOptionRole = 'customer' | 'supplier';
+
+/** Prefer normalized partner roles when supplied; legacy `type` is the fallback. */
+export function getPartnerOptionRoles(partner: PartnerOption): PartnerOptionRole[] {
+  const normalized = partner.roles
+    ?.filter((role) => role.is_active !== false)
+    .map((role) => role.role);
+  if (normalized?.length) return Array.from(new Set(normalized));
+  if (partner.type === 'both') return ['supplier', 'customer'];
+  return partner.type === 'supplier' || partner.type === 'customer' ? [partner.type] : [];
+}
 
 export type PartnerRole = {
   id: string;

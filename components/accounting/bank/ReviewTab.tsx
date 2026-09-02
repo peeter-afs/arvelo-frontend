@@ -14,7 +14,9 @@ import {
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { bankingApi, type BankAutoMatchPlan, type BankAutoMatchReason, type BankMatchCandidate, type BankReviewQueueItem } from '@/lib/api/banking.api';
+import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { BankFooterBar, type BankInlineSummaryData } from './shared';
+import { PartnerPicker, type PartnerPickerHandle } from './PartnerPicker';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
@@ -36,6 +38,25 @@ function buildManualDescription(item: BankReviewQueueItem, partnerName: string):
     return item.reference ? `${partnerName} · ${item.reference}` : partnerName;
   }
   return item.description || item.reference || item.counterparty_name || '';
+}
+
+function payloadText(item: BankReviewQueueItem, key: string): string {
+  const value = item.import_parsed_payload?.[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function getBankLineText(item: BankReviewQueueItem): string {
+  return payloadText(item, 'raw_description')
+    || payloadText(item, 'bank_description')
+    || item.import_parsed_payload?.card_descriptor?.raw
+    || item.description
+    || '';
+}
+
+function getDetectedMerchantName(item: BankReviewQueueItem): string {
+  return item.counterparty_name?.trim()
+    || item.import_parsed_payload?.card_descriptor?.merchant?.trim()
+    || '';
 }
 
 export function ReviewTab({
@@ -81,6 +102,10 @@ export function ReviewTab({
   const [manualDescriptionDirty, setManualDescriptionDirty] = useState(false);
   const [manualPartnerId, setManualPartnerId] = useState('');
   const [manualPartnerName, setManualPartnerName] = useState('');
+  const [manualPartnerType, setManualPartnerType] = useState('');
+  const [manualPartnerRegCode, setManualPartnerRegCode] = useState('');
+  const [partnerModalOpen, setPartnerModalOpen] = useState(false);
+  const [partnerCreateQuery, setPartnerCreateQuery] = useState('');
   const [manualAllocations, setManualAllocations] = useState<ManualAllocation[]>([]);
   const [dismissReason, setDismissReason] = useState('');
   // Bulk selection is a separate axis from the detail selection above: ticking a
@@ -94,6 +119,7 @@ export function ReviewTab({
   const [lastDraftTxIds, setLastDraftTxIds] = useState<string[]>([]);
   const [seenDraftBatch, setSeenDraftBatch] = useState<string[]>(autoDraftTxIds);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const partnerPickerRef = useRef<PartnerPickerHandle>(null);
 
   // A fresh batch of auto-created drafts arrived from the import commit. Compared
   // by identity, which is stable because the parent holds it in state.
@@ -176,6 +202,9 @@ export function ReviewTab({
     setManualAccountId(selectedItem.suggested_manual_account_id || '');
     setManualPartnerId(selectedItem.counterparty_partner_id || '');
     setManualPartnerName(selectedItem.counterparty_partner_name || '');
+    setManualPartnerType('');
+    setManualPartnerRegCode('');
+    setPartnerCreateQuery('');
     setManualDescriptionDirty(false);
     setManualDescription(
       buildManualDescription(selectedItem, selectedItem.counterparty_partner_name || '')
@@ -344,9 +373,11 @@ export function ReviewTab({
 
   // Picking a counterparty re-seeds the description, unless the accountant has
   // already typed their own.
-  const handlePartnerChange = (partnerId: string, partnerName: string) => {
+  const handlePartnerChange = (partnerId: string, partnerName: string, partnerType = '', partnerRegCode = '') => {
     setManualPartnerId(partnerId);
     setManualPartnerName(partnerName);
+    setManualPartnerType(partnerType);
+    setManualPartnerRegCode(partnerRegCode);
     if (!manualDescriptionDirty && selectedItem) {
       setManualDescription(buildManualDescription(selectedItem, partnerName));
     }
@@ -539,6 +570,8 @@ export function ReviewTab({
   const bulkTotal = bulkItems
     .filter((item) => !droppedIds.has(item.transaction_id))
     .reduce((sum, item) => sum + Math.abs(item.amount), 0);
+  const bankLineText = selectedItem ? getBankLineText(selectedItem) : '';
+  const merchantPrefill = selectedItem ? getDetectedMerchantName(selectedItem) : '';
 
   return (
     <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-hidden">
@@ -627,7 +660,23 @@ export function ReviewTab({
               <div className="flex flex-shrink-0 items-center gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-2.5">
                 <div className="min-w-0">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h2 className="truncate text-sm font-semibold text-slate-900">{selectedItem.counterparty_name || t('bankTransaction')}</h2>
+                    {!selectedItem.counterparty_partner_id ? (
+                      <PartnerPicker
+                        ref={partnerPickerRef}
+                        value={manualPartnerId}
+                        onChange={handlePartnerChange}
+                        onRequestCreate={(query) => { setPartnerCreateQuery(query); setPartnerModalOpen(true); }}
+                        initialQuery={partnerCreateQuery || selectedItem.counterparty_name || merchantPrefill}
+                        fallbackLabel={manualPartnerName}
+                        fallbackType={manualPartnerType}
+                        fallbackRegCode={manualPartnerRegCode}
+                        unselectedLabel={selectedItem.counterparty_name || t('unknownCounterparty')}
+                        sourceText={bankLineText}
+                        disabled={!!actionLoading}
+                      />
+                    ) : (
+                      <h2 className="truncate text-sm font-semibold text-slate-900">{selectedItem.counterparty_partner_name || selectedItem.counterparty_name || t('bankTransaction')}</h2>
+                    )}
                     {selectedItem.import_parsed_payload?.counterparty_source === 'card_descriptor' && (
                       // The statement carried no counterparty; this name was read
                       // out of the card descriptor, so say so rather than implying
@@ -647,7 +696,7 @@ export function ReviewTab({
                 <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
               <div className="flex min-h-0 flex-1 flex-col px-3 pb-1">
-                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} setManualPartnerId={handlePartnerChange} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} onPartnerCreated={(message) => setSuccessMessage(message)} />
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
               </div>
             </>
           )}
@@ -685,6 +734,24 @@ export function ReviewTab({
           </div>
         );
       })()}
+
+      <AddPartnerModal
+        open={partnerModalOpen}
+        onClose={() => {
+          setPartnerModalOpen(false);
+          window.setTimeout(() => partnerPickerRef.current?.open(), 0);
+        }}
+        onCreated={(partner) => {
+          accountingApi.invalidatePartnersCache();
+          handlePartnerChange(partner.id, partner.name, partner.type, partner.reg_code || '');
+          setPartnerModalOpen(false);
+          setSuccessMessage(t('partnerCreatedAndSelected', { name: partner.name }));
+          window.setTimeout(() => partnerPickerRef.current?.focus(), 0);
+        }}
+        defaultType="supplier"
+        prefillName={partnerCreateQuery || merchantPrefill}
+        sourceNote={bankLineText || undefined}
+      />
     </div>
   );
 }
