@@ -205,6 +205,15 @@ export function ImportTab({
     if (bankAccountId) void loadImportHistory(bankAccountId);
   }, [bankAccountId, loadImportHistory]);
 
+  const applyResolvedBankAccount = (resolvedAccountId?: string | null) => {
+    if (!resolvedAccountId || resolvedAccountId === bankAccountId) return;
+    historyRequestRef.current += 1;
+    setBankAccountId(resolvedAccountId);
+    setImportHistory([]);
+    setLastImportedBankDay(null);
+    setHistoryError(null);
+  };
+
   const counts = useMemo(() => {
     const review = previewRows.filter((row) => row.needs_review).length;
     const duplicate = previewRows.filter((row) => !row.needs_review && isDuplicateRow(row)).length;
@@ -277,6 +286,7 @@ export function ImportTab({
         bank_account_id: bankAccountId.trim() || undefined,
       });
       const parsed = await bankingApi.parseImportJob(created.job.id);
+      applyResolvedBankAccount(parsed.summary.bank_account_id);
       setJob(parsed.job);
       setPreviewRows(parsed.preview_rows);
       setSummary(parsed.summary);
@@ -305,6 +315,7 @@ export function ImportTab({
     setErrorMessage(null);
     try {
       const result = await bankingApi.parseImportJob(job.id);
+      applyResolvedBankAccount(result.summary.bank_account_id);
       setJob(result.job);
       setPreviewRows(result.preview_rows);
       setSummary(result.summary);
@@ -326,6 +337,7 @@ export function ImportTab({
   };
 
   const applyApprovalResult = (result: { job: BankImportJob; preview_rows: BankImportPreviewRow[]; summary: BankImportSummary }) => {
+    applyResolvedBankAccount(result.summary.bank_account_id);
     setJob(result.job);
     setPreviewRows(result.preview_rows);
     setSummary(result.summary);

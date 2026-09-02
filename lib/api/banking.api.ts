@@ -259,6 +259,7 @@ export type BankAccountRecord = {
 
 export type BankImportSummary = {
   source_type?: string;
+  bank_account_id?: string | null;
   parsed_row_count?: number;
   approved_row_count?: number;
   review_row_count?: number;
