@@ -55,7 +55,14 @@ export type AccountingSettings = {
   default_sales_account_id_third_country?: string | null;
   fiscal_year_start_month?: number;
   fiscal_year_start_day?: number;
+  rounding_account_id?: string | null;
+  rounding_tolerance?: number | string | null;
 };
+
+export type RoundingSettings = Partial<{
+  rounding_account_id: string | null;
+  rounding_tolerance: number | null;
+}>;
 
 export type SupplyTypeSalesDefaults = Partial<{
   default_sales_account_id_domestic: string | null;
@@ -378,6 +385,14 @@ export const accountingApi = {
     const response = await apiClient.put<ApiResponse<{ settings: AccountingSettings; warnings: string[] }>>(
       '/api/accounting/settings/sales-defaults',
       mapping
+    );
+    return response.data.data;
+  },
+
+  async updateRoundingSettings(settings: RoundingSettings) {
+    const response = await apiClient.put<ApiResponse<{ settings: AccountingSettings; warnings: string[] }>>(
+      '/api/accounting/settings/rounding',
+      settings
     );
     return response.data.data;
   },

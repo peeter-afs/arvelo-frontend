@@ -131,7 +131,7 @@ export function ImportTab({
   onReviewCountChange,
   onSummaryChange,
 }: {
-  onCommitted: (draftTxIds?: string[]) => void;
+  onCommitted: (draftTxIds?: string[], summary?: { imported_count: number }) => void;
   onReviewCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
@@ -164,6 +164,7 @@ export function ImportTab({
   const [selectedDraftIds, setSelectedDraftIds] = useState<Set<string>>(new Set());
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [isCreatingDrafts, setIsCreatingDrafts] = useState(false);
+  const [isUndoingDrafts, setIsUndoingDrafts] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const historyRequestRef = useRef(0);
 
@@ -401,10 +402,13 @@ export function ImportTab({
       setJob(result.job);
       setCommitSummary(result.summary);
       showToast.success(t('approvedBankRowsImported'));
-      await Promise.all([
-        loadDraftableOutgoing(result.job.id),
-        loadImportHistory(bankAccountId),
-      ]);
+      const followUps: Array<Promise<void>> = [loadImportHistory(bankAccountId)];
+      if (result.summary.auto_create_enabled === false) followUps.push(loadDraftableOutgoing(result.job.id));
+      else {
+        setDraftableOutgoing([]);
+        setSelectedDraftIds(new Set());
+      }
+      await Promise.all(followUps);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -426,6 +430,28 @@ export function ImportTab({
       setDraftError(getErrorMessage(error));
     } finally {
       setIsCreatingDrafts(false);
+    }
+  };
+
+  const handleUndoAutoDrafts = async () => {
+    const ids = commitSummary?.draft_transaction_ids || [];
+    if (ids.length === 0) return;
+    setIsUndoingDrafts(true);
+    setDraftError(null);
+    try {
+      const result = await bankingApi.undoAutoDrafts(ids);
+      setCommitSummary((current) => current ? {
+        ...current,
+        drafts_created: Math.max((current.drafts_created || 0) - result.deleted, 0),
+        drafts: (current.drafts || []).filter((item) => !result.deleted_transaction_ids.includes(item.transaction_id)),
+        draft_transaction_ids: (current.draft_transaction_ids || []).filter((id) => !result.deleted_transaction_ids.includes(id)),
+        already_drafted: 0,
+      } : current);
+      showToast.success(t('autoDraftsUndone', { count: result.deleted }));
+    } catch (error) {
+      setDraftError(getErrorMessage(error));
+    } finally {
+      setIsUndoingDrafts(false);
     }
   };
 
@@ -668,10 +694,12 @@ export function ImportTab({
               <KeyValue label={t('importedRows')} value={importedCount} />
               <KeyValue label={t('skippedDuplicates')} value={commitSummary.skipped_duplicate_count ?? counts.duplicate} />
               <KeyValue label={t('manuallyApproved')} value={counts.manuallyApproved} />
+              <KeyValue label={t('autoDraftsCreated')} value={commitSummary.drafts_created || 0} />
+              {(commitSummary.drafts_excluded?.length || 0) > 0 && <KeyValue label={t('autoDraftsExcluded')} value={commitSummary.drafts_excluded?.length || 0} />}
             </div>
             <InlineError message={errorMessage} />
             <div className="mt-auto flex flex-wrap gap-2 border-t border-slate-200 bg-slate-50 p-4">
-              <button onClick={() => onCommitted(commitSummary.draft_transaction_ids || [])} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]"><CheckCircle2 className="h-4 w-4" />{t('openReview', { count: importedCount })}</button>
+              <button onClick={() => onCommitted(commitSummary.draft_transaction_ids || [], { imported_count: importedCount })} className="inline-flex h-9 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]"><CheckCircle2 className="h-4 w-4" />{t('continueToAutoMatched')}</button>
               <button onClick={resetImport} className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"><FileUp className="h-4 w-4" />{t('importNext')}</button>
             </div>
           </section>
@@ -679,19 +707,57 @@ export function ImportTab({
           <section className="card flex min-h-[300px] flex-col overflow-hidden">
             <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3">
               <FileQuestion className="h-5 w-5 text-slate-400" />
-              <div><h2 className="text-sm font-semibold text-slate-900">{t('draftFromOutgoingTitle')}</h2><p className="text-[11px] text-slate-500">{t('optionalNextStep')}</p></div>
-              <button onClick={() => { setDraftableOutgoing([]); setSelectedDraftIds(new Set()); }} className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-800">{t('skip')}</button>
+              <div>
+                <h2 className="text-sm font-semibold text-slate-900">{(commitSummary.drafts_created || 0) > 0 ? t('autoDraftsCreated') : commitSummary.auto_create_enabled === false ? t('manualDraftsTitle') : t('draftFromOutgoingTitle')}</h2>
+                <p className="text-[11px] text-slate-500">{(commitSummary.drafts_created || 0) > 0 ? t('autoDraftsCreatedDescription') : t('optionalNextStep')}</p>
+              </div>
+              {commitSummary.auto_create_enabled === false && <button onClick={() => { setDraftableOutgoing([]); setSelectedDraftIds(new Set()); }} className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-800">{t('skip')}</button>}
             </div>
-            <InlineError message={draftError} />
+            <InlineError message={draftError || (commitSummary.drafts_errors?.length ? t('draftCreationErrors', { count: commitSummary.drafts_errors.length }) : null)} />
             <div className="min-h-0 flex-1 overflow-auto">
-              {isLoadingDrafts ? <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />{t('loading')}</div> : draftableOutgoing.length === 0 ? <div className="p-6 text-sm text-slate-500">{t('noDraftableOutgoing')}</div> : draftableOutgoing.map((item) => (
+              {(commitSummary.drafts_created || 0) > 0 ? (
+                <>
+                  {(commitSummary.drafts || []).map((item) => (
+                    <div key={item.transaction_id} className="flex items-start gap-3 border-b border-slate-100 px-4 py-2.5">
+                      <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${item.partner_id ? 'bg-emerald-500' : 'bg-amber-400'}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2"><span className="truncate text-xs font-medium text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</span><span className="ml-auto whitespace-nowrap font-mono text-xs font-semibold tabular-nums text-slate-900">{Math.abs(item.amount).toFixed(2)} {item.currency}</span></div>
+                        <div className="mt-0.5 flex items-center gap-2 text-[10px] text-slate-500"><span className="font-mono">{item.tx_date}</span><span className={item.partner_id ? 'text-emerald-700' : 'text-amber-700'}>{item.partner_id ? t('supplierFound') : t('supplierUndefined')}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                  {(commitSummary.drafts_excluded?.length || 0) > 0 && (
+                    <div className="border-t border-slate-200">
+                      <div className="bg-slate-50 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{t('excludedByRuleTitle')}</div>
+                      {commitSummary.drafts_excluded?.map((item) => (
+                        <div key={item.transaction_id} className="flex items-baseline gap-2 border-t border-slate-100 px-4 py-2 text-xs"><span className="min-w-0 flex-1 truncate text-slate-700">{item.counterparty_name || t('unknownCounterparty')}</span><span className="text-amber-700">{item.excluded_by || '—'}</span><span className="font-mono font-semibold tabular-nums">{Math.abs(item.amount).toFixed(2)} {item.currency}</span></div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : commitSummary.auto_create_enabled === false ? (
+                isLoadingDrafts ? <div className="flex h-full items-center justify-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />{t('loading')}</div> : draftableOutgoing.length === 0 ? <div className="p-6 text-sm text-slate-500">{t('noDraftableOutgoing')}</div> : draftableOutgoing.map((item) => (
                 <label key={item.transaction_id} className="flex cursor-pointer items-start gap-3 border-b border-slate-100 px-4 py-2.5 hover:bg-slate-50">
                   <input type="checkbox" checked={selectedDraftIds.has(item.transaction_id)} disabled={item.excluded} onChange={() => setSelectedDraftIds((current) => { const next = new Set(current); if (next.has(item.transaction_id)) next.delete(item.transaction_id); else next.add(item.transaction_id); return next; })} className="mt-1 h-4 w-4" />
                   <div className="min-w-0 flex-1"><div className="flex items-baseline gap-2"><span className="truncate text-xs font-medium text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</span><span className="ml-auto whitespace-nowrap font-mono text-xs font-semibold tabular-nums text-slate-900">{Math.abs(item.amount).toFixed(2)} {item.currency}</span></div><div className="mt-0.5 flex gap-2 text-[10px] text-slate-500"><span className="font-mono">{item.tx_date}</span><span className="truncate">{item.description || item.reference || '—'}</span>{item.excluded && <span className="ml-auto text-amber-700">{t('excludedByRule', { rule: item.excluded_by || '—' })}</span>}</div></div>
                 </label>
-              ))}
+                ))
+              ) : (
+                <>
+                  <div className="p-6 text-sm text-slate-500">{(commitSummary.already_drafted || 0) > 0 ? t('allOutgoingAlreadyDrafted', { count: commitSummary.already_drafted || 0 }) : t('noDraftableOutgoing')}</div>
+                  {(commitSummary.drafts_excluded?.length || 0) > 0 && (
+                    <div className="border-t border-slate-200">
+                      <div className="bg-slate-50 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{t('excludedByRuleTitle')}</div>
+                      {commitSummary.drafts_excluded?.map((item) => (
+                        <div key={item.transaction_id} className="flex items-baseline gap-2 border-t border-slate-100 px-4 py-2 text-xs"><span className="min-w-0 flex-1 truncate text-slate-700">{item.counterparty_name || t('unknownCounterparty')}</span><span className="text-amber-700">{item.excluded_by || '—'}</span><span className="font-mono font-semibold tabular-nums">{Math.abs(item.amount).toFixed(2)} {item.currency}</span></div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
-            {draftableOutgoing.length > 0 && <div className="flex justify-end border-t border-slate-200 bg-white px-4 py-2"><button onClick={() => void handleCreateDrafts()} disabled={selectedDraftIds.size === 0 || isCreatingDrafts} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white disabled:opacity-50">{isCreatingDrafts && <Loader2 className="h-4 w-4 animate-spin" />}{t('createDraftsButton', { count: selectedDraftIds.size })}</button></div>}
+            {(commitSummary.drafts_created || 0) > 0 && <div className="flex justify-end border-t border-slate-200 bg-white px-4 py-2"><button onClick={() => void handleUndoAutoDrafts()} disabled={isUndoingDrafts} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{isUndoingDrafts && <Loader2 className="h-4 w-4 animate-spin" />}{t('undoAutoDrafts')}</button></div>}
+            {commitSummary.auto_create_enabled === false && draftableOutgoing.length > 0 && <div className="flex justify-end border-t border-slate-200 bg-white px-4 py-2"><button onClick={() => void handleCreateDrafts()} disabled={selectedDraftIds.size === 0 || isCreatingDrafts} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white disabled:opacity-50">{isCreatingDrafts && <Loader2 className="h-4 w-4 animate-spin" />}{t('createDraftsButton', { count: selectedDraftIds.size })}</button></div>}
           </section>
         </div>
       )}

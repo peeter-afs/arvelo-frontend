@@ -54,7 +54,8 @@
     "security": "Turvallisuus",
     "auditLog": "Tarkastusloki",
     "autoCollapse": "Pienennä valikko tehtävässä",
-    "autoCollapseHint": "Kun avaat tehtävän, valikko pienenee kuvakepalkiksi. Poista asetus käytöstä, jos haluat pitää valikon aina leveänä."
+    "autoCollapseHint": "Kun avaat tehtävän, valikko pienenee kuvakepalkiksi. Poista asetus käytöstä, jos haluat pitää valikon aina leveänä.",
+    "help": "Ohjeet"
   },
   "accounting": {
     "chartOfAccounts": "Tilikartta",
@@ -388,6 +389,11 @@
     "matchReverted": "Match reverted",
     "revertMatch": "Revert match",
     "onlyAutoReady": "Auto-ready only",
+    "reviewPhaseAuto": "Automatically matched ({count})",
+    "reviewPhaseRest": "Remaining ({count})",
+    "showDraftedRows": "Show rows with drafts",
+    "draftedHiddenCount": "{count} rows with drafts hidden",
+    "draftTag": "DRAFT",
     "undo": "Undo",
     "matchScore": "Match",
     "matchTag": "MATCH → {invoice}",
@@ -489,6 +495,7 @@
     "approveAnywayShort": "Hyväksy silti",
     "commitAndSendToReview": "Vahvista ja lähetä tarkistukseen ({count})",
     "openReview": "Avaa tarkistus ({count})",
+    "continueToAutoMatched": "Continue: confirm automatically matched rows",
     "importNext": "Tuo seuraava",
     "checksTitle": "Tarkistukset",
     "balanceCheckOk": "Alku- ja loppusaldo täsmäävät tiliotteen summiin.",
@@ -510,6 +517,17 @@
     "duplicatesWillBeSkipped": "kaksoiskappaletta ohitetaan",
     "rowsImportedAndSent": "{count} riviä tuotu ja lähetetty tarkistukseen",
     "noDraftableOutgoing": "Tässä tuonnissa ei ole kulutositeluonnoksiin sopivia lähteviä tapahtumia.",
+    "autoDraftsCreated": "Automaattisesti luodut luonnokset",
+    "autoDraftsExcluded": "Säännöllä rajatut",
+    "autoDraftsCreatedDescription": "Nämä ostolaskuluonnokset luotiin tuonnin vahvistamisen yhteydessä.",
+    "supplierFound": "toimittaja löytyi",
+    "supplierUndefined": "toimittajaa ei määritetty",
+    "excludedByRuleTitle": "Rajattu säännöllä",
+    "undoAutoDrafts": "Peruuta luodut luonnokset",
+    "autoDraftsUndone": "{count} luonnosta peruutettiin",
+    "allOutgoingAlreadyDrafted": "{count} lähtevällä tapahtumalla oli jo luonnos.",
+    "manualDraftsTitle": "Luo luonnokset käsin",
+    "draftCreationErrors": "{count} luonnoksen luonti epäonnistui.",
     "skip": "Ohita",
     "loading": "Ladataan...",
     "cancelImport": "Keskeytä"
@@ -1040,5 +1058,26 @@
     "customerTemplate": "Asiakas · malli",
     "nextIssue": "Seuraava lähetys",
     "today": "tänään"
+  },
+  "guides": {
+    "title": "Ohjeet",
+    "subtitle": "Vaiheittaiset ohjeet Arvelon käyttöön.",
+    "readGuide": "Lue ohje",
+    "minutes": "n. {count} min",
+    "updatedAt": "Päivitetty {date}",
+    "backToGuides": "Kaikki ohjeet",
+    "contents": "Sisällys",
+    "guideShort": "Ohje",
+    "openGuide": "Avaa ohje",
+    "empty": "Ohjeita ei vielä ole.",
+    "notFoundTitle": "Ohjetta ei löytynyt",
+    "notFoundMessage": "Tätä ohjetta ei ole. Valitse ohje luettelosta.",
+    "fallbackNotice": "Ohjeet ovat toistaiseksi saatavilla vain viroksi.",
+    "category": {
+      "alustamine": "Aloittaminen",
+      "raamatupidamine": "Kirjanpito",
+      "arved": "Laskut",
+      "pank": "Pankki"
+    }
   }
 }

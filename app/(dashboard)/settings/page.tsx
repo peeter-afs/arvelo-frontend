@@ -8,9 +8,10 @@ import Link from 'next/link';
 import { Settings, User, Building, CreditCard, Bell, Shield, Globe, Database, RotateCcw, Sparkles, Upload, Users, UserPlus, Trash2, Loader2, KeyRound, Pencil, Plug, Landmark, Send } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getErrorMessage } from '@/lib/api/client';
-import { accountingApi, type AccountOption, type AccountingSettings, type OpeningBalanceImportStatus, type OpeningBalanceResetBackup, type SystemRoleMapping } from '@/lib/api/accounting.api';
+import { accountingApi, type AccountOption, type AccountingSettings, type OpeningBalanceImportStatus, type OpeningBalanceResetBackup, type RoundingSettings, type SystemRoleMapping } from '@/lib/api/accounting.api';
 import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
 import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyTypeSalesAccountsPanel';
+import { RoundingSettlementPanel } from '@/components/accounting/RoundingSettlementPanel';
 import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -251,6 +252,25 @@ export default function SettingsPage() {
         result.warnings?.length
           ? t('systemRolesSavedWithWarnings', { warnings: result.warnings.join('; ') })
           : t('salesDefaultsSaved')
+      );
+    } catch (error) {
+      setSettingsError(getErrorMessage(error));
+    } finally {
+      setRolesSaving(false);
+    }
+  };
+
+  const handleSaveRoundingSettings = async (settings: RoundingSettings) => {
+    setRolesSaving(true);
+    setSettingsError(null);
+    setSettingsSuccess(null);
+    try {
+      const result = await accountingApi.updateRoundingSettings(settings);
+      setAccountingSettings(result.settings);
+      setSettingsSuccess(
+        result.warnings?.length
+          ? t('systemRolesSavedWithWarnings', { warnings: result.warnings.join('; ') })
+          : t('roundingSettingsSaved')
       );
     } catch (error) {
       setSettingsError(getErrorMessage(error));
@@ -934,6 +954,15 @@ export default function SettingsPage() {
                     settings={accountingSettings}
                     saving={rolesSaving}
                     onSave={handleSaveSalesDefaults}
+                  />
+                )}
+
+                {canManageData && (
+                  <RoundingSettlementPanel
+                    accounts={roleAccounts}
+                    settings={accountingSettings}
+                    saving={rolesSaving}
+                    onSave={handleSaveRoundingSettings}
                   />
                 )}
 

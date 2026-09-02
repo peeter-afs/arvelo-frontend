@@ -162,6 +162,8 @@ export type BankReviewQueueItem = {
   top_candidates: BankMatchCandidate[];
   has_missing_receipt_placeholder: boolean;
   placeholder_invoice_id: string | null;
+  /** "active" while the receipt is still awaited, "promoted" once the draft was confirmed. */
+  placeholder_state?: string | null;
 };
 
 export type PaymentBatchListItem = {
@@ -278,6 +280,28 @@ export type BankImportCommitSummary = {
   skipped_duplicate_count?: number;
   approved_row_count?: number;
   draft_transaction_ids?: string[];
+  drafts_created?: number;
+  drafts?: Array<{
+    transaction_id: string;
+    invoice_id: string;
+    partner_id: string | null;
+    counterparty_name: string | null;
+    amount: number;
+    currency: string;
+    tx_date: string;
+  }>;
+  drafts_excluded?: Array<{
+    transaction_id: string;
+    excluded_by: string | null;
+    counterparty_name: string | null;
+    amount: number;
+    currency: string;
+    tx_date: string;
+  }>;
+  drafts_errors?: Array<{ transaction_id: string | null; error: string }>;
+  auto_create_enabled?: boolean;
+  already_drafted?: number;
+  strong_match_skipped?: number;
 };
 
 export type PaymentBatchSummary = {
@@ -397,10 +421,19 @@ export const bankingApi = {
     offset?: number;
     auto_matchable_only?: boolean;
     review_state?: 'pending' | 'reviewed';
+    hide_drafted?: boolean;
   }) {
     const response = await apiClient.get<ApiResponse<{
       items: BankReviewQueueItem[];
       total: number;
+      /** Queue size ignoring the review_state filter. */
+      total_all_states?: number;
+      counts: {
+        total: number;
+        auto_ready: number;
+        drafted: number;
+        pending_other: number;
+      };
     }>>('/api/banking/transactions/review-queue', { params });
     return response.data.data;
   },
@@ -574,7 +607,11 @@ export const bankingApi = {
   },
 
   async listDraftableOutgoing(importJobId: string) {
-    const response = await apiClient.get<ApiResponse<{ items: DraftableOutgoingItem[] }>>(
+    const response = await apiClient.get<ApiResponse<{
+      items: DraftableOutgoingItem[];
+      already_drafted: number;
+      strong_match_skipped: number;
+    }>>(
       `/api/banking/import-jobs/${importJobId}/draftable-outgoing`
     );
     return response.data.data;
@@ -582,7 +619,7 @@ export const bankingApi = {
 
   async bulkMarkMissingReceipt(transactionIds: string[]) {
     const response = await apiClient.post<ApiResponse<{
-      created: Array<{ transaction_id: string; invoice_id: string }>;
+      created: Array<{ transaction_id: string; invoice_id: string; partner_id: string | null }>;
       skipped: number;
       errors: Array<{ transaction_id: string; error: string }>;
     }>>('/api/banking/transactions/bulk-mark-missing-receipt', { transaction_ids: transactionIds });
@@ -593,6 +630,7 @@ export const bankingApi = {
     const response = await apiClient.post<ApiResponse<{
       deleted: number;
       skipped: number;
+      deleted_transaction_ids: string[];
     }>>('/api/banking/transactions/undo-auto-drafts', { transaction_ids: transactionIds });
     return response.data.data;
   },
@@ -634,7 +672,7 @@ export type DraftExclusionRule = {
   id: string;
   label: string;
   enabled: boolean;
-  field: 'counterparty_name' | 'counterparty_account' | 'reference' | 'description';
+  field: 'counterparty_name' | 'counterparty_account' | 'reference' | 'description' | 'counterparty_is_private_person';
   match: 'contains' | 'exact' | 'starts_with' | 'regex';
   value: string;
 };

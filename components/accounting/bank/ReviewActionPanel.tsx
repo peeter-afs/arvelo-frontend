@@ -473,20 +473,25 @@ export function ReviewActionPanel({
               <div className="flex flex-wrap items-center gap-3">
                 {selectedItem.placeholder_invoice_id && (
                   <Link
-                    href={`/invoices/${selectedItem.placeholder_invoice_id}/edit`}
+                    // A confirmed draft is posted and no longer editable, so it opens read-only.
+                    href={`/invoices/${selectedItem.placeholder_invoice_id}/${selectedItem.placeholder_state === 'promoted' ? 'preview' : 'edit'}`}
                     className="text-xs font-medium text-[var(--primary)] underline"
                   >
                     {t('openDraftInvoice')}
                   </Link>
                 )}
-                <button
-                  onClick={onDismissMissingReceipt}
-                  disabled={busy}
-                  className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                >
-                  {actionLoading === 'dismiss-missing-receipt' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {t('noReceiptExpected')}
-                </button>
+                {selectedItem.placeholder_state !== 'promoted' && (
+                  // Nothing left to dismiss once the invoice is confirmed: the reminders
+                  // stopped when it was posted.
+                  <button
+                    onClick={onDismissMissingReceipt}
+                    disabled={busy}
+                    className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+                  >
+                    {actionLoading === 'dismiss-missing-receipt' && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {t('noReceiptExpected')}
+                  </button>
+                )}
               </div>
             ) : (
               <PanelNotice>{t('willCreateDraft')} {t('noEntryYet')}</PanelNotice>

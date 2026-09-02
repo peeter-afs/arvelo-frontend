@@ -20,6 +20,7 @@ import { PartnerPicker, type PartnerPickerHandle } from './PartnerPicker';
 import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
+type ReviewPhase = 'auto' | 'rest';
 
 // Stable identity so the "new draft batch?" check below cannot loop when the
 // prop is omitted.
@@ -65,12 +66,14 @@ export function ReviewTab({
   onSummaryChange,
   autoDraftTxIds = NO_DRAFT_IDS,
   onAutoDraftsHandled,
+  initialPhase = 'rest',
 }: {
   refreshKey?: number;
   onCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
   autoDraftTxIds?: string[];
   onAutoDraftsHandled?: () => void;
+  initialPhase?: ReviewPhase;
 }) {
   const t = useTranslations('accounting');
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
@@ -82,6 +85,8 @@ export function ReviewTab({
   const [isQueueLoading, setIsQueueLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [queueTotal, setQueueTotal] = useState(0);
+  const [queueTotalAllStates, setQueueTotalAllStates] = useState(0);
+  const [queueBreakdown, setQueueBreakdown] = useState({ total: 0, auto_ready: 0, drafted: 0, pending_other: 0 });
   // Number of backend rows already scanned. This differs from items.length when
   // the client-side "auto ready" filter removes rows from a fetched page.
   const [scannedCount, setScannedCount] = useState(0);
@@ -92,8 +97,12 @@ export function ReviewTab({
   // Kept apart from errorMessage: reselecting a row reruns the candidate load,
   // which used to clear whatever error the last bulk action had just reported.
   const [candidateError, setCandidateError] = useState<string | null>(null);
-  const [reviewFilter, setReviewFilter] = useState<ReviewStateFilter>('all');
+  // Pending by default: a transaction that already has a draft purchase invoice has
+  // been decided on, and re-reading it in this queue every time is wasted work.
+  const [reviewFilter, setReviewFilter] = useState<ReviewStateFilter>('pending');
   const [autoMatchableOnly, setAutoMatchableOnly] = useState(false);
+  const [reviewPhase, setReviewPhase] = useState<ReviewPhase>(initialPhase);
+  const [hideDrafted, setHideDrafted] = useState(true);
   const [reviewNote, setReviewNote] = useState('');
   const [ignoreReason, setIgnoreReason] = useState('');
   const [manualAccountId, setManualAccountId] = useState('');
@@ -120,6 +129,15 @@ export function ReviewTab({
   const [seenDraftBatch, setSeenDraftBatch] = useState<string[]>(autoDraftTxIds);
   const selectAllRef = useRef<HTMLInputElement>(null);
   const partnerPickerRef = useRef<PartnerPickerHandle>(null);
+  const effectiveAutoMatchableOnly = reviewPhase === 'auto' || autoMatchableOnly;
+
+  useEffect(() => {
+    setReviewPhase(initialPhase);
+    if (initialPhase === 'auto') {
+      setReviewFilter('pending');
+      setAutoMatchableOnly(true);
+    }
+  }, [initialPhase, refreshKey]);
 
   // A fresh batch of auto-created drafts arrived from the import commit. Compared
   // by identity, which is stable because the parent holds it in state.
@@ -140,6 +158,7 @@ export function ReviewTab({
   const someSelected = items.some((item) => selectedIds.has(item.transaction_id));
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setIsQueueLoading(true);
       setErrorMessage(null);
@@ -151,13 +170,17 @@ export function ReviewTab({
           bankingApi.getReviewQueue({
             limit: REVIEW_PAGE_SIZE,
             offset: 0,
-            auto_matchable_only: autoMatchableOnly || undefined,
+            auto_matchable_only: effectiveAutoMatchableOnly || undefined,
             review_state: reviewFilter === 'all' ? undefined : reviewFilter,
+            hide_drafted: hideDrafted || undefined,
           }),
           accountingApi.getAccounts(),
         ]);
+        if (cancelled) return;
         setItems(queueResult.items);
         setQueueTotal(queueResult.total);
+        setQueueTotalAllStates(queueResult.total_all_states ?? queueResult.total);
+        setQueueBreakdown(queueResult.counts ?? { total: queueResult.total, auto_ready: 0, drafted: 0, pending_other: queueResult.total });
         setScannedCount(Math.min(REVIEW_PAGE_SIZE, queueResult.total));
         setAccounts(accountResult);
         setSelectedTransactionId((current) => (
@@ -165,15 +188,25 @@ export function ReviewTab({
             ? current
             : queueResult.items[0]?.transaction_id || null
         ));
+        if (reviewPhase === 'auto') {
+          if ((queueResult.counts?.auto_ready ?? 0) === 0) {
+            setReviewPhase('rest');
+            setAutoMatchableOnly(false);
+          } else {
+            setSelectedIds(new Set(queueResult.items.filter((item) => item.auto_match_ready).map((item) => item.transaction_id)));
+            setBulkConfirmOpen(true);
+          }
+        }
       } catch (error) {
-        setErrorMessage(getErrorMessage(error));
+        if (!cancelled) setErrorMessage(getErrorMessage(error));
       } finally {
-        setIsQueueLoading(false);
+        if (!cancelled) setIsQueueLoading(false);
       }
     };
 
     void load();
-  }, [autoMatchableOnly, reviewFilter, refreshKey]);
+    return () => { cancelled = true; };
+  }, [effectiveAutoMatchableOnly, hideDrafted, reviewFilter, refreshKey, reviewPhase]);
 
   useEffect(() => {
     onCountChange?.(queueTotal);
@@ -244,21 +277,26 @@ export function ReviewTab({
     let offset = 0;
     let total = 0;
     let refreshedItems: BankReviewQueueItem[] = [];
+    let totalAllStates = 0;
 
     do {
       const result = await bankingApi.getReviewQueue({
         limit: REVIEW_PAGE_SIZE,
         offset,
-        auto_matchable_only: autoMatchableOnly || undefined,
+        auto_matchable_only: effectiveAutoMatchableOnly || undefined,
         review_state: reviewFilter === 'all' ? undefined : reviewFilter,
+        hide_drafted: hideDrafted || undefined,
       });
       refreshedItems = mergeQueueItems(refreshedItems, result.items);
       total = result.total;
+      totalAllStates = result.total_all_states ?? result.total;
+      setQueueBreakdown(result.counts ?? { total: result.total, auto_ready: 0, drafted: 0, pending_other: result.total });
       offset += REVIEW_PAGE_SIZE;
     } while (offset < targetScannedCount && offset < total);
 
     setItems(refreshedItems);
     setQueueTotal(total);
+    setQueueTotalAllStates(totalAllStates);
     setScannedCount(Math.min(offset, total));
     const nextSelected = preferredTransactionId && refreshedItems.some((item) => item.transaction_id === preferredTransactionId)
       ? preferredTransactionId
@@ -274,11 +312,14 @@ export function ReviewTab({
       const result = await bankingApi.getReviewQueue({
         limit: REVIEW_PAGE_SIZE,
         offset: scannedCount,
-        auto_matchable_only: autoMatchableOnly || undefined,
+        auto_matchable_only: effectiveAutoMatchableOnly || undefined,
         review_state: reviewFilter === 'all' ? undefined : reviewFilter,
+        hide_drafted: hideDrafted || undefined,
       });
       setItems((current) => mergeQueueItems(current, result.items));
       setQueueTotal(result.total);
+      setQueueTotalAllStates(result.total_all_states ?? result.total);
+      setQueueBreakdown(result.counts ?? { total: result.total, auto_ready: 0, drafted: 0, pending_other: result.total });
       setScannedCount(Math.min(scannedCount + REVIEW_PAGE_SIZE, result.total));
       setSelectedTransactionId((current) => current || result.items[0]?.transaction_id || null);
     } catch (error) {
@@ -481,7 +522,12 @@ export function ReviewTab({
       setSelectedIds(new Set());
       setDroppedIds(new Set());
       setBulkConfirmOpen(false);
-      await refreshQueue();
+      if (reviewPhase === 'auto' && result.auto_matched.length > 0) {
+        setReviewPhase('rest');
+        setAutoMatchableOnly(false);
+      } else {
+        await refreshQueue();
+      }
     });
   };
 
@@ -507,9 +553,15 @@ export function ReviewTab({
   };
 
   const queueCounts = {
-    total: items.length,
-    autoReady: items.filter((item) => item.auto_match_ready).length,
-    reviewed: items.filter((item) => item.review_state === 'reviewed').length,
+    total: queueTotal,
+    autoReady: queueBreakdown.auto_ready,
+    // Progress is about the whole queue, not the loaded page: with the default
+    // "Ootel" filter the reviewed rows are not among the items at all, so they are
+    // counted as the difference between the unfiltered queue and what is pending.
+    reviewed: reviewFilter === 'pending'
+      ? Math.max(queueTotalAllStates - queueTotal, 0)
+      : items.filter((item) => item.review_state === 'reviewed').length,
+    progressTotal: reviewFilter === 'pending' ? queueTotalAllStates : queueTotal,
   };
 
   const selectedIndex = selectedItem
@@ -534,11 +586,11 @@ export function ReviewTab({
         { label: t('queueItems'), value: queueCounts.total },
         { label: t('autoMatchReady'), value: queueCounts.autoReady, color: 'var(--pos, #0e7b5a)' },
         { label: t('needsReview'), value: queueCounts.total - queueCounts.autoReady },
-        { label: t('reviewed'), value: `${queueCounts.reviewed}/${queueCounts.total}` },
+        { label: t('reviewed'), value: `${queueCounts.reviewed}/${queueCounts.progressTotal}` },
       ],
-      progress: { label: t('reviewed'), done: queueCounts.reviewed, total: queueCounts.total },
+      progress: { label: t('reviewed'), done: queueCounts.reviewed, total: queueCounts.progressTotal },
     });
-  }, [onSummaryChange, queueCounts.autoReady, queueCounts.reviewed, queueCounts.total, t]);
+  }, [onSummaryChange, queueCounts.autoReady, queueCounts.reviewed, queueCounts.progressTotal, queueCounts.total, t]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -564,7 +616,9 @@ export function ReviewTab({
     setBulkConfirmOpen(true);
   };
 
-  const reviewCount = selectedIds.size > 0 ? autoReadySelected.length : queueCounts.autoReady;
+  const reviewCount = selectedIds.size > 0
+    ? autoReadySelected.length
+    : items.filter((item) => item.auto_match_ready).length;
   const hasMoreQueueItems = scannedCount < queueTotal;
   const remainingQueueItems = Math.max(queueTotal - items.length, 0);
   const bulkTotal = bulkItems
@@ -575,6 +629,16 @@ export function ReviewTab({
 
   return (
     <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-hidden">
+      <div className="card flex h-[34px] flex-shrink-0 items-center overflow-hidden text-[11.5px]">
+        <div className={`flex h-full flex-1 items-center gap-2 border-r border-slate-200 px-3 ${reviewPhase === 'auto' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
+          <span className="font-mono font-bold">1.</span>
+          <span className="font-semibold">{t('reviewPhaseAuto', { count: queueBreakdown.auto_ready })}</span>
+        </div>
+        <div className={`flex h-full flex-1 items-center gap-2 px-3 ${reviewPhase === 'rest' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
+          <span className="font-mono font-bold">2.</span>
+          <span className="font-semibold">{t('reviewPhaseRest', { count: queueBreakdown.pending_other })}</span>
+        </div>
+      </div>
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[420px_minmax(0,1fr)]">
         <aside className="card flex min-h-0 flex-col overflow-hidden">
           <div className="flex h-[38px] flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-[11px]">
@@ -583,10 +647,13 @@ export function ReviewTab({
               {t('transactions')} · {items.length < queueTotal ? `${items.length}/${queueTotal}` : items.length}
             </h2>
             <div className="flex-1" />
-            <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
+            {reviewPhase === 'rest' && <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
               <option value="all">{t('all')}</option><option value="pending">{t('pending')}</option><option value="reviewed">{t('reviewed')}</option>
-            </select>
-            <button onClick={() => setAutoMatchableOnly((value) => !value)} aria-pressed={autoMatchableOnly} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${autoMatchableOnly ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>{t('onlyAutoReady')}</button>
+            </select>}
+            {reviewPhase === 'rest' && <button onClick={() => setAutoMatchableOnly((value) => !value)} aria-pressed={autoMatchableOnly} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${autoMatchableOnly ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>{t('onlyAutoReady')}</button>}
+            {reviewPhase === 'rest' && <button onClick={() => setHideDrafted((value) => !value)} role="switch" aria-checked={!hideDrafted} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${!hideDrafted ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>
+              {hideDrafted ? t('draftedHiddenCount', { count: queueBreakdown.drafted }) : t('showDraftedRows')}
+            </button>}
             <button onClick={() => void refreshQueue(selectedTransactionId)} aria-label="Refresh" className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><RefreshCw className="h-4 w-4" /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -604,8 +671,8 @@ export function ReviewTab({
                     </div>
                     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] text-slate-500">
                       <span className="min-w-0 truncate">{item.reference || item.description || t('noReference')}</span><span className="flex-shrink-0">· {item.tx_date}</span>
-                      <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? ((item.auto_match_invoice_count || 1) > 1 ? t('matchTagMulti', { count: item.auto_match_invoice_count || 1 }) : t('matchTag', { invoice: item.auto_match_summary.invoice_number })) : t('awaitingDecision')}
+                      <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary ? 'bg-emerald-50 text-emerald-700' : item.has_missing_receipt_placeholder ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? ((item.auto_match_invoice_count || 1) > 1 ? t('matchTagMulti', { count: item.auto_match_invoice_count || 1 }) : t('matchTag', { invoice: item.auto_match_summary.invoice_number })) : item.has_missing_receipt_placeholder ? t('draftTag') : t('awaitingDecision')}
                       </span>
                     </div>
                   </button>
@@ -705,7 +772,7 @@ export function ReviewTab({
 
       <BankFooterBar status={bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : selectedIds.size > 0 ? `${t('selectedCount', { count: selectedIds.size })} · ${autoReadySelected.length} ${t('autoReady')}` : t('autoReadyCount', { count: queueCounts.autoReady })}>
         {bulkConfirmOpen ? <button onClick={() => setBulkConfirmOpen(false)} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('back')}</button> : selectedIds.size > 0 ? <button onClick={() => setSelectedIds(new Set())} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('clearSelection')}</button> : queueCounts.autoReady > 0 ? <button onClick={selectAutoReady} className="h-8 rounded-lg px-3 text-xs text-[var(--primary)] hover:bg-orange-50">{t('selectAllAutoReady')}</button> : null}
-        {!bulkConfirmOpen && draftableSelected.length > 0 && <button onClick={handleBulkCreateDrafts} disabled={!!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{actionLoading === 'bulk-drafts' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />} {t('createDraftsButton', { count: draftableSelected.length })}</button>}
+        {!hideDrafted && !bulkConfirmOpen && draftableSelected.length > 0 && <button onClick={handleBulkCreateDrafts} disabled={!!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{actionLoading === 'bulk-drafts' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />} {t('createDraftsButton', { count: draftableSelected.length })}</button>}
         <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>
       </BankFooterBar>
 

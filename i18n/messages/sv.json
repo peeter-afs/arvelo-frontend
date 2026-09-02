@@ -54,7 +54,8 @@
     "security": "Säkerhet",
     "auditLog": "Granskningslogg",
     "autoCollapse": "Minimera menyn under en uppgift",
-    "autoCollapseHint": "När du öppnar en uppgift minimeras menyn till ett ikonfält. Stäng av inställningen om du alltid vill behålla den breda menyn."
+    "autoCollapseHint": "När du öppnar en uppgift minimeras menyn till ett ikonfält. Stäng av inställningen om du alltid vill behålla den breda menyn.",
+    "help": "Guider"
   },
   "accounting": {
     "chartOfAccounts": "Kontoplan",
@@ -388,6 +389,11 @@
     "matchReverted": "Match reverted",
     "revertMatch": "Revert match",
     "onlyAutoReady": "Auto-ready only",
+    "reviewPhaseAuto": "Automatically matched ({count})",
+    "reviewPhaseRest": "Remaining ({count})",
+    "showDraftedRows": "Show rows with drafts",
+    "draftedHiddenCount": "{count} rows with drafts hidden",
+    "draftTag": "DRAFT",
     "undo": "Undo",
     "matchScore": "Match",
     "matchTag": "MATCH → {invoice}",
@@ -489,6 +495,7 @@
     "approveAnywayShort": "Godkänn ändå",
     "commitAndSendToReview": "Bekräfta och skicka till granskning ({count})",
     "openReview": "Öppna granskning ({count})",
+    "continueToAutoMatched": "Continue: confirm automatically matched rows",
     "importNext": "Importera nästa",
     "checksTitle": "Kontroller",
     "balanceCheckOk": "Ingående och utgående saldo stämmer med kontoutdragets summor.",
@@ -510,6 +517,17 @@
     "duplicatesWillBeSkipped": "dubbletter hoppas över",
     "rowsImportedAndSent": "{count} rader importerades och skickades till granskning",
     "noDraftableOutgoing": "Den här importen har inga utgående transaktioner som passar för utgiftsutkast.",
+    "autoDraftsCreated": "Automatiskt skapade utkast",
+    "autoDraftsExcluded": "Undantagna enligt regel",
+    "autoDraftsCreatedDescription": "Dessa inköpsfakturautkast skapades när importen bekräftades.",
+    "supplierFound": "leverantör hittad",
+    "supplierUndefined": "leverantör saknas",
+    "excludedByRuleTitle": "Undantagna enligt regel",
+    "undoAutoDrafts": "Ångra skapade utkast",
+    "autoDraftsUndone": "{count} utkast ångrades",
+    "allOutgoingAlreadyDrafted": "{count} utgående transaktioner hade redan ett utkast.",
+    "manualDraftsTitle": "Skapa utkast manuellt",
+    "draftCreationErrors": "Det gick inte att skapa {count} utkast.",
     "skip": "Hoppa över",
     "loading": "Laddar...",
     "cancelImport": "Avbryt"
@@ -1040,5 +1058,26 @@
     "customerTemplate": "Kund · mall",
     "nextIssue": "Nästa utfärdande",
     "today": "idag"
+  },
+  "guides": {
+    "title": "Guider",
+    "subtitle": "Steg-för-steg-guider för att arbeta i Arvelo.",
+    "readGuide": "Läs guiden",
+    "minutes": "ca {count} min",
+    "updatedAt": "Uppdaterad {date}",
+    "backToGuides": "Alla guider",
+    "contents": "Innehåll",
+    "guideShort": "Guide",
+    "openGuide": "Öppna guiden",
+    "empty": "Inga guider ännu.",
+    "notFoundTitle": "Guiden hittades inte",
+    "notFoundMessage": "Guiden finns inte. Välj en guide i listan.",
+    "fallbackNotice": "Guiderna finns för närvarande endast på estniska.",
+    "category": {
+      "alustamine": "Kom igång",
+      "raamatupidamine": "Bokföring",
+      "arved": "Fakturor",
+      "pank": "Bank"
+    }
   }
 }
