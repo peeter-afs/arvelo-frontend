@@ -19,6 +19,21 @@ export type BankImportJob = {
   updated_at: string;
 };
 
+export type BankImportHistoryItem = {
+  id: string;
+  bank_account_id: string | null;
+  status: string;
+  source_type: string | null;
+  file_name: string | null;
+  statement_date_from: string | null;
+  statement_date_to: string | null;
+  parsed_row_count: number;
+  imported_count: number;
+  skipped_duplicate_count: number;
+  created_at: string;
+  completed_at: string | null;
+};
+
 export type BankImportPreviewRow = {
   row_no: number;
   tx_date: string | null;
@@ -339,6 +354,14 @@ export const bankingApi = {
     bank_account_id?: string;
   }) {
     const response = await apiClient.post<ApiResponse<{ job: BankImportJob }>>('/api/banking/import-jobs', payload);
+    return response.data.data;
+  },
+
+  async listImportJobs(params?: { bank_account_id?: string; limit?: number }) {
+    const response = await apiClient.get<ApiResponse<{
+      items: BankImportHistoryItem[];
+      last_imported_bank_day: string | null;
+    }>>('/api/banking/import-jobs', { params });
     return response.data.data;
   },
 

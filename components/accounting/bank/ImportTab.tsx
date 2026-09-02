@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState, type DragEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
   Check,
@@ -18,6 +18,7 @@ import {
   bankingApi,
   type BankAccountRecord,
   type BankImportCommitSummary,
+  type BankImportHistoryItem,
   type BankImportJob,
   type BankImportPreviewRow,
   type BankImportSummary,
@@ -117,6 +118,14 @@ function KeyValue({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function formatBankDay(value: string | null, locale: string): string {
+  if (!value) return '—';
+  const date = new Date(`${value}T00:00:00Z`);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(date);
+}
+
 export function ImportTab({
   onCommitted,
   onReviewCountChange,
@@ -127,6 +136,7 @@ export function ImportTab({
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
   const t = useTranslations('accounting');
+  const locale = useLocale();
   const [file, setFile] = useState<File | null>(null);
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]);
   const [bankAccountId, setBankAccountId] = useState('');
@@ -134,7 +144,10 @@ export function ImportTab({
   const [previewRows, setPreviewRows] = useState<BankImportPreviewRow[]>([]);
   const [summary, setSummary] = useState<BankImportSummary | null>(null);
   const [commitSummary, setCommitSummary] = useState<BankImportCommitSummary | null>(null);
-  const [lastImportedCount, setLastImportedCount] = useState<number | null>(null);
+  const [importHistory, setImportHistory] = useState<BankImportHistoryItem[]>([]);
+  const [lastImportedBankDay, setLastImportedBankDay] = useState<string | null>(null);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
   const [detectedFormat, setDetectedFormat] = useState<ImportFormat | null>(null);
@@ -152,8 +165,27 @@ export function ImportTab({
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [isCreatingDrafts, setIsCreatingDrafts] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
+  const historyRequestRef = useRef(0);
 
   const stage: ImportStage = commitSummary ? 'committed' : job ? 'parsed' : 'start';
+
+  const loadImportHistory = useCallback(async (accountId: string) => {
+    if (!accountId) return;
+    const requestId = ++historyRequestRef.current;
+    setIsLoadingHistory(true);
+    setHistoryError(null);
+    try {
+      const result = await bankingApi.listImportJobs({ bank_account_id: accountId, limit: 8 });
+      if (requestId !== historyRequestRef.current) return;
+      setImportHistory(result.items);
+      setLastImportedBankDay(result.last_imported_bank_day);
+    } catch (error) {
+      if (requestId !== historyRequestRef.current) return;
+      setHistoryError(getErrorMessage(error));
+    } finally {
+      if (requestId === historyRequestRef.current) setIsLoadingHistory(false);
+    }
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -168,6 +200,10 @@ export function ImportTab({
     };
     void load();
   }, []);
+
+  useEffect(() => {
+    if (bankAccountId) void loadImportHistory(bankAccountId);
+  }, [bankAccountId, loadImportHistory]);
 
   const counts = useMemo(() => {
     const review = previewRows.filter((row) => row.needs_review).length;
@@ -192,7 +228,7 @@ export function ImportTab({
   useEffect(() => {
     const cells: BankInlineSummaryData['cells'] = stage === 'start'
       ? [
-          { label: t('lastImport'), value: lastImportedCount ?? '—' },
+          { label: t('lastBankDay'), value: formatBankDay(lastImportedBankDay, locale) },
           { label: t('pendingInReview'), value: '—' },
         ]
       : stage === 'parsed'
@@ -207,7 +243,7 @@ export function ImportTab({
             { label: t('pendingInReview'), value: commitSummary?.imported_count ?? 0 },
           ];
     onSummaryChange?.({ cells });
-  }, [commitSummary, counts, lastImportedCount, onSummaryChange, stage, t]);
+  }, [commitSummary, counts, lastImportedBankDay, locale, onSummaryChange, stage, t]);
 
   useEffect(() => {
     onReviewCountChange?.(stage === 'parsed' ? counts.review : 0);
@@ -281,7 +317,11 @@ export function ImportTab({
   };
 
   const handleBankAccountIdChange = (value: string) => {
+    historyRequestRef.current += 1;
     setBankAccountId(value);
+    setImportHistory([]);
+    setLastImportedBankDay(null);
+    setHistoryError(null);
     if (pendingMessage && value.trim()) setPendingMessage(t('bankAccountIdFilledReupload'));
   };
 
@@ -348,9 +388,11 @@ export function ImportTab({
       const result = await bankingApi.commitImportJob(job.id);
       setJob(result.job);
       setCommitSummary(result.summary);
-      setLastImportedCount(counts.ready);
       showToast.success(t('approvedBankRowsImported'));
-      await loadDraftableOutgoing(result.job.id);
+      await Promise.all([
+        loadDraftableOutgoing(result.job.id),
+        loadImportHistory(bankAccountId),
+      ]);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -399,7 +441,8 @@ export function ImportTab({
       <ImportSteps stage={stage} />
 
       {stage === 'start' && (
-        <section className="card flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[1.35fr_1fr]">
+        <section className="card flex min-h-0 flex-col overflow-hidden">
           <label
             onDrop={handleDrop}
             onDragOver={(event) => { event.preventDefault(); setIsDragging(true); }}
@@ -449,6 +492,39 @@ export function ImportTab({
             )}
           </div>
         </section>
+
+        <section className="card flex min-h-[240px] flex-col overflow-hidden">
+          <div className="border-b border-slate-200 px-4 py-3">
+            <h2 className="text-sm font-semibold text-slate-900">{t('previousImports')}</h2>
+            <p className="mt-0.5 text-[11px] text-slate-500">{t('previousImportsBankDays')}</p>
+          </div>
+          <InlineError message={historyError} />
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {isLoadingHistory ? (
+              <div className="flex h-full min-h-[160px] items-center justify-center gap-2 text-xs text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />{t('loading')}</div>
+            ) : importHistory.length === 0 ? (
+              <div className="flex h-full min-h-[160px] items-center justify-center px-6 text-center text-xs text-slate-500">{t('noPreviousImports')}</div>
+            ) : importHistory.map((item) => (
+              <div key={item.id} className="border-b border-slate-100 px-4 py-2.5 last:border-b-0">
+                <div className="flex items-start gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-semibold text-slate-900" title={item.file_name || undefined}>{item.file_name || t('statementFile')}</div>
+                    <div className="mt-1 font-mono text-[10.5px] tabular-nums text-slate-500">
+                      {item.statement_date_from && item.statement_date_to
+                        ? `${formatBankDay(item.statement_date_from, locale)} – ${formatBankDay(item.statement_date_to, locale)}`
+                        : t('bankDayUnavailable')}
+                    </div>
+                    <div className="mt-1 text-[10.5px] text-slate-500">{t('importHistoryCounts', { rows: item.parsed_row_count, duplicates: item.skipped_duplicate_count })}</div>
+                  </div>
+                  <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === 'imported' ? 'bg-emerald-50 text-emerald-700' : item.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                    {item.status === 'imported' ? t('importedCountShort', { count: item.imported_count }) : item.status === 'failed' ? t('importFailed') : formatLabel(item.status)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+        </div>
       )}
 
       {stage === 'parsed' && job && (

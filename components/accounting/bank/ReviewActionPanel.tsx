@@ -118,7 +118,9 @@ export function ReviewActionPanel({
   const [invoiceQuery, setInvoiceQuery] = useState('');
   const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
   const [showNoteInput, setShowNoteInput] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);
+  // null follows the active route's default: transaction context is essential
+  // on the missing-document route, while the other routes stay compact.
+  const [showDetails, setShowDetails] = useState<boolean | null>(null);
   const [itemId, setItemId] = useState(selectedItem.transaction_id);
 
   if (itemId !== selectedItem.transaction_id) {
@@ -127,7 +129,7 @@ export function ReviewActionPanel({
     setInvoiceQuery('');
     setSelectedInvoiceId('');
     setShowNoteInput(false);
-    setShowDetails(false);
+    setShowDetails(null);
   }
 
   const isOutgoing = selectedItem.amount < 0;
@@ -146,6 +148,7 @@ export function ReviewActionPanel({
         : isOutgoing && !hasKnownCounterparty
           ? 'doc'
           : 'account');
+  const detailsExpanded = showDetails ?? activeRoute === 'doc';
 
   const busy = !!actionLoading;
   const planInvoices = autoMatchPlan
@@ -255,7 +258,10 @@ export function ReviewActionPanel({
         {routes.filter((entry) => !entry.hidden).map((entry) => (
           <button
             key={entry.key}
-            onClick={() => setRoute(entry.key)}
+            onClick={() => {
+              setRoute(entry.key);
+              setShowDetails(entry.key === 'doc');
+            }}
             className={`-mb-px flex items-center gap-1.5 border-b-2 px-1 py-2 text-xs font-semibold transition-colors ${
               activeRoute === entry.key
                 ? 'border-[var(--primary)] text-slate-900'
@@ -510,14 +516,14 @@ export function ReviewActionPanel({
         )}
 
         <div className="card overflow-hidden">
-          <button onClick={() => setShowDetails((value) => !value)} className="flex w-full items-center justify-between px-4 py-3 text-left">
+          <button onClick={() => setShowDetails(!detailsExpanded)} className="flex w-full items-center justify-between px-4 py-3 text-left">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">{t('transactionDetails')}</h2>
               <p className="text-xs text-slate-500">{t('transactionDetailsDescription')}</p>
             </div>
-            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${detailsExpanded ? 'rotate-180' : ''}`} />
           </button>
-          {showDetails && (
+          {detailsExpanded && (
             <div className="grid gap-3 border-t border-slate-200 p-4 lg:grid-cols-2">
               <InfoBox label={t('bankAccount')} value={selectedItem.bank_account_name || selectedItem.bank_account_iban || '-'} />
               <InfoBox label={t('counterpartyAccount')} value={selectedItem.counterparty_account || '-'} />
