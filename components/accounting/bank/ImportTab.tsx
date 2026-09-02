@@ -126,6 +126,18 @@ function formatBankDay(value: string | null, locale: string): string {
     : new Intl.DateTimeFormat(locale, { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 
+/** The bank account of the newest committed import, else of the newest job at all.
+ *  Used only to pick a sensible default account; never blocks the import view. */
+async function findMostRecentlyImportedAccount(): Promise<string | null> {
+  try {
+    const recent = await bankingApi.listImportJobs({ limit: 8 });
+    const committed = recent.items.find((item) => item.status === 'imported' && item.bank_account_id);
+    return committed?.bank_account_id || recent.items.find((item) => item.bank_account_id)?.bank_account_id || null;
+  } catch {
+    return null;
+  }
+}
+
 export function ImportTab({
   onCommitted,
   onReviewCountChange,
@@ -194,7 +206,15 @@ export function ImportTab({
         const items = await bankingApi.listBankAccounts();
         const activeItems = items.filter((item) => item.is_active);
         setBankAccounts(activeItems);
-        setBankAccountId((current) => current || activeItems[0]?.id || '');
+        // Open on the account someone actually imports into. Picking the first one
+        // in the list showed a stale "latest bank day" whenever the newest statement
+        // belonged to another account.
+        const recentAccountId = await findMostRecentlyImportedAccount();
+        setBankAccountId((current) => {
+          if (current) return current;
+          if (recentAccountId && activeItems.some((item) => item.id === recentAccountId)) return recentAccountId;
+          return activeItems[0]?.id || '';
+        });
       } catch {
         // File selection remains available; the inline CSV validation explains a missing account.
       }
@@ -555,7 +575,7 @@ export function ImportTab({
                     <div className="mt-1 text-[10.5px] text-slate-500">{t('importHistoryCounts', { rows: item.parsed_row_count, duplicates: item.skipped_duplicate_count })}</div>
                   </div>
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === 'imported' ? 'bg-emerald-50 text-emerald-700' : item.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
-                    {item.status === 'imported' ? t('importedCountShort', { count: item.imported_count }) : item.status === 'failed' ? t('importFailed') : formatLabel(item.status)}
+                    {item.status === 'imported' ? t('importedCountShort', { count: item.imported_count }) : item.status === 'failed' ? t('importFailed') : t('importNotCommitted')}
                   </span>
                 </div>
               </div>

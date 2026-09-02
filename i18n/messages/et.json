@@ -683,6 +683,7 @@
     "importHistoryCounts": "{rows} rida · {duplicates} duplikaati",
     "importedCountShort": "Imporditud {count}",
     "importFailed": "Ebaõnnestus",
+    "importNotCommitted": "Kinnitamata",
     "pendingInReview": "Ülevaatuses ootel",
     "statementPeriodOk": "Väljavõtte perioodis ei tuvastatud kattuvust ega lünka.",
     "rowsReady": "rida valmis",

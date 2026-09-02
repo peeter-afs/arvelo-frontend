@@ -683,6 +683,7 @@
     "importHistoryCounts": "{rows} rows · {duplicates} duplicates",
     "importedCountShort": "Imported {count}",
     "importFailed": "Failed",
+    "importNotCommitted": "Not committed",
     "pendingInReview": "Pending in review",
     "statementPeriodOk": "No overlap or gap was detected in the statement period.",
     "rowsReady": "rows ready",

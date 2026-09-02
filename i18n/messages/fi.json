@@ -511,6 +511,7 @@
     "importHistoryCounts": "{rows} riviä · {duplicates} kaksoiskappaletta",
     "importedCountShort": "Tuotu {count}",
     "importFailed": "Epäonnistui",
+    "importNotCommitted": "Vahvistamatta",
     "pendingInReview": "Odottaa tarkistusta",
     "statementPeriodOk": "Tiliotteen jaksossa ei havaittu päällekkäisyyttä tai aukkoa.",
     "rowsReady": "riviä valmiina",

@@ -511,6 +511,7 @@
     "importHistoryCounts": "{rows} rader · {duplicates} dubbletter",
     "importedCountShort": "Importerade {count}",
     "importFailed": "Misslyckades",
+    "importNotCommitted": "Inte bekräftad",
     "pendingInReview": "Väntar på granskning",
     "statementPeriodOk": "Ingen överlappning eller lucka upptäcktes i kontoutdragsperioden.",
     "rowsReady": "rader klara",
