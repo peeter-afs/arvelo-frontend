@@ -17,7 +17,8 @@ import { bankingApi, type BankAutoMatchPlan, type BankAutoMatchReason, type Bank
 import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { BankFooterBar, type BankInlineSummaryData } from './shared';
 import { PartnerPicker, type PartnerPickerHandle } from './PartnerPicker';
-import { ReviewActionPanel, type ManualAllocation } from './ReviewActionPanel';
+import { ReviewActionPanel } from './ReviewActionPanel';
+import { emptyManualLine, manualLinesReady, parseManualAmount, type ManualPostLine } from './ManualSplitEditor';
 
 type ReviewStateFilter = 'all' | 'pending' | 'reviewed';
 type ReviewPhase = 'auto' | 'rest';
@@ -105,7 +106,7 @@ export function ReviewTab({
   const [hideDrafted, setHideDrafted] = useState(true);
   const [reviewNote, setReviewNote] = useState('');
   const [ignoreReason, setIgnoreReason] = useState('');
-  const [manualAccountId, setManualAccountId] = useState('');
+  const [manualLines, setManualLines] = useState<ManualPostLine[]>([emptyManualLine()]);
   const [manualDescription, setManualDescription] = useState('');
   // Once the accountant edits the description we stop regenerating it.
   const [manualDescriptionDirty, setManualDescriptionDirty] = useState(false);
@@ -115,7 +116,6 @@ export function ReviewTab({
   const [manualPartnerRegCode, setManualPartnerRegCode] = useState('');
   const [partnerModalOpen, setPartnerModalOpen] = useState(false);
   const [partnerCreateQuery, setPartnerCreateQuery] = useState('');
-  const [manualAllocations, setManualAllocations] = useState<ManualAllocation[]>([]);
   const [dismissReason, setDismissReason] = useState('');
   // Bulk selection is a separate axis from the detail selection above: ticking a
   // checkbox never changes which transaction the right-hand panel shows.
@@ -224,7 +224,6 @@ export function ReviewTab({
       setSuggestedCandidates([]);
       setAutoMatchPlan(undefined);
       setAutoMatchReason(undefined);
-      setManualAllocations([]);
       return;
     }
 
@@ -232,7 +231,7 @@ export function ReviewTab({
     // suggestMatches fails, values from the previous row would otherwise stay
     // put — and a leaked counterparty would land on a real journal entry.
     setReviewNote(selectedItem.review_note || '');
-    setManualAccountId(selectedItem.suggested_manual_account_id || '');
+    setManualLines([emptyManualLine(selectedItem.suggested_manual_account_id || '')]);
     setManualPartnerId(selectedItem.counterparty_partner_id || '');
     setManualPartnerName(selectedItem.counterparty_partner_name || '');
     setManualPartnerType('');
@@ -254,12 +253,6 @@ export function ReviewTab({
         setSuggestedCandidates(result.candidates);
         setAutoMatchPlan(result.auto_match_plan);
         setAutoMatchReason(result.auto_match_reason);
-        setManualAllocations(
-          result.candidates.slice(0, 2).map((candidate) => ({
-            invoice_id: candidate.invoice_id,
-            amount: String(candidate.open_amount),
-          }))
-        );
       } catch (error) {
         if (cancelled) return;
         setCandidateError(getErrorMessage(error));
@@ -394,21 +387,30 @@ export function ReviewTab({
   };
 
   const handleManualPost = async () => {
-    if (!selectedItem || !manualAccountId) return;
-    const account = accounts.find((option) => option.id === manualAccountId);
+    if (!selectedItem || !manualLinesReady(manualLines, Math.abs(selectedItem.amount))) return;
+    const isSplit = manualLines.length > 1;
+    const account = accounts.find((option) => option.id === manualLines[0]?.account_id);
     await runAction('manual-post', async () => {
+      // One row still posts the old single-account way, so the well-trodden path
+      // does not change shape (and keeps working before migration 085 lands).
       await bankingApi.manualPost(selectedItem.transaction_id, {
-        counter_account_id: manualAccountId,
+        ...(isSplit
+          ? { lines: manualLines.map((line) => ({ account_id: line.account_id, amount: parseManualAmount(line.amount) })) }
+          : { counter_account_id: manualLines[0].account_id }),
         description: manualDescription || undefined,
         partner_id: manualPartnerId || undefined,
       });
       await refreshQueue(selectedItem.transaction_id);
-      const labels = { code: account?.code || '', name: account?.name || '' };
-      setSuccessMessage(
-        manualPartnerName
-          ? t('postedToAccountWithPartner', { ...labels, partner: manualPartnerName })
-          : t('postedToAccount', labels)
-      );
+      if (isSplit) {
+        setSuccessMessage(t('manualPostingCreated'));
+      } else {
+        const labels = { code: account?.code || '', name: account?.name || '' };
+        setSuccessMessage(
+          manualPartnerName
+            ? t('postedToAccountWithPartner', { ...labels, partner: manualPartnerName })
+            : t('postedToAccount', labels)
+        );
+      }
     });
   };
 
@@ -435,17 +437,12 @@ export function ReviewTab({
     });
   };
 
-  const handleSplitMatch = async () => {
-    if (!selectedItem) return;
-    await runAction('split-match', async () => {
+  const handleMatchInvoices = async (allocations: Array<{ invoice_id: string; amount: number }>) => {
+    if (!selectedItem || allocations.length === 0) return;
+    await runAction('match-invoices', async () => {
       await bankingApi.matchInvoices(selectedItem.transaction_id, {
         reference: selectedItem.reference || undefined,
-        allocations: manualAllocations
-          .filter((allocation) => allocation.invoice_id)
-          .map((allocation) => ({
-            invoice_id: allocation.invoice_id,
-            amount: Number(allocation.amount || 0),
-          })),
+        allocations,
       });
       await refreshQueue(selectedItem.transaction_id);
     });
@@ -763,7 +760,7 @@ export function ReviewTab({
                 <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
               <div className="flex min-h-0 flex-1 flex-col px-3 pb-1">
-                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualAccountId={manualAccountId} setManualAccountId={setManualAccountId} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} manualAllocations={manualAllocations} setManualAllocations={setManualAllocations} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onSplitMatch={handleSplitMatch} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualLines={manualLines} setManualLines={setManualLines} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onMatchInvoices={handleMatchInvoices} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
               </div>
             </>
           )}

@@ -512,6 +512,8 @@ export const accountingApi = {
     vat_number?: string;
     intended_role?: 'customer' | 'supplier';
     iban?: string;
+    /** Catches the same company entered twice with the legal form spelled differently. */
+    name?: string;
   }) {
     const response = await apiClient.post<ApiResponse<Array<{
       partner: PartnerRecord;

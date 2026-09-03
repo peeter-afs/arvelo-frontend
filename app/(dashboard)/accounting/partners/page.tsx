@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { duplicateMatchLabel } from '@/components/partners/duplicateMatchLabel';
 import {
   AlertCircle,
   CheckCircle2,
@@ -276,6 +277,7 @@ export default function BusinessPartnersPage() {
         vat_number: form.vat_number || undefined,
         intended_role: form.type === 'both' ? 'supplier' : form.type,
         iban: newBankAccount.iban || undefined,
+        name: form.name || undefined,
       });
       setDuplicateWarnings(duplicates);
       setSuccessMessage(duplicates.length > 0 ? t('potentialDuplicatesFound') : t('noPartnerDuplicatesFound'));
@@ -679,7 +681,7 @@ function PartnerDetailPanel({
               {duplicateWarnings.map((warning) => (
                 <div key={warning.partner.id} className="rounded-md bg-[var(--a-surface)] p-2 text-[12px] text-[var(--a-text-2)]">
                   <div className="font-medium text-[var(--a-text)]">{warning.partner.name}</div>
-                  <div>{warning.match_type} · {warning.severity} · {warning.roles.join(', ') || t('none')}</div>
+                  <div>{duplicateMatchLabel(t, warning.match_type)} · {warning.severity} · {warning.roles.join(', ') || t('none')}</div>
                 </div>
               ))}
             </div>

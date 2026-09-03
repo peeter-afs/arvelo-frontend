@@ -1,27 +1,22 @@
 'use client';
 
-import { useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, ArrowRight, ChevronDown, Info, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Check, ChevronDown, Info, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import type { AccountOption } from '@/lib/api/accounting.api';
 import type { BankAutoMatchPlan, BankAutoMatchReason, BankMatchCandidate, BankReviewQueueItem } from '@/lib/api/banking.api';
-import { AccountPicker, type SuggestedAccount } from './AccountPicker';
+import { type SuggestedAccount } from './AccountPicker';
+import { ManualSplitEditor, manualLinesReady, parseManualAmount, type ManualPostLine } from './ManualSplitEditor';
+import { RemainderBadge } from './RemainderBadge';
 import { InfoBox, formatLabel } from './shared';
 
-export type ManualAllocation = {
+/** One invoice of a settlement, with the amount of the payment it takes. */
+export type InvoiceAllocation = {
   invoice_id: string;
+  /** Free text so the field can be cleared mid-typing; parsed on use. */
   amount: string;
 };
-
-export function updateAllocation(
-  setAllocations: Dispatch<SetStateAction<ManualAllocation[]>>,
-  index: number,
-  key: keyof ManualAllocation,
-  value: string
-) {
-  setAllocations((current) => current.map((allocation, currentIndex) => currentIndex === index ? { ...allocation, [key]: value } : allocation));
-}
 
 // A bank transaction has exactly five possible outcomes. They are mutually
 // exclusive, so they are routes with one commit button — not eight buttons of
@@ -48,14 +43,12 @@ type Props = {
   setReviewNote: (value: string) => void;
   ignoreReason: string;
   setIgnoreReason: (value: string) => void;
-  manualAccountId: string;
-  setManualAccountId: (value: string) => void;
+  manualLines: ManualPostLine[];
+  setManualLines: (lines: ManualPostLine[]) => void;
   manualDescription: string;
   setManualDescription: (value: string) => void;
   manualPartnerId: string;
   manualPartnerName: string;
-  manualAllocations: ManualAllocation[];
-  setManualAllocations: Dispatch<SetStateAction<ManualAllocation[]>>;
   dismissReason: string;
   setDismissReason: (value: string) => void;
   onAutoMatch: () => void;
@@ -65,7 +58,7 @@ type Props = {
   onDismissMissingReceipt: () => void;
   onManualPost: () => void;
   onSingleMatch: (candidate: BankMatchCandidate) => void;
-  onSplitMatch: () => void;
+  onMatchInvoices: (allocations: Array<{ invoice_id: string; amount: number }>) => void;
   onAccountCreated?: (message: string) => void;
 };
 
@@ -95,8 +88,8 @@ export function ReviewActionPanel({
   setReviewNote,
   ignoreReason,
   setIgnoreReason,
-  manualAccountId,
-  setManualAccountId,
+  manualLines,
+  setManualLines,
   manualDescription,
   setManualDescription,
   manualPartnerId,
@@ -108,6 +101,7 @@ export function ReviewActionPanel({
   onDismissMissingReceipt,
   onManualPost,
   onSingleMatch,
+  onMatchInvoices,
   onAccountCreated,
 }: Props) {
   const t = useTranslations('accounting');
@@ -116,7 +110,7 @@ export function ReviewActionPanel({
   // once the plan finishes loading, while an explicit click still wins.
   const [route, setRoute] = useState<Route | null>(null);
   const [invoiceQuery, setInvoiceQuery] = useState('');
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState('');
+  const [invoiceSelection, setInvoiceSelection] = useState<InvoiceAllocation[]>([]);
   const [showNoteInput, setShowNoteInput] = useState(false);
   // null follows the active route's default: transaction context is essential
   // on the missing-document route, while the other routes stay compact.
@@ -127,7 +121,7 @@ export function ReviewActionPanel({
     setItemId(selectedItem.transaction_id);
     setRoute(null);
     setInvoiceQuery('');
-    setSelectedInvoiceId('');
+    setInvoiceSelection([]);
     setShowNoteInput(false);
     setShowDetails(null);
   }
@@ -164,8 +158,24 @@ export function ReviewActionPanel({
     );
   }, [suggestedCandidates, invoiceQuery]);
 
-  const pickedInvoice = suggestedCandidates.find((candidate) => candidate.invoice_id === selectedInvoiceId);
-  const pickedAccount = accounts.find((account) => account.id === manualAccountId);
+  const selectedCandidates = useMemo(
+    () => invoiceSelection
+      .map((entry) => suggestedCandidates.find((candidate) => candidate.invoice_id === entry.invoice_id))
+      .filter((candidate): candidate is BankMatchCandidate => !!candidate),
+    [invoiceSelection, suggestedCandidates]
+  );
+  const invoiceAllocated = Math.round(invoiceSelection.reduce((total, entry) => total + parseManualAmount(entry.amount), 0) * 100) / 100;
+  const invoiceRemainder = Math.round((gross - invoiceAllocated) * 100) / 100;
+  const pickedInvoice = selectedCandidates.length === 1 ? selectedCandidates[0] : undefined;
+  const pickedAllocation = pickedInvoice ? parseManualAmount(invoiceSelection[0].amount) : 0;
+
+  const toggleInvoice = (candidate: BankMatchCandidate) => {
+    setInvoiceSelection((current) => (current.some((entry) => entry.invoice_id === candidate.invoice_id)
+      ? current.filter((entry) => entry.invoice_id !== candidate.invoice_id)
+      : [...current, { invoice_id: candidate.invoice_id, amount: candidate.open_amount.toFixed(2) }]));
+  };
+  const manualReady = manualLinesReady(manualLines, gross);
+  const pickedAccount = accounts.find((account) => account.id === manualLines[0]?.account_id);
 
   const suggestedAccounts: SuggestedAccount[] = useMemo(() => {
     if (selectedItem.suggested_accounts?.length) return selectedItem.suggested_accounts;
@@ -184,6 +194,29 @@ export function ReviewActionPanel({
     ? selectedItem.import_parsed_payload.card_descriptor
     : undefined;
 
+  // Debit shows positive, credit negative — the same convention the two-line
+  // preview used, now over N counter lines plus the single bank line.
+  const manualPreviewLines = (() => {
+    const counterLines = manualLines
+      .filter((line) => line.account_id)
+      .map((line) => {
+        const account = accounts.find((entry) => entry.id === line.account_id);
+        const amount = manualLines.length === 1 ? gross : parseManualAmount(line.amount);
+        return {
+          code: account?.code || '',
+          name: account?.name || '',
+          amount: isOutgoing ? amount : -amount,
+        };
+      });
+    if (counterLines.length === 0) return [];
+    const bankLine = {
+      code: '',
+      name: selectedItem.bank_account_name || t('bankAccount'),
+      amount: isOutgoing ? -gross : gross,
+    };
+    return isOutgoing ? [...counterLines, bankLine] : [bankLine, ...counterLines];
+  })();
+
   const pickedPartnerName = manualPartnerId
     ? manualPartnerName || selectedItem.counterparty_partner_name || ''
     : '';
@@ -199,21 +232,36 @@ export function ReviewActionPanel({
   const commit = () => {
     if (busy) return;
     if (activeRoute === 'match' && autoMatchPlan) onAutoMatch();
-    else if (activeRoute === 'invoice' && pickedInvoice) onSingleMatch(pickedInvoice);
-    else if (activeRoute === 'account' && manualAccountId) onManualPost();
+    else if (activeRoute === 'invoice' && invoiceSelection.length > 0) {
+      // One invoice taking its whole open amount is the original single-match
+      // call. Keep it: it is the path that lets the server apply a rounding
+      // write-off, which an explicit allocation would not.
+      if (pickedInvoice && Math.abs(pickedAllocation - pickedInvoice.open_amount) < 0.005) {
+        onSingleMatch(pickedInvoice);
+      } else {
+        onMatchInvoices(invoiceSelection.map((entry) => ({ invoice_id: entry.invoice_id, amount: parseManualAmount(entry.amount) })));
+      }
+    }
+    else if (activeRoute === 'account' && manualReady) onManualPost();
     else if (activeRoute === 'doc') onMarkMissingReceipt();
     else if (activeRoute === 'ignore') onIgnore();
   };
 
   const commitDisabled = busy
     || (activeRoute === 'match' && !autoMatchPlan)
-    || (activeRoute === 'invoice' && !pickedInvoice)
-    || (activeRoute === 'account' && !manualAccountId)
+    || (activeRoute === 'invoice' && (
+      invoiceSelection.length === 0
+      // With one invoice the server still decides (it may write off a rounding
+      // difference); with several the allocation has to be exact.
+      || (invoiceSelection.length > 1 && Math.abs(invoiceRemainder) > 0.005)
+      || invoiceSelection.some((entry) => parseManualAmount(entry.amount) <= 0)
+    ))
+    || (activeRoute === 'account' && !manualReady)
     || (activeRoute === 'doc' && hasDraft);
 
   const commitLabel = {
     match: t('confirmMatch'),
-    invoice: t('linkSelectedInvoice'),
+    invoice: invoiceSelection.length > 1 ? t('linkSelectedInvoices') : t('linkSelectedInvoice'),
     account: t('createEntry'),
     doc: t('createDraft'),
     ignore: t('ignoreTransaction'),
@@ -226,11 +274,25 @@ export function ReviewActionPanel({
         : t('willLinkAndPost', { invoice: planInvoices[0].invoice_number, amount: gross.toFixed(2) });
     }
     if (activeRoute === 'invoice') {
+      if (invoiceSelection.length > 1) {
+        return t('selectedInvoicesCount', {
+          count: invoiceSelection.length,
+          allocated: invoiceAllocated.toFixed(2),
+          total: gross.toFixed(2),
+          remainder: invoiceRemainder.toFixed(2),
+        });
+      }
       return pickedInvoice
         ? t('willLinkInvoice', { invoice: pickedInvoice.invoice_number || '', partner: pickedInvoice.partner_name || '' })
         : t('pickInvoiceFirst');
     }
     if (activeRoute === 'account') {
+      if (manualLines.length > 1) {
+        return t('splitAccountsCount', {
+          count: manualLines.length,
+          remainder: (Math.round((gross - manualLines.reduce((total, line) => total + parseManualAmount(line.amount), 0)) * 100) / 100).toFixed(2),
+        });
+      }
       if (!pickedAccount) return t('pickAccountFirst');
       return pickedPartnerName
         ? t('willPostToAccountWithPartner', { code: pickedAccount.code, name: pickedAccount.name, partner: pickedPartnerName })
@@ -333,7 +395,18 @@ export function ReviewActionPanel({
               </div>
             </div>
           ) : (
-            <PanelNotice>{autoMatchReason ? t(AUTO_MATCH_REASON_KEY[autoMatchReason]) : t('noClearAutoMatchCandidate')}</PanelNotice>
+            <>
+              <PanelNotice>{autoMatchReason ? t(AUTO_MATCH_REASON_KEY[autoMatchReason]) : t('noClearAutoMatchCandidate')}</PanelNotice>
+              {autoMatchReason === 'amount_requires_split' && suggestedCandidates.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setRoute('invoice')}
+                  className="text-[11.5px] font-medium text-[var(--primary)] hover:underline"
+                >
+                  {t('splitAcrossInvoicesHint')}
+                </button>
+              )}
+            </>
           )
         )}
 
@@ -353,15 +426,17 @@ export function ReviewActionPanel({
                 <div className="p-3 text-sm text-slate-500">{t('noOpenInvoiceMatch')}</div>
               ) : (
                 filteredCandidates.map((candidate) => {
-                  const picked = candidate.invoice_id === selectedInvoiceId;
+                  const picked = invoiceSelection.some((entry) => entry.invoice_id === candidate.invoice_id);
                   const amountMatches = Math.abs(candidate.open_amount - gross) < 0.01;
                   return (
                     <button
                       key={candidate.invoice_id}
-                      onClick={() => setSelectedInvoiceId(candidate.invoice_id)}
+                      onClick={() => toggleInvoice(candidate)}
                       className={`flex w-full items-center gap-2 border-b border-slate-100 px-3 py-2 text-left last:border-b-0 ${picked ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                     >
-                      <span className={`h-3 w-3 flex-shrink-0 rounded-full border ${picked ? 'border-[var(--primary)] bg-[var(--primary)]' : 'border-slate-300'}`} />
+                      <span className={`flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded border ${picked ? 'border-[var(--primary)] bg-[var(--primary)] text-white' : 'border-slate-300'}`}>
+                        {picked && <Check className="h-2.5 w-2.5" strokeWidth={3.5} />}
+                      </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[12.5px] font-semibold text-slate-900">
                           {candidate.invoice_number || candidate.invoice_id.slice(0, 8)}
@@ -383,16 +458,40 @@ export function ReviewActionPanel({
                 })
               )}
             </div>
-            {pickedInvoice && (
-              <div className="rounded-lg border border-slate-200 p-3 text-[11.5px]">
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1">
-                  <span className="text-slate-500">{t('invoiceOpenBefore')}</span>
-                  <span className="font-mono font-semibold tabular-nums">{pickedInvoice.open_amount.toFixed(2)}</span>
-                  <span className="text-slate-500">{t('invoiceOpenAfter')}</span>
-                  <span className="font-mono font-semibold tabular-nums">
-                    {Math.max(pickedInvoice.open_amount - gross, 0).toFixed(2)}
-                  </span>
-                </div>
+            {invoiceSelection.length > 0 && (
+              <div className="space-y-1.5 rounded-lg border border-slate-200 p-3 text-[11.5px]">
+                {invoiceSelection.map((entry, index) => {
+                  const candidate = selectedCandidates.find((row) => row.invoice_id === entry.invoice_id);
+                  if (!candidate) return null;
+                  const allocated = parseManualAmount(entry.amount);
+                  return (
+                    <div key={entry.invoice_id} className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate font-semibold text-slate-900">
+                        {candidate.invoice_number || candidate.invoice_id.slice(0, 8)}
+                      </span>
+                      <span className="flex-shrink-0 font-mono text-[11px] tabular-nums text-slate-500">
+                        {candidate.open_amount.toFixed(2)} → {Math.max(candidate.open_amount - allocated, 0).toFixed(2)}
+                      </span>
+                      <input
+                        value={entry.amount}
+                        onChange={(event) => setInvoiceSelection((current) => current.map((row, currentIndex) =>
+                          (currentIndex === index ? { ...row, amount: event.target.value } : row)))}
+                        inputMode="decimal"
+                        aria-label={t('splitAmount')}
+                        disabled={busy}
+                        className="h-7 w-[92px] flex-shrink-0 rounded-lg border border-slate-200 px-2 text-right font-mono tabular-nums"
+                      />
+                    </div>
+                  );
+                })}
+                {invoiceSelection.length > 1 && (
+                  <div className="flex items-center justify-between border-t border-slate-100 pt-1.5">
+                    <span className="font-mono tabular-nums text-slate-500">
+                      {invoiceAllocated.toFixed(2)} / {gross.toFixed(2)}
+                    </span>
+                    <RemainderBadge remainder={invoiceRemainder} />
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -400,14 +499,17 @@ export function ReviewActionPanel({
 
         {activeRoute === 'account' && (
           <div className="space-y-3">
-            <AccountPicker
+            <ManualSplitEditor
               accounts={accounts}
-              value={manualAccountId}
-              onChange={setManualAccountId}
-              onAccountCreated={(_account, message) => onAccountCreated?.(message)}
+              lines={manualLines}
+              setLines={setManualLines}
+              gross={gross}
               defaultScope={isOutgoing ? 'expense' : 'income'}
               suggested={suggestedAccounts}
+              suggestedSplit={selectedItem.suggested_split || []}
+              seedAccountId={selectedItem.suggested_manual_account_id || ''}
               disabled={busy}
+              onAccountCreated={onAccountCreated}
             />
             <input
               value={manualDescription}
@@ -415,26 +517,17 @@ export function ReviewActionPanel({
               placeholder={t('manualPostingDescriptionPlaceholder')}
               className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
             />
-            {pickedAccount && (
+            {manualPreviewLines.length > 1 && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-800">
                   {t('createsEntry', { date: selectedItem.value_date || selectedItem.tx_date })}
                 </div>
                 {/* The entry the server actually posts: gross both sides, no VAT
-                    split. manual_post_bank_transaction writes two lines with a
-                    null tax_rate, so showing a net/VAT breakdown here would
-                    promise something the posting never creates. */}
+                    split. manual_post_bank_transaction writes a null tax_rate on
+                    every line, so showing a net/VAT breakdown here would promise
+                    something the posting never creates. */}
                 <div className="mt-2 space-y-1.5">
-                  {(isOutgoing
-                    ? [
-                        { code: pickedAccount.code, name: pickedAccount.name, amount: gross },
-                        { code: '', name: selectedItem.bank_account_name || t('bankAccount'), amount: -gross },
-                      ]
-                    : [
-                        { code: '', name: selectedItem.bank_account_name || t('bankAccount'), amount: gross },
-                        { code: pickedAccount.code, name: pickedAccount.name, amount: -gross },
-                      ]
-                  ).map((line, index) => (
+                  {manualPreviewLines.map((line, index) => (
                     <div key={index} className="grid grid-cols-[52px_minmax(0,1fr)_auto] gap-2 text-[11.5px]">
                       <span className="font-mono text-slate-500">{line.code}</span>
                       <span className="truncate text-slate-700">{line.name}</span>

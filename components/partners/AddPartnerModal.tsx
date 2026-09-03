@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { duplicateMatchLabel } from './duplicateMatchLabel';
 import {
   AlertCircle,
   ArrowLeft,
@@ -190,8 +191,10 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
   };
 
   const runDuplicateCheck = useCallback(
-    async (regCode: string, vat: string, type: PartnerFormState['type']) => {
-      if (!regCode && !vat) {
+    async (regCode: string, vat: string, type: PartnerFormState['type'], name: string) => {
+      // The name alone is enough to check: it is what catches "Motoral Eesti
+      // Aktsiaselts" when "MOTORAL EESTI AS" already exists without a reg code.
+      if (!regCode && !vat && name.trim().length < 3) {
         setDuplicateWarnings([]);
         return;
       }
@@ -200,6 +203,7 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
           registry_code: regCode || undefined,
           vat_number: vat || undefined,
           intended_role: type === 'both' ? 'supplier' : type,
+          name: name.trim() || undefined,
         });
         setDuplicateWarnings(duplicates);
       } catch {
@@ -214,10 +218,10 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
   useEffect(() => {
     if (!open || step !== 2) return;
     const handle = setTimeout(() => {
-      runDuplicateCheck(form.reg_code.trim(), form.vat_number.trim(), form.type);
+      runDuplicateCheck(form.reg_code.trim(), form.vat_number.trim(), form.type, form.name);
     }, 400);
     return () => clearTimeout(handle);
-  }, [open, step, form.reg_code, form.vat_number, form.type, runDuplicateCheck]);
+  }, [open, step, form.reg_code, form.vat_number, form.type, form.name, runDuplicateCheck]);
 
   const handleCreate = async () => {
     setLoading('create');
@@ -477,7 +481,7 @@ function StepTwo({
               <div key={w.partner.id} className="rounded-lg border border-[var(--a-warn-soft)] bg-[var(--a-surface)] p-3 text-[12.5px] text-[var(--a-text)]">
                 <div className="font-medium">{w.partner.name}</div>
                 <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
-                  {w.match_type} · {t('severityValue', { value: w.severity })} · {t('rolesValue', { roles: w.roles.join(', ') || t('none') })}
+                  {duplicateMatchLabel(t, w.match_type)} · {t('severityValue', { value: w.severity })} · {t('rolesValue', { roles: w.roles.join(', ') || t('none') })}
                 </div>
               </div>
             ))}

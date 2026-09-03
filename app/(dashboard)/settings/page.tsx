@@ -17,6 +17,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { FutursoftTab } from './_tabs/FutursoftTab';
+import { MeritPalkTab } from './_tabs/MeritPalkTab';
 import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
 import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
@@ -102,7 +103,7 @@ export default function SettingsPage() {
     is_active: true,
   });
   const canManageRegistry = role === 'owner' || role === 'admin';
-  const canManageFutursoft = role === 'owner' || role === 'admin';
+  const canManageIntegrations = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
 
@@ -849,9 +850,16 @@ export default function SettingsPage() {
 
             {activeTab === 'business-registry' && <BusinessRegistryTab canManage={canManageRegistry} />}
 
-            {activeTab === 'integrations' && <FutursoftTab canManage={canManageFutursoft} />}
+            {activeTab === 'integrations' && (
+              <div className="space-y-10">
+                <FutursoftTab canManage={canManageIntegrations} />
+                <div className="border-t border-slate-200 pt-8">
+                  <MeritPalkTab canManage={canManageIntegrations} />
+                </div>
+              </div>
+            )}
 
-            {activeTab === 'bank-connections' && <BankGatewaysTab canManage={canManageFutursoft} />}
+            {activeTab === 'bank-connections' && <BankGatewaysTab canManage={canManageIntegrations} />}
 
             {activeTab === 'data-management' && (
               <div className="space-y-6">

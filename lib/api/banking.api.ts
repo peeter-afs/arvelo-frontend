@@ -159,6 +159,12 @@ export type BankReviewQueueItem = {
   auto_match_invoice_count?: number;
   // Counter accounts used before for this counterparty, most recent first.
   suggested_accounts?: Array<{ account_id: string; code: string; name: string; reason?: string }>;
+  /**
+   * Ready-made split rows: from an imported Merit Palk payroll batch when this is
+   * the tax board's payment (amounts included), otherwise the accounts of the last
+   * split for this counterparty (amounts omitted — last month's figure is not this one's).
+   */
+  suggested_split?: Array<{ account_id: string; code: string; name: string; amount?: number; source?: string }>;
   top_candidates: BankMatchCandidate[];
   has_missing_receipt_placeholder: boolean;
   placeholder_invoice_id: string | null;
@@ -497,7 +503,14 @@ export const bankingApi = {
     return response.data.data;
   },
 
-  async manualPost(id: string, payload: { counter_account_id: string; description?: string; partner_id?: string }) {
+  async manualPost(id: string, payload: {
+    /** Post the whole transaction to one account. Mutually exclusive with `lines`. */
+    counter_account_id?: string;
+    description?: string;
+    partner_id?: string;
+    /** Split across accounts; amounts are signed like the transaction and must sum to it. */
+    lines?: Array<{ account_id: string; amount: number; description?: string }>;
+  }) {
     const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/manual-post`, payload);
     return response.data.data;
   },
