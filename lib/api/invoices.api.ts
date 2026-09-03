@@ -24,6 +24,11 @@ export type InvoiceListItem = {
   invoice_number?: string | null;
   partner_id?: string | null;
   partner_name?: string | null;
+  vat_codes?: Array<{
+    key: string;
+    supply_type: 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
+    rate: number;
+  }>;
   invoice_date: string;
   due_date?: string | null;
   currency: string;
