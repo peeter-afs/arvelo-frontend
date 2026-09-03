@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Müügiarved — tihe vaade v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea;--row-alt:#faf8f3}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{overflow-x:auto}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;overflow:hidden;font-size:13px}
+.mono{font-family:'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.005em}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+kbd{font-family:'Inter',system-ui,sans-serif;font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2)}
+svg.i{width:1em;height:1em;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:1240px;padding:12px 16px;display:flex;flex-direction:column;gap:9px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:29px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+/* ── rida 1 ── */
+.topbar{display:flex;align-items:center;gap:10px;flex-shrink:0;height:29px}
+.topbar h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.03em}
+.topbar .sub{font-size:12px;color:var(--text-3)}
+.topbar .acts{margin-left:14px;display:flex;gap:7px;flex-shrink:0}
+.topbar .metrics{margin-left:auto}
+/* ── rida 2: tabid + periood + otsing + mõõdikud ── */
+.railrow{display:flex;align-items:center;gap:10px;flex-shrink:0;height:36px}
+.tabmore{position:relative;display:inline-flex}
+.tabmore .menu{width:186px;top:33px;left:auto;right:0}
+.mitem{display:flex;align-items:center;gap:8px;width:100%;padding:5px 7px;border:none;border-radius:7px;background:transparent;color:var(--text-2);font-size:12px;font-weight:500;text-align:left}
+.mitem:hover{background:var(--surface-2)}
+.mitem.on{color:var(--text);font-weight:600}
+.mitem .pill{margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--border);color:var(--text-2)}
+.tabs{display:inline-flex;gap:3px;padding:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px}
+.tab{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;height:26px;padding:0 10px;border:none;border-radius:7px;background:transparent;color:var(--text-2);font-weight:600;font-size:12.5px}
+.tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.tab .pill{font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--border);color:var(--text-2)}
+.tab.on .pill{background:var(--accent);color:#fff}
+.metrics{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
+.metric{display:flex;align-items:baseline;gap:6px;padding:0 12px;border-left:1px solid var(--border);white-space:nowrap}
+.metric:first-child{border-left:none}
+.metric .k{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
+.metric .v{font-size:14.5px;font-weight:700;letter-spacing:-0.03em}
+.metric.neg .v{color:var(--neg)}
+.search{position:relative;flex:0 0 190px}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px}
+.search input{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:12.5px;color:var(--text);padding:0 9px 0 27px}
+.search input:focus{outline:none;border-color:var(--accent)}
+/* periood */
+.per{position:relative;flex-shrink:0}
+.perbtn{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex-shrink:0;height:29px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500}
+.perbtn.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f;font-weight:600}
+.perpop{position:absolute;top:34px;left:0;z-index:30;width:294px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 10px 28px rgba(0,0,0,.13)}
+.perpop[hidden]{display:none}
+.lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:6px}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.presets button{height:27px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text-2);font-size:12px;text-align:left;padding:0 8px}
+.presets button:hover{background:var(--surface-2)}
+.presets button.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f;font-weight:600}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.dates input{height:29px;width:100%;border:1px solid var(--border);border-radius:7px;background:var(--surface);font-family:'Inter',system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:12px;color:var(--text);padding:0 8px}
+.dates input:focus{outline:none;border-color:var(--accent)}
+.perfoot{display:flex;gap:6px;align-items:center;margin-top:10px}
+.perfoot .hint{font-size:11px;color:var(--text-3);margin-right:auto}
+/* ── keha ── */
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 9px var(--pw,430px);gap:0}
+.gutter{position:relative;cursor:col-resize}
+.gutter:after{content:'';position:absolute;left:3.5px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent;transition:background .12s}
+.gutter:hover:after{background:var(--border-strong)}
+body.pres .gutter:after{background:var(--accent)}
+body.pres{cursor:col-resize;user-select:none}
+.body.wide .gutter{display:none}
+.body.wide{grid-template-columns:minmax(0,1fr)}
+.body.wide>.col:first-child{display:none}
+.body[hidden],#full[hidden]{display:none}
+#full{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.fsplit{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px}
+.fsplit>.fleft{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+.fsplit>.fright{border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow-y:auto;background:var(--row-alt)}
+.bigh,.bigr{display:grid;grid-template-columns:minmax(0,1fr) 54px 74px 118px 52px 82px 82px;gap:10px;padding:7px 14px;align-items:baseline;font-size:12.5px}
+.bigh{background:var(--surface-2);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border);position:sticky;top:0}
+.bigr{border-bottom:1px solid #f1eee7}
+.bigr:nth-child(even){background:var(--row-alt)}
+.bigr .t{font-weight:500}
+.dhead>div:first-child{min-width:0}
+.bigtot{display:flex;justify-content:flex-end;gap:20px;white-space:nowrap;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2)}
+.bigtot b{font-weight:700;color:var(--text)}
+.jl{display:grid;grid-template-columns:64px minmax(0,1fr) 90px 90px;gap:10px;padding:4px 14px;font-size:12px;align-items:baseline;border-top:1px dashed #ece8dd}
+.crumb{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+.tscroll{flex:1;min-height:0;display:flex;flex-direction:column;overflow-x:auto}
+.tscroll>*{min-width:fit-content}
+.col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+/* ── tabel ── */
+.thead,.trow{display:grid;grid-template-columns:var(--cols);align-items:center}
+.thead{height:32px;background:var(--surface-2);border-bottom:1px solid var(--border);border-radius:11px 11px 0 0;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);flex-shrink:0;user-select:none}
+.th{position:relative;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.th.r{justify-content:flex-end}
+.th .grip{position:absolute;right:-3px;top:0;bottom:0;width:7px;cursor:col-resize;z-index:2}
+.th .grip:after{content:'';position:absolute;left:3px;top:6px;bottom:6px;width:1px;background:var(--border-strong);opacity:0;transition:opacity .12s}
+.th .grip:hover:after,body.resizing .th .grip:after{opacity:1;background:var(--accent)}
+.th .sort{opacity:0;font-size:11px}
+.th.sorted{color:var(--text-2)}
+.th.sorted .sort{opacity:1;color:var(--accent)}
+.rows{flex:1;min-height:0;overflow-y:auto;overflow-x:visible}
+.trow{padding:6px 0;border-bottom:1px solid #f1eee7;cursor:pointer;background:var(--surface);font-size:12.5px}
+.trow:nth-child(even){background:var(--row-alt)}
+.trow:hover{background:var(--accent-soft-2)}
+.trow.on{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.trow>div{padding:0 8px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.trow .idx{color:#c3bfb2;font-size:10.5px;text-align:right;padding-right:6px}
+.trow .nr{color:var(--accent);font-weight:500;font-size:12px}
+.cust{display:flex;align-items:center;gap:7px;min-width:0}
+.av{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0}
+.cust .nm{min-width:0}
+.cust .n1{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.cust .n2{display:block;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.num{text-align:right;font-weight:600;font-size:12.5px}
+.num.mut{font-weight:500;color:var(--text-3)}
+.dt{color:var(--text-2);font-size:11.5px}
+.dt .d2{font-size:10px;color:var(--text-3)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.tag .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.tag.draft{background:var(--surface-2);color:var(--text-3)}
+.tag.sent{background:#eaf0ff;color:#2c5cf6}
+.tag.paid{background:var(--pos-soft);color:var(--pos)}
+.tag.over{background:var(--neg-soft);color:var(--neg)}
+.tag.void{background:var(--surface-2);color:var(--text-3);text-decoration:line-through}
+.tag .n{font-weight:700;opacity:.75}
+.listhead{display:flex;align-items:center;gap:8px;height:33px;white-space:nowrap;padding:0 10px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:11px 11px 0 0;flex-shrink:0;font-size:11.5px;color:var(--text-2)}
+.listhead b{font-weight:600;color:var(--text)}
+.listhead .r{margin-left:auto;display:flex;align-items:center;gap:7px}
+.warnstrip{display:flex;align-items:center;gap:7px;padding:0 10px;height:31px;background:var(--warn-soft);border-bottom:1px solid #e8dcbc;color:#7d5a13;font-size:11.5px;flex-shrink:0;white-space:nowrap;overflow:hidden}
+.warnstrip .btn{margin-left:auto}
+#footsum{display:flex;align-items:center;gap:12px;white-space:nowrap;flex-shrink:0}
+#footsum span{white-space:nowrap}
+#footleft{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#footsum b{font-weight:700}
+.split{position:relative;display:inline-flex;gap:0}
+.split .btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+.split .btn:last-of-type{padding:0 6px;border-top-left-radius:0;border-bottom-left-radius:0}
+.split .menu{bottom:30px;top:auto;right:0;width:168px}
+.tfoot{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-top:1px solid var(--border);flex-shrink:0;font-size:11.5px;color:var(--text-3)}
+.tfoot .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+/* ── detail ── */
+.dhead{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:10px 13px;border-bottom:1px solid var(--border);background:var(--surface-2);border-radius:11px 11px 0 0;flex-shrink:0}
+.dhead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-0.025em}
+.dhead .line{margin-top:2px;font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dhead .nav{margin-left:0;display:flex;gap:4px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.dbody{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.sec.grow{flex:1 1 auto;min-height:132px;display:flex;flex-direction:column}
+.sec.grow .lines{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.sec.grow .lscroll{flex:1;min-height:0;overflow-y:auto}
+.dsplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--border)}
+.dsplit>.sec{border-bottom:none;border-left:1px solid var(--border)}
+.dsplit>.sec:first-child{border-left:none}
+.bar{height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--pos)}
+.sums{display:grid;grid-template-columns:minmax(0,1.15fr) repeat(3,minmax(0,1fr));border-bottom:1px solid var(--border);flex-shrink:0}
+.sums>div{padding:9px 12px;border-left:1px solid var(--border)}
+.sums>div:first-child{border-left:none}
+.sums .k{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
+.sums .v{font-size:18px;font-weight:700;letter-spacing:-0.035em;margin-top:2px}
+.sums .s{font-size:15px;font-weight:600;letter-spacing:-0.03em;margin-top:3px}
+.sums .h{font-size:10.5px;color:var(--text-3);margin-top:1px}
+.sec{padding:10px 13px;border-bottom:1px solid var(--border)}
+.sech{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap;overflow:hidden;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:8px}
+.sech .r{margin-left:auto;white-space:nowrap;flex-shrink:0;padding-left:10px;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.f{border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:var(--row-alt);min-width:0}
+.f .k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.f .v{font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.lrow .amt{text-align:right;font-weight:600}
+.lrow .amt.hasdisc{color:#b8330f;cursor:help;text-decoration:underline dotted var(--border-strong);text-underline-offset:3px}
+.lines.w .lhead,.lines.w .lrow{grid-template-columns:minmax(0,1fr) 44px 66px 52px 46px 76px;gap:8px}
+.lrow .dc{text-align:right;color:#b8330f;font-weight:600}
+.lrow .dc.none{color:var(--text-3);font-weight:400}
+.lines{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.lhead,.lrow{display:grid;grid-template-columns:minmax(0,1fr) 40px 62px 74px;gap:6px;padding:5px 9px;align-items:baseline;font-size:11.5px}
+.lhead{background:var(--surface-2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.lrow{border-top:1px solid #f1eee7}
+.lrow:first-of-type{border-top:none}
+.lrow .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltot{display:flex;gap:14px;justify-content:flex-end;padding:6px 9px;border-top:1px solid var(--border);background:var(--row-alt);font-size:11.5px;color:var(--text-2)}
+.ltot b{font-weight:600;color:var(--text)}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;white-space:nowrap;padding:3px 0;font-size:12px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.kv>b{text-align:right;overflow:hidden;text-overflow:ellipsis}
+.kv:first-of-type{border-top:none}
+.kv b{font-weight:600;color:var(--text)}
+#detail .tlrow{display:flex;align-items:center;gap:7px;font-size:11px}
+#detail .tlrow>span:nth-child(3){flex:1;min-width:0}
+#detail .tlrow>span:last-child{display:none}
+.tlrow>span:nth-child(3){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl{display:flex;flex-direction:column;gap:0}
+.tlrow{display:grid;grid-template-columns:70px 12px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:11.5px;color:var(--text-2);padding:3px 0}
+.tlrow .bul{width:7px;height:7px;border-radius:99px;background:var(--border-strong);justify-self:center}
+.tlrow.done .bul{background:var(--pos)}
+.tlrow .mono{color:var(--text-3)}
+.dfoot{display:flex;align-items:center;gap:6px;padding:8px 11px;border-top:1px solid var(--border);background:rgba(255,255,255,.96);flex-shrink:0;flex-wrap:nowrap;overflow:hidden}
+.dfoot .btn{padding:0 9px}
+.dfoot .r{margin-left:auto;display:flex;gap:7px}
+.empty{display:grid;place-items:center;height:100%;color:var(--text-3);font-size:12.5px}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(20,18,14,.34);display:grid;place-items:center;padding:24px}
+.modal[hidden]{display:none}
+.mbox{width:min(660px,100%);min-width:min(600px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 22px 60px rgba(0,0,0,.24)}
+.mhead{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.mhead h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-0.025em}
+.mhead .line{margin-top:2px;font-size:11.5px;color:var(--text-3)}
+.mhead .x{margin-left:auto;flex-shrink:0}
+.mbody{overflow-y:auto}
+.jgrp{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:7px 14px;background:var(--row-alt);border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-2)}
+.jgrp b{font-weight:600;color:var(--text)}
+.jgrp>span:nth-child(3){overflow:hidden;text-overflow:ellipsis}
+.jgrp .r{margin-left:auto;color:var(--text-3);flex-shrink:0}
+.jh,.jr,.jsum{display:grid;grid-template-columns:60px minmax(0,1fr) 104px 104px;gap:10px;padding:6px 14px;align-items:baseline;font-size:12.5px}
+.jh{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.jr{border-bottom:1px solid #f1eee7}
+.jsum{font-weight:700;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.rt{text-align:right}
+.mfootbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border)}
+.mfootbar .r{margin-left:auto;display:flex;gap:7px}
+.menu{position:absolute;right:0;top:32px;z-index:30;width:210px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.13)}
+.menu[hidden]{display:none}
+.menu label{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer}
+.menu label:hover{background:var(--surface-2)}
+.menu .mfoot{display:flex;padding:5px 7px 2px;border-top:1px solid var(--border);margin-top:4px}
+input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);margin:0;cursor:pointer}
+body.resizing{cursor:col-resize;user-select:none}
+@media (max-width:1420px){.metrics .metric:last-child{display:none}}
+@media (max-width:1300px){.tab .pill{display:none}}
+@media (max-width:700px){.body{grid-template-columns:minmax(0,1fr)}.metrics .metric:nth-child(n+3){display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <h1>Müügiarved</h1>
+    <span class="sub" id="subline"></span>
+    <div class="metrics" id="metrics"></div>
+    <div class="acts">
+      <button class="btn primary"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Uus arve <kbd style="border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff">U</kbd></button>
+      <button class="btn ghost"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg> Värskenda</button>
+    </div>
+  </div>
+
+  <div class="railrow">
+    <div class="tabs" id="tabs"></div>
+    <div class="per">
+      <button class="perbtn" id="perbtn"><svg class="i" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg> <span id="perlbl">Viimased 90 päeva</span> <svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="perpop" id="perpop" hidden>
+        <div class="lbl">Arve kuupäev</div>
+        <div class="presets" id="presets"></div>
+        <div class="lbl" style="margin:10px 0 6px">Kohandatud vahemik</div>
+        <div class="dates"><input id="d1" placeholder="pp.kk.aaaa" /><input id="d2" placeholder="pp.kk.aaaa" /></div>
+        <div class="perfoot"><span class="hint" id="perhint"></span><button class="btn sm" id="perclear">Eemalda</button><button class="btn sm primary" id="perapply">Rakenda</button></div>
+      </div>
+    </div>
+    <div class="per" id="vatwrap">
+      <button class="perbtn" id="vatbtn"><span id="vatlbl">KM: kõik</span> <svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu" id="vatmenu" hidden style="width:224px;left:0;right:auto"></div>
+    </div>
+    <div class="search"><svg class="i" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg><input id="q" placeholder="Otsi arvet või klienti  /" /></div>
+  </div>
+
+  <div class="body">
+    <div class="col card">
+      <div class="listhead">
+        <span id="counts"></span>
+        <div class="r" style="position:relative">
+          <button class="btn sm ghost" id="colbtn"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18"/></svg> Veerud</button>
+          <div class="menu" id="colmenu" hidden></div>
+        </div>
+      </div>
+      <div class="warnstrip" id="warnstrip">
+        <svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+        <span id="warntext"></span>
+        <button class="btn sm primary">Kinnita mustandid</button>
+      </div>
+      <div class="tscroll"><div class="thead" id="thead"></div><div class="rows" id="rows"></div></div>
+      <div class="tfoot">
+        <span id="footleft"></span>
+        <div class="r"><span id="footsum"></span>
+          <span class="split">
+            <button class="btn sm ghost" id="expbtn">Ekspordi Excel</button>
+            <button class="btn sm ghost" id="expmore" title="Muu vorming"><svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="menu" id="expmenu" hidden><button class="mitem" data-exp="xlsx">Excel (.xlsx)</button><button class="mitem" data-exp="csv">CSV (.csv)</button><button class="mitem" data-exp="pdf">PDF</button></div>
+          </span></div>
+      </div>
+    </div>
+    <div class="gutter" id="gutter" title="Lohista paneeli laiust · topeltklikk lähtestab"></div>
+    <div class="col card" id="detail"></div>
+  </div>
+  <div class="card" id="full" hidden></div>
+</div>
+<div class="modal" id="jmodal" hidden><div class="mbox" id="jbox"></div></div>
+
+<script>
+const NAMES=['Milworks OÜ','Opm24 OÜ','Rehvikeskus OÜ','Busland Service OÜ','Aardla Autoteenindus OÜ','Heko Kaubandus OÜ','MB Star OÜ','Tartu Puidutööstus AS','Nordic Logistics OÜ','Vesiroos Kinnisvara OÜ','Kalev Ehitus AS','Saarte Teenused OÜ','Metsatalu OÜ','Pärnu Külmutus OÜ','Elektrilevi Partner OÜ','Viru Autopesula OÜ','Tehnokraft OÜ','Lõunakeskuse Halduse OÜ'];
+const ITEMS=['Kuutasu · raamatupidamine','Transporditeenus','Rehvivahetus (4 tk)','Varuosad · komplekt','Hooldustööd','Konsultatsioon (h)','Materjalid','Rendiarve · august','Andmeside','Paigaldustööd'];
+const fmt=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();
+const TODAY=new Date(2026,8,2);
+let seed=7;const rnd=()=>(seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff;
+
+// ── andmed ─────────────────────────────────────────────────────────────────
+const INV=[];
+for(let i=0;i<58;i++){
+  const nr=25930-i;
+  const issued=new Date(TODAY);issued.setDate(TODAY.getDate()-Math.floor(rnd()*300));
+  if(i<2)issued.setTime(new Date(2026,8,1).getTime());
+  const due=new Date(issued);due.setDate(issued.getDate()+(rnd()<.6?7:14));
+  const sub=Math.round((40+rnd()*1400)*100)/100;
+  const vat=Math.round(sub*0.24*100)/100;
+  const total=Math.round((sub+vat)*100)/100;
+  const overdue=Math.round((TODAY-due)/86400000);
+  let st;
+  if(i<2)st='draft';
+  else if(rnd()<.16)st='paid';
+  else if(overdue>0)st='overdue';
+  else st='sent';
+  if(i===9)st='void';
+  const paid=st==='paid'?total:(st==='overdue'&&rnd()<.15?Math.round(total*0.4*100)/100:0);
+  const n=Math.floor(rnd()*3)+1;const lines=[];
+  let rest=sub;
+  for(let k=0;k<n;k++){
+    const amt=k===n-1?Math.round(rest*100)/100:Math.round(rest/(n-k)*rnd()*100)/100||Math.round(rest/n*100)/100;
+    rest=Math.round((rest-amt)*100)/100;
+    const qty=Math.max(1,Math.round(rnd()*4));
+    lines.push({t:ITEMS[Math.floor(rnd()*ITEMS.length)],qty,price:Math.round(amt/qty*100)/100,vat:24,amt});
+  }
+  INV.push({nr,name:NAMES[Math.floor(rnd()*NAMES.length)],reg:'1'+String(Math.floor(rnd()*8999999)+1000000),issued,due,sub,vat,total,paid,st,overdue,lines,
+    ref:String(nr)+'00'+(2500+i),journal:st==='draft'?null:'PR-2026-'+(1400+i),email:'arved@'+String(NAMES[0]).toLowerCase().replace(/[^a-z]/g,'')+'.ee',
+    terms:(rnd()<.6?7:14),credit:Math.round((500+rnd()*4000)/100)*100,openBal:Math.round((rnd()*6000)*100)/100});
+}
+const VATC=[
+ {k:'d24',l:'Siseriiklik 24%',s:'24%',rate:24},
+ {k:'d9',l:'Siseriiklik 9%',s:'9%',rate:9},
+ {k:'eug',l:'EU kauba müük 0%',s:'EU kaup',rate:0},
+ {k:'eus',l:'EU teenus 0% (pöördmaks)',s:'EU teenus',rate:0},
+ {k:'exp',l:'Eksport 0%',s:'Eksport',rate:0},
+ {k:'ex',l:'Maksuvaba käive',s:'Maksuvaba',rate:0}];
+INV.forEach(v=>{
+  const m=v.nr%13;
+  v.vatc=m<7?'d24':m===7?'d9':m===8?'eug':m===9?'eus':m===10?'exp':m===11?'ex':'d24';
+  const rate=VATC.find(c=>c.k===v.vatc).rate;
+  v.vat=Math.round(v.sub*rate/100*100)/100;
+  v.total=Math.round((v.sub+v.vat)*100)/100;
+  v.lines.forEach(l=>l.vat=rate);
+  if(v.st==='paid')v.paid=v.total;else if(v.paid>0)v.paid=Math.min(v.paid,v.total);
+});
+INV.forEach(v=>{v.open=Math.round((v.total-v.paid)*100)/100;v.email='arved@'+v.name.toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,14)+'.ee';
+  v.lines.forEach((l,k)=>{const m=(v.nr+k*3)%9;l.disc=m===0?10:m===4?5:m===7?15:0;
+    l.list=l.disc?Math.round(l.amt/(1-l.disc/100)*100)/100:l.amt;l.cut=Math.round((l.list-l.amt)*100)/100});
+  v.disc=v.lines.some(l=>l.disc);v.esent=v.st!=='draft'&&v.nr%7!==0});
+
+const ST={draft:{c:'draft',l:'Mustand'},sent:{c:'sent',l:'Saadetud'},paid:{c:'paid',l:'Makstud'},overdue:{c:'over',l:'Üle tähtaja',s:'Üle tähtaja'},void:{c:'void',l:'Tühistatud'}};
+
+// ── olek ───────────────────────────────────────────────────────────────────
+const COLS=[
+ {id:'idx',l:'',w:30,fix:true,lock:true},
+ {id:'nr',l:'Arve',w:62},
+ {id:'cust',l:'Klient',w:210,flex:true},
+ {id:'total',l:'Summa',w:92,r:true},
+ {id:'open',l:'Tasumata',w:88,r:true},
+ {id:'issued',l:'Väljastatud',w:92},
+ {id:'due',l:'Tähtaeg',w:124},
+ {id:'st',l:'Staatus',w:118},
+];
+const S={tab:'all',q:'',sort:'nr',dir:-1,sel:INV[0].nr,per:'90',d1:null,d2:null,mode:'list',wide:false,
+  pw:+(localStorage.getItem('arvelo.inv.pw')||0)||430,vatc:'all',
+  widths:JSON.parse(localStorage.getItem('arvelo.inv.cols')||'null')||{},
+  hidden:new Set(JSON.parse(localStorage.getItem('arvelo.inv.hidden')||'[]'))};
+
+const PRESETS=[['month','Käesolev kuu'],['prev','Eelmine kuu'],['q','Käesolev kvartal'],['90','Viimased 90 päeva'],['year','Käesolev aasta'],['all','Kõik ajad']];
+function periodRange(){
+  const t=TODAY,y=t.getFullYear(),m=t.getMonth();
+  if(S.per==='custom')return [S.d1,S.d2];
+  if(S.per==='month')return [new Date(y,m,1),new Date(y,m+1,0)];
+  if(S.per==='prev')return [new Date(y,m-1,1),new Date(y,m,0)];
+  if(S.per==='q'){const q=Math.floor(m/3)*3;return [new Date(y,q,1),new Date(y,q+3,0)]}
+  if(S.per==='90'){const a=new Date(t);a.setDate(t.getDate()-90);return [a,t]}
+  if(S.per==='year')return [new Date(y,0,1),new Date(y,11,31)];
+  return [null,null];
+}
+function inPeriod(v){const[a,b]=periodRange();if(a&&v.issued<a)return false;if(b&&v.issued>new Date(b.getFullYear(),b.getMonth(),b.getDate(),23,59))return false;return true}
+function vatMatch(v){return S.vatc==='all'||S.vatc===v.vatc}
+function tabMatch(v,tab){
+  if(tab==='all')return true;
+  if(tab==='unsent')return v.st!=='void'&&!v.esent;
+  if(tab==='unpaid')return v.st!=='void'&&v.st!=='draft'&&v.open>0;
+  return tab===v.st;
+}
+const TABS=[['all','Kõik'],['draft','Mustand'],['unsent','Saatmata'],['unpaid','Tasumata'],['overdue','Üle tähtaja']];
+const MORE=[['sent','Saadetud'],['paid','Makstud'],['void','Tühistatud']];
+function tabCount(k){return INV.filter(v=>inPeriod(v)&&tabMatch(v,k)).length}
+function visible(){
+  const q=S.q.trim().toLowerCase();
+  return INV.filter(v=>tabMatch(v,S.tab)&&inPeriod(v)&&vatMatch(v)&&(!q||String(v.nr).includes(q)||v.name.toLowerCase().includes(q)))
+    .sort((a,b)=>{const k=S.sort;let x=a[k],y=b[k];if(k==='cust'){x=a.name;y=b.name}if(x instanceof Date){x=+x;y=+y}return (x>y?1:x<y?-1:0)*S.dir});
+}
+const cols=()=>COLS.filter(c=>!S.hidden.has(c.id));
+function colTemplate(){return cols().map(c=>{const w=S.widths[c.id];if(c.flex&&!w)return 'minmax(96px,1fr)';return (w||c.w)+'px'}).join(' ')}
+
+// ── render ─────────────────────────────────────────────────────────────────
+function hue(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))%360;return h}
+function initials(s){return s.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+
+function renderTabs(){
+  const t=document.getElementById('tabs');
+  const more=MORE.find(([k])=>k===S.tab);
+  t.innerHTML=TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="pill">${tabCount(k)}</span></button>`).join('')
+    +`<span class="tabmore"><button class="tab ${more?'on':''}" id="morebtn" title="Rohkem filtreid">${more?more[1]+'<span class="pill">'+tabCount(more[0])+'</span>':'···'}</button>`
+    +`<div class="menu" id="moremenu" hidden>${MORE.map(([k,l])=>`<button class="mitem ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="pill">${tabCount(k)}</span></button>`).join('')}</div></span>`;
+}
+function renderMetrics(){
+  const v=INV.filter(inPeriod);
+  const open=v.filter(x=>x.st!=='void'&&x.st!=='draft').reduce((s,x)=>s+x.open,0);
+  const over=v.filter(x=>x.st==='overdue').reduce((s,x)=>s+x.open,0);
+  const overN=v.filter(x=>x.st==='overdue').length;
+  const dso=Math.round(v.filter(x=>x.st==='overdue').reduce((s,x)=>s+x.overdue,0)/(overN||1));
+  document.getElementById('metrics').innerHTML=`
+   <div class="metric"><span class="k">Laekumata</span><span class="v mono">${fmt(open)}</span></div>
+   <div class="metric neg"><span class="k">Üle tähtaja</span><span class="v mono">${fmt(over)}</span></div>
+   <div class="metric"><span class="k">Keskm. viivitus</span><span class="v mono">${dso}p</span></div>`;
+  const [a,b]=periodRange();
+  document.getElementById('subline').textContent=(a?dstr(a)+' – '+dstr(b):'kõik ajad')+' · '+v.length+' arvet';
+}
+function rowHTML(v,i){
+  const c=cols().map(c=>{
+    if(c.id==='idx')return `<div class="idx mono">${pad(i+1)}</div>`;
+    if(c.id==='nr')return `<div class="nr mono">${v.nr}</div>`;
+    if(c.id==='cust')return `<div><div class="cust"><span class="av" style="background:oklch(0.92 0.045 ${hue(v.name)});color:oklch(0.36 0.09 ${hue(v.name)})">${initials(v.name)}</span><span class="nm"><span class="n1">${v.name}</span><span class="n2">Reg ${v.reg} · ${v.lines.length} rida · ${v.terms}p</span></span></div></div>`;
+    if(c.id==='total')return `<div class="num mono">${fmt(v.total)}</div>`;
+    if(c.id==='open')return `<div class="num mono ${v.open===0?'mut':''}">${v.open===0?'—':fmt(v.open)}</div>`;
+    if(c.id==='issued')return `<div class="dt mono">${dstr(v.issued)}</div>`;
+    if(c.id==='due')return `<div class="dt mono">${dstr(v.due)}${v.st==='overdue'?` <span class="d2" style="color:var(--neg)">+${v.overdue}p</span>`:v.st==='sent'?` <span class="d2">${-v.overdue}p</span>`:''}</div>`;
+    if(c.id==='st'){const s=ST[v.st];return `<div><span class="tag ${s.c}"><span class="dot"></span>${s.s||s.l}</span></div>`}
+  }).join('');
+  return `<div class="trow ${S.sel===v.nr?'on':''}" data-nr="${v.nr}">${c}</div>`;
+}
+function renderTable(){
+  const list=visible();
+  const tpl=colTemplate();
+  document.documentElement.style.setProperty('--cols',tpl);
+  document.getElementById('thead').innerHTML=cols().map(c=>
+    `<div class="th ${c.r?'r':''} ${S.sort===c.id?'sorted':''}" data-col="${c.id}">${c.l}${S.sort===c.id?`<span class="sort">${S.dir>0?'↑':'↓'}</span>`:''}${c.lock?'':'<span class="grip" data-grip="'+c.id+'"></span>'}</div>`).join('');
+  document.getElementById('rows').innerHTML=list.map(rowHTML).join('')||'<div class="empty">Selles vahemikus arveid pole</div>';
+  document.getElementById('counts').innerHTML=`<b>${list.length}</b>&nbsp;arvet nähtaval`;
+  const sum=list.reduce((s,v)=>s+v.open,0);
+  const tot=list.reduce((s,v)=>s+v.total,0);
+  const net=list.reduce((s,v)=>s+v.sub,0);
+  document.getElementById('footleft').textContent='Sorteeritud: '+(cols().find(c=>c.id===S.sort)||{l:'arve'}).l.toLowerCase()+(S.dir>0?' ↑':' ↓');
+  document.getElementById('footsum').innerHTML=`<span class="mono" title="Käibemaksuta ${fmt(net)} · KM ${fmt(tot-net)}" style="cursor:help;text-decoration:underline dotted var(--border-strong);text-underline-offset:3px">Summa kokku <b style="color:var(--text)">${fmt(tot)}</b></span><span class="mono">Tasumata kokku <b style="color:var(--text)">${fmt(sum)}</b></span>`;
+  const dr=INV.filter(v=>v.st==='draft'&&inPeriod(v));
+  const ws=document.getElementById('warnstrip');
+  ws.hidden=dr.length===0;
+  if(dr.length)document.getElementById('warntext').innerHTML=`<b>${dr.length}</b> kinnitamata mustandit summas ${fmt(dr.reduce((s,v)=>s+v.total,0))} — need ei ole pearaamatus`;
+}
+function renderDetail(){
+  const v=INV.find(x=>x.nr===S.sel);
+  const d=document.getElementById('detail');
+  if(!v){d.innerHTML='<div class="empty">Vali arve</div>';return}
+  const s=ST[v.st];const list=visible();const i=list.findIndex(x=>x.nr===v.nr);
+  d.innerHTML=`
+  <div class="dhead">
+    <div><h2><span class="mono">${v.nr}</span> · ${v.name}</h2>
+      <div class="line mono">${v.ref} · ${v.journal?`<a href="#" data-jrn title="Vaata kannet">${v.journal}</a>`:'kanne kinnitamata'} · ${v.lines.length} rida</div></div>
+    <div class="nav"><span class="tag ${s.c}"><span class="dot"></span>${s.l}</span>
+      <button class="btn sm" data-nav="-1" ${i<=0?'disabled':''}>↑</button>
+      <button class="btn sm" data-nav="1" ${i>=list.length-1?'disabled':''}>↓</button>
+      <button class="btn sm" data-wide title="Laienda paneel (tabel peitu)">${S.wide?'⇲ Kitsenda':'⇱ Laienda'}</button>
+      <button class="btn sm" data-open title="Ava arve täisvaates (Enter)">Ava →</button></div>
+  </div>
+  <div class="dbody">
+    <div class="sec grow">
+      <div class="lines ${S.wide?'w':''}">
+        <div class="lhead"><div>Kirjeldus</div><div style="text-align:right">Kogus</div><div style="text-align:right">Hind</div>${S.wide?'<div style="text-align:right">Ale</div><div style="text-align:right">KM</div>':''}<div style="text-align:right">Summa</div></div>
+        <div class="lscroll">${v.lines.map(l=>`<div class="lrow"><div class="t">${l.t}</div><div class="mono" style="text-align:right">${l.qty}</div><div class="mono" style="text-align:right">${fmt(l.list/l.qty)}</div>${S.wide?`<div class="mono dc ${l.disc?'':'none'}">${l.disc?'−'+l.disc+'%':'—'}</div><div class="mono" style="text-align:right">${l.vat}%</div>`:''}<div class="mono amt ${l.disc?'hasdisc':''}"${l.disc?` title="Allahindlus ${l.disc}% · nimihind ${fmt(l.list)} · soodustus −${fmt(l.cut)}"`:''}>${fmt(l.amt)}</div></div>`).join('')}</div>
+        <div class="ltot"><span>Neto <b class="mono">${fmt(v.sub)}</b></span><span>KM <b class="mono">${fmt(v.vat)}</b></span><span>Kokku <b class="mono">${fmt(v.total)}</b></span></div>
+      </div>
+    </div>
+    <div class="dsplit">
+    <div class="sec">
+      <div class="sech">Andmed</div>
+      <div class="kv"><span>Makseviide</span><b class="mono" title="${v.ref}">${v.ref}</b></div>
+      <div class="kv"><span>Registrikood</span><b class="mono" title="${v.reg}">${v.reg}</b></div>
+      <div class="kv"><span>Maksetingimus</span><b class="mono">${v.terms} p</b></div>
+      <div class="kv"><span>Valuuta</span><b class="mono">EUR</b></div>
+      <div class="kv"><span>E-arve</span><b>${v.esent?'saadetud':'saatmata'}</b></div>
+      <div class="kv"><span>KM kood</span><b title="${VATC.find(c=>c.k===v.vatc).l}">${VATC.find(c=>c.k===v.vatc).s}</b></div>
+      <div class="kv"><span>Viivis</span><b class="mono">0,05%/p</b></div>
+    </div>
+    <div class="sec">
+      <div class="sech">Klient<span class="r"><a href="#">Kliendikaart</a></span></div>
+      <div class="kv"><span>E-post</span><b class="mono" title="${v.email}">${v.email}</b></div>
+      <div class="kv"><span>Avatud saldo</span><b class="mono">${fmt(v.openBal)}</b></div>
+      <div class="kv"><span>Krediidilimiit</span><b class="mono">${fmt(v.credit)}</b></div>
+      <div class="kv"><span>Laekumisaeg</span><b class="mono" title="keskmine">${18+(v.nr%22)} p</b></div>
+      <div class="sech" style="margin:11px 0 6px">Ajajoon</div>
+      <div class="tl">
+        <div class="tlrow done"><span class="mono">${dstr(v.issued)}</span><span class="bul"></span><span title="Arve koostatud">Arve koostatud</span><span class="mono">Peeter</span></div>
+        ${v.st!=='draft'?`<div class="tlrow done"><span class="mono">${dstr(v.issued)}</span><span class="bul"></span><span title="Saadetud e-arvena">Saadetud e-arvena</span><span class="mono">auto</span></div>`:''}
+        ${v.paid>0?`<div class="tlrow done"><span class="mono">${dstr(v.due)}</span><span class="bul"></span><span>Laekumine ${fmt(v.paid)}</span><span class="mono">pank</span></div>`:''}
+        ${v.st==='overdue'?`<div class="tlrow"><span class="mono">${dstr(v.due)}</span><span class="bul"></span><span>Tähtaeg möödas · meeldetuletus saatmata</span><span class="mono">—</span></div>`:''}
+        ${v.st==='draft'?`<div class="tlrow"><span class="mono">—</span><span class="bul"></span><span>Ootab kinnitamist</span><span class="mono">—</span></div>`:''}
+      </div>
+    </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn primary">${v.st==='draft'?'Kinnita ja saada':'Ava arve'}</button>
+    ${v.st==='overdue'?'<button class="btn">Saada meeldetuletus</button>':''}
+    <div class="r"><button class="btn ghost">Kreediteeri</button><button class="btn ghost">···</button></div>
+  </div>`;
+}
+function renderFull(){
+  const f=document.getElementById('full');
+  const list=visible();const i=list.findIndex(x=>x.nr===S.sel);
+  document.querySelector('.body').hidden=S.mode==='open';
+  document.querySelector('.railrow').style.display=S.mode==='open'?'none':'';
+  f.hidden=S.mode!=='open';
+  if(S.mode!=='open'){f.innerHTML='';return}
+  const v=INV.find(x=>x.nr===S.sel);const s=ST[v.st];
+  const lines=v.lines.map(l=>{const net=l.amt,vat=Math.round(net*l.vat)/100;return{...l,net,vatAmt:vat,gross:Math.round((net+vat)*100)/100}});
+  f.innerHTML=`
+  <div class="dhead">
+    <div><div class="crumb"><button class="btn sm ghost" data-back>← Müügiarved</button><span>/</span><span class="mono">${v.nr}</span></div>
+      <h2 style="margin-top:5px"><span class="mono">${v.nr}</span> · ${v.name}</h2>
+      <div class="line mono">${dstr(v.issued)} → ${dstr(v.due)} · ${v.terms} päeva · viide ${v.ref} · ${v.journal||'kanne puudub'}</div></div>
+    <div class="nav"><span class="tag ${s.c}"><span class="dot"></span>${s.l}</span>
+      <button class="btn sm" data-nav="-1" ${i<=0?'disabled':''}>↑</button>
+      <button class="btn sm" data-nav="1" ${i>=list.length-1?'disabled':''}>↓</button>
+      <button class="btn sm ghost" data-back title="Esc">Sulge</button></div>
+  </div>
+  <div class="fsplit">
+    <div class="fleft">
+      <div class="bigh"><div>Kirjeldus</div><div style="text-align:right">Kogus</div><div style="text-align:right">Hind</div><div style="text-align:right">Allahindl.</div><div style="text-align:right">KM</div><div style="text-align:right">Neto</div><div style="text-align:right">Kokku</div></div>
+      ${lines.map(l=>`<div class="bigr"><div class="t">${l.t}<div style="font-size:10.5px;color:var(--text-3)">Konto 3110 · tk</div></div><div class="mono" style="text-align:right">${l.qty}</div><div class="mono" style="text-align:right">${fmt(l.list/l.qty)}</div><div class="mono" style="text-align:right;${l.disc?'color:#b8330f;font-weight:600':'color:var(--text-3)'}">${l.disc?'−'+l.disc+'% · −'+fmt(l.cut):'—'}</div><div class="mono" style="text-align:right">${l.vat}%</div><div class="mono" style="text-align:right">${fmt(l.net)}</div><div class="mono" style="text-align:right;font-weight:700">${fmt(l.gross)}</div></div>`).join('')}
+      <div class="bigtot"><span>Neto <b class="mono">${fmt(v.sub)}</b></span><span>Käibemaks 24% <b class="mono">${fmt(v.vat)}</b></span><span>Kokku <b class="mono">${fmt(v.total)}</b></span></div>
+      <div class="sec" style="border-bottom:none">
+        <div class="sech">Konteering<span class="r mono">${v.journal?`<a href="#" data-jrn>${v.journal}</a>`:'kinnitamata mustand'}</span></div>
+        ${v.journal?`<div class="lines">
+          <div class="jl" style="border-top:none;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)"><div>Konto</div><div>Nimetus</div><div style="text-align:right">Deebet</div><div style="text-align:right">Kreedit</div></div>
+          <div class="jl"><div class="mono">1210</div><div>Nõuded ostjate vastu</div><div class="mono" style="text-align:right">${fmt(v.total)}</div><div class="mono" style="text-align:right;color:var(--text-3)">—</div></div>
+          <div class="jl"><div class="mono">3110</div><div>Müügitulu</div><div class="mono" style="text-align:right;color:var(--text-3)">—</div><div class="mono" style="text-align:right">${fmt(v.sub)}</div></div>
+          <div class="jl"><div class="mono">2130</div><div>Käibemaksukohustus</div><div class="mono" style="text-align:right;color:var(--text-3)">—</div><div class="mono" style="text-align:right">${fmt(v.vat)}</div></div>
+        </div>`:'<div class="kv"><span>Kanne tekib arve kinnitamisel</span><b>—</b></div>'}
+      </div>
+    </div>
+    <div class="fright">
+      <div class="sec">
+        <div class="sech">Maksmine</div>
+        <div class="v mono" style="font-size:22px;font-weight:700;letter-spacing:-0.035em">${fmt(v.open)}</div>
+        <div class="h" style="font-size:11px;color:var(--text-3)">tasumata ${v.total?Math.round(v.open/v.total*100):0}% · makstud ${fmt(v.paid)}</div>
+        <div class="bar"><i style="width:${Math.round(v.paid/v.total*100)}%"></i></div>
+        <div class="kv" style="margin-top:9px"><span>Tähtaeg</span><b class="mono">${dstr(v.due)}</b></div>
+        <div class="kv"><span>${v.st==='overdue'?'Üle tähtaja':'Tähtajani'}</span><b class="mono" style="color:${v.st==='overdue'?'var(--neg)':'inherit'}">${Math.abs(v.overdue)} päeva</b></div>
+        <div class="kv"><span>Viivis</span><b class="mono">0,05% / päev</b></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Klient<span class="r"><a href="#">Kliendikaart</a></span></div>
+        <div class="kv"><span>Registrikood</span><b class="mono">${v.reg}</b></div>
+        <div class="kv"><span>E-post</span><b class="mono">${v.email}</b></div>
+        <div class="kv"><span>Avatud saldo</span><b class="mono">${fmt(v.openBal)}</b></div>
+        <div class="kv"><span>Krediidilimiit</span><b class="mono">${fmt(v.credit)}</b></div>
+        <div class="kv"><span>Keskm. laekumisaeg</span><b class="mono">${18+(v.nr%22)} päeva</b></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Ajajoon</div>
+        <div class="tl">
+          <div class="tlrow done"><span class="mono">${dstr(v.issued)}</span><span class="bul"></span><span>Arve koostatud</span><span class="mono">Peeter</span></div>
+          ${v.st!=='draft'?`<div class="tlrow done"><span class="mono">${dstr(v.issued)}</span><span class="bul"></span><span>Saadetud e-arvena</span><span class="mono">auto</span></div>`:''}
+          ${v.paid>0?`<div class="tlrow done"><span class="mono">${dstr(v.due)}</span><span class="bul"></span><span>Laekumine ${fmt(v.paid)}</span><span class="mono">pank</span></div>`:''}
+          ${v.st==='overdue'?`<div class="tlrow"><span class="mono">${dstr(v.due)}</span><span class="bul"></span><span>Meeldetuletus saatmata</span><span class="mono">—</span></div>`:''}
+          ${v.st==='draft'?`<div class="tlrow"><span class="mono">—</span><span class="bul"></span><span>Ootab kinnitamist</span><span class="mono">—</span></div>`:''}
+        </div>
+      </div>
+      <div class="sec" style="border-bottom:none">
+        <div class="sech">Manused</div>
+        <div class="kv"><span>arve_${v.nr}.pdf</span><b><a href="#">Ava</a></b></div>
+        <div class="kv"><span>e-arve XML</span><b><a href="#">Ava</a></b></div>
+      </div>
+    </div>
+  </div>
+  <div class="dfoot">
+    <button class="btn primary">${v.st==='draft'?'Kinnita ja saada':'Saada uuesti'}</button>
+    <button class="btn">Muuda</button>
+    <button class="btn">Registreeri laekumine</button>
+    <div class="r"><button class="btn ghost">Kreediteeri</button><button class="btn ghost">Prindi</button><button class="btn ghost">···</button></div>
+  </div>`;
+}
+function openFull(){S.mode='open';renderFull()}
+function closeFull(){S.mode='list';renderFull()}
+function journalEntries(v){
+  const es=[{doc:v.journal,date:v.issued,desc:'Müügiarve '+v.nr+' · '+v.name,lines:[
+    {a:'1210',n:'Nõuded ostjate vastu',d:v.total,c:0},
+    {a:'3110',n:'Müügitulu',d:0,c:v.sub},
+    {a:'2130',n:'Käibemaksukohustus',d:0,c:v.vat}]}];
+  if(v.paid>0)es.push({doc:'PR-2026-'+(2200+v.nr%400),date:v.due,desc:'Laekumine · arve '+v.nr,lines:[
+    {a:'1010',n:'Pangakonto',d:v.paid,c:0},
+    {a:'1210',n:'Nõuded ostjate vastu',d:0,c:v.paid}]});
+  return es;
+}
+function openJournal(nr){
+  const v=INV.find(x=>x.nr===nr);if(!v||!v.journal)return;
+  const es=journalEntries(v);
+  document.getElementById('jbox').innerHTML=`
+    <div class="mhead">
+      <div><h3>Arvega seotud kanded</h3>
+        <div class="line mono">Arve ${v.nr} · ${v.name} · ${es.length} kannet</div></div>
+      <button class="btn sm ghost x" data-jclose title="Esc">Sulge</button>
+    </div>
+    <div class="mbody">${es.map(e=>{
+      const dt=e.lines.reduce((s,l)=>s+l.d,0),ct=e.lines.reduce((s,l)=>s+l.c,0);
+      return `<div class="jgrp"><b class="mono">${e.doc}</b><span class="mono">${dstr(e.date)}</span><span>${e.desc}</span><span class="r"><a href="#">Ava päevaraamatus</a></span></div>
+      <div class="jh"><div>Konto</div><div>Nimetus</div><div class="rt">Deebet</div><div class="rt">Kreedit</div></div>
+      ${e.lines.map(l=>`<div class="jr"><div class="mono">${l.a}</div><div>${l.n}</div><div class="mono rt">${l.d?fmt(l.d):'—'}</div><div class="mono rt">${l.c?fmt(l.c):'—'}</div></div>`).join('')}
+      <div class="jsum"><div></div><div>Kokku</div><div class="mono rt">${fmt(dt)}</div><div class="mono rt">${fmt(ct)}</div></div>`}).join('')}</div>
+    <div class="mfootbar"><span style="font-size:11.5px;color:var(--text-3)">Kanded on tasakaalus</span>
+      <div class="r"><button class="btn" data-jclose>Sulge</button><button class="btn primary">Ava pearaamatus →</button></div></div>`;
+  document.getElementById('jmodal').hidden=false;
+}
+function closeJournal(){document.getElementById('jmodal').hidden=true}
+function renderColMenu(){
+  document.getElementById('colmenu').innerHTML=COLS.filter(c=>!c.lock).map(c=>
+    `<label><input type="checkbox" data-hide="${c.id}" ${S.hidden.has(c.id)?'':'checked'} /> ${c.l}</label>`).join('')
+    +`<div class="mfoot"><button class="btn sm ghost" id="colreset">Lähtesta laiused</button></div>`;
+}
+function renderPeriod(){
+  document.getElementById('presets').innerHTML=PRESETS.map(([k,l])=>`<button data-pre="${k}" class="${S.per===k?'on':''}">${l}</button>`).join('');
+  document.getElementById('perlbl').textContent=S.per==='custom'?(dstr(S.d1)+' – '+dstr(S.d2)):PRESETS.find(p=>p[0]===S.per)[1];
+  document.getElementById('perbtn').classList.toggle('on',S.per!=='90');
+  const[a,b]=periodRange();
+  document.getElementById('perhint').textContent=a?dstr(a)+' – '+dstr(b):'piiranguta';
+}
+function renderVat(){
+  const cur=VATC.find(c=>c.k===S.vatc);
+  document.getElementById('vatlbl').textContent='KM: '+(cur?cur.s:'kõik');
+  document.getElementById('vatbtn').classList.toggle('on',S.vatc!=='all');
+  const cnt=k=>INV.filter(v=>inPeriod(v)&&tabMatch(v,S.tab)&&(k==='all'||v.vatc===k)).length;
+  document.getElementById('vatmenu').innerHTML=[{k:'all',l:'Kõik käibemaksukoodid'}].concat(VATC)
+    .map(c=>`<button class="mitem ${S.vatc===c.k?'on':''}" data-vatc="${c.k}">${c.l}<span class="pill">${cnt(c.k)}</span></button>`).join('');
+}
+function renderAll(){renderTabs();renderMetrics();renderTable();renderDetail();renderPeriod();renderVat();renderFull()}
+renderColMenu();
+document.documentElement.style.setProperty('--pw',clampPW(S.pw)+'px');
+renderAll();
+
+// ── interaktsioonid ────────────────────────────────────────────────────────
+document.getElementById('tabs').onclick=e=>{
+  if(e.target.closest('#morebtn')){e.stopPropagation();const m=document.getElementById('moremenu');m.hidden=!m.hidden;return}
+  const b=e.target.closest('[data-tab]');if(!b)return;
+  S.tab=b.dataset.tab;renderAll()};
+document.getElementById('q').oninput=e=>{S.q=e.target.value;renderTable();renderDetail()};
+document.getElementById('rows').onclick=e=>{const r=e.target.closest('[data-nr]');if(!r)return;S.sel=+r.dataset.nr;renderTable();renderDetail()};
+document.getElementById('rows').ondblclick=e=>{const r=e.target.closest('[data-nr]');if(!r)return;S.sel=+r.dataset.nr;renderTable();renderDetail();openFull()};
+document.getElementById('thead').onclick=e=>{
+  if(e.target.dataset.grip)return;
+  const th=e.target.closest('[data-col]');if(!th||th.dataset.col==='idx')return;
+  if(S.sort===th.dataset.col)S.dir*=-1;else{S.sort=th.dataset.col;S.dir=1}
+  renderTable()};
+document.getElementById('jmodal').addEventListener('click',e=>{
+  if(e.target.id==='jmodal'||e.target.closest('[data-jclose]'))closeJournal()});
+document.getElementById('detail').addEventListener('click',e=>{
+  if(e.target.closest('[data-jrn]')){e.preventDefault();openJournal(S.sel);return}
+  if(e.target.closest('[data-open]')){openFull();return}
+  if(e.target.closest('[data-wide]')){S.wide=!S.wide;document.querySelector('.body').classList.toggle('wide',S.wide);renderDetail();return}
+  const b=e.target.closest('[data-nav]');if(!b)return;
+  const list=visible();const i=list.findIndex(x=>x.nr===S.sel)+ +b.dataset.nav;
+  if(list[i]){S.sel=list[i].nr;renderTable();renderDetail()}});
+document.getElementById('full').addEventListener('click',e=>{
+  if(e.target.closest('[data-jrn]')){e.preventDefault();openJournal(S.sel);return}
+  if(e.target.closest('[data-back]')){closeFull();return}
+  const b=e.target.closest('[data-nav]');if(!b)return;
+  const list=visible();const i=list.findIndex(x=>x.nr===S.sel)+ +b.dataset.nav;
+  if(list[i]){S.sel=list[i].nr;renderTable();renderDetail();renderFull()}});
+
+// paneeli laiuse lohistamine
+const gut=document.getElementById('gutter');
+let gdrag=null;
+function clampPW(w){const avail=Math.max(document.querySelector('.shell').clientWidth,1240);return Math.max(410,Math.min(w,avail-9-560))}
+gut.addEventListener('mousedown',e=>{e.preventDefault();gdrag={x:e.clientX,w:S.pw};document.body.classList.add('pres')});
+window.addEventListener('mousemove',e=>{if(!gdrag)return;S.pw=clampPW(gdrag.w-(e.clientX-gdrag.x));document.documentElement.style.setProperty('--pw',S.pw+'px')});
+window.addEventListener('mouseup',()=>{if(!gdrag)return;gdrag=null;document.body.classList.remove('pres');localStorage.setItem('arvelo.inv.pw',S.pw)});
+gut.addEventListener('dblclick',()=>{S.pw=430;document.documentElement.style.setProperty('--pw','430px');localStorage.setItem('arvelo.inv.pw',S.pw)});
+window.addEventListener('resize',()=>{document.documentElement.style.setProperty('--pw',clampPW(S.pw)+'px')});
+
+// veeru laiuse lohistamine
+let drag=null;
+document.getElementById('thead').addEventListener('mousedown',e=>{
+  const g=e.target.dataset&&e.target.dataset.grip;if(!g)return;
+  e.preventDefault();
+  const th=e.target.parentElement;
+  drag={id:g,x:e.clientX,w:th.getBoundingClientRect().width};
+  document.body.classList.add('resizing')});
+window.addEventListener('mousemove',e=>{
+  if(!drag)return;
+  S.widths[drag.id]=Math.max(56,Math.round(drag.w+(e.clientX-drag.x)));
+  document.documentElement.style.setProperty('--cols',colTemplate())});
+window.addEventListener('mouseup',()=>{
+  if(!drag)return;drag=null;document.body.classList.remove('resizing');
+  localStorage.setItem('arvelo.inv.cols',JSON.stringify(S.widths))});
+document.getElementById('thead').addEventListener('dblclick',e=>{
+  const g=e.target.dataset&&e.target.dataset.grip;if(!g)return;
+  delete S.widths[g];localStorage.setItem('arvelo.inv.cols',JSON.stringify(S.widths));renderTable()});
+
+// veergude menüü
+const colmenu=document.getElementById('colmenu');
+document.getElementById('colbtn').onclick=e=>{e.stopPropagation();colmenu.hidden=!colmenu.hidden};
+colmenu.onclick=e=>{
+  e.stopPropagation();
+  if(e.target.id==='colreset'){S.widths={};localStorage.removeItem('arvelo.inv.cols');renderTable();return}
+  const id=e.target.dataset&&e.target.dataset.hide;if(!id)return;
+  if(e.target.checked)S.hidden.delete(id);else S.hidden.add(id);
+  localStorage.setItem('arvelo.inv.hidden',JSON.stringify([...S.hidden]));renderTable()};
+
+// periood
+const perpop=document.getElementById('perpop');
+document.getElementById('perbtn').onclick=e=>{e.stopPropagation();perpop.hidden=!perpop.hidden;if(!perpop.hidden){const[a,b]=periodRange();document.getElementById('d1').value=a?dstr(a):'';document.getElementById('d2').value=b?dstr(b):''}};
+perpop.onclick=e=>{
+  e.stopPropagation();
+  const p=e.target.dataset&&e.target.dataset.pre;
+  if(p){S.per=p;renderAll();perpop.hidden=true}};
+document.getElementById('perapply').onclick=e=>{
+  e.stopPropagation();
+  const p=s=>{const m=s.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+  const a=p(document.getElementById('d1').value),b=p(document.getElementById('d2').value);
+  if(a&&b){S.per='custom';S.d1=a;S.d2=b;renderAll();perpop.hidden=true}};
+document.getElementById('perclear').onclick=e=>{e.stopPropagation();S.per='all';renderAll();perpop.hidden=true};
+const vatmenu=document.getElementById('vatmenu');
+document.getElementById('vatbtn').onclick=e=>{e.stopPropagation();vatmenu.hidden=!vatmenu.hidden};
+vatmenu.onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-vatc]');if(!b)return;S.vatc=b.dataset.vatc;vatmenu.hidden=true;renderAll()};
+const expmenu=document.getElementById('expmenu');
+document.getElementById('expmore').onclick=e=>{e.stopPropagation();expmenu.hidden=!expmenu.hidden};
+expmenu.onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-exp]');if(!b)return;expmenu.hidden=true};
+document.addEventListener('click',()=>{perpop.hidden=true;colmenu.hidden=true;vatmenu.hidden=true;expmenu.hidden=true;const m=document.getElementById('moremenu');if(m)m.hidden=true});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!document.getElementById('jmodal').hidden){closeJournal();return}
+  if(e.key==='Escape'&&S.mode==='open'){closeFull();return}
+  if(e.key==='/'&&document.activeElement.id!=='q'){e.preventDefault();document.getElementById('q').focus();return}
+  if(document.activeElement.tagName==='INPUT')return;
+  if(e.key==='Enter'){e.preventDefault();S.mode==='open'?closeFull():openFull();return}
+  if(e.key==='j'||e.key==='k'){
+    const list=visible();const i=list.findIndex(x=>x.nr===S.sel)+(e.key==='j'?1:-1);
+    if(list[i]){S.sel=list[i].nr;renderTable();renderDetail();if(S.mode==='open')renderFull();
+      const el=document.querySelector('.trow.on');if(el){const r=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();if(r.bottom>p.bottom||r.top<p.top)el.parentElement.scrollTop+=r.top-p.top-(p.height/2)}}}});
+</script>
+</body>
+</html>
