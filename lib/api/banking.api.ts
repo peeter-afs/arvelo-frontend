@@ -604,6 +604,12 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  /** Run the missing-receipt reminder job now (sends every due reminder). */
+  async sendMissingReceiptRemindersNow() {
+    const response = await apiClient.post<ApiResponse<unknown>>('/api/banking/jobs/send-missing-receipt-reminders', {});
+    return response.data.data;
+  },
+
   async dismissMissingReceipt(transactionId: string, payload?: { reason?: string }) {
     const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${transactionId}/dismiss-missing-receipt`, payload || {});
     return response.data.data;

@@ -157,6 +157,12 @@ export const importApi = {
     return response.data.data;
   },
 
+  /** Original document bytes (PDF / image) for the viewer. Auth header is sent by the client. */
+  async downloadDocument(id: string) {
+    const response = await apiClient.get<Blob>(`/api/import/documents/${id}/download`, { responseType: 'blob' });
+    return response.data;
+  },
+
   async uploadPurchaseInvoicePdf(file: File, extra?: Record<string, string>) {
     const formData = new FormData();
     formData.append('file', file);
