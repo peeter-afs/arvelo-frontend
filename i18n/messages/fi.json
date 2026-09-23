@@ -58,6 +58,8 @@
     "help": "Ohjeet"
   },
   "accounting": {
+    "contactName": "Yhteyshenkilö",
+    "creditLimit": "Luottoraja",
     "chartOfAccounts": "Tilikartta",
     "journalEntries": "Päiväkirjamerkinnät",
     "partners": "Kumppanit",

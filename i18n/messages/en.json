@@ -84,6 +84,8 @@
     "help": "Guides"
   },
   "accounting": {
+    "contactName": "Contact person",
+    "creditLimit": "Credit limit",
     "chartOfAccounts": "Chart of Accounts",
     "journalEntries": "Journal Entries",
     "partners": "Partners",

@@ -39,6 +39,8 @@ type PartnerFormState = {
   notes: string;
   country_code: string;
   payment_terms_days: string;
+  contact_name: string;
+  credit_limit: string;
   is_active: boolean;
 };
 
@@ -57,6 +59,8 @@ const emptyForm = (): PartnerFormState => ({
   notes: '',
   country_code: 'EE',
   payment_terms_days: '',
+  contact_name: '',
+  credit_limit: '',
   is_active: true,
 });
 
@@ -242,6 +246,8 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
         notes: form.notes || undefined,
         country_code: form.country_code || undefined,
         payment_terms_days: form.payment_terms_days ? Number(form.payment_terms_days) : undefined,
+        contact_name: form.contact_name || undefined,
+        credit_limit: form.credit_limit.trim() ? Number(form.credit_limit.replace(',', '.')) : undefined,
         is_active: form.is_active,
       };
       const partner = await accountingApi.createPartner(payload);
@@ -449,6 +455,7 @@ function StepTwo({
       </Section>
 
       <Section label={t('contact')}>
+        <ModalField label={t('contactName')} value={form.contact_name} onChange={(v) => setForm((c) => ({ ...c, contact_name: v }))} />
         <ModalField label={t('email')} value={form.email} onChange={(v) => setForm((c) => ({ ...c, email: v }))} />
         <ModalField label={t('phone')} value={form.phone} onChange={(v) => setForm((c) => ({ ...c, phone: v }))} />
         <ModalField label={t('website')} value={form.website} onChange={(v) => setForm((c) => ({ ...c, website: v }))} />
@@ -459,6 +466,7 @@ function StepTwo({
         <ModalField label={t('city')} value={form.city} onChange={(v) => setForm((c) => ({ ...c, city: v }))} />
         <ModalField label={t('postalCode')} value={form.postal_code} onChange={(v) => setForm((c) => ({ ...c, postal_code: v }))} />
         <ModalField label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(v) => setForm((c) => ({ ...c, payment_terms_days: v }))} />
+        <ModalField label={t('creditLimit')} value={form.credit_limit} onChange={(v) => setForm((c) => ({ ...c, credit_limit: v }))} />
         <div className="sm:col-span-2">
           <ModalField label={t('address')} value={form.address} onChange={(v) => setForm((c) => ({ ...c, address: v }))} />
         </div>

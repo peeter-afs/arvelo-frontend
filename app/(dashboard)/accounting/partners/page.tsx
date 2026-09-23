@@ -50,6 +50,8 @@ type PartnerFormState = {
   country_code: string;
   payment_terms_days: string;
   receipt_responsible_email: string;
+  contact_name: string;
+  credit_limit: string;
   is_active: boolean;
 };
 
@@ -87,6 +89,8 @@ const emptyPartnerForm = (): PartnerFormState => ({
   country_code: 'EE',
   payment_terms_days: '',
   receipt_responsible_email: '',
+  contact_name: '',
+  credit_limit: '',
   is_active: true,
 });
 
@@ -655,6 +659,7 @@ function PartnerDetailPanel({
         </Section>
 
         <Section label={t('contact')} cols={2}>
+          <Field label={t('contactName')} value={form.contact_name} onChange={(value) => setForm((current) => ({ ...current, contact_name: value }))} />
           <Field label={t('email')} value={form.email} onChange={(value) => setForm((current) => ({ ...current, email: value }))} />
           <Field label={t('phone')} value={form.phone} onChange={(value) => setForm((current) => ({ ...current, phone: value }))} />
           <Field label={t('website')} value={form.website} onChange={(value) => setForm((current) => ({ ...current, website: value }))} />
@@ -663,6 +668,7 @@ function PartnerDetailPanel({
 
         <Section label={t('billing')} cols={2}>
           <Field label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(value) => setForm((current) => ({ ...current, payment_terms_days: value }))} />
+          <Field label={t('creditLimit')} value={form.credit_limit} onChange={(value) => setForm((current) => ({ ...current, credit_limit: value }))} />
           <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
           <Field label={t('receiptResponsibleEmail')} value={form.receipt_responsible_email || ''} onChange={(value) => setForm((current) => ({ ...current, receipt_responsible_email: value }))} />
         </Section>
@@ -930,6 +936,8 @@ function mapPartnerToForm(partner: PartnerRecord): PartnerFormState {
     country_code: partner.country_code || 'EE',
     payment_terms_days: partner.payment_terms_days !== null && partner.payment_terms_days !== undefined ? String(partner.payment_terms_days) : '',
     receipt_responsible_email: partner.receipt_responsible_email || '',
+    contact_name: partner.contact_name || '',
+    credit_limit: partner.credit_limit !== null && partner.credit_limit !== undefined ? String(partner.credit_limit) : '',
     is_active: partner.is_active,
   };
 }
@@ -951,6 +959,8 @@ function buildPartnerPayload(form: PartnerFormState) {
     country_code: form.country_code || undefined,
     payment_terms_days: form.payment_terms_days ? Number(form.payment_terms_days) : undefined,
     receipt_responsible_email: form.receipt_responsible_email || undefined,
+    contact_name: form.contact_name || undefined,
+    credit_limit: form.credit_limit.trim() ? Number(form.credit_limit.replace(',', '.')) : null,
     is_active: form.is_active,
   };
 }

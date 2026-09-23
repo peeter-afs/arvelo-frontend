@@ -156,6 +156,8 @@ export type PartnerRecord = {
   country_code?: string | null;
   payment_terms_days?: number | null;
   receipt_responsible_email?: string | null;
+  contact_name?: string | null;
+  credit_limit?: number | string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

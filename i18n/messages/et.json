@@ -84,6 +84,8 @@
     "help": "Juhendid"
   },
   "accounting": {
+    "contactName": "Kontaktisik",
+    "creditLimit": "Krediidilimiit",
     "chartOfAccounts": "Kontoplaan",
     "journalEntries": "Pearaamatu kanded",
     "partners": "Partnerid",

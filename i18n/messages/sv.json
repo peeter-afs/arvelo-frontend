@@ -58,6 +58,8 @@
     "help": "Guider"
   },
   "accounting": {
+    "contactName": "Kontaktperson",
+    "creditLimit": "Kreditgräns",
     "chartOfAccounts": "Kontoplan",
     "journalEntries": "Journalposter",
     "partners": "Partners",

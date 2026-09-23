@@ -272,7 +272,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       const patch: Partial<Header> = {};
       if (!h.partnerName) patch.partnerName = partner.name;
       if (!h.billing.trim()) patch.billing = partnerAddress(partner);
-      if (!h.contactEmail && !h.contactPhone && !h.contactName) { patch.contactEmail = partner.email || ''; patch.contactPhone = partner.phone || ''; }
+      if (!h.contactEmail && !h.contactPhone && !h.contactName) { patch.contactName = partner.contact_name || ''; patch.contactEmail = partner.email || ''; patch.contactPhone = partner.phone || ''; }
       return Object.keys(patch).length ? { ...h, ...patch } : h;
     });
   }, [partner]);
@@ -332,6 +332,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     return '';
   }, [members, hdr.authorId, user]);
   const balance = hdr.partnerId ? balances.get(hdr.partnerId) : undefined;
+  const creditLimit = partner?.credit_limit != null && partner.credit_limit !== '' ? Number(partner.credit_limit) : null;
   const salesDefault = settings?.[`default_sales_account_id_${vat.supply}` as const] || settings?.sales_revenue_account_id || '';
 
   /* ── a pristine new line takes the default sales account once settings arrive ── */
@@ -359,9 +360,10 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     else out.push({ s: 'ok', t: <>Maksetingimus <b>{termDays} päeva</b></> });
     if (extra.lcc) { const n = lines.filter((l) => !l.cost_center.trim()).length; if (n) out.push({ s: 'warn', t: <><b>{n}</b> rida ilma kulukohata</> }); }
     if (extra.lprj) { const n = lines.filter((l) => !l.project.trim()).length; if (n) out.push({ s: 'warn', t: <><b>{n}</b> rida ilma projektita</> }); }
+    if (creditLimit && creditLimit > 0 && (balance ?? 0) + totals.tot > creditLimit) out.push({ s: 'warn', t: <>Kliendi krediidilimiit saab täis ({money(creditLimit, hdr.currency)})</> });
     if (vat.rate === 0 && vatEnabled) out.push({ s: 'warn', t: '0% käive — kontrolli KM koodi põhjendust' });
     return out;
-  }, [partner, numberText, lines, hdr.issued, hdr.due, hdr.currency, termDays, extra.lcc, extra.lprj, vat.rate, vatEnabled]);
+  }, [partner, numberText, lines, hdr.issued, hdr.due, hdr.currency, termDays, extra.lcc, extra.lprj, vat.rate, vatEnabled, creditLimit, balance, totals.tot]);
   const hasErrors = checks.some((c) => c.s === 'err');
 
   const journalRows = useMemo(() => {
@@ -421,13 +423,13 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   /* ── header actions ── */
   const pickPartner = (p: PartnerRecord) => {
     const due = p.payment_terms_days != null ? addDaysEt(hdr.issued, p.payment_terms_days) : null;
-    setH({ partnerId: p.id, partnerName: p.name, billing: partnerAddress(p), contactName: '', contactEmail: p.email || '', contactPhone: p.phone || '', ...(due ? { due } : {}) });
+    setH({ partnerId: p.id, partnerName: p.name, billing: partnerAddress(p), contactName: p.contact_name || '', contactEmail: p.email || '', contactPhone: p.phone || '', ...(due ? { due } : {}) });
     setMenu(null);
     partnerRef.current?.blur();
   };
   const restoreBilling = () => { if (!partner) return; setH({ billing: partnerAddress(partner) }); showToast.info('Aadress taastatud kliendikaardilt'); };
   const copyBilling = () => { setH({ shipping: hdr.billing }); showToast.info('Arve aadress kopeeritud'); };
-  const restoreContact = () => { if (!partner) return; setH({ contactName: '', contactEmail: partner.email || '', contactPhone: partner.phone || '' }); showToast.info('Kontakt taastatud kliendikaardilt'); };
+  const restoreContact = () => { if (!partner) return; setH({ contactName: partner.contact_name || '', contactEmail: partner.email || '', contactPhone: partner.phone || '' }); showToast.info('Kontakt taastatud kliendikaardilt'); };
   const switchTab = (tab: AddressTab) => { focusTab.current = true; setAtab(tab); };
   const setDue = (days: number) => { const due = addDaysEt(hdr.issued, days); if (due) setH({ due }); };
   const addTerm = () => {
@@ -821,7 +823,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
             <div className={`${styles.kv} ${styles.kvWrap}`}><span>Aadress</span><b>{hdr.billing.trim() || '—'}</b></div>
             <div className={styles.kv}><span>E-post</span><b>{hdr.contactEmail.trim() || partner?.email || '—'}</b></div>
             <div className={styles.kv}><span>Avatud saldo</span><b className={styles.mono}>{balance != null ? money(balance, hdr.currency) : '—'}</b></div>
-            <div className={styles.kv}><span>Krediidilimiit</span><b className={styles.mono}>—</b></div>
+            <div className={styles.kv}><span>Krediidilimiit</span><b className={`${styles.mono} ${creditLimit && (balance ?? 0) + totals.tot > creditLimit ? styles.neg : ''}`}>{creditLimit ? money(creditLimit, hdr.currency) : '—'}</b></div>
             <div className={styles.kv}><span>Keskm. laekumisaeg</span><b>—</b></div>
           </div>
           <div className={styles.sec} style={{ borderBottom: 'none' }}>
