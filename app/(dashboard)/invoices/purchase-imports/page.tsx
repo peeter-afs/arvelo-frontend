@@ -34,6 +34,7 @@ type DraftInvoiceResult = {
       id: string;
     };
   };
+  credited_invoice?: { id: string; invoice_number: string | null } | null;
 };
 
 const emptyLine = (): EditableLine => ({
@@ -277,6 +278,7 @@ export default function PurchaseInvoiceImportsPage() {
   };
 
   const selectedWarnings = normalizeStringArray(detail?.import.warning_flags);
+  const isCreditNote = previewDraft?.document_type === 'purchase_credit_note';
   const duplicateWarning = Boolean(detail?.import.duplicate_check?.is_likely_duplicate);
   const selectedPartnerName = partnerNameById(partners, manualPartnerId || detail?.import.supplier_resolution?.selected_partner_id);
 
@@ -480,7 +482,24 @@ export default function PurchaseInvoiceImportsPage() {
                 </div>
 
                 <div className="space-y-6 p-5">
+                  {isCreditNote && (
+                    <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">{t('creditNoteDetected')}</div>
+                  )}
                   <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+                    <label className="space-y-2">
+                      <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('documentType')}</span>
+                      <select
+                        value={isCreditNote ? 'purchase_credit_note' : 'purchase_invoice'}
+                        onChange={(event) => setPreviewDraft((current) => ({ ...(current || {}), document_type: event.target.value }))}
+                        className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3"
+                      >
+                        <option value="purchase_invoice">{t('documentTypePurchaseInvoice')}</option>
+                        <option value="purchase_credit_note">{t('documentTypePurchaseCreditNote')}</option>
+                      </select>
+                    </label>
+                    {isCreditNote && (
+                      <Field label={t('creditedInvoiceNumber')} value={String(previewDraft.credited_invoice_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), credited_invoice_number: value }))} />
+                    )}
                     <Field label={t('supplierName')} value={String(previewDraft.supplier_name || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), supplier_name: value }))} />
                     <Field label={t('registryCode')} value={String(previewDraft.registry_code || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), registry_code: value }))} />
                     <Field label={t('vatNumber')} value={String(previewDraft.vat_number || '')} onChange={(value) => setPreviewDraft((current) => ({ ...(current || {}), vat_number: value }))} />
@@ -663,7 +682,7 @@ export default function PurchaseInvoiceImportsPage() {
                       className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreatingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      <span>{t('createDraftPurchaseInvoice')}</span>
+                      <span>{isCreditNote ? t('createDraftPurchaseCreditNote') : t('createDraftPurchaseInvoice')}</span>
                     </button>
 
                     {draftResult?.draft_invoice?.invoice && (
@@ -672,6 +691,13 @@ export default function PurchaseInvoiceImportsPage() {
                         <div className="mt-2">
                           {t('draftCreatedLinked', { invoiceId: draftResult.draft_invoice.invoice.id.slice(0, 8), importId: detail.import.id.slice(0, 8) })}
                         </div>
+                        {isCreditNote && !!previewDraft.credited_invoice_number && (
+                          <div className="mt-1">
+                            {draftResult.credited_invoice
+                              ? t('creditedInvoiceLinked', { invoiceNumber: String(draftResult.credited_invoice.invoice_number || previewDraft.credited_invoice_number) })
+                              : t('creditedInvoiceNotFound', { invoiceNumber: String(previewDraft.credited_invoice_number) })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

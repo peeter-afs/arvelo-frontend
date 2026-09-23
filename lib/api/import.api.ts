@@ -96,6 +96,7 @@ export type PurchaseInvoicePreviewData = Record<string, unknown> & {
 
 export type DraftInvoiceCreationResult = {
   draft_invoice?: { invoice?: { id: string } };
+  credited_invoice?: { id: string; invoice_number: string | null } | null;
   [key: string]: unknown;
 };
 
