@@ -18,6 +18,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import { invoicesApi, type InvoiceDetail, type InvoiceDraftPayload, type InvoiceLine, type InvoiceListItem, type InvoiceMeta } from '@/lib/api/invoices.api';
 import { productsApi, type Product } from '@/lib/api/products.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
+import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
@@ -131,8 +132,8 @@ function lineFrom(line: InvoiceLine): Line {
     code: String(meta.code || ''),
     description: line.description || '',
     account_id: line.account_id || '',
-    cost_center: String(meta.cost_center || ''),
-    project: String(meta.project || ''),
+    cost_center: String(meta.cost_center_id || ''),
+    project: String(meta.project_id || ''),
     quantity: String(Number(line.quantity ?? 1)),
     unit: String(meta.unit || 'tk'),
     unit_price: fmtNum(Number(line.unit_price || 0)),
@@ -162,8 +163,8 @@ function headerFrom(detail: InvoiceDetail, vatEnabled: boolean): { header: Heade
       inote: movedImportNote ? notes : m.internal_note || '',
       vatc: vatCodeFor(detail.lines, m, vatEnabled),
       authorId: m.author_user_id || inv.created_by_user_id || '',
-      costCenter: m.cost_center || '',
-      project: m.project || '',
+      costCenter: m.cost_center_id || '',
+      project: m.project_id || '',
     },
   };
 }
@@ -196,6 +197,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const [products, setProducts] = useState<Product[]>([]);
   const [balances, setBalances] = useState<Map<string, number>>(new Map());
   const [members, setMembers] = useState<TenantMember[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
 
   const [extra, setExtra] = useState<Extra>(DEFAULT_EXTRA);
   const [coll, setColl] = useState(false);
@@ -247,6 +250,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     productsApi.list().then(setProducts).catch(() => {});
     accountingApi.listPartnersWithBalances('customer').then((rows) => setBalances(new Map(rows.map((r) => [r.id, Number(r.balance || 0)])))).catch(() => {});
     if (tenant?.id) tenantsApi.getMembers(tenant.id).then(setMembers).catch(() => {});
+    costCentersApi.list().then(setCostCenters).catch(() => {});
+    projectsApi.list().then(setProjects).catch(() => {});
   }, [tenant?.id]);
 
   /* ── load the draft when the page did not pass it in ── */
@@ -420,6 +425,29 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
   };
 
+  /* ── dimension options: the partner's own projects first, everything else after ── */
+  const projectGroups = useMemo(() => groupProjects(projects, hdr.partnerId), [projects, hdr.partnerId]);
+  const CostCenterOptions = ({ current }: { current: string }) => (
+    <>
+      <option value="">—</option>
+      {current && !costCenters.some((c) => c.id === current) && <option value={current}>(tundmatu kulukoht)</option>}
+      {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+    </>
+  );
+  const ProjectOptions = ({ current }: { current: string }) => (
+    <>
+      <option value="">—</option>
+      {current && !projects.some((p) => p.id === current) && <option value={current}>(tundmatu projekt)</option>}
+      {projectGroups.own.length > 0 && <optgroup label="Kliendi projektid">{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+      {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? 'Muud projektid' : 'Projektid'}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+    </>
+  );
+  /** A project configured under a cost centre brings that cost centre along. */
+  const projectPatch = (projectId: string): { project: string; costCenter?: string } => {
+    const p = projects.find((x) => x.id === projectId);
+    return p?.cost_center_id ? { project: projectId, costCenter: p.cost_center_id } : { project: projectId };
+  };
+
   /* ── header actions ── */
   const pickPartner = (p: PartnerRecord) => {
     const due = p.payment_terms_days != null ? addDaysEt(hdr.issued, p.payment_terms_days) : null;
@@ -498,14 +526,14 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     meta: {
       ...(invoice?.meta || {}),
       billing_address: hdr.billing.trim(), delivery_address: hdr.shipping.trim(), contact_name: hdr.contactName.trim(), contact_email: hdr.contactEmail.trim(), contact_phone: hdr.contactPhone.trim(),
-      internal_note: hdr.inote.trim(), cost_center: hdr.costCenter.trim(), project: hdr.project.trim(), author_user_id: hdr.authorId || undefined, vat_code: vat.key,
+      internal_note: hdr.inote.trim(), cost_center_id: hdr.costCenter || undefined, project_id: hdr.project || undefined, cost_center: undefined, project: undefined, author_user_id: hdr.authorId || undefined, vat_code: vat.key,
     },
     lines: lines.map((l) => {
       const meta: Record<string, string> = {};
       if (l.code.trim()) meta.code = l.code.trim();
       if (l.unit.trim()) meta.unit = l.unit.trim();
-      if (l.cost_center.trim()) meta.cost_center = l.cost_center.trim();
-      if (l.project.trim()) meta.project = l.project.trim();
+      if (l.cost_center) meta.cost_center_id = l.cost_center;
+      if (l.project) meta.project_id = l.project;
       return {
         description: l.description.trim(), account_id: l.account_id || undefined, quantity: num(l.quantity), unit_price: num(l.unit_price), discount_percent: num(l.discount_percent),
         tax_rate: vatEnabled ? vat.rate : 0, supply_type: vat.supply, meta: Object.keys(meta).length ? meta : undefined,
@@ -709,8 +737,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                     <select className={styles.inp} value={hdr.authorId} onChange={(e) => setH({ authorId: e.target.value })}><option value="">—</option>{authorOptions.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
                   </div>
                   {showInote && <div className={`${styles.fld} ${styles.wide}`}><div className={styles.lbl}>Sisemärkus <span className={styles.r}>ei ole arvel</span></div><input className={styles.inp} value={hdr.inote} placeholder="Nähtav ainult raamatupidajale" onChange={(e) => setH({ inote: e.target.value })} /></div>}
-                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><input className={styles.inp} value={hdr.costCenter} placeholder="Kulukoht" onChange={(e) => setH({ costCenter: e.target.value })} /></div>}
-                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><input className={styles.inp} value={hdr.project} placeholder="Projekt" onChange={(e) => setH({ project: e.target.value })} /></div>}
+                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} onChange={(e) => setH({ costCenter: e.target.value })}><CostCenterOptions current={hdr.costCenter} /></select></div>}
+                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} onChange={(e) => setH(projectPatch(e.target.value))}><ProjectOptions current={hdr.project} /></select></div>}
                 </div>
               </div>
 
@@ -747,8 +775,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                               <option value="">—</option>{revenueAccounts.map((a) => <option key={a.id} value={a.id} title={a.name}>{a.code}</option>)}
                             </select>
                           </div>
-                          {extra.lcc && <div><input className={styles.in} value={l.cost_center} placeholder="Kulukoht" onChange={(e) => updateLine(i, { cost_center: e.target.value })} /></div>}
-                          {extra.lprj && <div><input className={styles.in} value={l.project} placeholder="Projekt" onChange={(e) => updateLine(i, { project: e.target.value })} /></div>}
+                          {extra.lcc && <div><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
+                          {extra.lprj && <div><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} onChange={(e) => { const patch = projectPatch(e.target.value); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }}><ProjectOptions current={l.project} /></select></div>}
                           <div><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
                           <div><select className={`${styles.in} ${styles.sel}`} value={l.unit} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
                           <div><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>

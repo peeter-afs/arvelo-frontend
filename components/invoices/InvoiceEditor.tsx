@@ -22,6 +22,7 @@ import InvoiceLinesEditor, {
 } from '@/components/invoices/InvoiceLinesEditor';
 import { ProductModal } from '@/components/invoices/ProductModal';
 import { productsApi, type Product } from '@/lib/api/products.api';
+import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
@@ -58,6 +59,11 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [salesDefaults, setSalesDefaults] = useState<Partial<Record<SupplyType, string>>>({});
   const [products, setProducts] = useState<Product[]>([]);
+  const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [costCenterId, setCostCenterId] = useState('');
+  const [projectId, setProjectId] = useState('');
+  const [loadedMeta, setLoadedMeta] = useState<Record<string, unknown>>({});
   const [quickAddLine, setQuickAddLine] = useState<EditorLine | null>(null);
   const [type, setType] = useState<InvoiceType>(defaultType);
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
@@ -95,6 +101,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
 
   useEffect(() => {
     const loadBase = async () => {
+      costCentersApi.list().then(setCostCenters).catch(() => {});
+      projectsApi.list().then(setProjects).catch(() => {});
       try {
         const [partnerItems, accountItems, settings, productItems] = await Promise.all([
           accountingApi.getPartners(),
@@ -137,6 +145,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
         setCurrency(result.invoice.currency || 'EUR');
         setPaymentReference(result.invoice.payment_reference || '');
         setNotes(result.invoice.notes || '');
+        setLoadedMeta(result.invoice.meta || {});
+        setCostCenterId(String(result.invoice.meta?.cost_center_id || ''));
+        setProjectId(String(result.invoice.meta?.project_id || ''));
         setLines(
           result.lines.length > 0
             ? result.lines.map((line) => ({
@@ -148,6 +159,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 discount_percent: String(line.discount_percent ?? 0),
                 tax_rate: String(line.tax_rate ?? 0),
                 supply_type: (line.supply_type as SupplyType) || 'domestic',
+                cost_center_id: String(line.meta?.cost_center_id || ''),
+                project_id: String(line.meta?.project_id || ''),
               }))
             : [emptyEditorLine()]
         );
@@ -172,6 +185,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   }, [vatEnabled]);
 
   const totals = useMemo(() => computeTotals(lines), [lines]);
+  const projectGroups = useMemo(() => groupProjects(projects, partnerId), [projects, partnerId]);
 
   const accountFilterType: 'revenue' | 'expense' =
     type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue';
@@ -188,6 +202,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     payment_reference: paymentReference || undefined,
     notes: notes || undefined,
     credit_note_for_invoice_id: creditNoteForInvoiceId || undefined,
+    meta: { ...loadedMeta, cost_center_id: costCenterId || undefined, project_id: projectId || undefined },
     lines: lines.map((line) => ({
       description: line.description,
       account_id: line.account_id || undefined,
@@ -196,7 +211,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
       discount_percent: Number(line.discount_percent || 0),
       tax_rate: Number(line.tax_rate || 0),
       supply_type: line.supply_type || 'domestic',
-      meta: line.code ? { code: line.code } : undefined,
+      meta: line.code || line.cost_center_id || line.project_id
+        ? { ...(line.code ? { code: line.code } : {}), ...(line.cost_center_id ? { cost_center_id: line.cost_center_id } : {}), ...(line.project_id ? { project_id: line.project_id } : {}) }
+        : undefined,
     })),
   });
 
@@ -329,6 +346,27 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 <Field label={t('notes')}>
                   <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
                 </Field>
+                {(costCenters.length > 0 || projects.length > 0) && (
+                  <>
+                    <Field label={t('costCenter')}>
+                      <select value={costCenterId} onChange={(e) => setCostCenterId(e.target.value)} className={selectClass}>
+                        <option value="">—</option>
+                        {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+                      </select>
+                    </Field>
+                    <Field label={t('project')}>
+                      <select
+                        value={projectId}
+                        onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); setProjectId(e.target.value); if (p?.cost_center_id) setCostCenterId(p.cost_center_id); }}
+                        className={selectClass}
+                      >
+                        <option value="">—</option>
+                        {projectGroups.own.length > 0 && <optgroup label={t('partnerProjects')}>{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                        {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? t('otherProjects') : t('project')}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                      </select>
+                    </Field>
+                  </>
+                )}
               </div>
 
               {/* Recurring toggle — purchase invoices only */}
@@ -394,6 +432,10 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 supplyTypeDefaults={accountFilterType === 'revenue' ? salesDefaults : undefined}
                 products={products}
                 onQuickAdd={(line) => setQuickAddLine(line)}
+                costCenters={costCenters}
+                projects={projects}
+                dimensionDefaults={{ cost_center_id: costCenterId || undefined, project_id: projectId || undefined }}
+                partnerId={partnerId}
               />
             </div>
 

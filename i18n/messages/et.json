@@ -84,6 +84,18 @@
     "help": "Juhendid"
   },
   "accounting": {
+    "dimensionsTitle": "Kulukohad ja projektid",
+    "dimensionsDescription": "Kulude ja tulude jälgimiseks müügi- ja ostuarvetel. Projekt võib kuuluda kulukoha alla (siis täidetakse kulukoht arvel automaatselt) ja kliendi või tarnija alla (siis pakutakse seda partneri arvetel esimesena).",
+    "costCenters": "Kulukohad",
+    "projects": "Projektid",
+    "dimensionCode": "Kood",
+    "dimensionName": "Nimi",
+    "parentCostCenter": "Kulukoht",
+    "dimensionPartner": "Klient / tarnija",
+    "noDimensions": "Pole veel lisatud",
+    "dimensionDeleteTitle": "Kustuta „{name}“?",
+    "dimensionDeleteDescription": "Arvetel olevad viited jäävad alles, kuid ei lahene enam nimeks. Kui soovid ajaloo säilitada, deaktiveeri kirje kustutamise asemel.",
+    "dimensionNameRequired": "Nimi on kohustuslik",
     "contactName": "Kontaktisik",
     "creditLimit": "Krediidilimiit",
     "chartOfAccounts": "Kontoplaan",
@@ -1385,6 +1397,13 @@
     "status_error": "Viga"
   },
   "invoices": {
+    "costCenter": "Kulukoht",
+    "project": "Projekt",
+    "showDimensionColumns": "Näita kulukoha ja projekti veerge",
+    "hideDimensionColumns": "Peida kulukoha ja projekti veerud",
+    "dimensions": "Kulukoht / projekt",
+    "partnerProjects": "Partneri projektid",
+    "otherProjects": "Muud projektid",
     "title": "Arved",
     "overview": "Arvete keskus",
     "salesList": "Müügiarved",

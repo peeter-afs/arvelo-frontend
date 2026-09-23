@@ -12,6 +12,7 @@ import { accountingApi, type AccountOption, type AccountingSettings, type Openin
 import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
 import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyTypeSalesAccountsPanel';
 import { RoundingSettlementPanel } from '@/components/accounting/RoundingSettlementPanel';
+import { DimensionsPanel } from '@/components/accounting/DimensionsPanel';
 import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -964,6 +965,8 @@ export default function SettingsPage() {
                     onSave={handleSaveSalesDefaults}
                   />
                 )}
+
+                {canManageData && <DimensionsPanel />}
 
                 {canManageData && (
                   <RoundingSettlementPanel

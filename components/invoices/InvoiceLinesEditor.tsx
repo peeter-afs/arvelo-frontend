@@ -5,6 +5,7 @@ import { Eye, EyeOff, PackagePlus, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AccountOption } from '@/lib/api/accounting.api';
 import type { Product } from '@/lib/api/products.api';
+import { dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 
 export type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
 
@@ -17,6 +18,8 @@ export type EditorLine = {
   discount_percent: string;
   tax_rate: string;
   supply_type?: SupplyType;
+  cost_center_id?: string;
+  project_id?: string;
 };
 
 export const emptyEditorLine = (): EditorLine => ({
@@ -76,6 +79,13 @@ type Props = {
   onQuickAdd?: (line: EditorLine) => void;
   /** When false the tenant is not VAT-liable: the VAT column is hidden and lines carry no VAT. */
   vatEnabled?: boolean;
+  /** Cost centres / projects for the optional dimension columns (hidden until at least one exists). */
+  costCenters?: CostCenter[];
+  projects?: Project[];
+  /** Header defaults a new line inherits. */
+  dimensionDefaults?: { cost_center_id?: string; project_id?: string };
+  /** Invoice partner: their projects are listed first. */
+  partnerId?: string;
 };
 
 export default function InvoiceLinesEditor({
@@ -89,12 +99,24 @@ export default function InvoiceLinesEditor({
   products,
   onQuickAdd,
   vatEnabled = true,
+  costCenters,
+  projects,
+  dimensionDefaults,
+  partnerId,
 }: Props) {
   const t = useTranslations('invoices');
   // Account and supply-type columns are hidden by default — reveal only when needed.
   const [showAccount, setShowAccount] = useState(false);
   const [showSupply, setShowSupply] = useState(false);
   const [productMenuRow, setProductMenuRow] = useState<number | null>(null);
+  const [showDims, setShowDims] = useState(() => lines.some((l) => l.cost_center_id || l.project_id));
+  const dimsAvailable = Boolean(costCenters?.length || projects?.length);
+  const dimsVisible = dimsAvailable && showDims;
+  const projectGroups = groupProjects(projects || [], partnerId);
+  const projectPatch = (project_id: string): Partial<EditorLine> => {
+    const p = projects?.find((x) => x.id === project_id);
+    return p?.cost_center_id ? { project_id, cost_center_id: p.cost_center_id } : { project_id };
+  };
 
   const supplyVisible = showSupplyType && showSupply;
   const vatVisible = vatEnabled;
@@ -146,6 +168,9 @@ export default function InvoiceLinesEditor({
     if (!vatEnabled) line.tax_rate = '0';
     const fallback = supplyTypeDefaults?.[line.supply_type || 'domestic'];
     if (fallback) line.account_id = fallback;
+    const last = lines[lines.length - 1];
+    line.cost_center_id = last?.cost_center_id || dimensionDefaults?.cost_center_id || '';
+    line.project_id = last?.project_id || dimensionDefaults?.project_id || '';
     onChange([...lines, line]);
   };
 
@@ -158,6 +183,8 @@ export default function InvoiceLinesEditor({
   const gridCols = [
     '88px',
     'minmax(150px,1fr)',
+    dimsVisible ? '118px' : null,
+    dimsVisible ? '118px' : null,
     '64px',
     '96px',
     '76px',
@@ -170,11 +197,22 @@ export default function InvoiceLinesEditor({
     .filter(Boolean)
     .join(' ');
   const minWidth =
-    574 + (vatVisible ? 66 : 0) + (supplyVisible ? 140 : 0) + (showAccount ? 160 : 64) + (onQuickAdd ? 58 : 32);
+    574 + (dimsVisible ? 236 : 0) + (vatVisible ? 66 : 0) + (supplyVisible ? 140 : 0) + (showAccount ? 160 : 64) + (onQuickAdd ? 58 : 32);
 
   return (
     <div>
       <div className="mb-2 flex justify-end gap-2">
+        {dimsAvailable && (
+          <button
+            type="button"
+            onClick={() => setShowDims((v) => !v)}
+            title={showDims ? t('hideDimensionColumns') : t('showDimensionColumns')}
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+          >
+            {showDims ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {t('dimensions')}
+          </button>
+        )}
         {showSupplyType && (
           <button
             type="button"
@@ -206,6 +244,8 @@ export default function InvoiceLinesEditor({
           >
             <div>{t('productCode')}</div>
             <div>{t('lineDescription')}</div>
+            {dimsVisible && <div>{t('costCenter')}</div>}
+            {dimsVisible && <div>{t('project')}</div>}
             <div className="text-right">{t('qty')}</div>
             <div className="text-right">{t('unitPrice')}</div>
             <div className="text-right">{t('discount')}</div>
@@ -267,6 +307,19 @@ export default function InvoiceLinesEditor({
                     placeholder={t('lineDescription')}
                     className={inputClass}
                   />
+                )}
+                {dimsVisible && (
+                  <select value={line.cost_center_id || ''} onChange={(event) => update(index, { cost_center_id: event.target.value })} className={`${inputClass} text-[12px]`}>
+                    <option value="">—</option>
+                    {(costCenters || []).map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+                  </select>
+                )}
+                {dimsVisible && (
+                  <select value={line.project_id || ''} onChange={(event) => update(index, projectPatch(event.target.value))} className={`${inputClass} text-[12px]`}>
+                    <option value="">—</option>
+                    {projectGroups.own.length > 0 && <optgroup label={t('partnerProjects')}>{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                    {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? t('otherProjects') : t('project')}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                  </select>
                 )}
                 <input inputMode="decimal" value={line.quantity} onChange={(e) => update(index, { quantity: e.target.value })} placeholder={t('qty')} className={numberClass} />
                 <input inputMode="decimal" value={line.unit_price} onChange={(e) => update(index, { unit_price: e.target.value })} placeholder={t('unitPrice')} className={numberClass} />

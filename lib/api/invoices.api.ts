@@ -27,6 +27,8 @@ export type InvoiceMeta = {
   internal_note?: string;
   cost_center?: string;
   project?: string;
+  cost_center_id?: string;
+  project_id?: string;
   author_user_id?: string;
   vat_code?: string;
   [key: string]: unknown;

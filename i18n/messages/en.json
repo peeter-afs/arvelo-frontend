@@ -84,6 +84,18 @@
     "help": "Guides"
   },
   "accounting": {
+    "dimensionsTitle": "Cost centres and projects",
+    "dimensionsDescription": "For tracking costs and revenue on sales and purchase invoices. A project may belong to a cost centre (the cost centre is then filled in automatically on the invoice) and to a customer or supplier (it is then offered first on that partner's invoices).",
+    "costCenters": "Cost centres",
+    "projects": "Projects",
+    "dimensionCode": "Code",
+    "dimensionName": "Name",
+    "parentCostCenter": "Cost centre",
+    "dimensionPartner": "Customer / supplier",
+    "noDimensions": "None added yet",
+    "dimensionDeleteTitle": "Delete “{name}”?",
+    "dimensionDeleteDescription": "References on invoices stay but no longer resolve to a name. Deactivate instead of deleting to keep history.",
+    "dimensionNameRequired": "Name is required",
     "contactName": "Contact person",
     "creditLimit": "Credit limit",
     "chartOfAccounts": "Chart of Accounts",
@@ -1385,6 +1397,13 @@
     "status_error": "Error"
   },
   "invoices": {
+    "costCenter": "Cost centre",
+    "project": "Project",
+    "showDimensionColumns": "Show cost centre and project columns",
+    "hideDimensionColumns": "Hide cost centre and project columns",
+    "dimensions": "Cost centre / project",
+    "partnerProjects": "Partner projects",
+    "otherProjects": "Other projects",
     "title": "Invoices",
     "overview": "Invoice Hub",
     "salesList": "Sales Invoices",
