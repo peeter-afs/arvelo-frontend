@@ -17,6 +17,21 @@ export type BulkConfirmResult = {
   }>;
 };
 
+/** Header extras kept in invoices.meta (free-form; only the sales-invoice editor writes them). */
+export type InvoiceMeta = {
+  billing_address?: string;
+  delivery_address?: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  internal_note?: string;
+  cost_center?: string;
+  project?: string;
+  author_user_id?: string;
+  vat_code?: string;
+  [key: string]: unknown;
+};
+
 export type InvoiceListItem = {
   id: string;
   type: string;
@@ -57,6 +72,7 @@ export type InvoiceListItem = {
   receipt_reminder_sent_count?: number | null;
   receipt_reminder_last_sent_at?: string | null;
   receipt_dismissed_reason?: string | null;
+  meta?: InvoiceMeta | null;
 };
 
 export type InvoiceLineInput = {
@@ -98,6 +114,7 @@ export type InvoiceDraftPayload = {
   notes?: string;
   payment_reference?: string;
   credit_note_for_invoice_id?: string;
+  meta?: InvoiceMeta;
   lines: InvoiceLineInput[];
 };
 
@@ -155,6 +172,12 @@ export const invoicesApi = {
 
   async updateInvoice(id: string, payload: InvoiceDraftPayload) {
     const response = await apiClient.put<ApiResponse<InvoiceDetail>>(`/api/invoices/${id}`, payload);
+    return response.data.data;
+  },
+
+  /** Delete an unposted draft. Posted invoices are reversed with a credit note instead. */
+  async deleteInvoice(id: string) {
+    const response = await apiClient.delete<ApiResponse<{ id: string }>>(`/api/invoices/${id}`);
     return response.data.data;
   },
 

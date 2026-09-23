@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import InvoiceEditor from '@/components/invoices/InvoiceEditor';
+import SalesInvoiceEditor from '@/components/invoices/SalesInvoiceEditor';
 
 const VALID_TYPES = ['sales_invoice', 'purchase_invoice', 'sales_credit_note', 'purchase_credit_note'] as const;
 type InvoiceType = (typeof VALID_TYPES)[number];
@@ -27,6 +28,11 @@ export default function NewInvoicePage() {
       return undefined;
     }
   }, [aiPrefill]);
+
+  // Plain new sales invoices use the dense editor; credit notes and AI-prefilled drafts keep the generic one.
+  if (defaultType === 'sales_invoice' && !creditNoteFor && !prefill) {
+    return <SalesInvoiceEditor mode="create" />;
+  }
 
   return (
     <InvoiceEditor
