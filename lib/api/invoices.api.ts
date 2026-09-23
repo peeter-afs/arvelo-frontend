@@ -101,6 +101,8 @@ export type InvoiceLine = {
   meta?: Record<string, unknown> | null;
 };
 
+export type ReceiptReminder = { id: string; reminder_number: number; sent_at: string; sent_to_email: string };
+
 export type InvoiceDetail = {
   invoice: InvoiceListItem;
   lines: InvoiceLine[];
@@ -174,6 +176,17 @@ export const invoicesApi = {
 
   async updateInvoice(id: string, payload: InvoiceDraftPayload) {
     const response = await apiClient.put<ApiResponse<InvoiceDetail>>(`/api/invoices/${id}`, payload);
+    return response.data.data;
+  },
+
+  /** Send a missing-receipt reminder for a bank-created draft right now (ignores the schedule). */
+  async sendReceiptReminder(id: string) {
+    const response = await apiClient.post<ApiResponse<{ reminder_number: number; sent_to: string; sent_count: number }>>(`/api/invoices/${id}/receipt-reminder`, {});
+    return response.data.data;
+  },
+
+  async listReceiptReminders(id: string) {
+    const response = await apiClient.get<ApiResponse<ReceiptReminder[]>>(`/api/invoices/${id}/receipt-reminders`);
     return response.data.data;
   },
 
