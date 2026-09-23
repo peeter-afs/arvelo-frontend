@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Ostuarved — tihe vaade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea;--row-alt:#faf8f3}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;overflow:hidden;font-size:13px}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.005em}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+kbd{font-family:inherit;font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2)}
+svg.i{width:1em;height:1em;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:1180px;padding:12px 16px;display:flex;flex-direction:column;gap:9px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:29px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--neg)}.btn.danger:hover{background:var(--neg-soft)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn.primary kbd{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff}
+.topbar{display:flex;align-items:center;gap:10px;flex-shrink:0;height:29px}
+.topbar h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.03em}
+.topbar .sub{font-size:12px;color:var(--text-3);white-space:nowrap}
+.topbar .acts{margin-left:14px;display:flex;gap:7px;flex-shrink:0;position:relative}
+.railrow{display:flex;align-items:center;gap:10px;flex-shrink:0;height:36px}
+.tabmore{position:relative;display:inline-flex}
+.tabmore .menu{width:196px;top:33px;right:0}
+.mitem{display:flex;align-items:center;gap:8px;width:100%;padding:5px 7px;border:none;border-radius:7px;background:transparent;color:var(--text-2);font-size:12px;font-weight:500;text-align:left}
+.mitem:hover{background:var(--surface-2)}
+.mitem.on{color:var(--text);font-weight:600}
+.mitem .pill{margin-left:auto;font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--border);color:var(--text-2)}
+.mitem .d{display:block;font-size:10.5px;color:var(--text-3);font-weight:400}
+.tabs{display:inline-flex;gap:3px;padding:3px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px}
+.tab{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;height:26px;padding:0 10px;border:none;border-radius:7px;background:transparent;color:var(--text-2);font-weight:600;font-size:12.5px}
+.tab.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.tab .pill{font-size:10.5px;font-weight:700;padding:1px 5px;border-radius:99px;background:var(--border);color:var(--text-2)}
+.tab.on .pill{background:var(--accent);color:#fff}
+.tab .pill.w{background:var(--warn-soft);color:#7d5a13}
+.metrics{display:flex;align-items:center;margin-left:auto;flex-shrink:0}
+.metric{display:flex;align-items:baseline;gap:6px;padding:0 12px;border-left:1px solid var(--border);white-space:nowrap}
+.metric:first-child{border-left:none}
+.metric .k{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
+.metric .v{font-size:14.5px;font-weight:700;letter-spacing:-0.03em}
+.metric.neg .v{color:var(--neg)}
+.search{position:relative;flex:0 0 190px}
+.search svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--text-3);font-size:13px}
+.search input{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-family:inherit;font-size:12.5px;color:var(--text);padding:0 9px 0 27px}
+.search input:focus{outline:none;border-color:var(--accent)}
+.per{position:relative;flex-shrink:0}
+.perbtn{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;flex-shrink:0;height:29px;padding:0 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500}
+.perbtn.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f;font-weight:600}
+.perpop{position:absolute;top:34px;left:0;z-index:30;width:294px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 10px 28px rgba(0,0,0,.13)}
+.perpop[hidden]{display:none}
+.lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:6px}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.presets button{height:27px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text-2);font-size:12px;text-align:left;padding:0 8px}
+.presets button:hover{background:var(--surface-2)}
+.presets button.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f;font-weight:600}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:9px}
+.dates input,.minp{height:29px;width:100%;border:1px solid var(--border);border-radius:7px;background:var(--surface);font-family:inherit;font-variant-numeric:tabular-nums;font-size:12px;color:var(--text);padding:0 8px}
+.dates input:focus,.minp:focus{outline:none;border-color:var(--accent)}
+.perfoot{display:flex;gap:6px;align-items:center;margin-top:10px}
+.perfoot .hint{font-size:11px;color:var(--text-3);margin-right:auto}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 9px var(--pw,420px);gap:0}
+.gutter{position:relative;cursor:col-resize}
+.gutter:after{content:'';position:absolute;left:3.5px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent;transition:background .12s}
+.gutter:hover:after{background:var(--border-strong)}
+body.pres .gutter:after{background:var(--accent)}
+body.pres{cursor:col-resize;user-select:none}
+.body.wide .gutter{display:none}
+.body.wide{grid-template-columns:minmax(0,1fr)}
+.body.wide>.col:first-child{display:none}
+.body[hidden],#full[hidden]{display:none}
+#full{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.fsplit{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px}
+.fsplit>.fleft{display:flex;flex-direction:column;min-height:0;overflow-y:auto}
+.fsplit>.fright{border-left:1px solid var(--border);display:flex;flex-direction:column;min-height:0;overflow-y:auto;background:var(--row-alt)}
+.bigh,.bigr{display:grid;grid-template-columns:minmax(0,1fr) 54px 84px 52px 90px 90px;gap:10px;padding:7px 14px;align-items:baseline;font-size:12.5px}
+.bigh{background:var(--surface-2);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border);position:sticky;top:0}
+.bigr{border-bottom:1px solid #f1eee7}
+.bigr:nth-child(even){background:var(--row-alt)}
+.bigr .t{font-weight:500}
+.bigr .t small{display:block;font-size:10.5px;color:var(--text-3);font-weight:400}
+.bigtot{display:flex;justify-content:flex-end;gap:20px;white-space:nowrap;padding:9px 14px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2)}
+.bigtot b{font-weight:700;color:var(--text)}
+.jl{display:grid;grid-template-columns:64px minmax(0,1fr) 90px 90px;gap:10px;padding:4px 14px;font-size:12px;align-items:baseline;border-top:1px dashed #ece8dd}
+.jl.h{border-top:none;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.crumb{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+.tscroll{flex:1;min-height:0;display:flex;flex-direction:column;overflow-x:auto}
+.tscroll>*{min-width:fit-content}
+.col{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.thead,.trow{display:grid;grid-template-columns:var(--cols);align-items:center}
+.thead{height:32px;background:var(--surface-2);border-bottom:1px solid var(--border);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);flex-shrink:0;user-select:none}
+.th{position:relative;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.th.r{justify-content:flex-end}
+.th .grip{position:absolute;right:-3px;top:0;bottom:0;width:7px;cursor:col-resize;z-index:2}
+.th .grip:after{content:'';position:absolute;left:3px;top:6px;bottom:6px;width:1px;background:var(--border-strong);opacity:0;transition:opacity .12s}
+.th .grip:hover:after,body.resizing .th .grip:after{opacity:1;background:var(--accent)}
+.th.sorted{color:var(--text-2)}
+.th .sort{font-size:11px;color:var(--accent)}
+.th.ck,.trow .ck{padding:0;display:grid;place-items:center}
+.rows{flex:1;min-height:0;overflow-y:auto}
+.trow{padding:6px 0;border-bottom:1px solid #f1eee7;cursor:pointer;background:var(--surface);font-size:12.5px}
+.trow:nth-child(even){background:var(--row-alt)}
+.trow:hover{background:var(--accent-soft-2)}
+.trow.chk{background:#fff8f4}
+.trow.on{background:var(--accent-soft);box-shadow:inset 2px 0 0 var(--accent)}
+.trow>div{padding:0 8px;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.trow .nr{color:var(--accent);font-weight:500;font-size:12px}
+.cust{display:flex;align-items:center;gap:7px;min-width:0}
+.av{width:20px;height:20px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0}
+.av.s{width:18px;height:18px;border-radius:99px;font-size:8px;background:var(--surface-2);color:var(--text-2);border:1px solid var(--border)}
+.cust .nm{min-width:0}
+.cust .n1{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
+.cust .n2{display:block;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.num{text-align:right;font-weight:600;font-size:12.5px}
+.num.mut{font-weight:500;color:var(--text-3)}
+.dt{color:var(--text-2);font-size:11.5px}
+.dt .d2{font-size:10px;color:var(--text-3)}
+.sinv{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2)}
+.clip{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:4px;color:var(--text-3);font-size:11px;flex-shrink:0}
+.clip:hover{background:var(--surface-2);color:var(--text)}
+.clip.no{opacity:.35}
+.appr{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-2)}
+.acc{font-size:11.5px;color:var(--text-2)}
+.srcl{font-size:10.5px;font-weight:600;color:var(--text-3)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.tag .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.tag.draft{background:var(--surface-2);color:var(--text-3)}
+.tag.pend{background:var(--warn-soft);color:#7d5a13}
+.tag.rej{background:var(--neg-soft);color:var(--neg)}
+.tag.ok{background:#eaf0ff;color:#2c5cf6}
+.tag.part{background:#eaf0ff;color:#2c5cf6}
+.tag.paid{background:var(--pos-soft);color:var(--pos)}
+.tag.over{background:var(--neg-soft);color:var(--neg)}
+.tag.void{background:var(--surface-2);color:var(--text-3);text-decoration:line-through}
+.mp.rm{background:var(--warn-soft);color:#7d5a13}
+.noorig{flex:1;min-height:0;overflow:auto;padding:22px 20px;display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.noorig .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--warn-soft);color:#7d5a13;font-size:18px}
+.noorig h4{margin:0;font-size:14px;font-weight:700;letter-spacing:-0.02em}
+.noorig p{margin:0;font-size:12px;color:var(--text-2);line-height:1.45}
+.noorig .acts{display:flex;gap:6px;flex-wrap:wrap}
+.remlist{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.remlist>div{display:grid;grid-template-columns:78px minmax(0,1fr) auto;gap:8px;padding:6px 10px;font-size:11.5px;color:var(--text-2);border-top:1px solid #f1eee7;align-items:baseline}
+.remlist>div:first-child{border-top:none}
+.remlist>div.nx{background:var(--row-alt);color:var(--text-3)}
+.remlist b{font-weight:600;color:var(--text)}
+.mp{display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;padding:1px 4px;border-radius:4px;background:var(--pos-soft);color:var(--pos);margin-left:4px;vertical-align:1px}
+.listhead{display:flex;align-items:center;gap:8px;height:33px;white-space:nowrap;padding:0 10px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:11px 11px 0 0;flex-shrink:0;font-size:11.5px;color:var(--text-2)}
+.listhead b{font-weight:600;color:var(--text)}
+.listhead .r{margin-left:auto;display:flex;align-items:center;gap:7px;position:relative}
+.listhead.sel{background:var(--accent-soft-2)}
+.listhead.sel .x{color:var(--text-3)}
+.warnstrip{display:flex;align-items:center;gap:7px;padding:0 10px;height:31px;background:var(--warn-soft);border-bottom:1px solid #e8dcbc;color:#7d5a13;font-size:11.5px;flex-shrink:0;white-space:nowrap;overflow:hidden}
+.warnstrip[hidden]{display:none}
+.warnstrip .btn{margin-left:auto}
+#footsum{display:flex;align-items:center;gap:12px;white-space:nowrap;flex-shrink:0}
+#footleft{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#footsum b{font-weight:700;color:var(--text)}
+.split{position:relative;display:inline-flex}
+.split .btn:first-child{border-top-right-radius:0;border-bottom-right-radius:0}
+.split .btn:last-of-type{padding:0 6px;border-top-left-radius:0;border-bottom-left-radius:0}
+.split .menu{bottom:30px;top:auto;right:0;width:168px}
+.tfoot{display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-top:1px solid var(--border);flex-shrink:0;font-size:11.5px;color:var(--text-3)}
+.tfoot .r{margin-left:auto;display:flex;align-items:center;gap:8px}
+.dhead{display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:10px 13px;border-bottom:1px solid var(--border);background:var(--surface-2);border-radius:11px 11px 0 0;flex-shrink:0}
+.dhead h2{margin:0;font-size:15px;font-weight:700;letter-spacing:-0.025em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dhead .line{margin-top:2px;font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dhead .nav{display:flex;gap:4px;align-items:center;justify-content:flex-end;flex-wrap:wrap}
+.dhead .nav .tag{margin-right:auto}
+.dbody{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.sec.grow{flex:1 1 auto;min-height:150px;display:flex;flex-direction:column}
+.sec.grow .lines{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.sec.grow .lscroll{flex:1;min-height:0;overflow-y:auto}
+.dsplit{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid var(--border)}
+.dsplit>.sec{border-bottom:none;border-left:1px solid var(--border)}
+.dsplit>.sec:first-child{border-left:none}
+.bar{height:4px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:99px;background:var(--pos)}
+.sec{padding:10px 13px;border-bottom:1px solid var(--border)}
+.sech{display:flex;align-items:center;gap:7px;min-width:0;white-space:nowrap;overflow:hidden;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:8px}
+.sech .r{margin-left:auto;white-space:nowrap;flex-shrink:0;padding-left:10px;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px;text-transform:none;letter-spacing:0}
+.seg button{height:20px;padding:0 8px;border:none;border-radius:5px;background:transparent;color:var(--text-2);font-size:11px;font-weight:600;white-space:nowrap}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.lines{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.lhead,.lrow{display:grid;grid-template-columns:minmax(0,1fr) 44px 40px 74px;gap:6px;padding:5px 9px;align-items:baseline;font-size:11.5px}
+.lines.w .lhead,.lines.w .lrow{grid-template-columns:minmax(0,1fr) 150px 44px 66px 46px 76px;gap:8px}
+.lhead{background:var(--surface-2);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.lhead .r,.lrow .r{text-align:right}
+.lrow{border-top:1px solid #f1eee7}
+.lrow:first-of-type{border-top:none}
+.lrow .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .a{font-weight:600;text-align:right}
+.lrow .c{color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ltot{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:5px 9px;border-top:1px solid var(--border);background:var(--row-alt);font-size:11.5px;color:var(--text-2);white-space:nowrap;min-width:0}
+.ltot b{font-weight:600;color:var(--text)}
+.pdf{flex:1;min-height:0;border:1px solid var(--border);border-radius:8px;background:#e3dfd3;overflow:auto;padding:14px;display:flex;justify-content:safe center;align-items:flex-start}
+.pdf.full{border:none;border-radius:0;background:var(--surface);padding:0}
+.pdf.full .page{box-shadow:none}
+.drow{display:flex;align-items:center;gap:6px;min-width:0}
+.drow h2{flex:1;min-width:0}
+.drow .nav{flex-shrink:0;flex-wrap:nowrap}
+.drow .nav .btn{padding:0 7px}
+.dhead.pd{padding:7px 10px}
+.snr{cursor:help}
+.snr.draft,.snr.void{color:var(--text-3)}.snr.void{text-decoration:line-through}
+.snr.pend{color:var(--warn)}.snr.rej,.snr.over{color:var(--neg)}.snr.ok,.snr.part{color:#2c5cf6}.snr.paid{color:var(--pos)}
+.page{width:600px;min-height:848px;zoom:var(--z,1);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.14);padding:34px 32px;font-size:12px;color:var(--text-2);display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.page .ph{display:flex;justify-content:space-between;align-items:flex-start;line-height:1.5}
+.page .ph b{font-size:16px;color:var(--text)}
+.page .ln{height:8px;border-radius:3px;background:#ece8dd}
+.page .rw{display:grid;grid-template-columns:1fr 60px 100px;gap:10px;padding:6px 0;border-top:1px solid #f1eee7}
+.page .tt{margin-top:auto;display:flex;justify-content:flex-end;gap:18px;font-size:14px;color:var(--text)}
+.pdfbar{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);flex-shrink:0;background:var(--surface)}
+.pdfbar .r{margin-left:auto;display:flex;gap:4px;flex-shrink:0;align-items:center}
+.pdfbar .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdfbar .iconb{width:26px;height:26px;display:grid;place-items:center;border:none;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px}
+.pdfbar .iconb:hover{background:var(--surface-2);color:var(--text)}
+.zoom{display:inline-flex;align-items:center;gap:2px;padding:2px;background:var(--surface);border:1px solid var(--border);border-radius:7px}
+.zoom button{height:20px;min-width:22px;padding:0 6px;border:none;border-radius:5px;background:transparent;color:var(--text-2);font-size:12px;font-weight:600}
+.zoom button:hover{background:var(--surface-2)}
+.zoom button.on{background:var(--accent-soft-2);color:#b8330f}
+.zoom .zv{min-width:44px;text-align:center;font-size:11px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.pview{flex:1;min-height:0;display:flex;flex-direction:column}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;white-space:nowrap;padding:3px 0;font-size:12px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.kv>b{text-align:right;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text)}
+.kv:first-of-type{border-top:none}
+.tl{display:flex;flex-direction:column}
+.tlrow{display:grid;grid-template-columns:40px 12px minmax(0,1fr);gap:7px;align-items:center;font-size:11px;color:var(--text-2);padding:3px 0}
+.tlrow>span:nth-child(3){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tlrow .bul{width:7px;height:7px;border-radius:99px;background:var(--border-strong);justify-self:center}
+.tlrow.done .bul{background:var(--pos)}
+.tlrow.wait .bul{background:var(--warn)}
+.tlrow.bad .bul{background:var(--neg)}
+.tlrow .mono{color:var(--text-3)}
+.fright .tlrow{grid-template-columns:70px 12px minmax(0,1fr);font-size:11.5px}
+.btx{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:11.5px;color:var(--text-2);margin-top:4px}
+.btx b{font-weight:600;color:var(--text)}
+.btx .r{margin-left:auto;white-space:nowrap}
+.btx.none{border-style:dashed;background:transparent;color:var(--text-3)}
+.dfoot{display:flex;align-items:center;gap:6px;padding:8px 11px;border-top:1px solid var(--border);background:rgba(255,255,255,.96);flex-shrink:0;flex-wrap:nowrap;overflow:hidden}
+.dfoot .btn{padding:0 9px}
+.dfoot .r{margin-left:auto;display:flex;gap:7px}
+.empty{display:grid;place-items:center;height:100%;min-height:80px;color:var(--text-3);font-size:12.5px}
+.modal{position:fixed;inset:0;z-index:60;background:rgba(20,18,14,.34);display:grid;place-items:center;padding:24px}
+.modal[hidden]{display:none}
+.mbox{width:min(720px,100%);max-height:86vh;display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 22px 60px rgba(0,0,0,.24)}
+.mhead{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.mhead h3{margin:0;font-size:15px;font-weight:700;letter-spacing:-0.025em}
+.mhead .line{margin-top:2px;font-size:11.5px;color:var(--text-3)}
+.mhead .x{margin-left:auto;flex-shrink:0}
+.mbody{overflow-y:auto}
+.mfields{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr);gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.mfields label{display:flex;flex-direction:column;gap:4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.mfields select{appearance:none}
+.pbh,.pbr{display:grid;grid-template-columns:minmax(0,1.2fr) 176px minmax(0,1fr) 84px 96px;gap:10px;padding:6px 14px;align-items:baseline;font-size:12px}
+.pbh{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border);background:var(--row-alt)}
+.pbr{border-bottom:1px solid #f1eee7}
+.pbr>div{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbsum{display:flex;justify-content:flex-end;gap:16px;padding:8px 14px;font-size:12.5px;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.pbsum b{font-weight:700}
+.pbnote{padding:8px 14px;font-size:11.5px;color:#7d5a13;background:var(--warn-soft);border-bottom:1px solid #e8dcbc}
+.jgrp{display:flex;align-items:center;gap:10px;white-space:nowrap;padding:7px 14px;background:var(--row-alt);border-bottom:1px solid var(--border);font-size:11.5px;color:var(--text-2)}
+.jgrp b{font-weight:600;color:var(--text)}
+.jgrp .r{margin-left:auto;color:var(--text-3);flex-shrink:0}
+.jh,.jr,.jsum{display:grid;grid-template-columns:60px minmax(0,1fr) 104px 104px;gap:10px;padding:6px 14px;align-items:baseline;font-size:12.5px}
+.jh{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.jr{border-bottom:1px solid #f1eee7}
+.jsum{font-weight:700;border-bottom:1px solid var(--border);background:var(--surface-2)}
+.rt{text-align:right}
+.mfootbar{display:flex;align-items:center;gap:8px;padding:10px 14px;border-top:1px solid var(--border)}
+.mfootbar .r{margin-left:auto;display:flex;gap:7px}
+.menu{position:absolute;right:0;top:32px;z-index:30;width:210px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.13)}
+.menu[hidden]{display:none}
+.menu label{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer}
+.menu label:hover{background:var(--surface-2)}
+.menu .mfoot{display:flex;padding:5px 7px 2px;border-top:1px solid var(--border);margin-top:4px}
+.menu .mh{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);padding:3px 7px 5px}
+input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);margin:0;cursor:pointer}
+body.resizing{cursor:col-resize;user-select:none}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);opacity:0;pointer-events:none;background:#1c1a16;color:#fff;font-size:12px;padding:8px 13px;border-radius:8px;transition:opacity .15s,transform .15s;z-index:80}
+.toast.on{opacity:1;transform:translateX(-50%)}
+@media (max-width:1420px){.metrics .metric:last-child{display:none}}
+@media (max-width:1300px){.tab .pill{display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <h1>Ostuarved</h1>
+    <span class="sub" id="subline"></span>
+    <div class="metrics" id="metrics"></div>
+    <div class="acts">
+      <button class="btn primary" id="upbtn"><svg class="i" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></svg> Laadi üles</button>
+      <div class="menu" id="upmenu" hidden style="width:252px;top:34px;left:0;right:auto">
+        <button class="mitem" data-up="pdf"><span>PDF või pilt<span class="d">Tuvastame tarnija, summad ja read</span></span></button>
+        <button class="mitem" data-up="xml"><span>E-arve XML<span class="d">Kui arve ei tulnud operaatori kaudu</span></span></button>
+        <button class="mitem" data-up="csv"><span>CSV / Bolt eksport<span class="d">Mitu arvet korraga</span></span></button>
+        <div class="mfoot" style="font-size:11px;color:var(--text-3)">Faili võib lohistada ka otse nimekirjale</div>
+      </div>
+      <button class="btn" id="newbtn"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Uus ostuarve <kbd>U</kbd></button>
+    </div>
+  </div>
+
+  <div class="railrow">
+    <div class="tabs" id="tabs"></div>
+    <div class="per">
+      <button class="perbtn" id="perbtn"><svg class="i" viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg> <span id="perlbl">Viimased 90 päeva</span> <svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="perpop" id="perpop" hidden>
+        <div class="lbl">Arve kuupäev</div>
+        <div class="presets" id="presets"></div>
+        <div class="lbl" style="margin:10px 0 6px">Kohandatud vahemik</div>
+        <div class="dates"><input id="d1" placeholder="pp.kk.aaaa" /><input id="d2" placeholder="pp.kk.aaaa" /></div>
+        <div class="perfoot"><span class="hint" id="perhint"></span><button class="btn sm" id="perclear">Eemalda</button><button class="btn sm primary" id="perapply">Rakenda</button></div>
+      </div>
+    </div>
+    <div class="per">
+      <button class="perbtn" id="srcbtn"><span id="srclbl">Allikas: kõik</span> <svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu" id="srcmenu" hidden style="width:214px;left:0;right:auto"></div>
+    </div>
+    <div class="per">
+      <button class="perbtn" id="vatbtn"><span id="vatlbl">KM: kõik</span> <svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="menu" id="vatmenu" hidden style="width:224px;left:0;right:auto"></div>
+    </div>
+    <div class="search"><svg class="i" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg><input id="q" placeholder="Otsi arvet või tarnijat  /" /></div>
+  </div>
+
+  <div class="body">
+    <div class="col card">
+      <div class="listhead" id="listhead"></div>
+      <div class="warnstrip" id="warnstrip">
+        <svg class="i" viewBox="0 0 24 24"><path d="M12 8v4M12 16h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span id="warntext"></span>
+        <button class="btn sm primary" id="warnbtn">Ava kinnitamiseks</button>
+      </div>
+      <div class="tscroll"><div class="thead" id="thead"></div><div class="rows" id="rows"></div></div>
+      <div class="tfoot">
+        <span id="footleft"></span>
+        <div class="r"><span id="footsum"></span>
+          <span class="split">
+            <button class="btn sm ghost">Ekspordi Excel</button>
+            <button class="btn sm ghost" id="expmore" title="Muu vorming"><svg class="i" viewBox="0 0 24 24" style="font-size:11px"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div class="menu" id="expmenu" hidden><button class="mitem">Excel (.xlsx)</button><button class="mitem">CSV (.csv)</button><button class="mitem">PDF</button></div>
+          </span></div>
+      </div>
+    </div>
+    <div class="gutter" id="gutter" title="Lohista paneeli laiust · topeltklikk lähtestab"></div>
+    <div class="col card" id="detail"></div>
+  </div>
+  <div class="card" id="full" hidden></div>
+</div>
+<div class="modal" id="modal" hidden><div class="mbox" id="mbox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUP=[['Elektrilevi OÜ','11050857','EE422200221011131489','4060'],['Telia Eesti AS','10234957','EE551010220016645011','4020'],['Circle K Eesti AS','10036451','EE301010022002456014','4040'],['Bolt Operations OÜ','14532901','EE127700771003812345','4030'],['Office Day OÜ','10712838','EE602200221034512278','4010'],['Würth OÜ','10020496','EE391010220023578018','4070'],['Tele2 Eesti AS','10069046','EE251010220026012018','4020'],['Neste Eesti AS','10015853','EE672200221020011112','4040'],['Ramirent Baltic AS','10011981','EE151010220034572014','4050'],['Kinnisvarahaldus Kesklinn OÜ','12488390','EE877700771001234567','4050'],['DPD Eesti AS','10332021','EE421010220005678019','4030'],['Tallinna Vesi AS','10257326','EE702200221012345678','4060'],['Zone Media OÜ','10815387','EE331010220041237012','4020'],['Rehvid Pluss OÜ','11215873','EE482200221055512341','4070'],['Swedbank AS','10060701','EE382200221020145685','4080'],['Microsoft Ireland Operations Ltd','IE8256796U','IE29AIBK93115212345678','4020']];
+const ACC={'4010':'Kontorikulud','4020':'Side- ja IT-kulud','4030':'Transpordikulud','4040':'Kütus','4050':'Rent','4060':'Kommunaalkulud','4070':'Materjalid','4080':'Pangatasud'};
+const ITEMS={'4010':['Kontoritarbed','Paber A4 (5 pk)','Kohvikapslid'],'4020':['Mobiilside · august','Internet 1 Gbit','Microsoft 365 Business','Domeen + hostimine'],'4030':['Kulleriteenus','Sõidud · august','Pakiautomaat'],'4040':['Diislikütus','Bensiin 95','Kütusekaardi tasu'],'4050':['Büroo üür · september','Tõstuki rent','Parkimiskoht'],'4060':['Elektrienergia','Võrgutasu','Vesi ja kanalisatsioon'],'4070':['Kinnitusvahendid','Tööriistad','Rehvid (4 tk)'],'4080':['Teenustasu','Kaarditasu']};
+const CCS=['Tartu kontor','Tallinna kontor','Hooldusüksus'];const PRJS=['AutoFutur 2026','LT filiaal','Serverimigratsioon'];
+const APPR=['K. Tamm','A. Lään','M. Sepp'];
+const SRC={eai:{l:'E-arve',d:'Operaatori kaudu'},pdf:{l:'PDF',d:'Üles laaditud / skaneeritud'},man:{l:'Käsitsi',d:'Sisestatud käsitsi'},bank:{l:'Pank',d:'Pangatehingust loodud mustand'},csv:{l:'CSV',d:'Bolt / CSV import'}};
+const VATC=[{k:'d24',l:'Siseriiklik 24%',s:'24%',rate:24},{k:'d9',l:'Siseriiklik 9%',s:'9%',rate:9},{k:'eus',l:'EU teenus (pöördmaks)',s:'EU teenus',rate:0},{k:'ex',l:'Maksuvaba',s:'Maksuvaba',rate:0}];
+const ST={draft:{c:'draft',l:'Mustand'},pend:{c:'pend',l:'Ootab kinnitust'},rej:{c:'rej',l:'Tagasi lükatud'},ok:{c:'ok',l:'Kinnitatud'},part:{c:'part',l:'Osaliselt makstud'},over:{c:'over',l:'Üle tähtaja'},paid:{c:'paid',l:'Makstud'},void:{c:'void',l:'Tühistatud'}};
+const fmt=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();
+const dsh=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1);
+const r2=n=>Math.round(n*100)/100;
+const TODAY=new Date(2026,8,2);
+let seed=11;const rnd=()=>(seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff;
+const $=id=>document.getElementById(id);
+
+const INV=[];
+for(let i=0;i<56;i++){
+  const nr=1840-i;const sp=SUP[Math.floor(rnd()*SUP.length)];
+  const issued=new Date(TODAY);issued.setDate(TODAY.getDate()-Math.floor(i<10?rnd()*6:rnd()*260));
+  const terms=[7,14,14,21,30][Math.floor(rnd()*5)];
+  const due=new Date(issued);due.setDate(issued.getDate()+terms);
+  const vatc=sp[0].startsWith('Microsoft')?'eus':sp[3]==='4080'?'ex':nr%11===0?'d9':'d24';
+  const rate=VATC.find(c=>c.k===vatc).rate;
+  const n=Math.floor(rnd()*3)+1,lines=[];let sub=0;
+  for(let k=0;k<n;k++){const acc=k===2&&sp[3]!=='4010'?'4010':sp[3];const it=ITEMS[acc];const qty=Math.max(1,Math.round(rnd()*3));const price=r2(8+rnd()*(acc==='4050'?900:260));const amt=r2(qty*price);sub+=amt;
+    lines.push({t:it[Math.floor(rnd()*it.length)],acc,qty,price,amt,vat:rate,cc:(nr+k)%4===0?CCS[(nr+k)%3]:'',prj:(nr+k)%6===0?PRJS[(nr+k)%3]:''})}
+  sub=r2(sub);const vat=r2(sub*rate/100),total=r2(sub+vat);
+  const late=Math.round((TODAY-due)/86400000);
+  let st,src;
+  if(i<3){st='draft';src=i<2?'bank':'pdf'}
+  else if(i<9){st='pend';src=['eai','pdf','eai','csv','eai','man'][i-3]}
+  else{src=rnd()<.55?'eai':rnd()<.5?'pdf':rnd()<.5?'csv':'man';
+    if(i===12)st='rej';else if(i===21)st='void';else if(rnd()<.52)st='paid';else if(late>0)st=(i%5===0?'part':'over');else st='ok'}
+  const paid=st==='paid'?total:st==='part'?r2(total*.5):0;
+  const appr=APPR[nr%3];
+  const inBatch=(st==='ok'||st==='over')&&nr%4===0;
+  const paydate=st==='paid'?new Date(due.getTime()-86400000*Math.floor(rnd()*4)):inBatch?new Date(2026,8,5):null;
+  INV.push({nr,name:sp[0],reg:sp[1],iban:sp[2],sinv:(sp[0].slice(0,2).toUpperCase())+'-'+(2600000+Math.floor(rnd()*99999)),issued,due,terms,vatc,sub,vat,total,paid,open:r2(total-paid),st,src,late,lines,appr,inBatch,paydate,
+    att:src!=='man'||nr%3===0,ref:String(nr)+'0'+(nr%7)+'3',journal:['draft','pend','rej','void'].includes(st)?null:'OA-2026-'+(600+i),
+    entered:APPR[(nr+1)%3],batch:inBatch?'MP-2026-014':st==='paid'?'MP-2026-0'+(10+i%4):null,rejWhy:st==='rej'?'Summa ei klapi tellimusega':''});
+}
+
+// Pangatehingust loodud mustandid: originaal puudub, süsteem saadab automaatseid meeldetuletusi
+INV.forEach(v=>{v.rem=[];if(v.src!=='bank')return;
+  v.att=false;v.issued=new Date(TODAY.getTime()-86400000*(8+v.nr%3));v.due=new Date(v.issued.getTime()+86400000*v.terms);v.late=Math.round((TODAY-v.due)/86400000);
+  v.remTo=['peeter@autofutur.ee','kaire@autofutur.ee'][v.nr%2];
+  for(let t=v.issued.getTime()+86400000;t<=TODAY.getTime();t+=86400000*3)v.rem.push(new Date(t));
+  v.remNext=new Date(v.rem[v.rem.length-1].getTime()+86400000*3)});
+const COLS=[
+ {id:'ck',l:'',w:30,lock:true},
+ {id:'nr',l:'Nr',w:56},
+ {id:'sup',l:'Tarnija',w:220,flex:true},
+ {id:'sinv',l:'Tarnija arve',w:112},
+ {id:'acc',l:'Kulukonto',w:140},
+ {id:'ccp',l:'Kulukoht / projekt',w:140},
+ {id:'total',l:'Summa',w:90,r:true},
+ {id:'open',l:'Tasumata',w:86,r:true},
+ {id:'issued',l:'Arve kp',w:84},
+ {id:'due',l:'Tähtaeg',w:112},
+ {id:'paydate',l:'Makstud',w:84},
+ {id:'appr',l:'Kinnitaja',w:92},
+ {id:'st',l:'Staatus',w:128},
+];
+const DEFHIDE=['acc','ccp','issued','paydate'];
+const S={tab:'all',q:'',sort:'nr',dir:-1,sel:INV[3].nr,per:'90',d1:null,d2:null,mode:'list',wide:false,ptab:'lines',zoom:'fit',
+  pw:+(localStorage.getItem('arvelo.pinv.pw')||0)||420,vatc:'all',src:'all',chk:new Set(),
+  widths:JSON.parse(localStorage.getItem('arvelo.pinv.cols')||'null')||{},
+  hidden:new Set(JSON.parse(localStorage.getItem('arvelo.pinv.hidden')||'null')||DEFHIDE)};
+
+const PRESETS=[['month','Käesolev kuu'],['prev','Eelmine kuu'],['q','Käesolev kvartal'],['90','Viimased 90 päeva'],['year','Käesolev aasta'],['all','Kõik ajad']];
+function periodRange(){const t=TODAY,y=t.getFullYear(),m=t.getMonth();
+  if(S.per==='custom')return[S.d1,S.d2];if(S.per==='month')return[new Date(y,m,1),new Date(y,m+1,0)];if(S.per==='prev')return[new Date(y,m-1,1),new Date(y,m,0)];
+  if(S.per==='q'){const q=Math.floor(m/3)*3;return[new Date(y,q,1),new Date(y,q+3,0)]}if(S.per==='90'){const a=new Date(t);a.setDate(t.getDate()-90);return[a,t]}
+  if(S.per==='year')return[new Date(y,0,1),new Date(y,11,31)];return[null,null]}
+// Tähtajaga avatud arved on alati nähtaval, sõltumata perioodist — maksmata arve ei tohi "ära kaduda"
+function inPeriod(v){const[a,b]=periodRange();if(a&&v.issued<a&&!(v.open>0&&isOpenSt(v)))return false;if(b&&v.issued>new Date(b.getFullYear(),b.getMonth(),b.getDate(),23,59))return false;return true}
+const isOpenSt=v=>['ok','over','part'].includes(v.st);
+const payable=v=>isOpenSt(v)&&v.open>0;
+function tabMatch(v,t){
+  if(t==='all')return true;
+  if(t==='topay')return payable(v);
+  if(t==='ok')return v.st==='ok'||v.st==='part';
+  return v.st===t}
+const TABS=[['all','Kõik'],['draft','Mustand'],['pend','Ootab kinnitust'],['topay','Maksmisele'],['over','Üle tähtaja']];
+const MORE=[['paid','Makstud'],['rej','Tagasi lükatud'],['void','Tühistatud']];
+const tabCount=k=>INV.filter(v=>inPeriod(v)&&tabMatch(v,k)).length;
+function visible(){const q=S.q.trim().toLowerCase();
+  return INV.filter(v=>tabMatch(v,S.tab)&&inPeriod(v)&&(S.vatc==='all'||v.vatc===S.vatc)&&(S.src==='all'||v.src===S.src)&&(!q||String(v.nr).includes(q)||v.name.toLowerCase().includes(q)||v.sinv.toLowerCase().includes(q)))
+   .sort((a,b)=>{const k=S.sort;let x=a[k],y=b[k];if(k==='sup'){x=a.name;y=b.name}if(k==='paydate'){x=a.paydate||0;y=b.paydate||0}if(x instanceof Date||y instanceof Date){x=+x;y=+y}return(x>y?1:x<y?-1:0)*S.dir})}
+const cols=()=>COLS.filter(c=>!S.hidden.has(c.id));
+const colTemplate=()=>cols().map(c=>{const w=S.widths[c.id];if(c.flex&&!w)return'minmax(120px,1fr)';return(w||c.w)+'px'}).join(' ');
+function hue(s){let h=0;for(const ch of s)h=(h*31+ch.charCodeAt(0))%360;return h}
+const initials=s=>s.split(' ').filter(w=>w.length>2).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const ini2=s=>s.replace('.','').split(' ').map(w=>w[0]).join('');
+const accOf=v=>{const a=[...new Set(v.lines.map(l=>l.acc))];return a.length>1?a[0]+' + '+(a.length-1):a[0]+' '+ACC[a[0]]};
+const ccpOf=v=>{const c=[...new Set(v.lines.map(l=>l.cc).filter(Boolean))],p=[...new Set(v.lines.map(l=>l.prj).filter(Boolean))];return[c[0],p[0]].filter(Boolean).join(' · ')||'—'};
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2000)}
+
+function renderTabs(){
+  const more=MORE.find(([k])=>k===S.tab);
+  $('tabs').innerHTML=TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="pill ${k==='pend'&&S.tab!==k&&tabCount(k)?'w':''}">${tabCount(k)}</span></button>`).join('')
+   +`<span class="tabmore"><button class="tab ${more?'on':''}" id="morebtn" title="Rohkem filtreid">${more?more[1]+'<span class="pill">'+tabCount(more[0])+'</span>':'···'}</button><div class="menu" id="moremenu" hidden>${MORE.map(([k,l])=>`<button class="mitem ${S.tab===k?'on':''}" data-tab="${k}">${l}<span class="pill">${tabCount(k)}</span></button>`).join('')}</div></span>`;
+}
+function renderMetrics(){
+  const all=INV.filter(inPeriod);
+  const topay=all.filter(payable).reduce((s,x)=>s+x.open,0);
+  const over=all.filter(v=>payable(v)&&v.late>0).reduce((s,x)=>s+x.open,0);
+  const wk=all.filter(v=>payable(v)&&v.late<=0&&v.late>=-7).reduce((s,x)=>s+x.open,0);
+  $('metrics').innerHTML=`<div class="metric"><span class="k">Maksmisele</span><span class="v mono">${fmt(topay)}</span></div><div class="metric neg"><span class="k">Üle tähtaja</span><span class="v mono">${fmt(over)}</span></div><div class="metric"><span class="k">7 päeva jooksul</span><span class="v mono">${fmt(wk)}</span></div>`;
+  const[a,b]=periodRange();$('subline').textContent=(a?dstr(a)+' – '+dstr(b):'kõik ajad')+' · '+all.length+' arvet';
+}
+function cell(c,v){
+  if(c.id==='ck')return`<div class="ck"><input type="checkbox" data-ck="${v.nr}" ${S.chk.has(v.nr)?'checked':''} /></div>`;
+  if(c.id==='nr')return`<div class="nr mono">${v.nr}</div>`;
+  if(c.id==='sup'){const h=hue(v.name);return`<div><div class="cust"><span class="av" style="background:oklch(0.92 0.045 ${h});color:oklch(0.36 0.09 ${h})">${initials(v.name)}</span><span class="nm"><span class="n1">${v.name}</span><span class="n2">${SRC[v.src].l}${v.att?'':' · originaal puudub'} · ${v.lines.length} rida · ${v.terms}p</span></span></div></div>`}
+  if(c.id==='sinv')return`<div><span class="sinv"><span class="mono" style="overflow:hidden;text-overflow:ellipsis">${v.sinv}</span><span class="clip ${v.att?'':'no'}" data-pdf="${v.nr}" title="${v.att?'Ava originaal (PDF)':'Manus puudub'}"><svg class="i" viewBox="0 0 24 24"><path d="M21.4 11.1l-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg></span></span></div>`;
+  if(c.id==='acc')return`<div class="acc" title="${[...new Set(v.lines.map(l=>l.acc+' '+ACC[l.acc]))].join(', ')}">${accOf(v)}</div>`;
+  if(c.id==='ccp')return`<div class="acc">${ccpOf(v)}</div>`;
+  if(c.id==='total')return`<div class="num mono">${fmt(v.total)}</div>`;
+  if(c.id==='open')return`<div class="num mono ${v.open===0||!isOpenSt(v)?'mut':''}">${v.open===0||!isOpenSt(v)?'—':fmt(v.open)}</div>`;
+  if(c.id==='issued')return`<div class="dt mono">${dstr(v.issued)}</div>`;
+  if(c.id==='due'){const late=payable(v)&&v.late>0,soon=payable(v)&&v.late<=0;return`<div class="dt mono">${dstr(v.due)}${late?` <span class="d2" style="color:var(--neg)">+${v.late}p</span>`:soon?` <span class="d2">${-v.late}p</span>`:''}</div>`}
+  if(c.id==='paydate')return`<div class="dt mono">${v.paydate?dstr(v.paydate)+(v.st!=='paid'?' <span class="d2">plaan</span>':''):'<span style="color:var(--text-3)">—</span>'}</div>`;
+  if(c.id==='appr'){const done=!['draft','pend'].includes(v.st);return`<div><span class="appr" title="${done?'Kinnitas ':'Kinnitab '}${v.appr}"><span class="av s" style="${done?'':'border-style:dashed;background:transparent'}">${ini2(v.appr)}</span>${v.appr}</span></div>`}
+  if(c.id==='st'){const s=ST[v.st];return`<div><span class="tag ${s.c}"><span class="dot"></span>${s.l}</span>${v.inBatch?'<span class="mp" title="Maksepakis '+v.batch+' · '+dstr(v.paydate)+'">MP</span>':''}${v.rem.length?`<span class="mp rm" title="Originaal puudub · ${v.rem.length} meeldetuletust saadetud, viimane ${dstr(v.rem[v.rem.length-1])} · ${v.remTo}"><svg class="i" viewBox="0 0 24 24" style="font-size:9px;vertical-align:-1px"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg> ${v.rem.length}</span>`:''}</div>`}
+}
+function renderTable(){
+  const list=visible();
+  document.documentElement.style.setProperty('--cols',colTemplate());
+  const allck=list.length&&list.every(v=>S.chk.has(v.nr));
+  $('thead').innerHTML=cols().map(c=>c.id==='ck'?`<div class="th ck"><input type="checkbox" id="ckall" title="Vali kõik nähtavad" ${allck?'checked':''} /></div>`:
+    `<div class="th ${c.r?'r':''} ${S.sort===c.id?'sorted':''}" data-col="${c.id}">${c.l}${S.sort===c.id?`<span class="sort">${S.dir>0?'↑':'↓'}</span>`:''}<span class="grip" data-grip="${c.id}"></span></div>`).join('');
+  $('rows').innerHTML=list.map(v=>`<div class="trow ${S.sel===v.nr?'on':''} ${S.chk.has(v.nr)?'chk':''}" data-nr="${v.nr}">${cols().map(c=>cell(c,v)).join('')}</div>`).join('')||'<div class="empty">Selles vaates arveid pole</div>';
+  renderListHead(list);
+  const tot=list.reduce((s,v)=>s+v.total,0),net=list.reduce((s,v)=>s+v.sub,0),open=list.filter(payable).reduce((s,v)=>s+v.open,0);
+  $('footleft').textContent='Sorteeritud: '+((cols().find(c=>c.id===S.sort)||{l:'nr'}).l||'nr').toLowerCase()+(S.dir>0?' ↑':' ↓');
+  $('footsum').innerHTML=`<span class="mono" title="Käibemaksuta ${fmt(net)} · KM ${fmt(tot-net)}" style="cursor:help;text-decoration:underline dotted var(--border-strong);text-underline-offset:3px">Summa kokku <b>${fmt(tot)}</b></span><span class="mono">Maksmisele <b>${fmt(open)}</b></span>`;
+  const pend=INV.filter(v=>v.st==='pend'&&inPeriod(v));
+  $('warnstrip').hidden=!pend.length||S.tab==='pend'||S.chk.size>0;
+  if(pend.length)$('warntext').innerHTML=`<b>${pend.length}</b> arvet ootab kinnitust summas ${fmt(pend.reduce((s,v)=>s+v.total,0))} — neid ei saa enne kinnitamist maksta`;
+}
+function selInfo(){const s=INV.filter(v=>S.chk.has(v.nr));return{all:s,pay:s.filter(v=>payable(v)&&!v.inBatch),pend:s.filter(v=>v.st==='pend')}}
+function renderListHead(list){
+  const h=$('listhead');
+  if(S.chk.size){const x=selInfo();
+    h.className='listhead sel';
+    h.innerHTML=`<span><b>${x.all.length}</b> valitud</span><span style="color:var(--text-3)">·</span><span class="mono">maksmisele <b>${fmt(x.pay.reduce((s,v)=>s+v.open,0))}</b>${x.pay.length<x.all.length?` <span style="color:var(--text-3)">(${x.pay.length} arvet)</span>`:''}</span>
+      <div class="r">${x.pend.length?`<button class="btn sm" data-bulk="approve">Kinnita (${x.pend.length})</button>`:''}<button class="btn sm primary" data-bulk="pay" ${x.pay.length?'':'disabled'}>Koosta maksekorraldus</button><button class="btn sm ghost x" data-bulk="clear" title="Tühista valik (Esc)">✕</button></div>`;
+  }else{
+    h.className='listhead';
+    h.innerHTML=`<span><b>${list.length}</b>&nbsp;arvet nähtaval</span><span style="color:var(--text-3)">· märgi read <kbd>x</kbd>, et koostada maksekorraldus</span>
+      <div class="r"><button class="btn sm ghost" id="colbtn"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18M3 12h18M3 19h18"/></svg> Veerud</button><div class="menu" id="colmenu" hidden></div></div>`;
+    renderColMenu();
+  }
+}
+function zoomCtl(){return`<span class="zoom"><button data-z="-" title="Vähenda (− · Ctrl+rullik)">−</button><span class="zv">${S.zoom==='fit'?'Laius':Math.round(S.zoom*100)+'%'}</span><button data-z="+" title="Suurenda (+)">+</button><button data-z="fit" class="${S.zoom==='fit'?'on':''}" title="Mahuta laiusele (0)">↔</button><button data-z="1" class="${S.zoom===1?'on':''}" title="Tegelik suurus">1:1</button></span>`}
+function pdfPage(v,full,seg){
+  if(!v.att)return`<div class="noorig" id="pdfbox0">
+    <div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M9 15l6-6M15 15L9 9"/></svg></div>
+    <div><h4>Originaal puudub</h4><p>${v.src==='bank'?`Mustand loodi pangatehingust ${dstr(v.issued)}. Kviitungi või arve küsimiseks saadetakse automaatselt meeldetuletusi aadressile <b>${v.remTo}</b>.`:'Arvel pole originaali. Lisa PDF või pilt, et arvet saaks kinnitada.'}</p></div>
+    ${v.rem.length?`<div><div class="sech" style="margin-bottom:6px">Meeldetuletused · ${v.rem.length}</div><div class="remlist">${v.rem.map((d,k)=>`<div><span class="mono">${dstr(d)}</span><span><b>Meeldetuletus ${k+1}</b> · e-post</span><span class="mono" style="color:var(--text-3)">${k===v.rem.length-1?'avamata':'avatud'}</span></div>`).join('')}${v.remNext?`<div class="nx"><span class="mono">${dstr(v.remNext)}</span><span>Järgmine automaatne meeldetuletus</span><span></span></div>`:''}</div></div>`:''}
+    <div class="acts"><button class="btn primary" data-act="upload">Laadi originaal üles</button>${v.src==='bank'?'<button class="btn" data-act="remind">Saada meeldetuletus kohe</button><button class="btn ghost" data-act="nodoc">Originaali ei tule</button>':''}</div>
+  </div>${seg?`<div class="pdfbar"><span class="seg" style="flex-shrink:0"><button data-ptab="lines">Read · ${v.lines.length}</button><button class="on" data-ptab="pdf">Originaal</button></span><span class="fn">Faili võib lohistada siia</span></div>`:''}`;
+  return`<div class="pdf ${full?'full':''}" id="pdfbox"><div class="page">
+    <div class="ph"><div><b>${v.name}</b><div>Reg ${v.reg}</div><div>${v.iban}</div></div><div style="text-align:right"><b>ARVE</b><div class="mono">${v.sinv}</div><div class="mono">${dstr(v.issued)}</div></div></div>
+    <div class="ln" style="width:55%"></div><div class="ln" style="width:38%"></div>
+    <div><div class="rw" style="font-weight:700;border-top:none">${'<span>Kirjeldus</span><span style="text-align:right">Kogus</span><span style="text-align:right">Summa</span>'}</div>
+    ${v.lines.map(l=>`<div class="rw"><span>${l.t}</span><span class="mono" style="text-align:right">${l.qty}</span><span class="mono" style="text-align:right">${fmt(l.amt)}</span></div>`).join('')}</div>
+    <div class="ln" style="width:70%;margin-top:6px"></div>
+    <div class="tt"><span>KM ${fmt(v.vat)}</span><b class="mono">Kokku ${fmt(v.total)}</b></div>
+    <div class="mono" style="font-size:11px;color:var(--text-3)">Tasuda ${dstr(v.due)} · viitenumber ${v.ref}</div>
+  </div></div>
+  <div class="pdfbar">${seg?`<span class="seg" style="flex-shrink:0"><button data-ptab="lines">Read · ${v.lines.length}</button><button class="on" data-ptab="pdf">Originaal</button></span>`:''}<span class="fn" title="${v.att?`arve_${v.sinv}.pdf · 1 lk · ${SRC[v.src].l}`:''}">${v.att?`arve_${v.sinv}.pdf · 1 lk · ${SRC[v.src].l}`:'Originaal puudub'}</span><span class="r">${zoomCtl()}<button class="iconb" title="Laadi alla"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button><button class="iconb" title="Asenda fail"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg></button></span></div>`;
+}
+function applyZoom(){const b=$('pdfbox');if(!b)return;const pg=b.querySelector('.page');const z=S.zoom==='fit'?Math.max(.3,(b.clientWidth-(b.classList.contains('full')?2:30))/600):S.zoom;pg.style.setProperty('--z',z);b.querySelectorAll('.zv').forEach(x=>x.textContent=S.zoom==='fit'?Math.round(z*100)+'%':Math.round(z*100)+'%');document.querySelectorAll('.zv').forEach(x=>x.textContent=Math.round(z*100)+'%')}
+function setZoom(k){const b=$('pdfbox');const cur=S.zoom==='fit'?(b?Math.max(.3,(b.clientWidth-30)/600):1):S.zoom;
+  if(k==='fit')S.zoom='fit';else if(k==='1')S.zoom=1;else S.zoom=Math.min(3,Math.max(.3,Math.round((cur+(k==='+'?.25:-.25))*4)/4));
+  document.querySelectorAll('.zoom button[data-z="fit"]').forEach(x=>x.classList.toggle('on',S.zoom==='fit'));document.querySelectorAll('.zoom button[data-z="1"]').forEach(x=>x.classList.toggle('on',S.zoom===1));applyZoom()}
+function linesBlock(v,w,seg){
+  return`<div class="lines ${w?'w':''}"><div class="lhead"><div>Kirjeldus</div>${w?'<div>Kulukonto</div>':''}<div class="r">Kogus</div>${w?'<div class="r">Hind</div>':''}<div class="r">KM</div><div class="r">Summa</div></div>
+   <div class="lscroll">${v.lines.map(l=>`<div class="lrow"><div class="t" title="${l.t}${l.cc?' · '+l.cc:''}${l.prj?' · '+l.prj:''}">${l.t}</div>${w?`<div class="c"><span class="mono">${l.acc}</span> ${ACC[l.acc]}</div>`:''}<div class="mono r">${l.qty}</div>${w?`<div class="mono r">${fmt(l.price)}</div>`:''}<div class="mono r">${l.vat}%</div><div class="mono a">${fmt(l.amt)}</div></div>`).join('')}</div>
+   <div class="ltot">${seg?`<span class="seg" style="margin-right:auto;flex-shrink:0"><button class="on" data-ptab="lines">Read · ${v.lines.length}</button><button data-ptab="pdf">Originaal</button></span>`:''}${w||!seg?`<span>Neto <b class="mono">${fmt(v.sub)}</b></span>`:''}<span>KM <b class="mono">${fmt(v.vat)}</b></span><span title="Neto ${fmt(v.sub)} · KM ${fmt(v.vat)}">Kokku <b class="mono">${fmt(v.total)}</b></span></div></div>`;
+}
+function approvalTL(v){
+  const r=[`<div class="tlrow done"><span class="mono">${dsh(v.issued)}</span><span class="bul"></span><span>${v.src==='eai'?'Saabus e-arvena':v.src==='bank'?'Loodud pangatehingust':v.src==='csv'?'Imporditud CSV-st':v.src==='pdf'?'PDF tuvastatud':'Sisestatud'} · ${v.entered}</span></div>`];
+  if(v.st==='draft'){v.rem.forEach((d,k)=>r.push(`<div class="tlrow wait"><span class="mono">${dsh(d)}</span><span class="bul"></span><span title="Saadetud ${v.remTo}">Meeldetuletus ${k+1} saadetud · ${v.remTo}</span></div>`));
+    if(v.remNext)r.push(`<div class="tlrow"><span class="mono">${dsh(v.remNext)}</span><span class="bul"></span><span>Järgmine meeldetuletus (automaatne)</span></div>`);
+    r.push(`<div class="tlrow wait"><span class="mono">—</span><span class="bul"></span><span>${v.att?'Täienda ja saada kinnitamiseks':'Ootab originaali'}</span></div>`)}
+  else if(v.st==='pend')r.push(`<div class="tlrow wait"><span class="mono">—</span><span class="bul"></span><span>Ootab kinnitust · ${v.appr}</span></div>`);
+  else if(v.st==='rej')r.push(`<div class="tlrow bad"><span class="mono">${dsh(v.issued)}</span><span class="bul"></span><span title="${v.rejWhy}">Tagasi lükatud · ${v.appr}: ${v.rejWhy}</span></div>`);
+  else if(v.st!=='void'){r.push(`<div class="tlrow done"><span class="mono">${dsh(new Date(v.issued.getTime()+86400000))}</span><span class="bul"></span><span>Kinnitatud · ${v.appr}</span></div>`);
+    if(v.inBatch)r.push(`<div class="tlrow wait"><span class="mono">${dsh(v.paydate)}</span><span class="bul"></span><span>Maksepakis ${v.batch}</span></div>`);
+    if(v.paid>0)r.push(`<div class="tlrow done"><span class="mono">${dsh(v.paydate||v.due)}</span><span class="bul"></span><span>Makstud ${fmt(v.paid)}</span></div>`);
+    else if(!v.inBatch&&payable(v))r.push(`<div class="tlrow ${v.late>0?'bad':''}"><span class="mono">${dsh(v.due)}</span><span class="bul"></span><span>${v.late>0?'Tähtaeg möödas '+v.late+' p':'Maksmata'}</span></div>`)}
+  else r.push(`<div class="tlrow"><span class="mono">—</span><span class="bul"></span><span>Tühistatud</span></div>`);
+  return`<div class="tl">${r.join('')}</div>`;
+}
+function bankTx(v){
+  if(v.src==='bank'&&v.st==='draft')return`<div class="btx"><span class="mono">${dsh(v.issued)}</span><b class="mono">−${fmt(v.total)}</b><span style="overflow:hidden;text-overflow:ellipsis">Swedbank · mustand loodud siit</span><span class="r"><a href="Pangatehingud.html">Ava</a></span></div>`;
+  if(v.paid>0)return`<div class="btx"><span class="mono">${dsh(v.paydate||v.due)}</span><b class="mono">−${fmt(v.paid)}</b><span style="overflow:hidden;text-overflow:ellipsis">Swedbank · ${v.batch||'SEPA'}</span><span class="r"><a href="Pangatehingud.html">Ava</a></span></div>`;
+  if(v.inBatch)return`<div class="btx none">Makse ootab panka · ${v.batch} · ${dstr(v.paydate)}</div>`;
+  return`<div class="btx none">Pangatehingut pole seotud</div>`;
+}
+function actions(v,full){
+  const P=(t,a)=>`<button class="btn primary" data-act="${a}">${t}</button>`,B=(t,a,c='')=>`<button class="btn ${c}" data-act="${a}">${t}</button>`;
+  let l='';
+  if(v.st==='draft')l=P('Saada kinnitamiseks','submit')+(v.src==='bank'?B('Saada meeldetuletus','remind'):B('Muuda','edit'));
+  else if(v.st==='pend')l=P('Kinnita','approve')+B('Lükka tagasi','reject','danger');
+  else if(v.st==='rej')l=P('Paranda ja saada uuesti','edit');
+  else if(payable(v))l=(v.inBatch?B('Maksepakis '+v.batch,'batch'):P('Lisa maksekorraldusse','pay1'))+B('Registreeri tasumine','reg');
+  else l=P(full?'Muuda':'Ava arve',full?'edit':'open');
+  return`<div class="dfoot">${l}<div class="r">${['draft','pend','rej'].includes(v.st)&&!full?'':B('Muuda','edit','ghost')}<button class="btn ghost">···</button></div></div>`;
+}
+function renderDetail(){
+  const v=INV.find(x=>x.nr===S.sel),d=$('detail');
+  if(!v){d.innerHTML='<div class="empty">Vali arve</div>';return}
+  const s=ST[v.st],list=visible(),i=list.findIndex(x=>x.nr===v.nr),vc=VATC.find(c=>c.k===v.vatc);
+  d.innerHTML=`
+  <div class="dhead ${S.ptab==='pdf'?'pd':''}">
+    <div class="drow"><h2 title="${v.nr} · ${v.name}"><span class="mono snr ${s.c}" title="${s.l}">${v.nr}</span> · ${v.name}</h2>
+      <div class="nav"><button class="btn sm" data-nav="-1" ${i<=0?'disabled':''} title="Eelmine (k)">↑</button><button class="btn sm" data-nav="1" ${i>=list.length-1?'disabled':''} title="Järgmine (j)">↓</button>
+      <button class="btn sm" data-wide title="${S.wide?'Kitsenda paneel':'Laienda paneel (tabel peitu)'}">${S.wide?'⇲':'⇱'}</button><button class="btn sm" data-open title="Ava täisvaates (Enter)">Ava →</button></div></div>
+    ${S.ptab==='pdf'?'':`<div class="line mono">${v.sinv} · ${SRC[v.src].l}</div>`}
+  </div>
+  <div class="dbody">${S.ptab==='pdf'?`<div class="pview">${pdfPage(v,true,true)}</div></div>`:`
+    <div class="sec grow">
+      ${v.st==='rej'?`<div class="sech"><span style="color:var(--neg);text-transform:none;letter-spacing:0;font-weight:500;font-size:11px">Tagasi lükatud: ${v.rejWhy}</span></div>`:''}
+      ${linesBlock(v,S.wide,true)}
+    </div>
+    <div class="dsplit">
+      <div class="sec">
+        <div class="sech">Andmed</div>
+        <div class="kv"><span>Tähtaeg</span><b class="mono" style="${payable(v)&&v.late>0?'color:var(--neg)':''}">${dstr(v.due)}</b></div>
+        <div class="kv"><span>Viitenumber</span><b class="mono">${v.ref}</b></div>
+        <div class="kv"><span>IBAN</span><b class="mono" title="${v.iban}">${v.iban}</b></div>
+        <div class="kv"><span>KM kood</span><b title="${vc.l}">${vc.s}</b></div>
+        <div class="kv"><span>Kulukonto</span><b title="${[...new Set(v.lines.map(l=>l.acc+' '+ACC[l.acc]))].join(', ')}">${accOf(v)}</b></div>
+        <div class="kv"><span>Kulukoht / projekt</span><b>${ccpOf(v)}</b></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Kinnitamine</div>
+        ${approvalTL(v)}
+        <div class="sech" style="margin:10px 0 4px">Pangatehing</div>
+        ${bankTx(v)}
+      </div>
+    </div>`}
+  </div>
+  ${S.ptab==='pdf'?'':actions(v,false)}`;
+  applyZoom();
+}
+function journalLines(v){
+  const by={};v.lines.forEach(l=>by[l.acc]=r2((by[l.acc]||0)+l.amt));
+  return[...Object.entries(by).map(([a,x])=>({a,n:ACC[a],d:x,c:0})),...(v.vat?[{a:'1510',n:'Sisendkäibemaks',d:v.vat,c:0}]:[]),{a:'2110',n:'Võlad tarnijatele',d:0,c:v.total}];
+}
+function renderFull(){
+  const f=$('full');
+  document.querySelector('.body').hidden=S.mode==='open';
+  document.querySelector('.railrow').style.display=S.mode==='open'?'none':'';
+  f.hidden=S.mode!=='open';
+  if(S.mode!=='open'){f.innerHTML='';return}
+  const v=INV.find(x=>x.nr===S.sel),s=ST[v.st],list=visible(),i=list.findIndex(x=>x.nr===v.nr);
+  const jl=journalLines(v);
+  f.innerHTML=`
+  <div class="dhead">
+    <div><div class="crumb"><button class="btn sm ghost" data-back>← Ostuarved</button><span>/</span><span class="mono">${v.nr}</span></div>
+      <h2 style="margin-top:5px"><span class="mono">${v.nr}</span> · ${v.name}</h2>
+      <div class="line mono">Tarnija arve ${v.sinv} · ${dstr(v.issued)} → ${dstr(v.due)} · ${v.terms} päeva · viide ${v.ref} · ${SRC[v.src].l}</div></div>
+    <div class="nav"><span class="tag ${s.c}"><span class="dot"></span>${s.l}</span>
+      <button class="btn sm" data-nav="-1" ${i<=0?'disabled':''}>↑</button><button class="btn sm" data-nav="1" ${i>=list.length-1?'disabled':''}>↓</button>
+      <button class="btn sm ghost" data-back title="Esc">Sulge</button></div>
+  </div>
+  <div class="fsplit">
+    <div class="fleft">
+      <div style="padding:8px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px"><span class="seg"><button class="${S.ptab==='lines'?'on':''}" data-ptab="lines">Read · ${v.lines.length}</button><button class="${S.ptab==='pdf'?'on':''}" data-ptab="pdf">Originaal</button></span>${v.st==='rej'?`<span style="font-size:11.5px;color:var(--neg);margin-left:auto">Tagasi lükatud: ${v.rejWhy}</span>`:''}</div>
+      ${S.ptab==='pdf'?`<div style="flex:1;min-height:0;display:flex;flex-direction:column">${pdfPage(v,true)}</div>`:`
+      <div class="bigh"><div>Kirjeldus</div><div style="text-align:right">Kogus</div><div style="text-align:right">Hind</div><div style="text-align:right">KM</div><div style="text-align:right">Neto</div><div style="text-align:right">Kokku</div></div>
+      ${v.lines.map(l=>`<div class="bigr"><div class="t">${l.t}<small><span class="mono">${l.acc}</span> ${ACC[l.acc]}${l.cc?' · '+l.cc:''}${l.prj?' · '+l.prj:''}</small></div><div class="mono" style="text-align:right">${l.qty}</div><div class="mono" style="text-align:right">${fmt(l.price)}</div><div class="mono" style="text-align:right">${l.vat}%</div><div class="mono" style="text-align:right">${fmt(l.amt)}</div><div class="mono" style="text-align:right;font-weight:700">${fmt(r2(l.amt*(1+l.vat/100)))}</div></div>`).join('')}
+      <div class="bigtot"><span>Neto <b class="mono">${fmt(v.sub)}</b></span><span>Käibemaks <b class="mono">${fmt(v.vat)}</b></span><span>Kokku <b class="mono">${fmt(v.total)}</b></span></div>
+      <div class="sec" style="border-bottom:none">
+        <div class="sech">Konteering<span class="r mono">${v.journal?`<a href="#" data-jrn>${v.journal}</a>`:'eelvaade · kanne tekib kinnitamisel'}</span></div>
+        <div class="lines"><div class="jl h"><div>Konto</div><div>Nimetus</div><div class="rt">Deebet</div><div class="rt">Kreedit</div></div>
+        ${jl.map(l=>`<div class="jl"><div class="mono">${l.a}</div><div>${l.n}</div><div class="mono rt" style="${l.d?'':'color:var(--text-3)'}">${l.d?fmt(l.d):'—'}</div><div class="mono rt" style="${l.c?'':'color:var(--text-3)'}">${l.c?fmt(l.c):'—'}</div></div>`).join('')}</div>
+      </div>`}
+    </div>
+    <div class="fright">
+      <div class="sec">
+        <div class="sech">Maksmine</div>
+        <div class="mono" style="font-size:22px;font-weight:700;letter-spacing:-0.035em">${fmt(isOpenSt(v)?v.open:v.st==='paid'?0:v.total)}</div>
+        <div style="font-size:11px;color:var(--text-3)">${v.st==='paid'?'makstud täielikult':isOpenSt(v)?'tasumata · makstud '+fmt(v.paid):'maksmine pärast kinnitamist'}</div>
+        <div class="bar"><i style="width:${Math.round(v.paid/v.total*100)}%"></i></div>
+        <div class="kv" style="margin-top:9px"><span>Tähtaeg</span><b class="mono" style="${payable(v)&&v.late>0?'color:var(--neg)':''}">${dstr(v.due)}${payable(v)?(v.late>0?' · +'+v.late+' p':' · '+(-v.late)+' p'):''}</b></div>
+        <div class="kv"><span>Saaja IBAN</span><b class="mono" title="${v.iban}">${v.iban}</b></div>
+        <div class="kv"><span>Viitenumber</span><b class="mono">${v.ref}</b></div>
+        <div class="kv"><span>Maksepakk</span><b class="mono">${v.batch||'—'}</b></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Tarnija<span class="r"><a href="#">Partneri kaart</a></span></div>
+        <div class="kv"><span>Registrikood</span><b class="mono">${v.reg}</b></div>
+        <div class="kv"><span>KM kood</span><b>${VATC.find(c=>c.k===v.vatc).l}</b></div>
+        <div class="kv"><span>Vaikimisi kulukonto</span><b>${v.lines[0].acc} ${ACC[v.lines[0].acc]}</b></div>
+        <div class="kv"><span>Avatud kokku</span><b class="mono">${fmt(INV.filter(x=>x.name===v.name&&payable(x)).reduce((s,x)=>s+x.open,0))}</b></div>
+      </div>
+      <div class="sec"><div class="sech">Kinnitamine</div>${approvalTL(v)}</div>
+      <div class="sec"><div class="sech">Pangatehing</div>${bankTx(v)}</div>
+      <div class="sec" style="border-bottom:none"><div class="sech">Manused</div>
+        ${v.att?`<div class="kv"><span>arve_${v.sinv}.pdf</span><b><a href="#" data-ptab="pdf">Ava</a></b></div>`:''}${v.src==='eai'?'<div class="kv"><span>e-arve XML</span><b><a href="#">Ava</a></b></div>':''}${!v.att&&v.src!=='eai'?'<div class="kv"><span>Manus puudub</span><b><a href="#">Lisa</a></b></div>':''}
+      </div>
+    </div>
+  </div>
+  ${actions(v,true)}`;
+  applyZoom();
+}
+const openFull=()=>{S.mode='open';renderFull()},closeFull=()=>{S.mode='list';renderFull()};
+function openJournal(nr){
+  const v=INV.find(x=>x.nr===nr);if(!v||!v.journal)return;
+  const es=[{doc:v.journal,date:new Date(v.issued.getTime()+86400000),desc:'Ostuarve '+v.nr+' · '+v.name,lines:journalLines(v)}];
+  if(v.paid>0)es.push({doc:'PR-2026-'+(3100+v.nr%300),date:v.paydate||v.due,desc:'Tasumine · arve '+v.nr,lines:[{a:'2110',n:'Võlad tarnijatele',d:v.paid,c:0},{a:'1010',n:'Pangakonto',d:0,c:v.paid}]});
+  $('mbox').innerHTML=`<div class="mhead"><div><h3>Arvega seotud kanded</h3><div class="line mono">Ostuarve ${v.nr} · ${v.name} · ${es.length} kannet</div></div><button class="btn sm ghost x" data-mclose>Sulge</button></div>
+   <div class="mbody">${es.map(e=>{const dt=e.lines.reduce((s,l)=>s+l.d,0),ct=e.lines.reduce((s,l)=>s+l.c,0);
+    return`<div class="jgrp"><b class="mono">${e.doc}</b><span class="mono">${dstr(e.date)}</span><span>${e.desc}</span><span class="r"><a href="#">Ava päevaraamatus</a></span></div><div class="jh"><div>Konto</div><div>Nimetus</div><div class="rt">Deebet</div><div class="rt">Kreedit</div></div>
+    ${e.lines.map(l=>`<div class="jr"><div class="mono">${l.a}</div><div>${l.n}</div><div class="mono rt">${l.d?fmt(l.d):'—'}</div><div class="mono rt">${l.c?fmt(l.c):'—'}</div></div>`).join('')}<div class="jsum"><div></div><div>Kokku</div><div class="mono rt">${fmt(dt)}</div><div class="mono rt">${fmt(ct)}</div></div>`}).join('')}</div>
+   <div class="mfootbar"><span style="font-size:11.5px;color:var(--text-3)">Kanded on tasakaalus</span><div class="r"><button class="btn" data-mclose>Sulge</button><button class="btn primary">Ava pearaamatus →</button></div></div>`;
+  $('modal').hidden=false;
+}
+let PB=[];
+function openPay(nrs){
+  const pick=INV.filter(v=>nrs.includes(v.nr));PB=pick.filter(v=>payable(v)&&!v.inBatch);const skip=pick.length-PB.length;
+  if(!PB.length)return toast('Valitud arvetest pole ühtegi maksmisele');
+  const tot=PB.reduce((s,v)=>s+v.open,0);
+  $('mbox').innerHTML=`<div class="mhead"><div><h3>Maksekorraldus</h3><div class="line mono">${PB.length} arvet · ${new Set(PB.map(v=>v.name)).size} saajat · kokku ${fmt(tot)}</div></div><button class="btn sm ghost x" data-mclose>Sulge</button></div>
+   <div class="mfields">
+     <label>Maksja konto<select class="minp"><option>Swedbank · EE38 2200 2210 2014 5685</option><option>LHV · EE71 7700 7710 0123 4567</option></select></label>
+     <label>Maksekuupäev<input class="minp" id="pbdate" value="${dstr(TODAY)}" /></label>
+     <label>Koondamine<select class="minp"><option>Iga arve eraldi</option><option>Koonda saaja kaupa</option></select></label>
+   </div>
+   ${skip?`<div class="pbnote"><b>${skip}</b> valitud arvet jäid välja — need on mustandid, ootavad kinnitust või on juba maksepakis.</div>`:''}
+   <div class="mbody">
+     <div class="pbh"><div>Saaja</div><div>IBAN</div><div>Selgitus / viide</div><div>Tähtaeg</div><div class="rt">Summa</div></div>
+     ${PB.map(v=>`<div class="pbr"><div>${v.name}</div><div class="mono" style="font-size:11px">${v.iban}</div><div class="mono" style="font-size:11px">${v.ref} · ${v.sinv}</div><div class="mono" style="${v.late>0?'color:var(--neg)':''}">${dstr(v.due)}</div><div class="mono rt" style="font-weight:600">${fmt(v.open)}</div></div>`).join('')}
+   </div>
+   <div class="pbsum"><span>Makseid <b class="mono">${PB.length}</b></span><span>Kokku <b class="mono">${fmt(tot)}</b></span></div>
+   <div class="mfootbar"><span style="font-size:11.5px;color:var(--text-3)">Arved märgitakse makstuks, kui pangatehing saabub ja seotakse</span>
+     <div class="r"><button class="btn" data-mclose>Loobu</button><button class="btn" data-pb="save">Salvesta maksepakina</button><button class="btn primary" data-pb="file">Laadi pangafail (pain.001)</button></div></div>`;
+  $('modal').hidden=false;
+}
+function closeModal(){$('modal').hidden=true}
+function renderColMenu(){
+  const m=$('colmenu');if(!m)return;
+  m.innerHTML=COLS.filter(c=>!c.lock).map(c=>`<label><input type="checkbox" data-hide="${c.id}" ${S.hidden.has(c.id)?'':'checked'} /> ${c.l}</label>`).join('')+`<div class="mfoot"><button class="btn sm ghost" id="colreset">Lähtesta</button></div>`;
+}
+function renderPeriod(){
+  $('presets').innerHTML=PRESETS.map(([k,l])=>`<button data-pre="${k}" class="${S.per===k?'on':''}">${l}</button>`).join('');
+  $('perlbl').textContent=S.per==='custom'?dstr(S.d1)+' – '+dstr(S.d2):PRESETS.find(p=>p[0]===S.per)[1];
+  $('perbtn').classList.toggle('on',S.per!=='90');
+  const[a,b]=periodRange();$('perhint').textContent=a?dstr(a)+' – '+dstr(b):'piiranguta';
+}
+function renderFilters(){
+  const cur=VATC.find(c=>c.k===S.vatc);
+  $('vatlbl').textContent='KM: '+(cur?cur.s:'kõik');$('vatbtn').classList.toggle('on',S.vatc!=='all');
+  const base=v=>inPeriod(v)&&tabMatch(v,S.tab);
+  $('vatmenu').innerHTML=[{k:'all',l:'Kõik käibemaksukoodid'}].concat(VATC).map(c=>`<button class="mitem ${S.vatc===c.k?'on':''}" data-vatc="${c.k}">${c.l}<span class="pill">${INV.filter(v=>base(v)&&(c.k==='all'||v.vatc===c.k)).length}</span></button>`).join('');
+  $('srclbl').textContent='Allikas: '+(S.src==='all'?'kõik':SRC[S.src].l);$('srcbtn').classList.toggle('on',S.src!=='all');
+  $('srcmenu').innerHTML=`<button class="mitem ${S.src==='all'?'on':''}" data-src="all">Kõik allikad<span class="pill">${INV.filter(base).length}</span></button>`+Object.entries(SRC).map(([k,s])=>`<button class="mitem ${S.src===k?'on':''}" data-src="${k}"><span>${s.l}<span class="d">${s.d}</span></span><span class="pill">${INV.filter(v=>base(v)&&v.src===k).length}</span></button>`).join('');
+}
+function renderAll(){renderTabs();renderMetrics();renderTable();renderDetail();renderPeriod();renderFilters();renderFull()}
+function refresh(){renderTabs();renderMetrics();renderTable();renderDetail();renderFilters();if(S.mode==='open')renderFull()}
+
+function act(a,v){
+  if(a==='approve'){v.st=v.late>0?'over':'ok';v.journal='OA-2026-'+(700+v.nr%100);toast('Arve '+v.nr+' kinnitatud · kanne '+v.journal)}
+  else if(a==='reject'){const w=prompt('Tagasilükkamise põhjus','Summa ei klapi tellimusega');if(w===null)return;v.st='rej';v.rejWhy=w||'põhjus märkimata';toast('Arve '+v.nr+' tagasi lükatud')}
+  else if(a==='submit'){v.st='pend';toast('Saadetud kinnitamiseks · '+v.appr)}
+  else if(a==='remind'){v.rem.push(new Date(TODAY));v.remNext=new Date(TODAY.getTime()+86400000*3);toast('Meeldetuletus saadetud · '+v.remTo)}
+  else if(a==='upload')return toast('Vali PDF või pilt — seome selle mustandiga '+v.nr);
+  else if(a==='nodoc'){v.remNext=null;toast('Meeldetuletused peatatud · kanne tehakse ilma originaalita')}
+  else if(a==='pay1')return openPay([v.nr]);
+  else if(a==='reg')return toast('Tasumise registreerimine — vali pangatehing või sisesta käsitsi');
+  else if(a==='edit')return toast('Avaneb ostuarve muutmine');
+  else if(a==='open')return openFull();
+  else if(a==='batch')return toast('Ava maksepakk '+v.batch);
+  refresh();
+}
+
+document.documentElement.style.setProperty('--pw',clampPW(S.pw)+'px');
+renderAll();
+
+$('tabs').onclick=e=>{if(e.target.closest('#morebtn')){e.stopPropagation();const m=$('moremenu');m.hidden=!m.hidden;return}const b=e.target.closest('[data-tab]');if(!b)return;S.tab=b.dataset.tab;renderAll()};
+$('q').oninput=e=>{S.q=e.target.value;renderTable();renderDetail()};
+$('rows').addEventListener('click',e=>{
+  const ck=e.target.closest('[data-ck]');if(ck){e.stopPropagation();const n=+ck.dataset.ck;ck.checked?S.chk.add(n):S.chk.delete(n);renderTable();return}
+  if(e.target.closest('.ck'))return;
+  const p=e.target.closest('[data-pdf]');const r=e.target.closest('[data-nr]');if(!r)return;S.sel=+r.dataset.nr;
+  if(p)S.ptab='pdf';
+  renderTable();renderDetail()});
+$('rows').ondblclick=e=>{const r=e.target.closest('[data-nr]');if(!r||e.target.closest('.ck'))return;S.sel=+r.dataset.nr;openFull()};
+$('thead').addEventListener('click',e=>{
+  if(e.target.id==='ckall'){const l=visible();if(e.target.checked)l.forEach(v=>S.chk.add(v.nr));else l.forEach(v=>S.chk.delete(v.nr));renderTable();return}
+  if(e.target.dataset.grip)return;const th=e.target.closest('[data-col]');if(!th)return;
+  if(S.sort===th.dataset.col)S.dir*=-1;else{S.sort=th.dataset.col;S.dir=1}renderTable()});
+$('listhead').addEventListener('click',e=>{
+  if(e.target.closest('#colbtn')){e.stopPropagation();const m=$('colmenu');m.hidden=!m.hidden;return}
+  const cm=e.target.closest('#colmenu');if(cm){e.stopPropagation();
+    if(e.target.id==='colreset'){S.widths={};S.hidden=new Set(DEFHIDE);localStorage.removeItem('arvelo.pinv.cols');localStorage.removeItem('arvelo.pinv.hidden');renderTable();$('colmenu').hidden=false;return}
+    const id=e.target.dataset&&e.target.dataset.hide;if(!id)return;e.target.checked?S.hidden.delete(id):S.hidden.add(id);
+    localStorage.setItem('arvelo.pinv.hidden',JSON.stringify([...S.hidden]));renderTable();$('colmenu').hidden=false;return}
+  const b=e.target.closest('[data-bulk]');if(!b)return;const x=selInfo();
+  if(b.dataset.bulk==='clear'){S.chk.clear();refresh()}
+  else if(b.dataset.bulk==='approve'){x.pend.forEach(v=>{v.st=v.late>0?'over':'ok';v.journal='OA-2026-'+(700+v.nr%100)});toast(x.pend.length+' arvet kinnitatud');refresh()}
+  else if(b.dataset.bulk==='pay')openPay([...S.chk]);
+});
+$('warnbtn').onclick=()=>{S.tab='pend';renderAll()};
+function panelClick(e){
+  const z=e.target.closest('[data-z]');if(z){setZoom(z.dataset.z);return}
+  if(e.target.closest('[data-jrn]')){e.preventDefault();openJournal(S.sel);return}
+  if(e.target.closest('[data-open]')){openFull();return}
+  if(e.target.closest('[data-back]')){closeFull();return}
+  const pt=e.target.closest('[data-ptab]');if(pt){e.preventDefault();S.ptab=pt.dataset.ptab;renderDetail();if(S.mode==='open')renderFull();return}
+  if(e.target.closest('[data-wide]')){S.wide=!S.wide;document.querySelector('.body').classList.toggle('wide',S.wide);renderDetail();return}
+  const a=e.target.closest('[data-act]');if(a){act(a.dataset.act,INV.find(x=>x.nr===S.sel));return}
+  const b=e.target.closest('[data-nav]');if(!b)return;
+  const list=visible(),i=list.findIndex(x=>x.nr===S.sel)+ +b.dataset.nav;if(list[i]){S.sel=list[i].nr;renderTable();renderDetail();if(S.mode==='open')renderFull()}}
+$('detail').addEventListener('click',panelClick);$('full').addEventListener('click',panelClick);
+$('modal').addEventListener('click',e=>{
+  if(e.target.id==='modal'||e.target.closest('[data-mclose]')){closeModal();return}
+  const b=e.target.closest('[data-pb]');if(!b)return;
+  const nb='MP-2026-015',dt=(s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s.trim());return m?new Date(+m[3],+m[2]-1,+m[1]):TODAY})($('pbdate').value);
+  PB.forEach(v=>{v.inBatch=true;v.batch=nb;v.paydate=dt;S.chk.delete(v.nr)});
+  closeModal();refresh();
+  toast(b.dataset.pb==='file'?`Pangafail ${nb}.xml loodud · ${PB.length} makset`:`Maksepakk ${nb} salvestatud`)});
+
+const gut=$('gutter');let gdrag=null;
+function clampPW(w){const avail=Math.max(document.querySelector('.shell').clientWidth,1180);return Math.max(380,Math.min(w,avail-9-560))}
+gut.addEventListener('mousedown',e=>{e.preventDefault();gdrag={x:e.clientX,w:S.pw};document.body.classList.add('pres')});
+addEventListener('mousemove',e=>{if(!gdrag)return;S.pw=clampPW(gdrag.w-(e.clientX-gdrag.x));document.documentElement.style.setProperty('--pw',S.pw+'px');if(S.zoom==='fit')applyZoom()});
+addEventListener('mouseup',()=>{if(!gdrag)return;gdrag=null;document.body.classList.remove('pres');localStorage.setItem('arvelo.pinv.pw',S.pw)});
+gut.addEventListener('dblclick',()=>{S.pw=420;document.documentElement.style.setProperty('--pw','420px');localStorage.setItem('arvelo.pinv.pw',420)});
+addEventListener('resize',()=>{document.documentElement.style.setProperty('--pw',clampPW(S.pw)+'px');applyZoom()});
+document.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.target.closest('#pdfbox'))return;e.preventDefault();setZoom(e.deltaY<0?'+':'-')},{passive:false});
+let drag=null;
+$('thead').addEventListener('mousedown',e=>{const g=e.target.dataset&&e.target.dataset.grip;if(!g)return;e.preventDefault();drag={id:g,x:e.clientX,w:e.target.parentElement.getBoundingClientRect().width};document.body.classList.add('resizing')});
+addEventListener('mousemove',e=>{if(!drag)return;S.widths[drag.id]=Math.max(56,Math.round(drag.w+(e.clientX-drag.x)));document.documentElement.style.setProperty('--cols',colTemplate())});
+addEventListener('mouseup',()=>{if(!drag)return;drag=null;document.body.classList.remove('resizing');localStorage.setItem('arvelo.pinv.cols',JSON.stringify(S.widths))});
+$('thead').addEventListener('dblclick',e=>{const g=e.target.dataset&&e.target.dataset.grip;if(!g)return;delete S.widths[g];localStorage.setItem('arvelo.pinv.cols',JSON.stringify(S.widths));renderTable()});
+
+const perpop=$('perpop');
+$('perbtn').onclick=e=>{e.stopPropagation();perpop.hidden=!perpop.hidden;if(!perpop.hidden){const[a,b]=periodRange();$('d1').value=a?dstr(a):'';$('d2').value=b?dstr(b):''}};
+perpop.onclick=e=>{e.stopPropagation();const p=e.target.dataset&&e.target.dataset.pre;if(p){S.per=p;renderAll();perpop.hidden=true}};
+$('perapply').onclick=e=>{e.stopPropagation();const p=s=>{const m=s.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);return m?new Date(+m[3],+m[2]-1,+m[1]):null};const a=p($('d1').value),b=p($('d2').value);if(a&&b){S.per='custom';S.d1=a;S.d2=b;renderAll();perpop.hidden=true}};
+$('perclear').onclick=e=>{e.stopPropagation();S.per='all';renderAll();perpop.hidden=true};
+const tog=(btn,menu)=>{$(btn).onclick=e=>{e.stopPropagation();const m=$(menu),h=m.hidden;closeMenus();m.hidden=!h}};
+tog('vatbtn','vatmenu');tog('srcbtn','srcmenu');tog('expmore','expmenu');tog('upbtn','upmenu');
+$('vatmenu').onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-vatc]');if(!b)return;S.vatc=b.dataset.vatc;$('vatmenu').hidden=true;renderAll()};
+$('srcmenu').onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-src]');if(!b)return;S.src=b.dataset.src;$('srcmenu').hidden=true;renderAll()};
+$('upmenu').onclick=e=>{e.stopPropagation();const b=e.target.closest('[data-up]');if(!b)return;$('upmenu').hidden=true;toast({pdf:'Vali PDF või pilt — tuvastame andmed ja loome mustandi',xml:'Vali e-arve XML',csv:'Vali CSV fail — iga rida saab eraldi mustandiks'}[b.dataset.up])};
+$('newbtn').onclick=()=>toast('Avaneb uus ostuarve');
+function closeMenus(){['perpop','vatmenu','srcmenu','expmenu','upmenu','moremenu','colmenu'].forEach(id=>{const m=$(id);if(m)m.hidden=true})}
+document.addEventListener('click',closeMenus);
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){if(!$('modal').hidden){closeModal();return}if(S.mode==='open'){closeFull();return}if(S.chk.size){S.chk.clear();refresh();return}}
+  if(e.key==='/'&&document.activeElement.id!=='q'){e.preventDefault();$('q').focus();return}
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName)||!$('modal').hidden)return;
+  if(e.key==='Enter'){e.preventDefault();S.mode==='open'?closeFull():openFull();return}
+  if(e.key==='x'){S.chk.has(S.sel)?S.chk.delete(S.sel):S.chk.add(S.sel);renderTable();return}
+  if(S.ptab==='pdf'&&$('pdfbox')&&['+','=','-','0'].includes(e.key)){e.preventDefault();setZoom(e.key==='0'?'fit':e.key==='-'?'-':'+');return}
+  if(e.key==='u'||e.key==='U'){$('newbtn').click();return}
+  if(e.key==='j'||e.key==='k'){const list=visible(),i=list.findIndex(x=>x.nr===S.sel)+(e.key==='j'?1:-1);
+    if(list[i]){S.sel=list[i].nr;renderTable();renderDetail();if(S.mode==='open')renderFull();
+      const el=document.querySelector('.trow.on');if(el){const r=el.getBoundingClientRect(),p=el.parentElement.getBoundingClientRect();if(r.bottom>p.bottom||r.top<p.top)el.parentElement.scrollTop+=r.top-p.top-p.height/2}}}});
+</script>
+</body>
+</html>
