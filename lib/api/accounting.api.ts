@@ -158,6 +158,11 @@ export type PartnerRecord = {
   receipt_responsible_email?: string | null;
   contact_name?: string | null;
   credit_limit?: number | string | null;
+  /** Purchase posting defaults (supplier card); accounting settings apply when empty. */
+  default_expense_account_id?: string | null;
+  vat_input_account_id?: string | null;
+  accounts_payable_account_id?: string | null;
+  vat_deduction_pct?: number | string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

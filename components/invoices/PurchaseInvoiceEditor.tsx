@@ -360,7 +360,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   }, [members, hdr.approverId]);
   const approverShort = approverName ? shortName(approverName) : '';
   const balance = hdr.partnerId ? balances.get(hdr.partnerId) : undefined;
-  const expenseDefault = settings?.purchase_expense_account_id || '';
+  // Supplier card first, accounting settings second — the same order confirm_invoice uses.
+  const expenseDefault = partner?.default_expense_account_id || settings?.purchase_expense_account_id || '';
 
   /* ── source + recognised values ── */
   const srcInfo = useMemo(() => {
@@ -438,11 +439,15 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   /* ── GL accounts: defaults from settings, overrides kept in invoice meta ── */
   const glVatOptions = useMemo(() => accounts.filter((a) => a.is_active && (a.type === 'asset' || a.type === 'liability') && /^(15|27)/.test(a.code) && /käibemaks|vat/i.test(a.name)), [accounts]);
   const glApOptions = useMemo(() => accounts.filter((a) => a.is_active && a.type === 'liability' && /^2[12]/.test(a.code)), [accounts]);
-  const glDefault = useMemo<Gl>(() => ({ vat: settings?.vat_input_account_id || glVatOptions[0]?.id || '', ap: settings?.accounts_payable_account_id || glApOptions[0]?.id || '', ded: 100 }), [settings, glVatOptions, glApOptions]);
+  const glDefault = useMemo<Gl>(() => ({
+    vat: partner?.vat_input_account_id || settings?.vat_input_account_id || glVatOptions[0]?.id || '',
+    ap: partner?.accounts_payable_account_id || settings?.accounts_payable_account_id || glApOptions[0]?.id || '',
+    ded: partner?.vat_deduction_pct != null && partner.vat_deduction_pct !== '' ? Number(partner.vat_deduction_pct) : 100,
+  }), [partner, settings, glVatOptions, glApOptions]);
   const gl: Gl = useMemo(() => ({ vat: glOverride?.vat || glDefault.vat, ap: glOverride?.ap || glDefault.ap, ded: glOverride?.ded ?? glDefault.ded }), [glOverride, glDefault]);
   const glChanged = gl.vat !== glDefault.vat || gl.ap !== glDefault.ap || gl.ded !== glDefault.ded;
   const setGl = (patch: Partial<Gl>) => { setGlOverride({ ...gl, ...patch }); touch(); };
-  const resetGl = () => { setGlOverride(null); setGledit(false); touch(); showToast.info('Üldkontod taastatud vaikeväärtustele'); };
+  const resetGl = () => { setGlOverride(null); setGledit(false); touch(); showToast.info('Üldkontod taastatud tarnija kaardilt'); };
 
   const journal = useMemo(() => {
     const vatD = r2(totals.vat * gl.ded / 100), vatN = r2(totals.vat - vatD);

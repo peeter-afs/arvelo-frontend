@@ -20,6 +20,7 @@ import {
 } from '@/lib/api/businessRegistry.api';
 import {
   accountingApi,
+  type AccountOption,
   type PartnerRecord,
 } from '@/lib/api/accounting.api';
 import { Button } from '@/components/ui/Button';
@@ -41,6 +42,10 @@ type PartnerFormState = {
   payment_terms_days: string;
   contact_name: string;
   credit_limit: string;
+  default_expense_account_id: string;
+  vat_input_account_id: string;
+  accounts_payable_account_id: string;
+  vat_deduction_pct: string;
   is_active: boolean;
 };
 
@@ -61,6 +66,10 @@ const emptyForm = (): PartnerFormState => ({
   payment_terms_days: '',
   contact_name: '',
   credit_limit: '',
+  default_expense_account_id: '',
+  vat_input_account_id: '',
+  accounts_payable_account_id: '',
+  vat_deduction_pct: '',
   is_active: true,
 });
 
@@ -86,6 +95,8 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
   const [registryResults, setRegistryResults] = useState<BusinessRegistrySearchItem[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<BusinessRegistryCompany | null>(null);
   const [form, setForm] = useState<PartnerFormState>(emptyForm());
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
+  useEffect(() => { accountingApi.getAccounts().then(setAccounts).catch(() => setAccounts([])); }, []);
   const [duplicateWarnings, setDuplicateWarnings] = useState<Array<{
     partner: PartnerRecord;
     roles: string[];
@@ -248,6 +259,10 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
         payment_terms_days: form.payment_terms_days ? Number(form.payment_terms_days) : undefined,
         contact_name: form.contact_name || undefined,
         credit_limit: form.credit_limit.trim() ? Number(form.credit_limit.replace(',', '.')) : undefined,
+        default_expense_account_id: form.default_expense_account_id || undefined,
+        vat_input_account_id: form.vat_input_account_id || undefined,
+        accounts_payable_account_id: form.accounts_payable_account_id || undefined,
+        vat_deduction_pct: form.vat_deduction_pct.trim() ? Number(form.vat_deduction_pct.replace(',', '.')) : undefined,
         is_active: form.is_active,
       };
       const partner = await accountingApi.createPartner(payload);
@@ -323,7 +338,7 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
               onCreateManually={handleCreateManually}
             />
           ) : (
-            <StepTwo form={form} setForm={setForm} duplicateWarnings={duplicateWarnings} />
+            <StepTwo form={form} setForm={setForm} accounts={accounts} duplicateWarnings={duplicateWarnings} />
           )}
         </div>
 
@@ -433,10 +448,12 @@ function StepOne({
 function StepTwo({
   form,
   setForm,
+  accounts,
   duplicateWarnings,
 }: {
   form: PartnerFormState;
   setForm: React.Dispatch<React.SetStateAction<PartnerFormState>>;
+  accounts: AccountOption[];
   duplicateWarnings: Array<{ partner: PartnerRecord; roles: string[]; match_type: string; severity: string }>;
 }) {
   const t = useTranslations('accounting');
@@ -467,6 +484,12 @@ function StepTwo({
         <ModalField label={t('postalCode')} value={form.postal_code} onChange={(v) => setForm((c) => ({ ...c, postal_code: v }))} />
         <ModalField label={t('paymentTermsDays')} value={form.payment_terms_days} onChange={(v) => setForm((c) => ({ ...c, payment_terms_days: v }))} />
         <ModalField label={t('creditLimit')} value={form.credit_limit} onChange={(v) => setForm((c) => ({ ...c, credit_limit: v }))} />
+        {form.type !== 'customer' && (
+          <>
+            <ModalField label={t('defaultExpenseAccount')} value={form.default_expense_account_id} onChange={(v) => setForm((c) => ({ ...c, default_expense_account_id: v }))} as="select" options={[{ label: `— ${t('fromSettings')}`, value: '' }, ...accounts.filter((a) => a.is_active && (a.type === 'expense' || a.type === 'asset')).map((a) => ({ label: `${a.code} ${a.name}`, value: a.id }))]} />
+            <ModalField label={t('vatDeductionPct')} value={form.vat_deduction_pct} onChange={(v) => setForm((c) => ({ ...c, vat_deduction_pct: v }))} />
+          </>
+        )}
         <div className="sm:col-span-2">
           <ModalField label={t('address')} value={form.address} onChange={(v) => setForm((c) => ({ ...c, address: v }))} />
         </div>

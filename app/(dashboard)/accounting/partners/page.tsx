@@ -26,6 +26,7 @@ import {
   type PartnerRole,
   type PartnerWithBalance,
   type SupplierBankAccount,
+  type AccountOption,
 } from '@/lib/api/accounting.api';
 import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { Button } from '@/components/ui/Button';
@@ -52,6 +53,10 @@ type PartnerFormState = {
   receipt_responsible_email: string;
   contact_name: string;
   credit_limit: string;
+  default_expense_account_id: string;
+  vat_input_account_id: string;
+  accounts_payable_account_id: string;
+  vat_deduction_pct: string;
   is_active: boolean;
 };
 
@@ -91,6 +96,10 @@ const emptyPartnerForm = (): PartnerFormState => ({
   receipt_responsible_email: '',
   contact_name: '',
   credit_limit: '',
+  default_expense_account_id: '',
+  vat_input_account_id: '',
+  accounts_payable_account_id: '',
+  vat_deduction_pct: '',
   is_active: true,
 });
 
@@ -130,6 +139,7 @@ export default function BusinessPartnersPage() {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(null);
   const [selectedPartner, setSelectedPartner] = useState<PartnerRecord | null>(null);
   const [roles, setRoles] = useState<PartnerRole[]>([]);
+  const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [bankAccounts, setBankAccounts] = useState<SupplierBankAccount[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'customer' | 'supplier' | 'both'>('all');
@@ -181,6 +191,8 @@ export default function BusinessPartnersPage() {
   const suppliers = partners.filter((partner) => partner.type === 'supplier' || partner.type === 'both');
   const receivable = partners.reduce((sum, partner) => sum + Math.max(0, partner.balance), 0);
   const payable = partners.reduce((sum, partner) => sum + Math.max(0, -partner.balance), 0);
+
+  useEffect(() => { accountingApi.getAccounts().then(setAccounts).catch(() => setAccounts([])); }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -519,6 +531,7 @@ export default function BusinessPartnersPage() {
             duplicateWarnings={duplicateWarnings}
             form={form}
             setForm={setForm}
+            accounts={accounts}
             newBankAccount={newBankAccount}
             setNewBankAccount={setNewBankAccount}
             includeTaxArrearsOnRefresh={includeTaxArrearsOnRefresh}
@@ -559,6 +572,7 @@ function PartnerDetailPanel({
   duplicateWarnings,
   form,
   setForm,
+  accounts,
   newBankAccount,
   setNewBankAccount,
   includeTaxArrearsOnRefresh,
@@ -581,6 +595,7 @@ function PartnerDetailPanel({
   duplicateWarnings: Array<{ partner: PartnerRecord; roles: string[]; match_type: string; severity: string }>;
   form: PartnerFormState;
   setForm: React.Dispatch<React.SetStateAction<PartnerFormState>>;
+  accounts: AccountOption[];
   newBankAccount: BankAccountDraft;
   setNewBankAccount: React.Dispatch<React.SetStateAction<BankAccountDraft>>;
   includeTaxArrearsOnRefresh: boolean;
@@ -672,6 +687,15 @@ function PartnerDetailPanel({
           <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
           <Field label={t('receiptResponsibleEmail')} value={form.receipt_responsible_email || ''} onChange={(value) => setForm((current) => ({ ...current, receipt_responsible_email: value }))} />
         </Section>
+
+        {form.type !== 'customer' && (
+          <Section label={t('purchasePosting')} cols={2}>
+            <Field label={t('defaultExpenseAccount')} value={form.default_expense_account_id} onChange={(value) => setForm((current) => ({ ...current, default_expense_account_id: value }))} as="select" options={accountOptions(accounts, ['expense', 'asset'], t('fromSettings'))} />
+            <Field label={t('vatInputAccount')} value={form.vat_input_account_id} onChange={(value) => setForm((current) => ({ ...current, vat_input_account_id: value }))} as="select" options={accountOptions(accounts, ['asset', 'liability'], t('fromSettings'))} />
+            <Field label={t('accountsPayableAccount')} value={form.accounts_payable_account_id} onChange={(value) => setForm((current) => ({ ...current, accounts_payable_account_id: value }))} as="select" options={accountOptions(accounts, ['liability'], t('fromSettings'))} />
+            <Field label={t('vatDeductionPct')} value={form.vat_deduction_pct} onChange={(value) => setForm((current) => ({ ...current, vat_deduction_pct: value }))} placeholder="100" />
+          </Section>
+        )}
 
         <Section label={t('other')}>
           <Field label={t('notes')} value={form.notes} onChange={(value) => setForm((current) => ({ ...current, notes: value }))} as="textarea" />
@@ -938,6 +962,10 @@ function mapPartnerToForm(partner: PartnerRecord): PartnerFormState {
     receipt_responsible_email: partner.receipt_responsible_email || '',
     contact_name: partner.contact_name || '',
     credit_limit: partner.credit_limit !== null && partner.credit_limit !== undefined ? String(partner.credit_limit) : '',
+    default_expense_account_id: partner.default_expense_account_id || '',
+    vat_input_account_id: partner.vat_input_account_id || '',
+    accounts_payable_account_id: partner.accounts_payable_account_id || '',
+    vat_deduction_pct: partner.vat_deduction_pct !== null && partner.vat_deduction_pct !== undefined ? String(partner.vat_deduction_pct) : '',
     is_active: partner.is_active,
   };
 }
@@ -961,8 +989,17 @@ function buildPartnerPayload(form: PartnerFormState) {
     receipt_responsible_email: form.receipt_responsible_email || undefined,
     contact_name: form.contact_name || undefined,
     credit_limit: form.credit_limit.trim() ? Number(form.credit_limit.replace(',', '.')) : null,
+    default_expense_account_id: form.default_expense_account_id || null,
+    vat_input_account_id: form.vat_input_account_id || null,
+    accounts_payable_account_id: form.accounts_payable_account_id || null,
+    vat_deduction_pct: form.vat_deduction_pct.trim() ? Number(form.vat_deduction_pct.replace(',', '.')) : null,
     is_active: form.is_active,
   };
+}
+
+/** Select options for a GL default: blank = inherit from accounting settings. */
+function accountOptions(accounts: AccountOption[], types: string[], blankLabel: string) {
+  return [{ label: `— ${blankLabel}`, value: '' }, ...accounts.filter((a) => a.is_active && types.includes(a.type)).map((a) => ({ label: `${a.code} ${a.name}`, value: a.id }))];
 }
 
 function sortBankAccounts(accounts: SupplierBankAccount[]) {
