@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Ostuarve 1838</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea;--row-alt:#faf8f3}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px;overflow:hidden}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.005em}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+svg.i{width:1em;height:1em;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:1180px;padding:9px 14px 10px;display:flex;flex-direction:column;gap:7px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--neg)}.btn.danger:hover{background:var(--neg-soft)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn kbd{border-color:var(--border-strong);background:var(--surface-2);color:var(--text-3)}
+.btn.primary kbd{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff}
+.topbar{display:flex;align-items:center;gap:9px;flex-shrink:0;height:27px}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3);flex-shrink:0}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+.topbar h1{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-0.025em;white-space:nowrap}
+.topbar .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.dirty{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#7d5a13;white-space:nowrap;margin-right:2px}
+.dirty .dot{width:6px;height:6px;border-radius:99px;background:var(--warn)}
+.dirty.clean{color:var(--text-3)}.dirty.clean .dot{background:var(--pos)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.tag .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.tag.draft{background:var(--surface-2);color:var(--text-3)}
+.tag.info{background:#eaf0ff;color:#2c5cf6}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 9px var(--pw,330px);overflow:hidden;background:#f9f7f1}
+.body.norail{grid-template-columns:minmax(0,1fr)}
+.body.norail .gutter,.body.norail .right{display:none}
+.gutter{position:relative;cursor:col-resize}
+.gutter:after{content:'';position:absolute;left:3.5px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent;transition:background .12s}
+.gutter:hover:after{background:var(--border-strong)}
+body.pres .gutter:after{background:var(--accent)}
+body.pres{cursor:col-resize;user-select:none}
+.left{display:flex;flex-direction:column;min-height:0;background:#f9f7f1;border-radius:11px 0 0 11px}
+.body.norail .left{border-radius:11px}
+.lscroll{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.sec{padding:9px 13px;border-bottom:1px solid var(--border)}
+.sec.form{flex-shrink:0;max-height:46vh;overflow-y:auto;position:relative;padding-top:8px}
+.sec.linesec{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:12px;padding-top:2px;border-bottom:none}
+.sec.linesec .lines{flex:1;min-height:0;display:flex;flex-direction:column}
+#rows{flex:1;min-height:0;overflow-y:auto}
+.fbar{position:absolute;top:4px;right:13px;display:flex;gap:3px;z-index:5}
+.collbtn{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text-3);font-size:9px;flex-shrink:0}
+.collbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.collbtn svg{width:11px;height:11px}
+.sec.collapsed .fgrid{display:none}
+.sec.collapsed{max-height:none;padding-top:7px;padding-bottom:7px}
+.csum{display:none;gap:14px;align-items:center;min-height:22px;padding-right:60px;font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden}
+.sec.collapsed .csum{display:flex}
+.csum b{font-weight:600;color:var(--text)}.csum .s{color:var(--border-strong)}
+.sech{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:9px}
+.sech .r{margin-left:auto;display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px;color:var(--text-3)}
+.fgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px 10px}
+.fld{min-width:0;display:flex;flex-direction:column;gap:4px}
+.fld[hidden]{display:none}
+.fld>label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fld>label .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis}
+.fld>label .r.ok{color:var(--pos)}.fld>label .r.bad{color:var(--neg)}
+.fld.wide{grid-column:span 3}.fld.mid{grid-column:span 2}
+.inp,select.inp{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:12.5px;color:var(--text);padding:0 9px}
+.inp.mono{font-variant-numeric:tabular-nums}
+.inp:hover{border-color:var(--border-strong)}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.inp.warn{border-color:#ecd7b4;background:#fdf8ec}
+select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8c84' stroke-width='1.8' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 7px center;background-size:12px;padding-right:24px}
+.partner{display:flex;align-items:center;gap:8px;height:29px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);min-width:0}
+.partner:hover{border-color:var(--border-strong)}
+.partner .av{width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0;background:oklch(0.92 0.045 200);color:oklch(0.36 0.09 200)}
+.partner input{flex:1;min-width:0;border:none;background:transparent;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);padding:0}
+.partner input:focus{outline:none}
+.partner .meta{font-size:10.5px;color:var(--text-3);white-space:nowrap;flex-shrink:0}
+.chips{display:flex;gap:4px;align-items:center;height:29px}
+.chip{height:20px;padding:0 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:10.5px;font-weight:600}
+.chip:hover{background:var(--surface-2)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f}
+.mwrap{position:relative;display:inline-flex}
+.menu{position:absolute;right:0;top:24px;z-index:30;width:214px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.13);text-transform:none;letter-spacing:0}
+.menu[hidden]{display:none}
+.menu .mh{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);padding:3px 7px 5px}
+.menu label{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500}
+.menu label:hover{background:var(--surface-2)}
+.menu .mrow{display:flex;justify-content:space-between;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500}
+.menu .mrow:hover{background:var(--surface-2)}
+.menu .mrow.on{color:#b8330f;background:var(--accent-soft-2);font-weight:600}
+input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);margin:0;cursor:pointer}
+.lines{border:1px solid var(--border);border-radius:9px;overflow-x:auto;background:#fdfcf9}
+.lh,.lr{display:grid;grid-template-columns:var(--lcols);align-items:center}
+.lh{background:var(--surface-2);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);height:28px}
+.lh>div{padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh>div.r{text-align:right}
+.lr{border-top:1px solid #efece4;background:#fdfcf9;min-height:32px}
+.lr:first-of-type{border-top:none}
+.lr:nth-child(even){background:#f8f6f0}
+.lr:hover{background:var(--accent-soft-2)}
+.lr.drag{opacity:.4}.lr.over{box-shadow:inset 0 2px 0 var(--accent)}
+.lr>div{padding:0 3px;min-width:0}
+.lr .ix{padding:0;text-align:center;font-size:10.5px;color:#c3bfb2;cursor:grab;user-select:none}
+.in{height:25px;width:100%;border:1px solid transparent;border-radius:6px;background:transparent;font:inherit;font-size:12.5px;color:var(--text);padding:0 5px}
+.in::placeholder{color:#bfbbb0}
+.in:hover{border-color:var(--border);background:#fff}
+.in:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px var(--accent-soft)}
+.in.r{text-align:right;font-variant-numeric:tabular-nums}
+.in.sel{appearance:none;cursor:pointer}
+.in.miss{border-color:#ecd7b4;background:#fdf8ec}
+.lr .sum{text-align:right;font-weight:600;font-size:12.5px;padding-right:9px;font-variant-numeric:tabular-nums}
+.lr .vt{font-size:11.5px;color:var(--text-3);padding-left:7px}
+.lr .ra{display:flex;gap:1px;justify-content:flex-end;padding-right:4px;opacity:0;transition:opacity .1s}
+.lr:hover .ra,.lr:focus-within .ra{opacity:1}
+.iconbtn{width:22px;height:22px;display:grid;place-items:center;border:none;border-radius:6px;background:transparent;color:var(--text-3);font-size:13px}
+.iconbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.iconbtn.del:hover{background:var(--neg-soft);color:var(--neg)}
+.addrow{display:flex;align-items:center;gap:8px;padding:0 9px;height:30px;border-top:1px solid var(--border);background:#f9f7f1}
+.addrow .hint{margin-left:auto;font-size:11px;color:var(--text-3)}
+.ltot{display:grid;grid-template-columns:minmax(0,1fr) auto;border-top:1px solid var(--border);background:#f2efe6}
+.ltot .cells{display:flex;align-items:stretch}
+.ltot .lcount{display:flex;align-items:center;padding:0 13px;font-size:11.5px;color:var(--text-3);white-space:nowrap;gap:8px}
+.ltot .cell{padding:7px 14px;border-left:1px solid var(--border);white-space:nowrap;text-align:right}
+.ltot .k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.ltot .v{font-size:13px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.ltot .cell.big .v{font-size:15px;font-weight:700;letter-spacing:-0.03em}
+.ocr{font-size:10.5px;padding:1px 6px;border-radius:5px;white-space:nowrap}
+.ocr.ok{background:var(--pos-soft);color:var(--pos)}.ocr.bad{background:var(--warn-soft);color:#7d5a13}
+.footbar{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-top:1px solid var(--border);background:#f4f1e9;flex-shrink:0;font-size:11.5px;color:var(--text-3);white-space:nowrap;border-radius:0 0 0 11px}
+.footbar .hint{display:flex;gap:12px}
+.footbar .r{margin-left:auto;display:flex;gap:4px}
+.right{border-left:1px solid var(--border);background:#f4f1e9;display:flex;flex-direction:column;min-height:0;border-radius:0 11px 11px 0;overflow:hidden}
+.rhead{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.rhead .r{margin-left:auto;display:flex;align-items:center;gap:4px}
+.seg{display:inline-flex;gap:2px;padding:2px;background:var(--surface-2);border:1px solid var(--border);border-radius:7px}
+.seg button{height:21px;padding:0 9px;border:none;border-radius:5px;background:transparent;color:var(--text-2);font-size:11.5px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.seg .d{width:5px;height:5px;border-radius:99px;background:var(--pos)}
+.seg .d.w{background:var(--warn)}
+.rbody{flex:1;min-height:0;overflow-y:auto}
+.rbody[hidden],.rpdf[hidden]{display:none}
+.rpdf{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--surface)}
+.pdf{flex:1;min-height:0;overflow:auto;display:flex;justify-content:safe center;align-items:flex-start}
+.page{width:600px;min-height:848px;zoom:var(--z,1);background:#fff;padding:34px 32px;font-size:12px;color:var(--text-2);display:flex;flex-direction:column;gap:12px;flex-shrink:0}
+.page .ph{display:flex;justify-content:space-between;align-items:flex-start;line-height:1.5}
+.page .ph b{font-size:16px;color:var(--text)}
+.page .ln{height:8px;border-radius:3px;background:#ece8dd}
+.page .rw{display:grid;grid-template-columns:1fr 60px 80px 90px;gap:10px;padding:6px 0;border-top:1px solid #f1eee7}
+.page .rw span:not(:first-child){text-align:right}
+.page .tt{margin-top:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:13px;color:var(--text)}
+.page .tt b{font-size:15px}
+.pdfbar{display:flex;align-items:center;gap:6px;padding:6px 10px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);flex-shrink:0;background:var(--surface)}
+.pdfbar .fn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdfbar .r{display:flex;gap:4px;flex-shrink:0;align-items:center}
+.zoom{display:inline-flex;align-items:center;gap:2px;padding:2px;background:var(--surface);border:1px solid var(--border);border-radius:7px}
+.zoom button{height:20px;min-width:22px;padding:0 6px;border:none;border-radius:5px;background:transparent;color:var(--text-2);font-size:12px;font-weight:600}
+.zoom button:hover{background:var(--surface-2)}
+.zoom button.on{background:var(--accent-soft-2);color:#b8330f}
+.zoom .zv{min-width:40px;text-align:center;font-size:11px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.pdfbar .iconb{width:26px;height:26px;display:grid;place-items:center;border:none;border-radius:6px;background:transparent;color:var(--text-2);font-size:13px}
+.pdfbar .iconb:hover{background:var(--surface-2);color:var(--text)}
+.big{font-size:20px;font-weight:700;letter-spacing:-0.035em;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;white-space:nowrap;padding:4px 0;font-size:12px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.kv:first-of-type{border-top:none}
+.kv>b{text-align:right;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.kv.tot{border-top:1px solid var(--border);margin-top:3px;padding-top:6px;font-weight:600;color:var(--text)}
+.chk{display:grid;grid-template-columns:13px minmax(0,1fr);gap:8px;align-items:start;padding:4px 0;font-size:11.5px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.chk:first-of-type{border-top:none}
+.chk .m{width:13px;height:13px;border-radius:99px;display:grid;place-items:center;font-size:8px;color:#fff;margin-top:1px;background:var(--pos)}
+.chk.warn .m{background:var(--warn)}.chk.err .m{background:var(--neg)}
+.chk.warn{color:#7d5a13}.chk.err{color:var(--neg)}
+.chk b{font-weight:600;color:inherit}
+.jt{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fdfcf9}
+.jh,.jr{display:grid;grid-template-columns:44px minmax(0,1fr) 66px 66px;gap:6px;padding:4px 8px;font-size:11px;align-items:baseline}
+.jh{background:var(--surface-2);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.jr{border-top:1px solid #efece4}.jr:first-of-type{border-top:none}
+.jr .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+.jr .a{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.jr .a.z{color:var(--text-3);font-weight:400}
+.jr.jl{cursor:pointer}.jr.jl:hover{background:var(--accent-soft-2)}
+.jnote{font-size:10.5px;color:var(--text-3);margin-top:6px}
+.tlrow{display:grid;grid-template-columns:66px 12px minmax(0,1fr);gap:8px;align-items:center;font-size:11.5px;color:var(--text-2);padding:3px 0}
+.tlrow .bul{width:7px;height:7px;border-radius:99px;background:var(--border-strong);justify-self:center}
+.tlrow.done .bul{background:var(--pos)}.tlrow.wait .bul{background:var(--warn)}
+.tlrow .mono{color:var(--text-3)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);opacity:0;pointer-events:none;background:#1c1a16;color:#fff;font-size:12px;padding:8px 13px;border-radius:8px;transition:opacity .15s,transform .15s;z-index:80}
+.toast.on{opacity:1;transform:translateX(-50%)}
+@media (max-width:1440px){.shell{padding:8px 10px}.topbar{gap:7px}#raillbl{display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="crumb"><a href="Ostuarved - tihe vaade.html">← Ostuarved</a><span class="sep">/</span></div>
+    <h1 class="mono">1838</h1>
+    <span class="tag draft"><span class="dot"></span>Mustand</span>
+    <span class="tag info" title="PDF üles laaditud 28.08.2026 · andmed tuvastatud automaatselt"><span class="dot"></span>PDF import</span>
+    <div class="acts">
+      <span class="dirty" id="dirty"><span class="dot"></span><span id="dirtytxt">Salvestamata muudatused</span></span>
+      <button class="btn ghost" id="cancel">Loobu <kbd>Esc</kbd></button>
+      <button class="btn" id="save">Salvesta mustand <kbd>⌘S</kbd></button>
+      <button class="btn primary" id="submit">Saada kinnitamiseks</button>
+      <button class="btn ghost" id="railbtn"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM15 5v14"/></svg> <span id="raillbl">Peida paneel</span></button>
+    </div>
+  </div>
+
+  <div class="body card" id="body">
+    <div class="left">
+      <div class="lscroll">
+        <div class="sec form" id="formsec">
+          <div class="fbar"><span class="mwrap"><button class="collbtn" id="fldbtn" title="Lisa välju"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div class="menu" id="fldmenu" hidden><div class="mh">Ainult arvel</div><label><input type="checkbox" data-h="inote" /> Sisemärkus</label><div class="mh" style="padding-top:7px">Arvel ja ridadel</div><label><input type="checkbox" data-h="cc" /> Kulukoht</label><label><input type="checkbox" data-h="prj" /> Projekt</label><div class="mh" style="padding-top:7px">Ainult ridadel</div><label><input type="checkbox" data-c="cc" /> Kulukoht real</label><label><input type="checkbox" data-c="prj" /> Projekt real</label></div></span><button class="collbtn" id="collbtn" title="Ahenda arve andmed">▾</button></div>
+          <div class="csum" id="csum"></div>
+          <div class="fgrid">
+            <div class="fld wide"><label>Tarnija <span class="r" id="smeta">Reg 10712838 · avatud 0,00 €</span></label><div class="partner"><span class="av">OD</span><input id="sname" value="Office Day OÜ" /><span class="meta">Vaheta ⌘K</span></div></div>
+            <div class="fld mid"><label>Tarnija arve nr <span class="r ok" id="sinvmeta">unikaalne</span></label><input class="inp mono" id="sinv" value="OF-2607863" /></div>
+            <div class="fld"><label style="padding-right:46px">Valuuta</label><select class="inp" id="cur"><option>EUR</option><option>USD</option><option>SEK</option></select></div>
+            <div class="fld"><label>Arve kuupäev</label><input class="inp mono" id="issued" value="28.08.2026" placeholder="pp.kk.aaaa" /></div>
+            <div class="fld"><label>Maksetähtaeg</label><input class="inp mono" id="due" value="11.09.2026" placeholder="pp.kk.aaaa" /></div>
+            <div class="fld"><label>Maksetingimus</label><span class="chips mwrap" id="terms"><button class="chip" data-t="7">7p</button><button class="chip" data-t="14">14p</button><button class="chip" data-t="30">30p</button><button class="chip" id="termmore" title="Kõik maksetingimused">···</button><div class="menu" id="termmenu" hidden style="width:170px;left:0;right:auto"></div></span></div>
+            <div class="fld mid"><label>Saaja IBAN <span class="r ok" id="ibanmeta">kehtiv · partneri kaardilt</span></label><input class="inp mono" id="iban" value="EE60 2200 2210 3451 2278" /></div>
+            <div class="fld"><label>Viitenumber</label><input class="inp mono" id="ref" value="26078631" /></div>
+            <div class="fld wide"><label>Selgitus <span class="r">maksekorraldusele</span></label><input class="inp" id="note" value="Arve OF-2607863" /></div>
+            <div class="fld"><label>KM kood</label><select class="inp" id="vatc"></select></div>
+            <div class="fld mid"><label>Kinnitaja <span class="r">saab teavituse</span></label><select class="inp" id="appr"></select></div>
+            <div class="fld wide" id="fld-inote" hidden><label>Sisemärkus <span class="r">ainult raamatupidajale</span></label><input class="inp" id="inote" placeholder="Nt miks kulu sellele kontole läks" /></div>
+            <div class="fld" id="fld-cc" hidden><label>Kulukoht <span class="r">ridadel</span></label><select class="inp" id="cc"></select></div>
+            <div class="fld" id="fld-prj" hidden><label>Projekt <span class="r">ridadel</span></label><select class="inp" id="prj"></select></div>
+          </div>
+        </div>
+        <div class="sec linesec">
+          <div class="lines">
+            <div class="lh" id="lh"></div>
+            <div id="rows"></div>
+            <div class="addrow">
+              <button class="btn sm ghost" id="add"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Lisa rida</button>
+              <button class="btn sm ghost" id="split" title="Jaga üks summa mitmele kulukontole">Jaga kontodele</button>
+              <span class="hint"><kbd>⏎</kbd> viimasel real lisab uue · <kbd>⌥⌫</kbd> kustutab rea</span>
+            </div>
+            <div class="ltot"><div class="lcount"><span class="mono" id="lcount"></span><span id="ocr"></span></div><div class="cells" id="ltot"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="footbar">
+        <div class="hint"><span><kbd>⌘S</kbd> salvesta</span><span><kbd>⌘O</kbd> originaal</span><span><kbd>Esc</kbd> loobu</span></div>
+        <div class="r"><button class="btn sm ghost danger" id="drop">Kustuta mustand</button></div>
+      </div>
+    </div>
+
+    <div class="gutter" id="gutter" title="Lohista paneeli laiust · topeltklikk lähtestab"></div>
+    <div class="right">
+      <div class="rhead">
+        <span class="seg"><button data-rt="sum" id="rt-sum">Kokkuvõte<span class="d" id="chkdot"></span></button><button data-rt="pdf" id="rt-pdf">Originaal</button></span>
+        <span class="r"><button class="iconbtn" id="railclose" title="Peida paneel">✕</button></span>
+      </div>
+      <div class="rbody" id="rsum">
+        <div class="sec">
+          <div class="sech">Tarnija<span class="r"><a href="#">Partneri kaart</a></span></div>
+          <div class="kv"><span>Registrikood</span><b class="mono">10712838</b></div>
+          <div class="kv"><span>Vaikimisi kulukonto</span><b>4010 Kontorikulud</b></div>
+          <div class="kv"><span>Varasemad arved</span><b class="mono">14 · keskm. 186,20 €</b></div>
+          <div class="kv"><span>Avatud kokku</span><b class="mono">0,00 €</b></div>
+        </div>
+        <div class="sec">
+          <div class="sech">Kokku tasuda<span class="r mono" id="rdue"></span></div>
+          <div style="display:flex;align-items:baseline;gap:10px"><div class="big mono" id="rtot"></div><span id="rocr" style="margin-left:auto"></span></div>
+          <div style="font-size:10.5px;color:var(--text-3);margin-top:2px" id="rtotsub"></div>
+        </div>
+        <div class="sec"><div class="sech">Kontroll</div><div id="checks"></div></div>
+        <div class="sec">
+          <div class="sech">Konteering<span class="r" id="glr"></span></div>
+          <div class="jt"><div class="jh"><div>Konto</div><div>Nimetus</div><div style="text-align:right">Deebet</div><div style="text-align:right">Kreedit</div></div><div id="jrows"></div></div>
+          <div id="glbox"></div>
+          <div class="jnote" id="jnote">Kanne tekib arve kinnitamisel.</div>
+        </div>
+        <div class="sec" style="border-bottom:none">
+          <div class="sech">Ajalugu</div>
+          <div class="tlrow done"><span class="mono">28.08.2026</span><span class="bul"></span><span>PDF üles laaditud · M. Sepp</span></div>
+          <div class="tlrow done"><span class="mono">28.08.2026</span><span class="bul"></span><span>Andmed tuvastatud · 3 rida</span></div>
+          <div class="tlrow" id="tlsave"><span class="mono">—</span><span class="bul"></span><span>Salvestamata muudatused</span></div>
+          <div class="tlrow"><span class="mono">—</span><span class="bul"></span><span id="tlappr">Kinnitamine · K. Tamm</span></div>
+        </div>
+      </div>
+      <div class="rpdf" id="rpdf" hidden>
+        <div class="pdf" id="pdfbox"><div class="page" id="page"></div></div>
+        <div class="pdfbar"><span class="fn" title="arve_OF-2607863.pdf · 1 lk">arve_OF-2607863.pdf · 1 lk</span><span class="r">
+          <span class="zoom"><button data-z="-" title="Vähenda (− · Ctrl+rullik)">−</button><span class="zv" id="zv">100%</span><button data-z="+" title="Suurenda (+)">+</button><button data-z="fit" id="zfit" title="Mahuta laiusele (0)">↔</button><button data-z="1" id="z1" title="Tegelik suurus">1:1</button></span>
+          <button class="iconb" title="Laadi alla"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></svg></button><button class="iconb" title="Asenda fail"><svg class="i" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"/></svg></button></span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const VATC=[{k:'d24',l:'Siseriiklik 24%',s:'24%',rate:24},{k:'d9',l:'Siseriiklik 9%',s:'9%',rate:9},{k:'eus',l:'EU teenus (pöördmaks)',s:'EU teenus',rate:0},{k:'ex',l:'Maksuvaba',s:'Maksuvaba',rate:0}];
+const ACC={'4010':'Kontorikulud','4020':'Side- ja IT-kulud','4030':'Transpordikulud','4040':'Kütus','4050':'Rent','4060':'Kommunaalkulud','4070':'Materjalid','4080':'Pangatasud','1610':'Väikevahendid (vara)'};
+const UNITS=['tk','pk','h','kuu','km','l'];
+const CCS=['','Tartu kontor','Tallinna kontor','Hooldusüksus'];
+const PRJS=['','AutoFutur 2026','LT filiaal','Serverimigratsioon'];
+const APPRS=['K. Tamm','A. Lään','M. Sepp'];
+const TERMS=[0,7,10,14,21,30,45,60];
+const OCR={total:224.94,sinv:'OF-2607863',lines:[['Kontoritarbed',1,48.90],['Paber A4 (5 pk)',3,21.50],['Kohvikapslid',2,34.00]]};
+const EXK='arvelo.pinv.edit.extra';
+const EX=Object.assign({hcc:false,hprj:false,hinote:false,lcc:false,lprj:false},JSON.parse(localStorage.getItem(EXK)||'{}'));
+const fmt=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
+const num=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=n=>Math.round(n*100)/100;
+const S={vatc:'d24',dirty:true,appr:'K. Tamm',cc:'',prj:'',lines:OCR.lines.map(([desc,qty,price])=>({desc,acc:'4010',qty,unit:'tk',price,cc:'',prj:''}))};
+S.lines[1].unit='pk';
+const GLVAT=[['1510','Sisendkäibemaks'],['1515','Sisendkäibemaks impordilt'],['1516','Sisendkäibemaks (sõiduauto)']];
+const GLAP=[['2110','Võlad tarnijatele'],['2111','Võlad välistarnijatele'],['2120','Aruandvad isikud'],['2190','Muud võlad']];
+const GLDEF={vat:'1510',ap:'2110',ded:100};
+S.gl={...GLDEF};S.gledit=false;
+const rate=()=>VATC.find(c=>c.k===S.vatc).rate;
+const netOf=l=>r2(l.qty*l.price);
+const opts=(a,v)=>a.map(o=>`<option value="${o}" ${o===v?'selected':''}>${o||'—'}</option>`).join('');
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1900)}
+const parseN=v=>{const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n};
+const pd=s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s.trim());return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+const pad=n=>String(n).padStart(2,'0');const dstr=d=>pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.'+d.getFullYear();
+
+function lcols(){return[{w:'22px',l:''},{w:'minmax(130px,1fr)',l:'Kirjeldus'},{w:'136px',l:'Kulukonto'},
+ ...(EX.lcc?[{w:'96px',l:'Kulukoht'}]:[]),...(EX.lprj?[{w:'104px',l:'Projekt'}]:[]),
+ {w:'52px',l:'Kogus',r:1},{w:'50px',l:'Ühik'},{w:'86px',l:'Ühikuhind',r:1},{w:'50px',l:'KM'},{w:'92px',l:'Rea summa',r:1},{w:'46px',l:''}]}
+function renderCols(){const c=lcols();document.documentElement.style.setProperty('--lcols',c.map(x=>x.w).join(' '));$('lh').innerHTML=c.map(x=>`<div class="${x.r?'r':''}">${x.l}</div>`).join('')}
+function rowHTML(l,i){return`<div class="lr" data-i="${i}" draggable="true">
+ <div class="ix" title="Lohista järjestamiseks">${i+1}</div>
+ <div><input class="in ${l.desc.trim()?'':'miss'}" data-f="desc" value="${l.desc.replace(/"/g,'&quot;')}" placeholder="Kirjeldus" /></div>
+ <div><select class="in sel" data-f="acc" title="${l.acc} ${ACC[l.acc]}" style="text-overflow:ellipsis">${Object.entries(ACC).map(([a,n])=>`<option value="${a}" ${a===l.acc?'selected':''}>${a} ${n}</option>`).join('')}</select></div>
+ ${EX.lcc?`<div><select class="in sel" data-f="cc">${opts(CCS,l.cc)}</select></div>`:''}
+ ${EX.lprj?`<div><select class="in sel" data-f="prj">${opts(PRJS,l.prj)}</select></div>`:''}
+ <div><input class="in r" data-f="qty" value="${l.qty}" /></div>
+ <div><select class="in sel" data-f="unit">${UNITS.map(u=>`<option ${u===l.unit?'selected':''}>${u}</option>`).join('')}</select></div>
+ <div><input class="in r" data-f="price" value="${num(l.price)}" /></div>
+ <div class="vt">${rate()}%</div>
+ <div class="sum">${num(netOf(l))}</div>
+ <div class="ra"><button class="iconbtn" data-a="dup" title="Kopeeri rida">⧉</button><button class="iconbtn del" data-a="del" title="Kustuta rida">✕</button></div></div>`}
+function totals(){const net=r2(S.lines.reduce((s,l)=>s+netOf(l),0)),vat=r2(net*rate()/100);return{net,vat,tot:r2(net+vat)}}
+function checks(){
+  const t=totals(),o=[];
+  o.push({s:'ok',t:'Tarnija <b>Office Day OÜ</b> seotud'});
+  const sinv=$('sinv').value.trim();
+  if(!sinv)o.push({s:'err',t:'Tarnija arve nr puudub'});
+  else if(sinv==='OF-2605120')o.push({s:'err',t:'Arve <b>'+sinv+'</b> on juba sisestatud (1791)'});
+  else o.push({s:'ok',t:'Arve nr <b>'+sinv+'</b> pole varem sisestatud'});
+  const diff=r2(t.tot-OCR.total);
+  if(Math.abs(diff)<0.01)o.push({s:'ok',t:'Summa klapib originaaliga <b>'+fmt(OCR.total)+'</b>'});
+  else o.push({s:'warn',t:'Summa erineb originaalist <b>'+(diff>0?'+':'')+fmt(diff)+'</b>'});
+  const noDesc=S.lines.filter(l=>!l.desc.trim()).length;
+  if(!S.lines.length)o.push({s:'err',t:'Arvel pole ridu'});else if(noDesc)o.push({s:'err',t:'<b>'+noDesc+'</b> rida ilma kirjelduseta'});
+  else o.push({s:'ok',t:'Kulukonto määratud kõigil ridadel'});
+  const iban=$('iban').value.replace(/\s/g,'');
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban))o.push({s:'err',t:'IBAN ei ole kehtiv'});
+  else if(iban!=='EE602200221034512278')o.push({s:'warn',t:'IBAN erineb partneri kaardist — kontrolli'});
+  else o.push({s:'ok',t:'IBAN klapib partneri kaardiga'});
+  const a=pd($('issued').value),b=pd($('due').value);
+  if(!a||!b)o.push({s:'err',t:'Kuupäev vormis pp.kk.aaaa'});else if(b<a)o.push({s:'err',t:'Maksetähtaeg on enne arve kuupäeva'});
+  if(EX.lcc){const n=S.lines.filter(l=>!l.cc).length;if(n)o.push({s:'warn',t:'<b>'+n+'</b> rida ilma kulukohata'})}
+  if(EX.lprj){const n=S.lines.filter(l=>!l.prj).length;if(n)o.push({s:'warn',t:'<b>'+n+'</b> rida ilma projektita'})}
+  if(S.vatc==='eus')o.push({s:'warn',t:'Pöördmaks — KM arvestatakse deklaratsioonis (KMD lisa)'});
+  return o;
+}
+function renderRight(){
+  const t=totals();
+  $('ltot').innerHTML=[['Neto',fmt(t.net),''],[`KM ${rate()}%`,fmt(t.vat),''],['Kokku',fmt(t.tot),'big']].map(([k,v,c])=>`<div class="cell ${c}"><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join('');
+  $('lcount').textContent=S.lines.length+' rida';
+  const diff=r2(t.tot-OCR.total);
+  $('ocr').innerHTML=Math.abs(diff)<0.01?`<span class="ocr ok" title="Tuvastatud originaalilt">✓ klapib originaaliga</span>`:`<span class="ocr bad" title="Originaalil ${fmt(OCR.total)}">originaalist ${diff>0?'+':''}${num(diff)} €</span>`;
+  $('rtot').textContent=fmt(t.tot);
+  $('rtotsub').textContent=`${S.lines.length} rida · ${VATC.find(c=>c.k===S.vatc).l} · kinnitab ${S.appr}`;
+  $('rocr').innerHTML=Math.abs(diff)<0.01?`<span class="ocr ok" title="Originaalil ${fmt(OCR.total)}">✓ klapib originaaliga</span>`:`<span class="ocr bad" title="Originaalil ${fmt(OCR.total)}">originaalil ${fmt(OCR.total)}</span>`;
+  $('rdue').textContent='tähtaeg '+$('due').value;
+  const cs=checks();
+  $('checks').innerHTML=cs.map(c=>`<div class="chk ${c.s==='ok'?'':c.s}"><span class="m">${c.s==='ok'?'✓':'!'}</span><span>${c.t}</span></div>`).join('');
+  const worst=cs.some(c=>c.s==='err')?'err':cs.some(c=>c.s==='warn')?'w':'';
+  $('chkdot').className='d'+(worst==='err'?' w':worst?' w':'');$('chkdot').style.background=worst==='err'?'var(--neg)':'';
+  const gl=S.gl,ded=gl.ded/100,vatD=r2(t.vat*ded),vatN=r2(t.vat-vatD);
+  const by={};S.lines.forEach(l=>by[l.acc]=r2((by[l.acc]||0)+netOf(l)));
+  if(vatN&&t.net){const ks=Object.keys(by);let rest=vatN;ks.forEach((a,k)=>{const p=k===ks.length-1?rest:r2(vatN*by[a]/t.net);by[a]=r2(by[a]+p);rest=r2(rest-p)})}
+  const chg=gl.vat!==GLDEF.vat||gl.ap!==GLDEF.ap||gl.ded!==GLDEF.ded;
+  $('glr').innerHTML=(chg?`<span style="color:#b8330f;font-weight:600">muudetud</span> · <a href="#" id="glreset">Taasta</a> · `:'')+`<a href="#" id="gltoggle">${S.gledit?'Valmis':chg?'Muuda':'Muuda kontosid'}</a>`;
+  const sel=(k,list,v)=>`<select class="in sel mono" data-gl="${k}" style="height:22px;font-size:11px;padding:0 4px">${list.map(([a,n])=>`<option value="${a}" ${a===v?'selected':''}>${a} ${n}</option>`).join('')}</select>`;
+  const GLN=Object.fromEntries([...GLVAT,...GLAP]);
+  $('jrows').innerHTML=Object.entries(by).map(([a,v])=>`<div class="jr jl" data-acc="${a}" title="Rea kulukonto — muuda ridadel"><div class="mono">${a}</div><div class="n">${ACC[a]}${vatN?' <span style="color:var(--text-3)">+ KM</span>':''}</div><div class="a">${num(v)}</div><div class="a z">—</div></div>`).join('')
+   +(vatD?(S.gledit?`<div class="jr" style="grid-template-columns:minmax(0,1fr) 66px 66px"><div>${sel('vat',GLVAT,gl.vat)}</div><div class="a">${num(vatD)}</div><div class="a z">—</div></div>`:`<div class="jr"><div class="mono" style="${gl.vat!==GLDEF.vat?'color:#b8330f':''}">${gl.vat}</div><div class="n">${GLN[gl.vat]}</div><div class="a">${num(vatD)}</div><div class="a z">—</div></div>`):'')
+   +(S.gledit?`<div class="jr" style="grid-template-columns:minmax(0,1fr) 66px 66px"><div>${sel('ap',GLAP,gl.ap)}</div><div class="a z">—</div><div class="a">${num(t.tot)}</div></div>`:`<div class="jr"><div class="mono" style="${gl.ap!==GLDEF.ap?'color:#b8330f':''}">${gl.ap}</div><div class="n">${GLN[gl.ap]}</div><div class="a z">—</div><div class="a">${num(t.tot)}</div></div>`);
+  $('glbox').innerHTML=S.gledit&&t.vat?`<div style="display:flex;align-items:center;gap:8px;margin-top:7px;font-size:11.5px;color:var(--text-2)">KM mahaarvamine<span class="chips" style="height:auto;margin-left:auto">${[100,50,0].map(p=>`<button class="chip ${gl.ded===p?'on':''}" data-ded="${p}">${p}%</button>`).join('')}</span></div>`:'';
+  $('jnote').textContent=vatN?`Maha arvamata KM ${fmt(vatN)} lisatud kulukontodele. Kanne tekib arve kinnitamisel.`:'Kanne tekib arve kinnitamisel.';
+  $('dirty').classList.toggle('clean',!S.dirty);$('dirtytxt').textContent=S.dirty?'Salvestamata muudatused':'Salvestatud 11:49';
+  $('save').disabled=!S.dirty;
+  $('tlsave').className='tlrow'+(S.dirty?' wait':' done');$('tlsave').children[0].textContent=S.dirty?'—':'02.09.2026';$('tlsave').children[2].textContent=S.dirty?'Salvestamata muudatused':'Mustand salvestatud 11:49';
+  $('tlappr').textContent='Kinnitamine · '+S.appr;
+  const u=$('sinv').value.trim()==='OF-2605120';$('sinvmeta').textContent=u?'juba sisestatud':'unikaalne';$('sinvmeta').className='r '+(u?'bad':'ok');$('sinv').classList.toggle('warn',u);
+  const ib=$('iban').value.replace(/\s/g,'')==='EE602200221034512278';$('ibanmeta').textContent=ib?'kehtiv · partneri kaardilt':'erineb partneri kaardist';$('ibanmeta').className='r '+(ib?'ok':'bad');
+  markTerm();if(coll)applyColl();
+}
+function render(){renderCols();$('rows').innerHTML=S.lines.map(rowHTML).join('')||'<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">Ridu pole — lisa esimene rida</div>';renderRight()}
+function dirty(){S.dirty=true}
+function curDays(){const a=pd($('issued').value),b=pd($('due').value);return a&&b?Math.round((b-a)/86400000):null}
+function markTerm(){const d=curDays();[...$('terms').querySelectorAll('.chip[data-t]')].forEach(c=>c.classList.toggle('on',+c.dataset.t===d));const k=[7,14,30].includes(d);$('termmore').classList.toggle('on',d!==null&&!k);$('termmore').textContent=d!==null&&!k?d+'p':'···'}
+function setDue(n){const a=pd($('issued').value);if(!a)return;a.setDate(a.getDate()+n);$('due').value=dstr(a);dirty();renderRight()}
+
+// page (originaal)
+$('page').innerHTML=`<div class="ph"><div><b>Office Day OÜ</b><div>Reg 10712838 · KMKR EE100671835</div><div>Peterburi tee 2, Tallinn</div><div>EE60 2200 2210 3451 2278</div></div><div style="text-align:right"><b>ARVE</b><div class="mono">${OCR.sinv}</div><div class="mono">28.08.2026</div><div>Maksetähtaeg 11.09.2026</div></div></div>
+ <div class="ln" style="width:45%"></div><div class="ln" style="width:30%"></div>
+ <div><div class="rw" style="font-weight:700;border-top:none"><span>Kirjeldus</span><span>Kogus</span><span>Hind</span><span>Summa</span></div>
+ ${OCR.lines.map(([d,q,p])=>`<div class="rw"><span>${d}</span><span class="mono">${q}</span><span class="mono">${num(p)}</span><span class="mono">${num(q*p)}</span></div>`).join('')}</div>
+ <div class="ln" style="width:70%;margin-top:10px"></div><div class="ln" style="width:52%"></div>
+ <div class="tt"><span>Summa km-ta <span class="mono">181,40 €</span></span><span>Käibemaks 24% <span class="mono">43,54 €</span></span><b class="mono">Tasuda ${fmt(OCR.total)}</b></div>
+ <div class="mono" style="font-size:11px;color:var(--text-3)">Viitenumber 26078631 · Täname koostöö eest!</div>`;
+
+// init selects
+$('vatc').innerHTML=VATC.map(c=>`<option value="${c.k}" ${c.k===S.vatc?'selected':''}>${c.l}</option>`).join('');
+$('appr').innerHTML=opts(APPRS,S.appr);$('cc').innerHTML=opts(CCS,'');$('prj').innerHTML=opts(PRJS,'');
+function applyExtra(){$('fld-cc').hidden=!EX.hcc;$('fld-prj').hidden=!EX.hprj;$('fld-inote').hidden=!EX.hinote&&!$('inote').value.trim();
+  document.querySelector('[data-h="inote"]').checked=!$('fld-inote').hidden;document.querySelector('[data-h="cc"]').checked=EX.hcc;document.querySelector('[data-h="prj"]').checked=EX.hprj;
+  document.querySelector('[data-c="cc"]').checked=EX.lcc;document.querySelector('[data-c="prj"]').checked=EX.lprj;localStorage.setItem(EXK,JSON.stringify(EX))}
+
+// lines
+$('rows').addEventListener('input',e=>{const row=e.target.closest('.lr');if(!row)return;const l=S.lines[+row.dataset.i],f=e.target.dataset.f;if(!f)return;
+  if(f==='qty'||f==='price')l[f]=parseN(e.target.value);else l[f]=e.target.value;dirty();
+  if(f==='desc')e.target.classList.toggle('miss',!l.desc.trim());else row.querySelector('.sum').textContent=num(netOf(l));renderRight()});
+$('rows').addEventListener('change',e=>{const row=e.target.closest('.lr');if(!row||e.target.tagName!=='SELECT')return;S.lines[+row.dataset.i][e.target.dataset.f]=e.target.value;dirty();renderRight()});
+$('rows').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=+b.closest('.lr').dataset.i;
+  if(b.dataset.a==='dup'){S.lines.splice(i+1,0,{...S.lines[i]});toast('Rida kopeeritud')}else{S.lines.splice(i,1);toast('Rida kustutatud')}dirty();render()});
+$('rows').addEventListener('keydown',e=>{const row=e.target.closest('.lr');if(!row)return;const i=+row.dataset.i;
+  if(e.key==='Enter'){e.preventDefault();if(i===S.lines.length-1)addLine();else $('rows').children[i+1].querySelector('[data-f="desc"]').focus()}
+  if(e.key==='Backspace'&&e.altKey){e.preventDefault();S.lines.splice(i,1);dirty();render();toast('Rida kustutatud')}});
+function addLine(){const last=S.lines[S.lines.length-1];S.lines.push({desc:'',acc:last?last.acc:'4010',qty:1,unit:'tk',price:0,cc:last?last.cc:S.cc,prj:last?last.prj:S.prj});dirty();render();const r=$('rows').children;r[r.length-1].querySelector('[data-f="desc"]').focus()}
+$('add').onclick=addLine;
+$('split').onclick=()=>toast('Jaga summa: vali kontod ja osakaalud — read luuakse automaatselt');
+let dragI=null;
+$('rows').addEventListener('dragstart',e=>{const r=e.target.closest('.lr');if(!r)return;dragI=+r.dataset.i;r.classList.add('drag')});
+$('rows').addEventListener('dragover',e=>{e.preventDefault();const r=e.target.closest('.lr');if(!r)return;[...$('rows').children].forEach(x=>x.classList.remove('over'));r.classList.add('over')});
+$('rows').addEventListener('dragend',()=>[...$('rows').children].forEach(x=>x.classList.remove('drag','over')));
+$('rows').addEventListener('drop',e=>{e.preventDefault();const r=e.target.closest('.lr');if(!r||dragI===null)return;const[m]=S.lines.splice(dragI,1);S.lines.splice(+r.dataset.i,0,m);dragI=null;dirty();render()});
+
+// fields
+['issued','due','sinv','iban','ref','note','inote','sname'].forEach(id=>$(id).addEventListener('input',()=>{dirty();renderRight()}));
+$('vatc').onchange=()=>{S.vatc=$('vatc').value;dirty();render()};
+$('appr').onchange=()=>{S.appr=$('appr').value;dirty();renderRight()};
+$('cc').onchange=()=>{S.cc=$('cc').value;dirty()};$('prj').onchange=()=>{S.prj=$('prj').value;dirty()};
+$('terms').addEventListener('click',e=>{const c=e.target.closest('.chip[data-t]');if(c)setDue(+c.dataset.t)});
+$('termmore').onclick=e=>{e.stopPropagation();$('fldmenu').hidden=true;const d=curDays();$('termmenu').innerHTML='<div class="mh">Maksetingimus</div>'+TERMS.map(n=>`<div class="mrow ${n===d?'on':''}" data-tm="${n}">${n?n+' päeva':'Kohe'}<span>${n}p</span></div>`).join('');$('termmenu').hidden=!$('termmenu').hidden};
+$('termmenu').onclick=e=>{e.stopPropagation();const r=e.target.closest('[data-tm]');if(!r)return;setDue(+r.dataset.tm);$('termmenu').hidden=true};
+$('fldbtn').onclick=e=>{e.stopPropagation();$('termmenu').hidden=true;$('fldmenu').hidden=!$('fldmenu').hidden};
+$('fldmenu').addEventListener('click',e=>e.stopPropagation());
+$('fldmenu').addEventListener('change',e=>{const h=e.target.dataset.h,c=e.target.dataset.c;if(h){EX['h'+h]=e.target.checked;if(h!=='inote')EX['l'+h]=e.target.checked}else if(c)EX['l'+c]=e.target.checked;else return;applyExtra();dirty();render();toast(e.target.checked?'Väli lisatud':'Väli eemaldatud')});
+document.addEventListener('click',()=>{$('fldmenu').hidden=true;$('termmenu').hidden=true});
+$('save').onclick=()=>{S.dirty=false;renderRight();toast('Mustand salvestatud')};
+$('submit').onclick=()=>{if(checks().some(c=>c.s==='err'))return toast('Paranda kontrolli vead enne saatmist');S.dirty=false;renderRight();toast('Saadetud kinnitamiseks · '+S.appr)};
+$('cancel').onclick=()=>toast(S.dirty?'Muudatused jäetakse salvestamata — küsitakse kinnitust':'Tagasi nimekirja');
+$('drop').onclick=()=>toast('Mustandi kustutamine — küsitakse kinnitust');
+$('rsum').addEventListener('click',e=>{
+  if(e.target.id==='gltoggle'){e.preventDefault();S.gledit=!S.gledit;renderRight();return}
+  if(e.target.id==='glreset'){e.preventDefault();S.gl={...GLDEF};S.gledit=false;dirty();renderRight();toast('Üldkontod taastatud tarnija kaardilt');return}
+  const d=e.target.closest('[data-ded]');if(d){S.gl.ded=+d.dataset.ded;dirty();renderRight();return}
+  const j=e.target.closest('.jl[data-acc]');if(j){const i=S.lines.findIndex(l=>l.acc===j.dataset.acc);const r=$('rows').children[i];if(r){const s=r.querySelector('[data-f="acc"]');s.focus();r.classList.add('over');setTimeout(()=>r.classList.remove('over'),900)}}});
+$('rsum').addEventListener('change',e=>{const k=e.target.dataset.gl;if(!k)return;S.gl[k]=e.target.value;dirty();renderRight()});
+
+// collapse
+const CK='arvelo.pinv.edit.coll';let coll=localStorage.getItem(CK)==='1';
+function applyColl(){$('formsec').classList.toggle('collapsed',coll);$('collbtn').textContent=coll?'▸':'▾';$('collbtn').title=coll?'Ava arve andmed':'Ahenda arve andmed';
+  if(coll)$('csum').innerHTML=`<b>${$('sname').value}</b><span class="s">·</span><span class="mono">${$('sinv').value}</span><span class="s">·</span><span class="mono">${$('issued').value}</span> → <span class="mono">${$('due').value}</span><span class="s">·</span>${VATC.find(c=>c.k===S.vatc).s}<span class="s">·</span>kinnitab ${S.appr}`}
+$('collbtn').onclick=e=>{e.stopPropagation();coll=!coll;localStorage.setItem(CK,coll?'1':'0');applyColl()};
+
+// right panel: tab + width per tab + open state — all persisted
+const RT='arvelo.pinv.edit.rtab',RO='arvelo.pinv.edit.rail',PWK=t=>'arvelo.pinv.edit.pw.'+t,DEFW={sum:330,pdf:460};
+let rtab=localStorage.getItem(RT)||'sum',railOpen=localStorage.getItem(RO)!=='0',zoom='fit';
+const pwOf=t=>+(localStorage.getItem(PWK(t))||0)||DEFW[t];
+function clampPW(v){const w=Math.max(1180,document.querySelector('.shell').clientWidth);return Math.max(rtab==='pdf'?360:260,Math.min(v,w-9-620))}
+function applyRail(){
+  $('body').classList.toggle('norail',!railOpen);
+  document.documentElement.style.setProperty('--pw',clampPW(pwOf(rtab))+'px');
+  $('rt-sum').classList.toggle('on',rtab==='sum');$('rt-pdf').classList.toggle('on',rtab==='pdf');
+  $('rsum').hidden=rtab!=='sum';$('rpdf').hidden=rtab!=='pdf';
+  $('raillbl').textContent=railOpen?'Peida paneel':'Näita paneeli';
+  applyZoom();
+}
+function setTab(t){rtab=t;localStorage.setItem(RT,t);if(!railOpen){railOpen=true;localStorage.setItem(RO,'1')}applyRail()}
+document.querySelector('.rhead .seg').onclick=e=>{const b=e.target.closest('[data-rt]');if(b)setTab(b.dataset.rt)};
+$('railbtn').onclick=()=>{railOpen=!railOpen;localStorage.setItem(RO,railOpen?'1':'0');applyRail()};
+$('railclose').onclick=()=>{railOpen=false;localStorage.setItem(RO,'0');applyRail()};
+let gd=null;
+$('gutter').addEventListener('mousedown',e=>{e.preventDefault();gd={x:e.clientX,w:clampPW(pwOf(rtab))};document.body.classList.add('pres')});
+addEventListener('mousemove',e=>{if(!gd)return;const w=clampPW(gd.w-(e.clientX-gd.x));document.documentElement.style.setProperty('--pw',w+'px');gd.cur=w;if(zoom==='fit')applyZoom()});
+addEventListener('mouseup',()=>{if(!gd)return;if(gd.cur)localStorage.setItem(PWK(rtab),gd.cur);gd=null;document.body.classList.remove('pres')});
+$('gutter').addEventListener('dblclick',()=>{localStorage.removeItem(PWK(rtab));applyRail()});
+addEventListener('resize',applyRail);
+
+// zoom
+function fitZ(){return Math.max(.3,($('pdfbox').clientWidth-2)/600)}
+function applyZoom(){if(rtab!=='pdf'||!railOpen)return;const z=zoom==='fit'?fitZ():zoom;$('page').style.setProperty('--z',z);$('zv').textContent=Math.round(z*100)+'%';$('zfit').classList.toggle('on',zoom==='fit');$('z1').classList.toggle('on',zoom===1)}
+function setZoom(k){const cur=zoom==='fit'?fitZ():zoom;if(k==='fit')zoom='fit';else if(k==='1')zoom=1;else zoom=Math.min(3,Math.max(.3,Math.round((cur+(k==='+'?.25:-.25))*4)/4));applyZoom()}
+document.querySelector('.zoom').onclick=e=>{const b=e.target.closest('[data-z]');if(b)setZoom(b.dataset.z)};
+document.addEventListener('wheel',e=>{if(!(e.ctrlKey||e.metaKey)||!e.target.closest('#pdfbox'))return;e.preventDefault();setZoom(e.deltaY<0?'+':'-')},{passive:false});
+
+document.addEventListener('keydown',e=>{
+  const mod=e.metaKey||e.ctrlKey;
+  if(mod&&e.key.toLowerCase()==='s'){e.preventDefault();$('save').click();return}
+  if(mod&&e.key.toLowerCase()==='o'){e.preventDefault();setTab(rtab==='pdf'&&railOpen?'sum':'pdf');return}
+  if(mod&&e.key.toLowerCase()==='k'){e.preventDefault();$('sname').select();toast('Tarnija otsing');return}
+  if(e.key==='Escape'){$('cancel').click();return}
+  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement.tagName))return;
+  if(rtab==='pdf'&&railOpen&&['+','=','-','0'].includes(e.key)){e.preventDefault();setZoom(e.key==='0'?'fit':e.key==='-'?'-':'+')}
+});
+
+applyExtra();applyRail();render();
+</script>
+</body>
+</html>
