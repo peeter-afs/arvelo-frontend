@@ -170,7 +170,7 @@ export const importApi = {
       formData.append(key, value);
     });
 
-    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail>>('/api/import/purchase-invoices/upload', formData, {
+    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail & { status?: 'processed' | 'attached' | 'skipped_duplicate'; linked_invoice_id?: string }>>('/api/import/purchase-invoices/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
