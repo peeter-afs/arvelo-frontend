@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Muuda arvet 25930</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea;--row-alt:#faf8f3}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px;overflow:hidden}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.005em}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+svg.i{width:1em;height:1em;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:1180px;padding:9px 14px 10px;display:flex;flex-direction:column;gap:7px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--neg)}
+.btn.danger:hover{background:var(--neg-soft)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.btn kbd{border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.18);color:#fff}
+/* ── päis: üks rida, ilma dubleerimist ── */
+.topbar{display:flex;align-items:center;gap:9px;flex-shrink:0;height:27px}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3);flex-shrink:0}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+.topbar h1{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-0.025em;white-space:nowrap}
+.topbar .who{font-size:11.5px;color:var(--text-3);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.dirty{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#7d5a13;white-space:nowrap;margin-right:2px}
+.dirty .dot{width:6px;height:6px;border-radius:99px;background:var(--warn)}
+.dirty.clean{color:var(--text-3)}
+.dirty.clean .dot{background:var(--pos)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.tag .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.tag.draft{background:var(--surface-2);color:var(--text-3)}
+.tag.info{background:#eaf0ff;color:#2c5cf6}
+/* ── keha ── */
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 9px var(--pw,330px);overflow:hidden;background:#f9f7f1}
+.body.norail{grid-template-columns:minmax(0,1fr)}
+.body.norail .gutter,.body.norail .right{display:none}
+.gutter{position:relative;cursor:col-resize}
+.gutter:after{content:'';position:absolute;left:3.5px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent;transition:background .12s}
+.gutter:hover:after{background:var(--border-strong)}
+body.pres .gutter:after{background:var(--accent)}
+body.pres{cursor:col-resize;user-select:none}
+.left{display:flex;flex-direction:column;min-height:0;background:#f9f7f1;border-radius:11px 0 0 11px}
+.body.norail .left{border-radius:11px}
+.lscroll{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
+.sec.form{flex-shrink:0;max-height:46vh;overflow-y:auto}
+.sec.linesec{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:12px;padding-top:2px}
+.sec.linesec .lines{flex:1;min-height:0;display:flex;flex-direction:column}
+#rows{flex:1;min-height:0;overflow-y:auto}
+.sec.form{position:relative;padding-top:8px}
+.fbar{position:absolute;top:4px;right:13px;display:flex;gap:3px;z-index:5}
+.fld>label.atabs{gap:12px}
+.atab{border:none;background:none;padding:0 0 2px;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--text-3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:inset 0 -1.5px 0 transparent}
+.atab:hover{color:var(--text-2)}
+.atab.on{color:var(--text);box-shadow:inset 0 -1.5px 0 var(--accent)}
+.adot{width:5px;height:5px;border-radius:99px;background:var(--accent)}
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr);gap:6px}
+[data-ap][hidden],[data-ar][hidden]{display:none!important}
+.atabs .r{white-space:nowrap}
+.fbar .collbtn{width:18px;height:18px;border-radius:5px;font-size:9px}
+.fbar .collbtn svg{width:11px;height:11px}
+.sec.collapsed .fgrid{display:none}
+.sec.collapsed{max-height:none;padding-top:7px;padding-bottom:7px}
+.csum{display:none;gap:14px;align-items:center;min-height:22px;padding-right:60px;font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden}
+.sec.collapsed .csum{display:flex}
+.csum b{font-weight:600;color:var(--text)}
+.csum .s{color:var(--border-strong)}
+.collbtn{width:22px;height:22px;display:grid;place-items:center;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text-3);font-size:10px;flex-shrink:0}
+.collbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.right{border-left:1px solid var(--border);background:#f4f1e9;display:flex;flex-direction:column;min-height:0;overflow-y:auto;border-radius:0 11px 11px 0}
+.sec{padding:9px 13px;border-bottom:1px solid var(--border)}
+.sech{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:9px}
+.sech .r{margin-left:auto;display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px;color:var(--text-3)}
+/* ── väljad ── */
+.fgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px 10px}
+.fld{min-width:0;display:flex;flex-direction:column;gap:4px}
+.fld>label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);display:flex;align-items:center;gap:6px}
+.fld>label .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px;color:var(--text-3)}
+.fld[hidden],.stack[hidden]{display:none}
+.fld.wide{grid-column:span 3}
+.fld.mid{grid-column:span 2}
+.inp.ro{background:#f1eee6;border-style:dashed;color:var(--text-2);cursor:default}
+.inp.ro:hover{border-color:var(--border)}
+.ser{display:flex;align-items:center;gap:0;height:29px;border:1px dashed var(--border);border-radius:8px;background:#f1eee6;overflow:hidden}
+.ser .pre{font-size:10.5px;font-weight:600;color:var(--text-3);padding:0 8px;border-right:1px dashed var(--border);white-space:nowrap;line-height:27px;flex-shrink:0}
+.ser .val{padding:0 9px;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:9px;min-width:0;align-self:start}
+.stack.notes{grid-column:span 3}
+.inp,select.inp{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:12.5px;color:var(--text);padding:0 9px}
+.inp.mono{font-variant-numeric:tabular-nums}
+.inp:hover{border-color:var(--border-strong)}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8c84' stroke-width='1.8' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 7px center;background-size:12px;padding-right:24px}
+.partner{display:flex;align-items:center;gap:8px;height:29px;padding:0 8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);min-width:0}
+.partner:hover{border-color:var(--border-strong)}
+.partner .av{width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0;background:oklch(0.92 0.045 42);color:oklch(0.36 0.09 42)}
+.partner input{flex:1;min-width:0;border:none;background:transparent;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);padding:0}
+.partner input:focus{outline:none}
+.partner .meta{font-size:10.5px;color:var(--text-3);white-space:nowrap;flex-shrink:0}
+.chips{display:flex;gap:4px;align-items:center}
+.chip{height:20px;padding:0 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:10.5px;font-weight:600}
+.chip:hover{background:var(--surface-2)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f}
+/* ── read ── */
+.lines{border:1px solid var(--border);border-radius:9px;overflow-x:auto;background:#fdfcf9}
+.lh,.lr{display:grid;grid-template-columns:var(--lcols);align-items:center;gap:0}
+.mwrap{position:relative;display:inline-flex}
+.menu{position:absolute;right:0;top:28px;z-index:30;width:194px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.13);text-transform:none;letter-spacing:0}
+.menu[hidden]{display:none}
+.menu .mh{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);padding:3px 7px 5px}
+.menu .mrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500}
+.menu .mrow:hover{background:var(--surface-2)}
+.menu .mrow.on{color:#b8330f;background:var(--accent-soft-2);font-weight:600}
+.menu .mrow span.d{font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.menu .mrow.on span.d{color:#b8330f}
+.menu label{display:flex;align-items:center;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500}
+.menu label:hover{background:var(--surface-2)}
+input[type=checkbox]{width:13px;height:13px;accent-color:var(--accent);margin:0;cursor:pointer}
+.lh{background:var(--surface-2);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);height:28px}
+.lh>div{padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh>div.r{text-align:right}
+.lr{border-top:1px solid #efece4;background:#fdfcf9;min-height:32px}
+.lr:first-of-type{border-top:none}
+.lr:nth-child(even){background:#f8f6f0}
+.lr:hover{background:var(--accent-soft-2)}
+.lr.drag{opacity:.4}
+.lr.over{box-shadow:inset 0 2px 0 var(--accent)}
+.lr>div{padding:0 3px;min-width:0}
+.lr .ix{padding:0;text-align:center;font-size:10.5px;color:#c3bfb2;cursor:grab;user-select:none}
+.lr .ix:hover{color:var(--text-3)}
+.in{height:25px;width:100%;border:1px solid transparent;border-radius:6px;background:transparent;font:inherit;font-size:12.5px;color:var(--text);padding:0 5px}
+.in::placeholder{color:#bfbbb0}
+.in:hover{border-color:var(--border);background:#fff}
+.in:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px var(--accent-soft)}
+.in.r{text-align:right;font-variant-numeric:tabular-nums}
+.in.sel{appearance:none;cursor:pointer}
+.in.miss{border-color:#ecd7b4;background:#fdf8ec}
+.lr .sum{text-align:right;font-weight:600;font-size:12.5px;padding-right:9px;font-variant-numeric:tabular-nums}
+.lr .sum .cut{display:block;font-size:10px;font-weight:500;color:#b8330f}
+.lr .ra{display:flex;gap:1px;justify-content:flex-end;padding-right:4px;opacity:0;transition:opacity .1s}
+.lr:hover .ra,.lr:focus-within .ra{opacity:1}
+.iconbtn{width:22px;height:22px;display:grid;place-items:center;border:none;border-radius:6px;background:transparent;color:var(--text-3);font-size:13px}
+.iconbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.iconbtn.del:hover{background:var(--neg-soft);color:var(--neg)}
+.addrow{display:flex;align-items:center;gap:8px;padding:0 9px;height:30px;border-top:1px solid var(--border);background:#f9f7f1}
+.addrow .hint{margin-left:auto;font-size:11px;color:var(--text-3)}
+.ltot{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0;border-top:1px solid var(--border);background:#f2efe6}
+.ltot .cells{grid-column:2;display:flex;align-items:stretch}
+.ltot .lcount{grid-column:1;display:flex;align-items:center;padding:0 13px;font-size:11.5px;color:var(--text-3);white-space:nowrap}
+.ltot .cell{padding:7px 14px;border-left:1px solid var(--border);white-space:nowrap;text-align:right}
+.ltot .k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.ltot .v{font-size:13px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.ltot .cell.big .v{font-size:15px;font-weight:700;letter-spacing:-0.03em}
+.ltot .cell.cut .v{color:#b8330f}
+/* ── parem rail ── */
+.big{font-size:20px;font-weight:700;letter-spacing:-0.035em;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;white-space:nowrap;padding:4px 0;font-size:12px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.kv:first-of-type{border-top:none}
+.kv>b{text-align:right;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.kv.tot{border-top:1px solid var(--border);margin-top:3px;padding-top:6px;font-weight:600;color:var(--text)}
+.chk{display:grid;grid-template-columns:13px minmax(0,1fr);gap:8px;align-items:start;padding:4px 0;font-size:11.5px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.chk:first-of-type{border-top:none}
+.chk .m{width:13px;height:13px;border-radius:99px;display:grid;place-items:center;font-size:8px;color:#fff;margin-top:1px;background:var(--pos)}
+.chk.warn .m{background:var(--warn)}
+.chk.err .m{background:var(--neg)}
+.chk.warn{color:#7d5a13}
+.chk.err{color:var(--neg)}
+.chk b{font-weight:600;color:inherit}
+.jt{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fdfcf9}
+.jh,.jr{display:grid;grid-template-columns:44px minmax(0,1fr) 66px 66px;gap:6px;padding:4px 8px;font-size:11px;align-items:baseline}
+.jh{background:var(--surface-2);font-size:8.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);border-bottom:1px solid var(--border)}
+.jr{border-top:1px solid #efece4}
+.jr:first-of-type{border-top:none}
+.jr .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+.jr .a{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.jr .a.z{color:var(--text-3);font-weight:400}
+.jnote{font-size:10.5px;color:var(--text-3);margin-top:6px}
+.tlrow{display:grid;grid-template-columns:66px 12px minmax(0,1fr);gap:8px;align-items:center;font-size:11.5px;color:var(--text-2);padding:3px 0}
+.tlrow .bul{width:7px;height:7px;border-radius:99px;background:var(--border-strong);justify-self:center}
+.tlrow.done .bul{background:var(--pos)}
+.tlrow .mono{color:var(--text-3)}
+textarea.inp{height:auto;min-height:29px;padding:6px 9px;resize:vertical;line-height:1.35}
+textarea.addr{min-height:29px;field-sizing:content;
+max-height:96px;overflow-y:auto}
+@media (max-width:1440px){.shell{padding:8px 10px}.topbar{gap:7px}.topbar #raillbl{display:none}}
+/* ── alumine riba ── */
+.footbar{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-top:1px solid var(--border);background:#f4f1e9;flex-shrink:0;font-size:11.5px;color:var(--text-3);white-space:nowrap;border-radius:0 0 11px 11px}
+.footbar .r{margin-left:auto;display:flex;gap:6px}
+.footbar .hint{display:flex;gap:12px;overflow:hidden}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;background:#1a1815;color:#fff;font-size:12px;font-weight:500;padding:8px 14px;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:80}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:1420px){.footbar .hint span:nth-child(n+3){display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="crumb"><a href="Müügiarved - tihe vaade v2.html">← Müügiarved</a><span class="sep">/</span></div>
+    <h1 class="mono" id="crumbnr">MA-2026 25930</h1>
+    <span class="tag draft"><span class="dot"></span>Mustand</span>
+    <span class="tag info" title="Imporditud Futursoftist · tx 5851"><span class="dot"></span>Futursofti import</span>
+    <div class="acts">
+      <span class="dirty" id="dirty"><span class="dot"></span><span id="dirtytxt">Salvestamata muudatused</span></span>
+      <button class="btn ghost" id="cancel">Loobu <kbd style="border-color:var(--border-strong);background:var(--surface-2);color:var(--text-3)">Esc</kbd></button>
+      <button class="btn" id="save">Salvesta mustand <kbd style="border-color:var(--border-strong);background:var(--surface-2);color:var(--text-3)">⌘S</kbd></button>
+      <button class="btn primary" id="confirm">Kinnita ja saada</button>
+      <button class="btn ghost" id="railbtn" title="Peida kokkuvõtte paneel"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM15 5v14"/></svg> <span id="raillbl">Peida kokkuvõte</span></button>
+    </div>
+  </div>
+
+  <div class="body card">
+    <div class="left">
+      <div class="lscroll">
+        <div class="sec form" id="formsec">
+          <div class="fbar"><span class="mwrap"><button class="collbtn" id="fldbtn" title="Lisa välju"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button><div class="menu" id="fldmenu" hidden style="width:214px"><div class="mh">Ainult arvel</div><label><input type="checkbox" data-h="inote" /> Sisemärkus</label><div class="mh" style="padding-top:7px">Arvel ja ridadel</div><label><input type="checkbox" data-h="cc" /> Kulukoht</label><label><input type="checkbox" data-h="prj" /> Projekt</label><div class="mh" style="padding-top:7px">Ainult ridadel</div><label><input type="checkbox" data-c="cc" /> Kulukoht real</label><label><input type="checkbox" data-c="prj" /> Projekt real</label></div></span><button class="collbtn" id="collbtn" title="Ahenda arve andmed">▾</button></div>
+          <div class="csum" id="csum"></div>
+          <div class="fgrid">
+            <div class="fld wide">
+              <label>Klient <span class="r" id="pmeta">Reg 14582301 · avatud saldo 1 240,00 €</span></label>
+              <div class="partner"><span class="av" id="pav">MO</span><input id="pname" value="Milworks OÜ" /><span class="meta">Vaheta ⌘K</span></div>
+            </div>
+            <div class="fld mid"><label>Arve number <span class="r" id="sermeta">seeriast</span></label><div class="ser" id="serbox"><span class="pre" id="serpre">MA-2026</span><span class="val mono" id="nr">25930</span></div></div>
+            <div class="fld"><label style="padding-right:46px">Valuuta</label><select class="inp" id="cur"><option>EUR</option><option>USD</option><option>SEK</option></select></div>
+            <div class="fld wide"><label class="atabs"><button type="button" class="atab on" data-at="bill">Arve aadress</button><button type="button" class="atab" data-at="ship">Tarne aadress<span class="adot" id="shipdot" hidden></span></button><button type="button" class="atab" data-at="ct">Kontakt</button><span class="r" data-ar="bill"><a href="#" id="addrreset" title="Taasta kliendikaardilt">Taasta</a></span><span class="r" data-ar="ship" hidden><a href="#" id="shipcopy" title="Kopeeri arve aadress">Kopeeri arve aadress</a></span><span class="r" data-ar="ct" hidden><a href="#" id="ctreset" title="Taasta kliendikaardilt">Taasta</a></span></label><div data-ap="bill"><textarea class="inp addr" id="addr" rows="1">Turu 45a, 51014 Tartu, Eesti</textarea></div><div data-ap="ship" hidden><textarea class="inp addr" id="ship" rows="1" placeholder="Sama mis arve aadress"></textarea></div><div data-ap="ct" class="cgrid" hidden><input class="inp" id="cname" value="Kadri Mets" placeholder="Kontaktisik" /><input class="inp" id="cmail" value="arved@milworks.ee" placeholder="E-post" /><input class="inp mono" id="cphone" value="+372 5123 4567" placeholder="Telefon" /></div></div>
+            <div class="fld"><label>Arve kuupäev</label><input class="inp mono" id="issued" value="01.09.2026" placeholder="pp.kk.aaaa" /></div>
+            <div class="fld"><label>Maksetähtaeg</label><input class="inp mono" id="due" value="08.09.2026" placeholder="pp.kk.aaaa" /></div>
+            <div class="fld"><label>Maksetingimus</label><span class="chips mwrap" id="terms" style="height:29px"><button class="chip" data-t="7">7p</button><button class="chip" data-t="14">14p</button><button class="chip" data-t="30">30p</button><button class="chip" id="termmore" title="Kõik maksetingimused">···</button><div class="menu" id="termmenu" hidden><div class="mh">Maksetingimus</div><div id="termlist"></div><div style="border-top:1px solid var(--border);margin:5px 0 4px"></div><label id="termadd" style="gap:6px;color:var(--accent);font-weight:600">+ Lisa maksetingimus…</label></div></span></div>
+            <div class="fld wide"><label>Märkused <span class="r">nähtav arvel</span></label><input class="inp" id="note" value="" placeholder="Näiteks tänusõnad või tellimuse viide" /></div>
+            <div class="fld"><label>KM kood</label><select class="inp" id="vatc"></select></div>
+            <div class="fld mid"><label>Koostaja <span class="r">arvel</span></label><select class="inp" id="user"></select></div>
+            <div class="fld wide" id="fld-inote" hidden><label>Sisemärkus <span class="r">ei ole arvel</span></label><input class="inp" id="inote" value="Imported from Futursoft (tx 5851, status STANDARD)" placeholder="Nähtav ainult raamatupidajale" /></div>
+            <div class="fld" id="fld-cc" hidden><label>Kulukoht <span class="r">ridadel</span></label><select class="inp" id="cc"></select></div>
+            <div class="fld" id="fld-prj" hidden><label>Projekt <span class="r">ridadel</span></label><select class="inp" id="prj"></select></div>
+          </div>
+        </div>
+
+        <div class="sec linesec" style="border-bottom:none">
+          <div class="lines">
+            <div class="lh" id="lh"></div>
+            <div id="rows"></div>
+            <div class="addrow">
+              <button class="btn sm ghost" id="add"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Lisa rida</button>
+              <button class="btn sm ghost" id="addcat"><svg class="i" viewBox="0 0 24 24"><path d="M21 21l-4.3-4.3M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/></svg> Otsi teenust</button>
+              <span class="hint"><kbd>⏎</kbd> viimasel real lisab uue · <kbd>⌥⌫</kbd> kustutab rea</span>
+            </div>
+            <div class="ltot"><div class="lcount mono" id="lcount"></div><div class="cells" id="ltot"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="footbar">
+        <div class="hint"><span><kbd>⌘S</kbd> salvesta</span><span><kbd>⏎</kbd> uus rida</span><span><kbd>Esc</kbd> loobu</span></div>
+        <div class="r">
+          <button class="btn sm ghost" id="preview">Eelvaade</button>
+          <button class="btn sm ghost danger" id="drop">Kustuta mustand</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gutter" id="gutter" title="Lohista paneeli laiust · topeltklikk lähtestab"></div>
+    <div class="right">
+      <div class="sec">
+        <div class="sech">Kokkuvõte<span class="r"><button class="iconbtn" id="railclose" title="Peida paneel">✕</button></span></div>
+        <div class="big mono" id="rtot">729,12 €</div>
+        <div style="font-size:10.5px;color:var(--text-3);margin:2px 0 9px" id="rtotsub">4 rida · KM 24%</div>
+        <div style="font-size:10.5px;color:var(--text-3);margin:-6px 0 9px">Koostaja <b style="font-weight:600;color:var(--text-2)" id="ruser">M. Sepp</b></div>
+        <div id="rsums"></div>
+        <div class="kv" style="margin-top:7px;border-top:1px solid var(--border);padding-top:6px"><span>Makseviide</span><b class="mono" id="ref">25930002535</b></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Kontroll</div>
+        <div id="checks"></div>
+      </div>
+      <div class="sec">
+        <div class="sech">Konteering<span class="r">eelvaade</span></div>
+        <div class="jt"><div class="jh"><div>Konto</div><div>Nimetus</div><div style="text-align:right">Deebet</div><div style="text-align:right">Kreedit</div></div><div id="jrows"></div></div>
+        <div class="jnote">Kanne tekib arve kinnitamisel.</div>
+      </div>
+      <div class="sec">
+        <div class="sech">Klient<span class="r"><a href="#">Kliendikaart</a></span></div>
+        <div class="kv"><span>Registrikood</span><b class="mono">14582301</b></div>
+        <div class="kv"><span>Aadress</span><b id="raddr" style="white-space:normal;text-align:right;font-weight:600">Turu 45a, 51014 Tartu, Eesti</b></div>
+        <div class="kv"><span>E-post</span><b>arved@milworks.ee</b></div>
+        <div class="kv"><span>Avatud saldo</span><b class="mono">1 240,00 €</b></div>
+        <div class="kv"><span>Krediidilimiit</span><b class="mono">5 000,00 €</b></div>
+        <div class="kv"><span>Keskm. laekumisaeg</span><b>9 päeva</b></div>
+      </div>
+      <div class="sec" style="border-bottom:none">
+        <div class="sech">Ajalugu</div>
+        <div class="tlrow done"><span class="mono">01.09.2026</span><span class="bul"></span><span>Imporditud Futursoftist</span></div>
+        <div class="tlrow done"><span class="mono">01.09.2026</span><span class="bul"></span><span id="tlmaker">Mustand loodud · M. Sepp</span></div>
+        <div class="tlrow" id="tlsave"><span class="mono">—</span><span class="bul"></span><span>Salvestamata muudatused</span></div>
+        <div class="tlrow"><span class="mono">—</span><span class="bul"></span><span>Ootab kinnitamist</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const VATC=[{k:'d24',l:'Siseriiklik 24%',s:'24%',rate:24},{k:'d9',l:'Siseriiklik 9%',s:'9%',rate:9},{k:'eug',l:'EU kauba müük 0%',s:'EU kaup',rate:0},{k:'eus',l:'EU teenus 0% (pöördmaks)',s:'EU teenus',rate:0},{k:'exp',l:'Eksport 0%',s:'Eksport',rate:0},{k:'ex',l:'Maksuvaba käive',s:'Maksuvaba',rate:0}];
+const ACC={'3002':'Tarkvara müük','3015':'Serveriteenused','3110':'Müügitulu','3120':'Teenuste müük'};
+const UNITS=['tk','h','kuu','km','kmpl'];
+const CCS=['','Tartu kontor','Tallinna kontor','Hooldusüksus'];
+const USERS=['M. Sepp','K. Tamm','A. Lään','R. Ilves'];
+const PRJS=['','AutoFutur 2026','LT filiaal','Serverimigratsioon'];
+const TERMS=JSON.parse(localStorage.getItem('arvelo.inv.terms')||'null')||[{d:0,l:'Kohe'},{d:7,l:'7 p\u00e4eva'},{d:10,l:'10 p\u00e4eva'},{d:14,l:'14 p\u00e4eva'},{d:21,l:'21 p\u00e4eva'},{d:30,l:'30 p\u00e4eva'},{d:45,l:'45 p\u00e4eva'},{d:60,l:'60 p\u00e4eva'}];
+const EXK='arvelo.inv.edit.extra';
+const EX=Object.assign({hcc:false,hprj:false,hinote:false,lcc:false,lprj:false},JSON.parse(localStorage.getItem(EXK)||'{}'));
+const fmt=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
+const num=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=n=>Math.round(n*100)/100;
+const S={vatc:'d24',dirty:true,cc:'',prj:'',user:'M. Sepp',lines:[
+ {code:'',desc:'AutoFutur.net tarkvara baastasu AFRNET8',acc:'3002',qty:1,unit:'kuu',price:75,disc:0},
+ {code:'',desc:'AutoFutur.net tarkvara arvutit/kuu AFRNET8',acc:'3002',qty:6,unit:'kuu',price:29,disc:0},
+ {code:'',desc:'Privaatserverid Autofuturile (Andmebaas, Rakendus, Tulemüür SRVR',acc:'3015',qty:1,unit:'kuu',price:289,disc:0},
+ {code:'',desc:'Lisa filiaal LT',acc:'3002',qty:1,unit:'tk',price:50,disc:0}]};
+const rate=()=>VATC.find(c=>c.k===S.vatc).rate;
+const netOf=l=>r2(l.qty*l.price*(1-(l.disc||0)/100));
+const listOf=l=>r2(l.qty*l.price);
+const $=id=>document.getElementById(id);
+// viide genereeritakse samamoodi nagu nimekirjavaates (Müügiarved - tihe vaade v2): nr + '00' + jooksev number
+const REFSEQ=2535;
+const refOf=nr=>String(nr)+'00'+REFSEQ;
+const opts=(arr,v)=>arr.map(o=>`<option value="${o}" ${o===v?'selected':''}>${o||'—'}</option>`).join('');
+function lcols(){return [{w:'22px',l:''},{w:'74px',l:'Kood'},{w:'minmax(150px,1fr)',l:'Kirjeldus'},{w:'76px',l:'Konto'},
+ ...(EX.lcc?[{w:'76px',l:'Kulukoht',f:'cc'}]:[]),...(EX.lprj?[{w:'84px',l:'Projekt',f:'prj'}]:[]),
+ {w:'52px',l:'Kogus',r:1},{w:'46px',l:'Ühik'},{w:'84px',l:'Ühikuhind',r:1},{w:'50px',l:'Ale %',r:1},{w:'74px',l:'KM'},{w:'92px',l:'Rea summa',r:1},{w:'46px',l:''}]}
+function renderCols(){
+  const c=lcols();
+  document.documentElement.style.setProperty('--lcols',c.map(x=>x.w).join(' '));
+  $('lh').innerHTML=c.map(x=>`<div class="${x.r?'r':''}">${x.l}</div>`).join('');
+}
+function applyExtra(){
+  $('fld-cc').hidden=!EX.hcc;$('fld-prj').hidden=!EX.hprj;
+  $('fld-inote').hidden=!EX.hinote&&!$('inote').value.trim();
+  document.querySelector('[data-h="inote"]').checked=!$('fld-inote').hidden;
+  document.querySelector('[data-h="cc"]').checked=EX.hcc;
+  document.querySelector('[data-h="prj"]').checked=EX.hprj;
+  document.querySelector('[data-c="cc"]').checked=EX.lcc;
+  document.querySelector('[data-c="prj"]').checked=EX.lprj;
+  localStorage.setItem(EXK,JSON.stringify(EX));
+}
+
+$('vatc').innerHTML=VATC.map(c=>`<option value="${c.k}" ${c.k===S.vatc?'selected':''}>${c.l}</option>`).join('');
+$('cc').innerHTML=opts(CCS,S.cc);
+$('prj').innerHTML=opts(PRJS,S.prj);
+$('user').innerHTML=opts(USERS,S.user);
+
+function rowHTML(l,i){
+  return `<div class="lr" data-i="${i}" draggable="true">
+   <div class="ix" title="Lohista järjestamiseks">${i+1}</div>
+   <div><input class="in" data-f="code" value="${l.code}" placeholder="Kood" /></div>
+   <div><input class="in ${l.desc.trim()?'':'miss'}" data-f="desc" value="${l.desc.replace(/"/g,'&quot;')}" placeholder="Kirjeldus" /></div>
+   <div><select class="in sel" data-f="acc">${Object.keys(ACC).map(a=>`<option ${a===l.acc?'selected':''}>${a}</option>`).join('')}</select></div>
+   ${EX.lcc?`<div><select class="in sel" data-f="cc">${opts(CCS,l.cc||'')}</select></div>`:''}
+   ${EX.lprj?`<div><select class="in sel" data-f="prj">${opts(PRJS,l.prj||'')}</select></div>`:''}
+   <div><input class="in r" data-f="qty" value="${l.qty}" /></div>
+   <div><select class="in sel" data-f="unit">${UNITS.map(u=>`<option ${u===l.unit?'selected':''}>${u}</option>`).join('')}</select></div>
+   <div><input class="in r mono" data-f="price" value="${num(l.price)}" /></div>
+   <div><input class="in r" data-f="disc" value="${l.disc||0}" /></div>
+   <div style="font-size:11.5px;color:var(--text-3);padding-left:7px">${rate()}%</div>
+   <div class="sum">${num(netOf(l))}${l.disc?`<span class="cut">−${num(r2(listOf(l)-netOf(l)))}</span>`:''}</div>
+   <div class="ra"><button class="iconbtn" data-a="dup" title="Kopeeri rida">⧉</button><button class="iconbtn del" data-a="del" title="Kustuta rida">✕</button></div>
+  </div>`;
+}
+function totals(){
+  const list=S.lines.reduce((s,l)=>s+listOf(l),0), net=S.lines.reduce((s,l)=>s+netOf(l),0);
+  const vat=r2(net*rate()/100);
+  return {list:r2(list),cut:r2(list-net),net:r2(net),vat,tot:r2(net+vat)};
+}
+function checks(){
+  const t=totals(),out=[];
+  out.push({s:'ok',t:'Klient <b>Milworks OÜ</b> seotud'});
+  out.push({s:'ok',t:`Number <b>${$('serpre').textContent} ${$('nr').textContent}</b> seeriast`});
+  const noDesc=S.lines.filter(l=>!l.desc.trim()).length;
+  const zero=S.lines.filter(l=>netOf(l)===0).length;
+  if(!S.lines.length)out.push({s:'err',t:'Arvel pole ridu'});
+  else if(noDesc)out.push({s:'err',t:`<b>${noDesc}</b> rida ilma kirjelduseta`});
+  else if(zero)out.push({s:'warn',t:`<b>${zero}</b> rida summaga 0,00 €`});
+  else out.push({s:'ok',t:`<b>${S.lines.length}</b> rida, kõik summad täidetud`});
+  out.push({s:'ok',t:'Konto määratud kõigil ridadel'});
+  const d1=$('issued').value,d2=$('due').value;
+  const p=s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s.trim());return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+  const a=p(d1),b=p(d2);
+  if(!a||!b)out.push({s:'err',t:'Kuupäev vormis pp.kk.aaaa'});
+  else if(b<a)out.push({s:'err',t:'Maksetähtaeg on enne arve kuupäeva'});
+  else out.push({s:'ok',t:`Maksetingimus <b>${Math.round((b-a)/86400000)} päeva</b>`});
+  if(EX.lcc){const n=S.lines.filter(l=>!l.cc).length;if(n)out.push({s:'warn',t:`<b>${n}</b> rida ilma kulukohata`})}
+  if(EX.lprj){const n=S.lines.filter(l=>!l.prj).length;if(n)out.push({s:'warn',t:`<b>${n}</b> rida ilma projektita`})}
+  if(t.tot>3760)out.push({s:'warn',t:'Kliendi krediidilimiit saab täis (5 000,00 €)'});
+  if(rate()===0)out.push({s:'warn',t:'0% käive — kontrolli KM koodi põhjendust'});
+  return out;
+}
+function render(){
+  renderCols();
+  $('rows').innerHTML=S.lines.map(rowHTML).join('')||'<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">Ridu pole — lisa esimene rida</div>';
+  const t=totals();
+  $('ltot').innerHTML=[
+   ['Neto',fmt(t.net),''],
+   ...(t.cut?[['Allahindlus','−'+fmt(t.cut),'cut']]:[]),
+   [`KM ${rate()}%`,fmt(t.vat),''],
+   ['Kokku',fmt(t.tot),'big']
+  ].map(([k,v,c])=>`<div class="cell ${c}"><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join('');
+  $('rtot').textContent=fmt(t.tot);
+  $('rtotsub').textContent=`${S.lines.length} rida · ${VATC.find(c=>c.k===S.vatc).l}`;
+  $('lcount').textContent=`${S.lines.length} rida`;
+  $('rsums').innerHTML=`<div class="kv"><span>Ridade summa</span><b>${fmt(t.list)}</b></div>`
+   +(t.cut?`<div class="kv"><span>Allahindlus</span><b style="color:#b8330f">−${fmt(t.cut)}</b></div>`:'')
+   +`<div class="kv"><span>Maksustatav käive</span><b>${fmt(t.net)}</b></div>`
+   +`<div class="kv"><span>Käibemaks ${rate()}%</span><b>${fmt(t.vat)}</b></div>`
+   +`<div class="kv tot"><span>Kokku tasumisele</span><b>${fmt(t.tot)}</b></div>`;
+  $('checks').innerHTML=checks().map(c=>`<div class="chk ${c.s==='ok'?'':c.s}"><span class="m">${c.s==='ok'?'✓':'!'}</span><span>${c.t}</span></div>`).join('');
+  const byAcc={};S.lines.forEach(l=>{byAcc[l.acc]=r2((byAcc[l.acc]||0)+netOf(l))});
+  $('jrows').innerHTML=`<div class="jr"><div class="mono">1210</div><div class="n">Nõuded ostjate vastu</div><div class="a">${num(t.tot)}</div><div class="a z">—</div></div>`
+   +Object.entries(byAcc).map(([a,v])=>`<div class="jr"><div class="mono">${a}</div><div class="n">${ACC[a]}</div><div class="a z">—</div><div class="a">${num(v)}</div></div>`).join('')
+   +(t.vat?`<div class="jr"><div class="mono">2130</div><div class="n">Käibemaksukohustus</div><div class="a z">—</div><div class="a">${num(t.vat)}</div></div>`:'');
+  const d=$('dirty');
+  d.classList.toggle('clean',!S.dirty);
+  $('dirtytxt').textContent=S.dirty?'Salvestamata muudatused':'Salvestatud 11:49';
+  $('save').disabled=!S.dirty;
+  $('tlsave').className='tlrow'+(S.dirty?'':' done');
+  $('tlsave').children[0].textContent=S.dirty?'—':'01.09.2026';
+  $('tlsave').children[2].textContent=S.dirty?'Salvestamata muudatused':'Mustand salvestatud 11:49';
+  $('raddr').textContent=$('addr').value.trim()||'—';
+  $('crumbnr').textContent=$('serpre').textContent+' '+$('nr').textContent;
+  $('ruser').textContent=S.user;
+  $('ref').textContent=refOf($('nr').textContent);
+  if(typeof coll!=='undefined'&&coll)applyColl();
+  $('tlmaker').textContent='Mustand loodud · '+S.user;
+  markTerm();
+}
+function markTerm(){
+  const days=curDays();
+  [...$('terms').querySelectorAll('.chip[data-t]')].forEach(c=>c.classList.toggle('on',+c.dataset.t===days));
+  const more=$('termmore');
+  const known=[7,14,30].includes(days);
+  more.classList.toggle('on',days!==null&&!known);
+  more.textContent=(days!==null&&!known)?days+'p':'···';
+}
+function dirty(){S.dirty=true}
+let tt;
+function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1900)}
+const parseN=v=>{const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n};
+
+$('rows').addEventListener('input',e=>{
+  const row=e.target.closest('.lr');if(!row)return;
+  const l=S.lines[+row.dataset.i],f=e.target.dataset.f;if(!f)return;
+  if(f==='qty'||f==='price'||f==='disc')l[f]=parseN(e.target.value);else l[f]=e.target.value;
+  dirty();
+  if(f==='desc'||f==='code'){ // kerge uuendus ilma fookuse kaotust
+    e.target.classList.toggle('miss',f==='desc'&&!l.desc.trim());
+    const t=totals();$('lcount').textContent=`${S.lines.length} rida`;
+    $('checks').innerHTML=checks().map(c=>`<div class="chk ${c.s==='ok'?'':c.s}"><span class="m">${c.s==='ok'?'✓':'!'}</span><span>${c.t}</span></div>`).join('');
+    $('dirty').classList.remove('clean');$('dirtytxt').textContent='Salvestamata muudatused';$('save').disabled=false;
+    return;
+  }
+  row.querySelector('.sum').innerHTML=num(netOf(l))+(l.disc?`<span class="cut">−${num(r2(listOf(l)-netOf(l)))}</span>`:'');
+  const t=totals();
+  $('ltot').innerHTML=[['Neto',fmt(t.net),''],...(t.cut?[['Allahindlus','−'+fmt(t.cut),'cut']]:[]),[`KM ${rate()}%`,fmt(t.vat),''],['Kokku',fmt(t.tot),'big']]
+   .map(([k,v,c])=>`<div class="cell ${c}"><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join('');
+  $('rtot').textContent=fmt(t.tot);$('lcount').textContent=`${S.lines.length} rida`;
+  $('rsums').innerHTML=`<div class="kv"><span>Ridade summa</span><b>${fmt(t.list)}</b></div>`+(t.cut?`<div class="kv"><span>Allahindlus</span><b style="color:#b8330f">−${fmt(t.cut)}</b></div>`:'')+`<div class="kv"><span>Maksustatav käive</span><b>${fmt(t.net)}</b></div><div class="kv"><span>Käibemaks ${rate()}%</span><b>${fmt(t.vat)}</b></div><div class="kv tot"><span>Kokku tasumisele</span><b>${fmt(t.tot)}</b></div>`;
+  $('checks').innerHTML=checks().map(c=>`<div class="chk ${c.s==='ok'?'':c.s}"><span class="m">${c.s==='ok'?'✓':'!'}</span><span>${c.t}</span></div>`).join('');
+  const byAcc={};S.lines.forEach(x=>{byAcc[x.acc]=r2((byAcc[x.acc]||0)+netOf(x))});
+  $('jrows').innerHTML=`<div class="jr"><div class="mono">1210</div><div class="n">Nõuded ostjate vastu</div><div class="a">${num(t.tot)}</div><div class="a z">—</div></div>`
+   +Object.entries(byAcc).map(([a,v])=>`<div class="jr"><div class="mono">${a}</div><div class="n">${ACC[a]}</div><div class="a z">—</div><div class="a">${num(v)}</div></div>`).join('')
+   +(t.vat?`<div class="jr"><div class="mono">2130</div><div class="n">Käibemaksukohustus</div><div class="a z">—</div><div class="a">${num(t.vat)}</div></div>`:'');
+  $('dirty').classList.remove('clean');$('dirtytxt').textContent='Salvestamata muudatused';$('save').disabled=false;
+});
+$('rows').addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const i=+b.closest('.lr').dataset.i;
+  if(b.dataset.a==='dup'){S.lines.splice(i+1,0,{...S.lines[i]});toast('Rida kopeeritud')}
+  else{S.lines.splice(i,1);toast('Rida kustutatud')}
+  dirty();render();
+});
+$('rows').addEventListener('keydown',e=>{
+  const row=e.target.closest('.lr');if(!row)return;
+  const i=+row.dataset.i;
+  if(e.key==='Enter'){e.preventDefault();
+    if(i===S.lines.length-1)addLine();
+    else $('rows').children[i+1].querySelector('[data-f="desc"]').focus();
+  }
+  if(e.key==='Backspace'&&e.altKey){e.preventDefault();S.lines.splice(i,1);dirty();render();toast('Rida kustutatud');
+    const n=$('rows').children[Math.min(i,S.lines.length-1)];if(n)n.querySelector('[data-f="desc"]').focus()}
+});
+function addLine(){
+  const last=S.lines[S.lines.length-1];
+  S.lines.push({code:'',desc:'',acc:last?last.acc:'3002',qty:1,unit:last?last.unit:'tk',price:0,disc:0,cc:last?last.cc||S.cc:S.cc,prj:last?last.prj||S.prj:S.prj});
+  dirty();render();
+  const rows=$('rows').children;rows[rows.length-1].querySelector('[data-f="desc"]').focus();
+}
+$('add').onclick=addLine;
+$('addcat').onclick=()=>toast('Teenuste otsing avaneb siit');
+$('terms').addEventListener('click',e=>{
+  const c=e.target.closest('.chip');if(!c||!c.dataset.t)return;
+  setDue(+c.dataset.t);
+});
+function setDue(days){
+  const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec($('issued').value.trim());if(!m)return;
+  const d=new Date(+m[3],+m[2]-1,+m[1]);d.setDate(d.getDate()+days);
+  const p=n=>String(n).padStart(2,'0');
+  $('due').value=p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear();
+  dirty();render();
+}
+function renderTerms(){
+  const cur=curDays();
+  $('termlist').innerHTML=TERMS.map(t=>`<div class="mrow ${t.d===cur?'on':''}" data-t="${t.d}">${t.l}<span class="d">${t.d}p</span></div>`).join('');
+}
+function curDays(){
+  const p=s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s.trim());return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+  const a=p($('issued').value),b=p($('due').value);
+  return a&&b?Math.round((b-a)/86400000):null;
+}
+$('termmore').onclick=e=>{e.stopPropagation();$('fldmenu').hidden=true;renderTerms();$('termmenu').hidden=!$('termmenu').hidden};
+$('termmenu').addEventListener('click',e=>{
+  e.stopPropagation();
+  if(e.target.closest('#termadd')){
+    const v=prompt('Mitu p\u00e4eva?');const n=parseInt(v,10);
+    if(isNaN(n)||n<0)return;
+    if(!TERMS.some(t=>t.d===n)){TERMS.push({d:n,l:n===0?'Kohe':n+' p\u00e4eva'});TERMS.sort((a,b)=>a.d-b.d);localStorage.setItem('arvelo.inv.terms',JSON.stringify(TERMS))}
+    setDue(n);renderTerms();toast('Maksetingimus lisatud');return;
+  }
+  const r=e.target.closest('.mrow');if(!r)return;
+  setDue(+r.dataset.t);$('termmenu').hidden=true;
+});
+$('vatc').onchange=()=>{S.vatc=$('vatc').value;dirty();render()};
+$('cc').onchange=()=>{S.cc=$('cc').value;dirty();render()};
+$('prj').onchange=()=>{S.prj=$('prj').value;dirty();render()};
+$('user').onchange=()=>{S.user=$('user').value;dirty();render()};
+$('fldbtn').onclick=e=>{e.stopPropagation();$('termmenu').hidden=true;$('fldmenu').hidden=!$('fldmenu').hidden};
+$('fldmenu').addEventListener('change',e=>{
+  const h=e.target.dataset.h,c=e.target.dataset.c;
+  if(h){EX['h'+h]=e.target.checked;if(h!=='inote')EX['l'+h]=e.target.checked}
+  else if(c){EX['l'+c]=e.target.checked}else return;
+  applyExtra();dirty();render();toast(e.target.checked?'Väli lisatud':'Väli eemaldatud')});
+document.addEventListener('click',()=>{$('fldmenu').hidden=true;$('termmenu').hidden=true});
+$('fldmenu').addEventListener('click',e=>e.stopPropagation());
+['issued','due','note','inote','pname','cur','addr'].forEach(id=>$(id).addEventListener('input',()=>{dirty();render()}));
+$('save').onclick=()=>{S.dirty=false;render();toast('Mustand salvestatud')};
+$('confirm').onclick=()=>{
+  const bad=checks().filter(c=>c.s==='err');
+  if(bad.length)return toast('Paranda kontrolli vead enne kinnitamist');
+  S.dirty=false;render();toast('Arve kinnitatud ja saadetud e-arvena');
+};
+$('cancel').onclick=()=>toast(S.dirty?'Muudatused jäetakse salvestamata — küsitakse kinnitust':'Tagasi nimekirja');
+$('drop').onclick=()=>toast('Mustandi kustutamine — küsitakse kinnitust');
+$('preview').onclick=()=>toast('Arve PDF eelvaade');
+$('addrreset').onclick=e=>{e.preventDefault();$('addr').value='Turu 45a, 51014 Tartu, Eesti';fitAddr();dirty();render();toast('Aadress taastatud kliendikaardilt')};
+function fitAddr(){const a=$('addr');if(CSS.supports('field-sizing','content'))return;a.style.height='29px';a.style.height=Math.min(a.scrollHeight+2,96)+'px'}
+$('addr').addEventListener('input',fitAddr);fitAddr();
+document.querySelectorAll('.atab').forEach(b=>b.onclick=e=>{e.preventDefault();const k=b.dataset.at;
+  document.querySelectorAll('.atab').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('[data-ap]').forEach(p=>p.hidden=p.dataset.ap!==k);
+  document.querySelectorAll('[data-ar]').forEach(p=>p.hidden=p.dataset.ar!==k);
+  const f=document.querySelector(`[data-ap="${k}"] .inp`);f&&f.focus()});
+const shipDot=()=>{$('shipdot').hidden=!$('ship').value.trim()};
+$('ship').addEventListener('input',()=>{shipDot();dirty();render()});
+$('shipcopy').onclick=e=>{e.preventDefault();$('ship').value=$('addr').value;shipDot();dirty();render();toast('Arve aadress kopeeritud')};
+$('ctreset').onclick=e=>{e.preventDefault();$('cname').value='Kadri Mets';$('cmail').value='arved@milworks.ee';$('cphone').value='+372 5123 4567';dirty();render();toast('Kontakt taastatud kliendikaardilt')};
+['cname','cmail','cphone'].forEach(id=>$(id).addEventListener('input',()=>{dirty();render()}));
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();$('save').click()}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();$('pname').select();toast('Kliendi otsing')}
+  if(e.key==='Escape'){$('cancel').click()}
+});
+// ridade lohistamine
+let dragI=null;
+$('rows').addEventListener('dragstart',e=>{const r=e.target.closest('.lr');if(!r)return;dragI=+r.dataset.i;r.classList.add('drag')});
+$('rows').addEventListener('dragover',e=>{e.preventDefault();const r=e.target.closest('.lr');if(!r)return;[...$('rows').children].forEach(x=>x.classList.remove('over'));r.classList.add('over')});
+$('rows').addEventListener('dragend',()=>{[...$('rows').children].forEach(x=>x.classList.remove('drag','over'))});
+$('rows').addEventListener('drop',e=>{
+  e.preventDefault();const r=e.target.closest('.lr');if(!r||dragI===null)return;
+  const to=+r.dataset.i;const[m]=S.lines.splice(dragI,1);S.lines.splice(to,0,m);dragI=null;dirty();render();
+});
+// ── paneel: sulgemine + laiuse muutmine ──
+const body=document.querySelector('.body');
+const PW='arvelo.inv.edit.pw',ROPEN='arvelo.inv.edit.rail';
+let pw=+(localStorage.getItem(PW)||0)||330, railOpen=localStorage.getItem(ROPEN)!=='0';
+function clampPW(v){const w=Math.max(1180,document.querySelector('.shell').clientWidth);return Math.max(260,Math.min(v,w-9-620))}
+function applyRail(){
+  body.classList.toggle('norail',!railOpen);
+  document.documentElement.style.setProperty('--pw',clampPW(pw)+'px');
+  $('raillbl').textContent=railOpen?'Peida kokkuvõte':'Näita kokkuvõtet';
+  $('railbtn').title=railOpen?'Peida kokkuvõtte paneel':'Näita kokkuvõtte paneeli';
+}
+function setRail(v){railOpen=v;localStorage.setItem(ROPEN,v?'1':'0');applyRail()}
+$('railbtn').onclick=()=>setRail(!railOpen);
+$('railclose').onclick=()=>setRail(false);
+$('gutter').addEventListener('mousedown',e=>{
+  e.preventDefault();const x0=e.clientX,w0=clampPW(pw);document.body.classList.add('pres');
+  const mv=ev=>{pw=clampPW(w0-(ev.clientX-x0));document.documentElement.style.setProperty('--pw',pw+'px')};
+  const up=()=>{document.body.classList.remove('pres');localStorage.setItem(PW,pw);removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};
+  addEventListener('mousemove',mv);addEventListener('mouseup',up);
+});
+$('gutter').addEventListener('dblclick',()=>{pw=330;localStorage.setItem(PW,pw);applyRail()});
+addEventListener('resize',()=>document.documentElement.style.setProperty('--pw',clampPW(pw)+'px'));
+// päise ahendamine
+const CK='arvelo.inv.edit.coll';
+let coll=localStorage.getItem(CK)==='1';
+function applyColl(){
+  $('formsec').classList.toggle('collapsed',coll);
+  $('collbtn').textContent=coll?'▸':'▾';
+  $('collbtn').title=coll?'Ava arve andmed':'Ahenda arve andmed';
+  if(coll)$('csum').innerHTML=`<b>${$('pname').value}</b><span class="s">·</span><span class="mono">${$('serpre').textContent} ${$('nr').textContent}</span><span class="s">·</span><span class="mono">${$('issued').value}</span> → <span class="mono">${$('due').value}</span><span class="s">·</span>${VATC.find(c=>c.k===S.vatc).s}<span class="s">·</span>${S.user}`;
+}
+$('collbtn').onclick=e=>{e.stopPropagation();coll=!coll;localStorage.setItem(CK,coll?'1':'0');applyColl()};
+applyRail();
+applyExtra();
+render();
+</script>
+</body>
+</html>
