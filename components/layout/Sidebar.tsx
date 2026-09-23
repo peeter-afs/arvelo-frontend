@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BarChart3,
+  BookOpen,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -161,6 +162,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tReports('balanceSheet'), href: '/reports/balance-sheet' },
         { label: tReports('trialBalance'), href: '/reports/trial-balance' },
         { label: tReports('turnoverReport'), href: '/reports/turnover' },
+        { label: tReports('dimensionReport'), href: '/reports/dimensions' },
         { label: tReports('generalLedger'), href: '/reports/general-ledger' },
         { label: tReports('vatReport'), href: '/reports/vat' },
         { label: tReports('agingReport'), href: '/reports/aging' },
@@ -168,6 +170,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       ],
     },
     { label: tNavigation('fixedAssets'), href: '/assets', icon: PiggyBank },
+    { label: tNavigation('help'), href: '/help', icon: BookOpen },
     {
       id: 'settings',
       label: tNavigation('settings'),

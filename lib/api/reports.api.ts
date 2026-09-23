@@ -191,7 +191,55 @@ export type AgingReportData = {
   partners: AgingPartnerLine[];
 };
 
+export type DimensionReportRow = {
+  id: string | null;
+  code: string | null;
+  name: string;
+  is_active: boolean;
+  cost_center_id?: string | null;
+  cost_center_name?: string | null;
+  partner_id?: string | null;
+  partner_name?: string | null;
+  revenue: number;
+  costs: number;
+  result: number;
+  sales_invoices: number;
+  purchase_invoices: number;
+};
+
+export type DimensionReportLine = {
+  invoice_id: string;
+  invoice_number: string | null;
+  type: string;
+  status: string;
+  invoice_date: string;
+  partner_id: string | null;
+  partner_name: string | null;
+  description: string;
+  amount: number;
+  kind: 'revenue' | 'cost';
+  cost_center_id: string | null;
+  project_id: string | null;
+};
+
+export type DimensionReportData = {
+  period: { start_date: string; end_date: string };
+  include_drafts: boolean;
+  cost_centers: DimensionReportRow[];
+  projects: DimensionReportRow[];
+  totals: { revenue: number; costs: number; result: number };
+  lines: DimensionReportLine[];
+};
+
 export const reportsApi = {
+  /** Revenue and costs by cost centre / project, from invoice lines. */
+  async getDimensionReport(startDate: string, endDate: string, includeDrafts = false) {
+    const response = await apiClient.get<ApiResponse<DimensionReportData>>('/api/reports/dimensions', {
+      params: { start_date: startDate, end_date: endDate, include_drafts: includeDrafts ? 'true' : 'false' },
+    });
+    return response.data.data;
+  },
+
   async getBalanceSheet(asOfDate?: string, compareAsOfDate?: string) {
     const params: Record<string, string> = {};
     if (asOfDate) params.as_of_date = asOfDate;
