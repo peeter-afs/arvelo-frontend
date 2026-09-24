@@ -1449,6 +1449,7 @@
     "newInvoice": "New Invoice",
     "aiInvoice": "AI Invoice",
     "recurring": "Recurring",
+    "recurringQuantities": "Quantities",
     "reminders": "Reminders",
     "searchSalesInvoices": "Search sales invoices",
     "searchPurchaseInvoices": "Search purchase invoices",

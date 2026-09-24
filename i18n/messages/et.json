@@ -1449,6 +1449,7 @@
     "newInvoice": "Uus arve",
     "aiInvoice": "AI arve",
     "recurring": "Korduvad",
+    "recurringQuantities": "Kogused",
     "reminders": "Meeldetuletused",
     "searchSalesInvoices": "Otsi müügiarveid",
     "searchPurchaseInvoices": "Otsi ostuarveid",

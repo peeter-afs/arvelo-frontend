@@ -653,6 +653,7 @@
     "overdue": "Erääntynyt",
     "newInvoice": "Uusi lasku",
     "recurring": "Toistuvat",
+    "recurringQuantities": "Määrät",
     "reminders": "Muistutukset",
     "currency": "Valuutta",
     "dueDate": "Eräpäivä",

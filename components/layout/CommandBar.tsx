@@ -55,6 +55,7 @@ export function CommandBar({
     'purchase-approvals': tInvoices('purchaseApprovals'),
     'purchase-imports': tInvoices('purchaseImports'),
     recurring: tInvoices('recurring'),
+    quantities: tInvoices('recurringQuantities'),
     reminders: tInvoices('reminders'),
     products: tInvoices('productsTitle'),
     reports: tNavigation('reports'),
