@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Kogused</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surface-2);text-decoration:none;color:var(--text-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f;color:#fff}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.shell{min-height:100vh;display:flex;flex-direction:column}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 20px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.tr1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3);white-space:nowrap}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-.03em}
+.per{margin-left:auto;display:flex;align-items:center;gap:4px}
+.per .lbl{min-width:124px;text-align:center;font-weight:600;font-size:13px}
+.iconbtn{width:25px;height:25px;display:grid;place-items:center;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text-2);font-size:12px}
+.iconbtn:hover{background:var(--surface-2)}
+.tr2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search{height:28px;width:260px;max-width:100%;border:1px solid var(--border);border-radius:7px;background:#fff;font:inherit;font-size:12.5px;padding:0 9px}
+.search:focus{outline:none;border-color:var(--text)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);padding:2px;gap:2px}
+.seg button{border:none;background:none;height:22px;padding:0 9px;border-radius:5px;font-size:11.5px;color:var(--text-2);font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.seg .n{font-size:10px;color:var(--text-3);font-weight:600}
+.sum{margin-left:auto;font-size:12px;color:var(--text-2);display:flex;gap:12px;flex-wrap:wrap}
+.sum b{color:var(--text);font-weight:600}
+.main{flex:1;padding:14px 20px 90px;display:flex;flex-direction:column;gap:12px;max-width:1320px;width:100%;margin:0 auto}
+.grp{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.grp.hl{border-color:var(--text);box-shadow:0 0 0 3px rgba(0,0,0,.05)}
+.gh{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);background:#f9f7f1;flex-wrap:wrap}
+.gh .nm{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gh .nm a{font-weight:700;font-size:13.5px;color:var(--text);letter-spacing:-.02em}
+.gh .nm a:hover{color:var(--accent)}
+.gh .meta{font-size:11.5px;color:var(--text-3)}
+.gh .late{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:5px;background:var(--neg-soft);color:var(--neg);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.gh .acts{margin-left:auto;display:flex;gap:4px;align-items:center}
+.gh .prog{font-size:11.5px;color:var(--text-2);margin-right:6px;white-space:nowrap}
+.gh .prog b{color:var(--text)}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-weight:600;padding:7px 12px;vertical-align:bottom;border-bottom:1px solid var(--border);background:#fdfcf9}
+th .k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+th .d{font-size:12px;margin-top:2px;white-space:nowrap}
+th .p{font-size:10.5px;color:var(--text-3);font-weight:500}
+th.r,td.r{text-align:right}
+td{border-bottom:1px solid #efece4;padding:5px 12px;height:42px;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr.skip td{color:var(--text-3);background:#faf9f5}
+tr.skip .qi{opacity:.4}
+.cn{display:flex;align-items:center;gap:8px}
+.cn b{font-weight:600;display:block}
+.cn .rg{font-size:10px;color:var(--text-3)}
+.av{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0;background:var(--pos-soft);color:var(--pos)}
+.qc{display:flex;align-items:center;gap:6px}
+.qi{width:78px;height:28px;border:1px solid var(--border);border-radius:7px;background:#fff;font:inherit;font-size:13px;text-align:right;padding:0 8px;font-variant-numeric:tabular-nums}
+.qi:focus{outline:none;border-color:var(--text);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+.qi.empty{border-color:#e2c48c;border-style:dashed;background:#fdf8ec}
+.qi::placeholder{color:#c9b58c}
+.qc .u{font-size:11px;color:var(--text-3);min-width:16px}
+.qc .pv{font-size:10.5px;color:var(--text-3)}
+.st{display:inline-flex;align-items:center;height:21px;padding:0 7px;border-radius:6px;font-size:10.5px;font-weight:600}
+.st.ok{background:var(--pos-soft);color:var(--pos)}
+.st.w{background:#fbefd6;color:#8a5a0c}
+.st.s{background:var(--surface-2);color:var(--text-3)}
+.st.done{background:#fff;border:1px solid var(--pos-soft);color:var(--pos)}
+.lk{border:none;background:none;font:inherit;font-size:11px;color:var(--text-3);padding:0 4px}
+.lk:hover{color:var(--text)}
+.grp.confirmed{opacity:.7}
+.empty-s{padding:40px;text-align:center;color:var(--text-3);font-size:12.5px}
+.foot{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#f4f1e9;border-top:1px solid var(--border);padding:11px 20px;display:flex;align-items:center;gap:16px}
+.foot .s{font-size:12px;color:var(--text-2)}
+.foot .s b{color:var(--text)}
+.foot .tot{font-size:17px;font-weight:700;letter-spacing:-.03em}
+.foot .tot small{font-size:11px;font-weight:500;color:var(--text-3);letter-spacing:0;margin-right:6px}
+.foot .hint{font-size:11px;color:var(--text-3);display:flex;gap:10px;white-space:nowrap}
+@media (max-width:1100px){.foot .hint{display:none}}
+.foot .s,.foot .tot{white-space:nowrap}
+.foot .r{margin-left:auto;display:flex;gap:6px}
+.toast{position:fixed;left:50%;bottom:70px;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;background:#1a1815;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="top">
+<div class="tr1"><div class="crumb"><a href="#">Müük</a><span class="sep">/</span><a href="Korduvad arved.html">Korduvad arved</a><span class="sep">/</span></div><h1>Kogused</h1>
+<div class="per"><button class="iconbtn" id="pp" title="Eelmine kuu">‹</button><span class="lbl" id="plbl"></span><button class="iconbtn" id="pn" title="Järgmine kuu">›</button></div></div>
+<div class="tr2"><input class="search" id="q" placeholder="Otsi klienti või malli" /><div class="seg" id="flt"><button data-f="all" class="on">Kõik <span class="n" id="n-all"></span></button><button data-f="wait">Ootab <span class="n" id="n-wait"></span></button><button data-f="ready">Valmis <span class="n" id="n-ready"></span></button></div><div class="sum" id="sum"></div></div>
+</div>
+<div class="main" id="main"></div>
+</div>
+<div class="foot"><div class="s" id="fs"></div><div class="tot mono" id="ft"></div><div class="hint"><span><kbd>Enter</kbd> järgmine klient</span><span><kbd>Tab</kbd> järgmine väli</span></div><div class="r"><button class="btn" id="draft">Salvesta mustandina</button><button class="btn primary" id="ok"></button></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const r2=n=>Math.round(n*100)/100;
+const num=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmt=n=>num(n)+'\u00a0€';
+const parseN=v=>{const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n};
+const ini=n=>n.replace(/\b(OÜ|AS|UAB)\b/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const MON=['jaanuar','veebruar','märts','aprill','mai','juuni','juuli','august','september','oktoober','november','detsember'];
+const pad=n=>String(n).padStart(2,'0');
+const ds=(y,m,d)=>`${pad(d)}.${pad(m+1)}.${y}`;
+const T=[
+ {id:'AFS_kuutasu',freq:'Igakuine',day:3,vat:24,every:1,fixed:538,deliv:'auto',
+  lines:[{d:'Tugiteenus ja arendustööd',u:'h',p:55}],
+  cl:[['Milworks OÜ','14582301'],['Tartu Autokeskus AS','10293847']]},
+ {id:'Hooldus_kuutasu',freq:'Igakuine',day:1,vat:24,every:1,fixed:120,deliv:'review',
+  lines:[{d:'Hooldustööd',u:'h',p:48},{d:'Kulumaterjalid',u:'tk',p:6.5}],
+  cl:[['Rehvimaailm OÜ','12874501'],['Nordic Fleet OÜ','14002918'],['Lõuna Transport AS','10555732'],['Viru Logistika OÜ','12390044']]},
+ {id:'Serverid_lisamaht',freq:'Igakuine',day:5,vat:24,every:1,fixed:0,deliv:'auto',
+  lines:[{d:'Andmemahu ületus',u:'GB',p:0.12},{d:'Varukoopiad',u:'tk',p:4}],
+  cl:[['Milworks OÜ','14582301'],['Baltic Parts UAB','305118220']]},
+ {id:'Konsultatsioon_kvartal',freq:'Kvartaalne',day:30,vat:24,every:3,fixed:0,deliv:'review',late:true,
+  lines:[{d:'Konsultatsioon',u:'h',p:85}],
+  cl:[['Tartu Autokeskus AS','10293847']]}
+];
+const P={y:2026,m:9};
+const K=()=>P.y+'-'+P.m;
+const Q={},SKIP={},DONE={};
+const seed=s=>{let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))%997;return h};
+const prev=(t,c,i)=>[0,3,4,6,8,10,12,16,20,24][seed(t.id+c[1]+i)%10]*(t.lines[i].u==='GB'?25:1);
+const qk=(t,c)=>K()+'|'+t.id+'|'+c[1];
+const qv=(t,c,i)=>{const o=Q[qk(t,c)];return o?o[i]:undefined};
+const setq=(t,c,i,v)=>{const k=qk(t,c);Q[k]=Q[k]||{};if(v==null)delete Q[k][i];else Q[k][i]=v};
+const sk=(t,c)=>!!SKIP[qk(t,c)];
+const rdy=(t,c)=>t.lines.every((_,i)=>qv(t,c,i)!=null);
+const net=(t,c)=>r2(t.fixed+t.lines.reduce((s,l,i)=>s+(qv(t,c,i)||0)*l.p,0));
+const gross=(t,c)=>r2(net(t,c)*(1+t.vat/100));
+const runOf=t=>{if(t.late)return ds(2026,8,30);const ld=new Date(P.y,P.m+1,0).getDate();return ds(P.y,P.m,Math.min(t.day,ld))};
+const perOf=t=>{const s=new Date(P.y,P.m-(t.every-1),1),e=new Date(P.y,P.m+1,0);return `${pad(s.getDate())}.${pad(s.getMonth()+1)}–${ds(e.getFullYear(),e.getMonth(),e.getDate())}`};
+const active=()=>T.filter(t=>t.every===1||t.late||P.m%3===2).map(t=>({...t,late:t.late&&P.y===2026&&P.m===9}));
+const hl=new URLSearchParams(location.search).get('mall');
+let F='all';
+function list(){const q=$('q').value.trim().toLowerCase();return active().map(t=>({t,rows:t.cl.filter(c=>!q||c[0].toLowerCase().includes(q)||t.id.toLowerCase().includes(q)||c[1].includes(q)).filter(c=>F==='all'||sk(t,c)?F==='all':F==='wait'?!rdy(t,c):rdy(t,c))})).filter(g=>g.rows.length)}
+function stats(){let all=0,wait=0,ready=0,tot=0,conf=0;active().forEach(t=>t.cl.forEach(c=>{if(DONE[qk(t,c)]){conf++;return}if(sk(t,c))return;all++;if(rdy(t,c)){ready++;tot+=gross(t,c)}else wait++}));return {all,wait,ready,tot:r2(tot),conf}}
+const stHTML=(t,c)=>DONE[qk(t,c)]?'<span class="st done">Kinnitatud</span>':sk(t,c)?'<span class="st s">Vahele</span>':rdy(t,c)?'<span class="st ok">Valmis</span>':'<span class="st w">Ootab</span>';
+function draw(){
+  $('plbl').textContent=MON[P.m][0].toUpperCase()+MON[P.m].slice(1)+' '+P.y;
+  const g=list();
+  $('main').innerHTML=g.length?g.map(({t,rows})=>{const open=t.cl.filter(c=>!sk(t,c)&&!DONE[qk(t,c)]),rd=open.filter(c=>rdy(t,c)).length;return `<section class="grp ${hl===t.id?'hl':''}" data-t="${t.id}">
+<div class="gh"><div class="nm"><a href="Korduva arve mall.html">${t.id}</a><span class="meta">${t.freq} · arve ${runOf(t)} · periood ${perOf(t)} · ${t.deliv==='auto'?'saadetakse automaatselt':'ülevaatusele'}</span></div>${t.late?'<span class="late">Hilinenud</span>':''}
+<div class="acts"><span class="prog"><b>${rd}</b> / ${open.length} valmis</span><button class="btn sm ghost" data-a="prev">Kopeeri eelmise perioodi kogused</button><button class="btn sm" data-a="conf" ${rd?'':'disabled'}>Kinnita (${rd})</button></div></div>
+<div class="tw"><table><thead><tr><th style="width:26%"><div class="k">Klient</div></th>${t.lines.map(l=>`<th><div class="k">Kogus</div><div class="d">${l.d}</div><div class="p">${num(l.p)} € / ${l.u}</div></th>`).join('')}<th class="r"><div class="k">Püsiread</div></th><th class="r"><div class="k">Arve kokku</div><div class="p">km-ga</div></th><th><div class="k">Olek</div></th><th></th></tr></thead><tbody>
+${rows.map(c=>{const s=sk(t,c),dn=DONE[qk(t,c)];return `<tr class="${s?'skip':''}" data-reg="${c[1]}"><td><div class="cn"><span class="av">${ini(c[0])}</span><div><b>${c[0]}</b><span class="rg mono">${c[1]}</span></div></div></td>
+${t.lines.map((l,i)=>{const v=qv(t,c,i);return `<td><div class="qc"><input class="qi ${v==null?'empty':''}" data-li="${i}" value="${v==null?'':String(v).replace('.',',')}" placeholder="0" ${s||dn?'disabled':''} /><span class="u">${l.u}</span><span class="pv mono">eelm. ${String(prev(t,c,i)).replace('.',',')}</span></div></td>`}).join('')}
+<td class="r mono" style="color:var(--text-2)">${num(t.fixed)}</td><td class="r mono" style="font-weight:600" data-tot>${s?'—':num(gross(t,c))}</td><td data-st>${stHTML(t,c)}</td>
+<td class="r">${dn?'':`<button class="lk" data-a="skip">${s?'Taasta':'Jäta vahele'}</button>`}</td></tr>`}).join('')}</tbody></table></div></section>`}).join(''):'<div class="empty-s">Sellel perioodil pole koguseid sisestada</div>';
+  foot();
+}
+function foot(){const s=stats();
+  $('n-all').textContent=s.all;$('n-wait').textContent=s.wait;$('n-ready').textContent=s.ready;
+  $('sum').innerHTML=`<span><b>${active().length}</b> malli</span><span><b>${s.all+s.conf}</b> arvet</span>${s.conf?`<span><b>${s.conf}</b> kinnitatud</span>`:''}`;
+  $('fs').innerHTML=`<b>${s.ready}</b> / ${s.all} valmis${s.wait?` · <b>${s.wait}</b> ootab kogust`:''}`;
+  $('ft').innerHTML=`<small>Kinnitatav summa</small>${fmt(s.tot)}`;
+  $('ok').textContent=s.ready&&s.ready===s.all?`Kinnita kõik ${s.ready} arvet`:`Kinnita valmis arved (${s.ready})`;$('ok').disabled=!s.ready;
+}
+const tOf=el=>T.find(x=>x.id===el.closest('.grp').dataset.t);
+const cOf=(t,el)=>t.cl.find(c=>c[1]===el.closest('tr').dataset.reg);
+function refreshRow(t,c,tr){tr.querySelector('[data-tot]').textContent=sk(t,c)?'—':num(gross(t,c));tr.querySelector('[data-st]').innerHTML=stHTML(t,c);
+  const g=tr.closest('.grp'),open=t.cl.filter(x=>!sk(t,x)&&!DONE[qk(t,x)]),rd=open.filter(x=>rdy(t,x)).length;g.querySelector('.prog').innerHTML=`<b>${rd}</b> / ${open.length} valmis`;const b=g.querySelector('[data-a="conf"]');b.textContent=`Kinnita (${rd})`;b.disabled=!rd;foot()}
+$('main').addEventListener('input',e=>{const el=e.target;if(!el.classList.contains('qi'))return;const t=tOf(el),c=cOf(t,el),v=el.value.trim();setq(t,c,+el.dataset.li,v===''?null:parseN(v));el.classList.toggle('empty',v==='');refreshRow(t,c,el.closest('tr'))});
+$('main').addEventListener('keydown',e=>{const el=e.target;if(e.key!=='Enter'||!el.classList.contains('qi'))return;e.preventDefault();const all=[...$('main').querySelectorAll('.qi:not(:disabled)')].filter(x=>x.dataset.li===el.dataset.li&&x.closest('.grp')===el.closest('.grp'));let n=all[all.indexOf(el)+(e.shiftKey?-1:1)];
+  if(!n&&!e.shiftKey){const gs=[...$('main').querySelectorAll('.grp')],ng=gs[gs.indexOf(el.closest('.grp'))+1];n=ng&&ng.querySelector('.qi:not(:disabled)')}if(n){n.focus();n.select()}});
+$('main').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const t=tOf(b);
+  if(b.dataset.a==='skip'){const c=cOf(t,b),k=qk(t,c);SKIP[k]=!SKIP[k];draw();return}
+  if(b.dataset.a==='prev'){t.cl.forEach(c=>{if(!sk(t,c)&&!DONE[qk(t,c)])t.lines.forEach((_,i)=>setq(t,c,i,prev(t,c,i)))});draw();toast(t.id+': eelmise perioodi kogused kopeeritud');return}
+  if(b.dataset.a==='conf'){const r=t.cl.filter(c=>!sk(t,c)&&!DONE[qk(t,c)]&&rdy(t,c));r.forEach(c=>DONE[qk(t,c)]=true);draw();toast(`${t.id}: ${r.length} arvet kinnitatud${t.deliv==='auto'?' ja saadetud':' · ülevaatusele'}`)}});
+$('ok').onclick=()=>{let n=0;active().forEach(t=>t.cl.forEach(c=>{if(!sk(t,c)&&!DONE[qk(t,c)]&&rdy(t,c)){DONE[qk(t,c)]=true;n++}}));draw();toast(`${n} arvet kinnitatud`)};
+$('draft').onclick=()=>toast('Kogused salvestatud · arved jäävad mustandiks');
+$('pp').onclick=()=>{P.m--;if(P.m<0){P.m=11;P.y--}draw()};
+$('pn').onclick=()=>{P.m++;if(P.m>11){P.m=0;P.y++}draw()};
+$('q').addEventListener('input',draw);
+$('flt').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;F=b.dataset.f;document.querySelectorAll('#flt button').forEach(x=>x.classList.toggle('on',x===b));draw()});
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),2000)}
+draw();
+if(hl){const g=document.querySelector(`.grp[data-t="${hl}"]`);if(g){window.scrollTo(0,g.getBoundingClientRect().top-130);const f=g.querySelector('.qi.empty');f&&f.focus({preventScroll:true})}}
+</script>
+</body>
+</html>

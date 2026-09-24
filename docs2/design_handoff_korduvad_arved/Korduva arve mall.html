@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Korduva arve mall</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px;overflow:hidden}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.005em}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+svg.i{width:1em;height:1em;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:1180px;padding:9px 14px 10px;display:flex;flex-direction:column;gap:7px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.sm{height:25px;padding:0 8px;font-size:12px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.danger{color:var(--neg)}
+.btn.danger:hover{background:var(--neg-soft)}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.kb{border-color:var(--border-strong);background:var(--surface-2);color:var(--text-3)}
+.topbar{display:flex;align-items:center;gap:9px;flex-shrink:0;height:27px}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3);flex-shrink:0}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+.topbar h1{margin:0;font-size:14.5px;font-weight:700;letter-spacing:-0.025em;white-space:nowrap}
+.topbar .who{font-size:11.5px;color:var(--text-3);white-space:nowrap}
+.topbar .acts{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.dirty{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#7d5a13;white-space:nowrap;margin-right:2px}
+.dirty .dot{width:6px;height:6px;border-radius:99px;background:var(--warn)}
+.dirty.clean{color:var(--text-3)}
+.dirty.clean .dot{background:var(--pos)}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;white-space:nowrap}
+.tag .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.tag.ok{background:var(--pos-soft);color:var(--pos)}
+.tag.off{background:var(--surface-2);color:var(--text-3)}
+.tag.rec{background:#eaf0ff;color:#2c5cf6}
+.body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 9px var(--pw,330px);overflow:hidden;background:#f9f7f1}
+.body.norail{grid-template-columns:minmax(0,1fr)}
+.body.norail .gutter,.body.norail .right{display:none}
+.gutter{position:relative;cursor:col-resize}
+.gutter:after{content:'';position:absolute;left:3.5px;top:0;bottom:0;width:2px;border-radius:2px;background:transparent;transition:background .12s}
+.gutter:hover:after{background:var(--border-strong)}
+body.pres .gutter:after{background:var(--accent)}
+body.pres{cursor:col-resize;user-select:none}
+.left{display:flex;flex-direction:column;min-height:0;background:#f9f7f1;border-radius:11px 0 0 11px}
+.body.norail .left{border-radius:11px}
+.lscroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column}
+.sec{padding:9px 13px;border-bottom:1px solid var(--border)}
+.sec.form{flex-shrink:0;max-height:44vh;overflow-y:auto;position:relative;padding-top:8px}
+.tabs{display:flex;align-items:center;gap:14px;margin-bottom:8px;height:22px}
+.tab{border:none;background:none;padding:0 0 3px;font-size:11.5px;font-weight:600;color:var(--text-3);display:inline-flex;align-items:center;gap:5px;box-shadow:inset 0 -2px 0 transparent}
+.tab:hover{color:var(--text-2)}
+.tab.on{color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.tab .n{font-size:10px;font-weight:600;padding:0 5px;border-radius:99px;background:var(--surface-2);color:var(--text-3)}
+.tab.on .n{background:var(--accent-soft);color:#b8330f}
+.tabs .r{margin-left:auto;font-size:11px;color:var(--text-3)}
+.tp{flex:1;min-height:0;display:flex;flex-direction:column}
+.tp[hidden]{display:none}
+.cpill{display:flex;align-items:center;gap:6px;height:29px;padding:0 4px 0 6px;border:1px solid var(--border);border-radius:8px;background:var(--surface);min-width:0;flex:1}
+.cpill .avs{display:flex;min-width:0;overflow:hidden}
+.cpill .avs .av{margin-left:-4px;box-shadow:0 0 0 2px #fff}
+.cpill .avs .av:first-child{margin-left:0}
+.cpill .txt{font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1;cursor:pointer}
+.cpill .txt:hover{color:var(--accent)}
+.cpill .btn{height:21px;padding:0 7px;font-size:11px}
+.sec.linesec{flex:1;min-height:0;display:flex;flex-direction:column;padding-bottom:12px;padding-top:8px;border-bottom:none}
+.sec.linesec .lines{flex:1;min-height:0;display:flex;flex-direction:column}
+#rows{flex:1;min-height:96px;overflow-y:auto}.sec.linesec{min-height:200px}
+.fbar{position:absolute;top:4px;right:13px;display:flex;gap:3px;z-index:5}
+.collbtn{width:18px;height:18px;display:grid;place-items:center;border:1px solid var(--border);border-radius:5px;background:var(--surface);color:var(--text-3);font-size:9px;flex-shrink:0}
+.collbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.sec.collapsed .fgrid{display:none}
+.sec.collapsed{max-height:none;padding-top:7px;padding-bottom:7px}
+.csum{display:none;gap:14px;align-items:center;min-height:22px;padding-right:40px;font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden}
+.sec.collapsed .csum{display:flex}
+.csum b{font-weight:600;color:var(--text)}
+.csum .s{color:var(--border-strong)}
+.right{border-left:1px solid var(--border);background:#f4f1e9;display:flex;flex-direction:column;min-height:0;overflow-y:auto;border-radius:0 11px 11px 0}
+.sech{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:9px}
+.sech .r{margin-left:auto;display:flex;align-items:center;gap:7px;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px;color:var(--text-3)}
+.fgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px 10px}
+.fld{min-width:0;display:flex;flex-direction:column;gap:4px}
+.fld>label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.fld>label .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px;color:var(--text-3)}
+.fld[hidden]{display:none}
+.fld.wide{grid-column:span 3}
+.fld.mid{grid-column:span 2}
+.fld.rec>label{color:#2c5cf6}
+.ser{display:flex;align-items:center;height:29px;border:1px dashed var(--border);border-radius:8px;background:#f1eee6;overflow:hidden}
+.ser .pre{font-size:10.5px;font-weight:600;color:var(--text-3);padding:0 8px;border-right:1px dashed var(--border);white-space:nowrap;line-height:27px;flex-shrink:0}
+.ser .val{padding:0 9px;font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inp,select.inp{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:12.5px;color:var(--text);padding:0 9px}
+.inp:hover{border-color:var(--border-strong)}
+.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8c84' stroke-width='1.8' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 7px center;background-size:12px;padding-right:24px}
+.inp::placeholder{color:#bfbbb0}
+.chips{display:flex;gap:4px;align-items:center;height:29px}
+.chip{height:22px;padding:0 7px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:10.5px;font-weight:600;white-space:nowrap}
+.chip:hover{background:var(--surface-2)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f}
+.seg{display:flex;height:29px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);padding:2px;gap:2px}
+.seg button{flex:1;border:none;border-radius:6px;background:transparent;color:var(--text-3);font-size:11.5px;font-weight:600;white-space:nowrap;padding:0 6px}
+.seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.dayrow{display:flex;gap:4px}
+.dayrow select{flex:1;min-width:0}
+.mwrap{position:relative;display:inline-flex}
+.menu{position:absolute;right:0;top:28px;z-index:30;width:194px;padding:6px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.13);text-transform:none;letter-spacing:0}
+.menu.l{left:0;right:auto}
+.menu[hidden]{display:none}
+.menu .mh{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);padding:3px 7px 5px}
+.menu .mrow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 7px;border-radius:7px;font-size:12px;color:var(--text-2);cursor:pointer;font-weight:500}
+.menu .mrow:hover{background:var(--surface-2)}
+.menu .mrow.on{color:#b8330f;background:var(--accent-soft-2);font-weight:600}
+.menu .mrow span.d{font-size:10.5px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.menu .msub{display:block;font-size:10.5px;color:var(--text-3);font-weight:400;margin-top:1px}
+.menu input.inp{height:27px;margin-bottom:5px}
+/* kliendid */
+.ct{border:1px solid var(--border);border-radius:9px;background:#fdfcf9;overflow:hidden}
+.ch,.cr{display:grid;grid-template-columns:22px minmax(170px,1.4fr) minmax(150px,1fr) 104px 96px 92px 50px;align-items:center}
+.ch{background:var(--surface-2);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);height:26px}
+.ch>div{padding:0 7px;white-space:nowrap}
+.ch>div.r{text-align:right}
+#crows{flex:1;min-height:96px;overflow-y:auto}
+.ct{flex:1;min-height:0;display:flex;flex-direction:column}
+.cr{border-top:1px solid #efece4;min-height:33px;font-size:12.5px}
+.cr:first-child{border-top:none}
+.cr:hover{background:var(--accent-soft-2)}
+.cr>div{padding:0 7px;min-width:0}
+.cr .ix{padding:0;text-align:center;font-size:10.5px;color:#c3bfb2}
+.cr .nm{display:flex;align-items:center;gap:8px;min-width:0}
+.av{width:21px;height:21px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;flex-shrink:0;background:var(--pos-soft);color:var(--pos)}
+.cr .nm b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .nm>div{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;line-height:1.2}.cr .nm span.rg{font-size:10px;color:var(--text-3);white-space:nowrap}
+.cr .em{font-size:11.5px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cr .nx{font-size:12px}
+.cr .sum{text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.cr.paused{color:var(--text-3)}
+.cr.paused .nm b{color:var(--text-3)}
+.cr.paused .av{background:var(--surface-2);color:var(--text-3)}
+.cr.paused .sum{color:var(--text-3);font-weight:500;text-decoration:line-through}
+.cr .ra{display:flex;gap:1px;justify-content:flex-end;opacity:0;transition:opacity .1s}
+.cr:hover .ra{opacity:1}
+.stog{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 7px;border-radius:6px;border:1px solid transparent;background:var(--pos-soft);color:var(--pos);font-size:10.5px;font-weight:600;white-space:nowrap}
+.stog .dot{width:5px;height:5px;border-radius:99px;background:currentColor}
+.stog.off{background:var(--surface-2);color:var(--text-3)}
+.stog:hover{border-color:currentColor}
+.in{height:25px;width:100%;border:1px solid transparent;border-radius:6px;background:transparent;font:inherit;font-size:12px;color:var(--text);padding:0 5px}
+.in:hover{border-color:var(--border);background:#fff}
+.in:focus{outline:none;border-color:var(--accent);background:#fff;box-shadow:0 0 0 2px var(--accent-soft)}
+.in.r{text-align:right;font-variant-numeric:tabular-nums}
+.in.sel{appearance:none;cursor:pointer}
+.in.miss{border-color:#ecd7b4;background:#fdf8ec}
+.in::placeholder{color:#bfbbb0}
+.cadd{display:flex;align-items:center;gap:8px;padding:0 9px;height:30px;border-top:1px solid var(--border);background:#f9f7f1}
+.cadd .hint{margin-left:auto;font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+/* read */
+.lines{border:1px solid var(--border);border-radius:9px;overflow-x:auto;background:#fdfcf9}
+.lh,.lr{display:grid;grid-template-columns:var(--lcols);align-items:center}
+.lh{background:var(--surface-2);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);height:28px}
+.lh>div{padding:0 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lh>div.r{text-align:right}
+.lr{border-top:1px solid #efece4;background:#fdfcf9;min-height:32px}
+.lr:first-of-type{border-top:none}
+.lr:nth-child(even){background:#f8f6f0}
+.lr:hover{background:var(--accent-soft-2)}
+.lr>div{padding:0 3px;min-width:0}
+.lr .ix{padding:0;text-align:center;font-size:10.5px;color:#c3bfb2}
+.lr .in{font-size:12.5px}
+.qc{display:flex;align-items:center;gap:2px;min-width:0}.qc .in{min-width:0}
+.vqb{flex-shrink:0;width:18px;height:18px;border:1px solid transparent;border-radius:5px;background:none;color:#c3bfb2;font-size:11px;line-height:1;padding:0;display:grid;place-items:center;opacity:0}
+.lr:hover .vqb,.vqb.on{opacity:1}.vqb:hover{border-color:var(--border);color:var(--text-2)}
+.vqb.on{background:#fbefd6;color:#8a5a0c;border-color:#ecd7b4}
+.vqtag{flex:1;min-width:0;height:22px;display:flex;align-items:center;justify-content:flex-end;padding:0 5px;border:1px dashed #e2c48c;border-radius:6px;background:#fdf8ec;color:#8a5a0c;font-size:10.5px;font-weight:600;white-space:nowrap;overflow:hidden}
+.lr.vq .ix{color:#c9962f}.kv>b.warnc{color:#8a5a0c}
+.lr .sum{text-align:right;font-weight:600;font-size:12.5px;padding-right:9px;font-variant-numeric:tabular-nums}
+.lr .ra{display:flex;gap:1px;justify-content:flex-end;padding-right:4px;opacity:0;transition:opacity .1s}
+.lr:hover .ra,.lr:focus-within .ra{opacity:1}
+.iconbtn{width:22px;height:22px;display:grid;place-items:center;border:none;border-radius:6px;background:transparent;color:var(--text-3);font-size:13px}
+.iconbtn:hover{background:var(--surface-2);color:var(--text-2)}
+.iconbtn.del:hover{background:var(--neg-soft);color:var(--neg)}
+.addrow{display:flex;align-items:center;gap:8px;padding:0 9px;height:30px;border-top:1px solid var(--border);background:#f9f7f1}
+.addrow .hint{margin-left:auto;font-size:11px;color:var(--text-3)}
+.addrow code{font-family:inherit;font-size:10.5px;padding:1px 4px;border-radius:4px;background:#eaf0ff;color:#2c5cf6;cursor:pointer}
+.ltot{display:grid;grid-template-columns:minmax(0,1fr) auto;border-top:1px solid var(--border);background:#f2efe6}
+.ltot .cells{grid-column:2;display:flex}
+.ltot .lcount{grid-column:1;display:flex;align-items:center;padding:0 13px;font-size:11.5px;color:var(--text-3);white-space:nowrap}
+.ltot .cell{padding:7px 14px;border-left:1px solid var(--border);white-space:nowrap;text-align:right}
+.ltot .k{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.ltot .v{font-size:13px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.ltot .cell.big .v{font-size:15px;font-weight:700;letter-spacing:-0.03em}
+/* rail */
+.big{font-size:20px;font-weight:700;letter-spacing:-0.035em;font-variant-numeric:tabular-nums}
+.big small{font-size:12px;font-weight:500;color:var(--text-3);letter-spacing:0}
+.kv{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;white-space:nowrap;padding:4px 0;font-size:12px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.kv:first-of-type{border-top:none}
+.kv>b{text-align:right;overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.kv>b.pos{color:var(--pos)}
+.kv.tot{border-top:1px solid var(--border);margin-top:3px;padding-top:6px;font-weight:600;color:var(--text)}
+.chk{display:grid;grid-template-columns:13px minmax(0,1fr);gap:8px;align-items:start;padding:4px 0;font-size:11.5px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.chk:first-of-type{border-top:none}
+.chk .m{width:13px;height:13px;border-radius:99px;display:grid;place-items:center;font-size:8px;color:#fff;margin-top:1px;background:var(--pos)}
+.chk.warn .m{background:var(--warn)}
+.chk.err .m{background:var(--neg)}
+.chk.warn{color:#7d5a13}
+.chk.err{color:var(--neg)}
+.chk b{font-weight:600;color:inherit}
+.run{display:grid;grid-template-columns:12px 72px minmax(0,1fr) auto;gap:7px;align-items:center;padding:4px 0;font-size:11.5px;color:var(--text-2);border-top:1px dashed #ece8dd}
+.run:first-child{border-top:none}
+.run .bul{width:7px;height:7px;border-radius:99px;background:var(--border-strong);justify-self:center}
+.run.next .bul{background:var(--accent)}
+.run .d{font-weight:600;color:var(--text)}
+.run .p{color:var(--text-3);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.run .a{text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2)}
+.gen{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--border);border-radius:8px;background:#fdfcf9;font-size:11.5px;margin-top:5px}
+.gen:first-child{margin-top:0}
+.gen .st{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:4px}
+.gen .st.bad{color:var(--neg)}.gen .st.good{color:var(--pos)}
+.gen .st i{width:5px;height:5px;border-radius:99px;background:currentColor}
+.gen .sub{font-size:10.5px;color:var(--text-3)}
+.footbar{display:flex;align-items:center;gap:8px;height:32px;padding:0 12px;border-top:1px solid var(--border);background:#f4f1e9;flex-shrink:0;font-size:11.5px;color:var(--text-3);white-space:nowrap;border-radius:0 0 11px 11px}
+.footbar .r{margin-left:auto;display:flex;gap:6px}
+.footbar .hint{display:flex;gap:12px;overflow:hidden}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;background:#1a1815;color:#fff;font-size:12px;font-weight:500;padding:8px 14px;border-radius:9px;box-shadow:0 8px 24px rgba(0,0,0,.22);z-index:80}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media (max-width:1440px){.shell{padding:8px 10px}.topbar #raillbl{display:none}.topbar .who{display:none}}
+@media (max-width:1420px){.footbar .hint span:nth-child(n+3){display:none}}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="topbar">
+<div class="crumb"><a href="Korduvad arved.html">← Korduvad</a><span class="sep">/</span></div>
+<h1 id="crumbnm">AFS_kuutasu</h1>
+<span class="tag ok" id="stag"><span class="dot"></span>Aktiivne</span>
+<span class="tag rec"><span class="dot"></span>Korduv mall</span>
+<span class="who" id="who"></span>
+<div class="acts">
+<span class="dirty" id="dirty"><span class="dot"></span><span id="dirtytxt">Salvestamata muudatused</span></span>
+<button class="btn ghost" id="cancel">Loobu <kbd class="kb">Esc</kbd></button>
+<span class="mwrap"><button class="btn" id="copybtn"><svg class="i" viewBox="0 0 24 24"><path d="M9 9h11v11H9zM5 15H4V4h11v1"/></svg> Kopeeri mall</button><div class="menu" id="copymenu" hidden style="width:236px"><div class="mh">Uus mall samade ridadega</div><div class="mrow" data-cp="empty"><span>Ilma klientideta<span class="msub">Lisad kliendid ise</span></span></div><div class="mrow" data-cp="all"><span>Koos klientidega<span class="msub" id="cpsub">3 klienti kopeeritakse</span></span></div></div></span>
+<button class="btn" id="save">Salvesta <kbd class="kb">⌘S</kbd></button>
+<button class="btn primary" id="confirm">Salvesta ja aktiveeri</button>
+<button class="btn ghost" id="railbtn"><svg class="i" viewBox="0 0 24 24"><path d="M3 5h18v14H3zM15 5v14"/></svg> <span id="raillbl">Peida kokkuvõte</span></button>
+</div>
+</div>
+<div class="body card">
+<div class="left">
+<div class="lscroll">
+<div class="sec form" id="formsec">
+<div class="fbar"><button class="collbtn" id="collbtn" title="Ahenda malli andmed">▾</button></div>
+<div class="csum" id="csum"></div>
+<div class="fgrid">
+<div class="fld wide"><label>Malli nimi <span class="r">ei ole arvel</span></label><input class="inp" id="tname" value="AFS_kuutasu" /></div>
+<div class="fld"><label>Kliendid</label><span class="mwrap" id="fcwrap" style="display:flex"><button class="btn" id="fcadd" style="height:29px;width:100%;justify-content:center">+ Lisa klient <kbd class="kb">⌘K</kbd></button></span></div>
+<div class="fld"><label style="padding-right:26px;margin-top:-1px;min-height:12px;max-width:calc(100% - 24px)">Valuuta</label><select class="inp" id="cur"><option>EUR</option><option>USD</option><option>SEK</option></select></div>
+<div class="fld"><label>Arve number</label><div class="ser" title="Number määratakse genereerimisel"><span class="pre">MA-2026</span><span class="val">auto</span></div></div>
+<div class="fld mid rec"><label>Sagedus</label><span class="chips mwrap" id="freq"><button class="chip" data-m="1">Kuu</button><button class="chip" data-m="3">Kvartal</button><button class="chip" data-m="12">Aasta</button><button class="chip" id="freqmore">···</button><div class="menu l" id="freqmenu" hidden><div class="mh">Sagedus</div><div id="freqlist"></div></div></span></div>
+<div class="fld rec"><label>Väljastamise päev</label><select class="inp" id="day"></select></div>
+<div class="fld rec"><label>Alates</label><input class="inp mono" id="start" value="03.06.2026" placeholder="pp.kk.aaaa" /></div>
+<div class="fld rec"><label>Kuni <span class="r">valikuline</span></label><input class="inp mono" id="end" value="" placeholder="tähtajatu" /></div>
+<div class="fld"><label>Maksetingimus</label><span class="chips" id="terms"><button class="chip" data-t="7">7p</button><button class="chip" data-t="14">14p</button><button class="chip" data-t="30">30p</button></span></div>
+<div class="fld mid rec"><label>Edastamine</label><div class="seg" id="deliv"><button data-d="auto" class="on">Saada automaatselt</button><button data-d="review">Ülevaatusele</button></div></div>
+<div class="fld rec"><label>Arveldusperiood</label><select class="inp" id="per"><option value="0">Jooksev periood</option><option value="-1">Eelmine periood</option><option value="1">Järgmine periood</option></select></div>
+<div class="fld wide"><label>Märkused <span class="r">nähtav arvel</span></label><input class="inp" id="note" value="" placeholder="Näiteks „Arve perioodi {periood} eest”" /></div>
+<div class="fld"><label>KM kood</label><select class="inp" id="vatc"></select></div>
+<div class="fld mid"><label>Koostaja</label><select class="inp" id="user"></select></div>
+</div>
+</div>
+<div class="sec linesec">
+<div class="tabs"><button class="tab on" data-tab="lines">Tooted <span class="n" id="lcnt"></span></button><button class="tab" data-tab="cli">Kliendid <span class="n" id="ccount"></span></button><span class="r" id="tabhint"></span></div>
+<div class="tp" data-tp="lines">
+<div class="lines">
+<div class="lh" id="lh"></div>
+<div id="rows"></div>
+<div class="addrow"><button class="btn sm ghost" id="add"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Lisa rida</button><span class="hint">Kirjelduses <code data-ph="{periood}">{periood}</code> <code data-ph="{kuu}">{kuu}</code> asendatakse genereerimisel</span></div>
+<div class="ltot"><div class="lcount mono" id="lcount"></div><div class="cells" id="ltot"></div></div>
+</div>
+</div>
+<div class="tp" data-tp="cli" hidden>
+<div class="ct lines">
+<div class="ch"><div></div><div>Klient</div><div>Saaja</div><div>Kanal</div><div>Järgmine</div><div class="r">Summa</div><div></div></div>
+<div id="crows"></div>
+<div class="cadd"><span class="mwrap" id="ccwrap"><button class="btn sm ghost" id="cadd"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Lisa klient</button><div class="menu l" id="cmenu" hidden style="width:280px;top:26px"><input class="inp" id="csearch" placeholder="Otsi nime või registrikoodi" /><div id="clist"></div></div></span><span class="hint"><kbd>⌘K</kbd> lisa klient</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="footbar">
+<div class="hint"><span><kbd>⌘S</kbd> salvesta</span><span><kbd>⌘K</kbd> lisa klient</span><span><kbd>Esc</kbd> loobu</span></div>
+<div class="r"><button class="btn sm ghost" id="preview">Eelvaade</button><button class="btn sm ghost" id="gennow">Genereeri kohe</button><button class="btn sm ghost" id="pause">Peata mall</button><button class="btn sm ghost danger" id="drop">Kustuta mall</button></div>
+</div>
+</div>
+<div class="gutter" id="gutter" title="Lohista paneeli laiust · topeltklikk lähtestab"></div>
+<div class="right">
+<div class="sec">
+<div class="sech">Kokkuvõte<span class="r"><button class="iconbtn" id="railclose" title="Peida paneel">✕</button></span></div>
+<div class="big mono" id="rtot"></div>
+<div style="font-size:10.5px;color:var(--text-3);margin:2px 0 9px" id="rtotsub"></div>
+<div id="rsums"></div>
+</div>
+<div class="sec">
+<div class="sech">Perioodilisus</div>
+<div id="rper"></div>
+</div>
+<div class="sec">
+<div class="sech">Tulevased jooksud<span class="r" id="runsub"></span></div>
+<div id="runs"></div>
+</div>
+<div class="sec">
+<div class="sech">Kontroll</div>
+<div id="checks"></div>
+</div>
+<div class="sec" style="border-bottom:none">
+<div class="sech">Genereeritud<span class="r">1</span></div>
+<div class="gen"><div><span class="mono">01.06.2026 → 30.06.2026</span><div class="sub">Milworks OÜ · MA-2026 25712</div></div><span class="st bad"><i></i>Ebaõnnestus</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const VATC=[{k:'d24',l:'Siseriiklik 24%',s:'24%',rate:24},{k:'d9',l:'Siseriiklik 9%',s:'9%',rate:9},{k:'eus',l:'EU teenus 0% (pöördmaks)',s:'EU teenus',rate:0},{k:'exp',l:'Eksport 0%',s:'Eksport',rate:0}];
+const ACC={'3002':'Tarkvara müük','3015':'Serveriteenused','3110':'Müügitulu'};
+const UNITS=['tk','h','kuu','kmpl'];
+const USERS=['M. Sepp','K. Tamm','A. Lään','R. Ilves'];
+const FREQ=[{m:1,l:'Igakuine',s:'kuu'},{m:2,l:'Iga 2 kuu järel',s:'2 kuud'},{m:3,l:'Kvartaalne',s:'kvartal'},{m:6,l:'Poolaastane',s:'poolaasta'},{m:12,l:'Aastane',s:'aasta'}];
+const DIR=[{n:'Milworks OÜ',reg:'14582301',em:'arved@milworks.ee',ch:'E-arve'},{n:'Tartu Autokeskus AS',reg:'10293847',em:'raamatupidamine@tak.ee',ch:'E-arve'},{n:'Rehvimaailm OÜ',reg:'12874501',em:'info@rehvimaailm.ee',ch:'E-post'},{n:'Pärnu Detailid OÜ',reg:'14011923',em:'arved@parnudetailid.ee',ch:'E-post'},{n:'Balti Veoteenus OÜ',reg:'11455620',em:'finance@bveo.ee',ch:'E-arve'},{n:'UAB Autodalys',reg:'LT304455',em:'invoices@autodalys.lt',ch:'E-post'}];
+const TODAY=new Date(2026,8,23);
+const fmt=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2})+'\u00a0€';
+const num=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2=n=>Math.round(n*100)/100;
+const p2=n=>String(n).padStart(2,'0');
+const dstr=d=>p2(d.getDate())+'.'+p2(d.getMonth()+1)+'.'+d.getFullYear();
+const pd=s=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec((s||'').trim());return m?new Date(+m[3],+m[2]-1,+m[1]):null};
+const $=id=>document.getElementById(id);
+const ini=n=>n.replace(/\b(OÜ|AS|UAB)\b/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const S={vatc:'d24',m:1,day:3,term:14,deliv:'auto',per:0,user:'M. Sepp',dirty:true,active:true,
+ clients:[{...DIR[0],on:true},{...DIR[1],on:true},{...DIR[2],on:false}],
+ lines:[{code:'AFRNET8',desc:'AutoFutur.net tarkvara baastasu {periood}',acc:'3002',qty:1,unit:'kuu',price:75,disc:0},
+ {code:'AFRNET8',desc:'AutoFutur.net tarkvara arvutit/kuu',acc:'3002',qty:6,unit:'kuu',price:29,disc:0},
+ {code:'SRVR',desc:'Privaatserverid (andmebaas, rakendus, tulemüür)',acc:'3015',qty:1,unit:'kuu',price:289,disc:0},
+ {code:'TUGI',desc:'Tugiteenus ja arendustööd {periood}',acc:'3110',qty:0,unit:'h',price:55,disc:0,vq:true}]};
+const rate=()=>VATC.find(c=>c.k===S.vatc).rate;
+const netOf=l=>l.vq?0:r2(l.qty*l.price*(1-(l.disc||0)/100));
+const vqN=()=>S.lines.filter(l=>l.vq).length;
+const fr=()=>FREQ.find(f=>f.m===S.m);
+const opts=(arr,v)=>arr.map(o=>`<option ${o===v?'selected':''}>${o}</option>`).join('');
+$('vatc').innerHTML=VATC.map(c=>`<option value="${c.k}" ${c.k===S.vatc?'selected':''}>${c.l}</option>`).join('');
+$('user').innerHTML=opts(USERS,S.user);
+$('day').innerHTML=Array.from({length:28},(_,i)=>`<option value="${i+1}" ${i+1===S.day?'selected':''}>${i+1}. kuupäev</option>`).join('')+'<option value="31">Kuu viimane päev</option>';
+function runDate(y,mo){const last=new Date(y,mo+1,0).getDate();return new Date(y,mo,Math.min(S.day,last))}
+function upcoming(n){
+  const st=pd($('start').value),en=pd($('end').value);if(!st)return [];
+  const out=[];let y=st.getFullYear(),mo=st.getMonth();
+  let d=runDate(y,mo);if(d<st){mo+=S.m;d=runDate(y,mo)}
+  let guard=0;
+  while(out.length<n&&guard++<400){d=runDate(y,mo);if(en&&d>en)break;if(d>=TODAY)out.push(d);mo+=S.m}
+  return out;
+}
+function periodOf(d){
+  const s=new Date(d.getFullYear(),d.getMonth()+S.per*S.m,1),e=new Date(s.getFullYear(),s.getMonth()+S.m,0);
+  return dstr(s).slice(0,5)+'–'+dstr(e);
+}
+function dueOf(d){const x=new Date(d);x.setDate(x.getDate()+S.term);return x}
+function totals(){const net=r2(S.lines.reduce((s,l)=>s+netOf(l),0)),vat=r2(net*rate()/100);return {net,vat,tot:r2(net+vat)}}
+const active=()=>S.clients.filter(c=>c.on);
+function lcols(){return [{w:'22px',l:''},{w:'74px',l:'Kood'},{w:'minmax(180px,1fr)',l:'Kirjeldus'},{w:'76px',l:'Konto'},{w:'76px',l:'Kogus',r:1},{w:'54px',l:'Ühik'},{w:'84px',l:'Ühikuhind',r:1},{w:'50px',l:'Ale %',r:1},{w:'50px',l:'KM'},{w:'92px',l:'Rea summa',r:1},{w:'46px',l:''}]}
+function rowHTML(l,i){return `<div class="lr ${l.vq?'vq':''}" data-i="${i}"><div class="ix">${i+1}</div>
+<div><input class="in" data-f="code" value="${l.code}" placeholder="Kood" /></div>
+<div><input class="in ${l.desc.trim()?'':'miss'}" data-f="desc" value="${l.desc.replace(/"/g,'&quot;')}" placeholder="Kirjeldus" /></div>
+<div><select class="in sel" data-f="acc">${Object.keys(ACC).map(a=>`<option ${a===l.acc?'selected':''}>${a}</option>`).join('')}</select></div>
+<div class="qc">${l.vq?'<span class="vqtag" title="Kogus sisestatakse igal perioodil enne arve väljastamist">iga kord</span>':`<input class="in r" data-f="qty" value="${l.qty}" />`}<button class="vqb ${l.vq?'on':''}" data-a="vq" title="${l.vq?'Muuda püsivaks koguseks':'Kogus sisestatakse iga kord (tunnid, tükid)'}">±</button></div>
+<div><select class="in sel" data-f="unit">${opts(UNITS,l.unit)}</select></div>
+<div><input class="in r mono" data-f="price" value="${num(l.price)}" /></div>
+<div><input class="in r" data-f="disc" value="${l.disc||0}" /></div>
+<div style="font-size:11.5px;color:var(--text-3);padding-left:7px">${rate()}%</div>
+<div class="sum">${l.vq?'<span style="color:var(--text-3);font-weight:500">muutuv</span>':num(netOf(l))}</div>
+<div class="ra"><button class="iconbtn" data-a="dup" title="Kopeeri rida">⧉</button><button class="iconbtn del" data-a="del" title="Kustuta rida">✕</button></div></div>`}
+function clientHTML(c,i,next,t){return `<div class="cr ${c.on?'':'paused'}" data-i="${i}"><div class="ix">${i+1}</div>
+<div class="nm"><span class="av">${ini(c.n)}</span><div><b>${c.n}</b><span class="rg mono">${c.reg}</span></div></div>
+<div><input class="in" data-f="em" value="${c.em}" /></div>
+<div><select class="in sel" data-f="ch">${opts(['E-arve','E-post','Ei saada'],c.ch)}</select></div>
+<div class="nx mono">${c.on&&next&&S.active?dstr(next):'—'}</div>
+<div class="sum">${num(t.tot)}</div>
+<div class="ra" style="justify-content:flex-end;display:flex"><button class="stog ${c.on?'':'off'}" data-a="tog" title="${c.on?'Peata see klient':'Aktiveeri'}"><span class="dot"></span>${c.on?'Aktiivne':'Peatatud'}</button><button class="iconbtn del" data-a="rm" title="Eemalda mallilt">✕</button></div></div>`}
+function checks(){
+  const out=[],a=active().length,st=pd($('start').value),en=pd($('end').value);
+  if(!S.clients.length)out.push({s:'err',t:'Mallil pole kliente'});
+  else out.push({s:a?'ok':'warn',t:`<b>${a}</b> aktiivset klienti ${S.clients.length}-st`});
+  const noDesc=S.lines.filter(l=>!l.desc.trim()).length;
+  if(!S.lines.length)out.push({s:'err',t:'Mallil pole ridu'});
+  else if(noDesc)out.push({s:'err',t:`<b>${noDesc}</b> rida ilma kirjelduseta`});
+  else if(vqN())out.push({s:'warn',t:`<b>${vqN()}</b> rida vajab igal perioodil kogust. Arved luuakse mustandina ja ootavad sisestamist`});
+  else out.push({s:'ok',t:`<b>${S.lines.length}</b> rida, kõik summad täidetud`});
+  if(!st)out.push({s:'err',t:'Alguskuupäev vormis pp.kk.aaaa'});
+  else if($('end').value.trim()&&!en)out.push({s:'err',t:'Lõppkuupäev vormis pp.kk.aaaa'});
+  else if(en&&en<st)out.push({s:'err',t:'Lõpp on enne algust'});
+  else out.push({s:'ok',t:`${fr().l}, <b>${S.day===31?'kuu viimasel päeval':S.day+'. kuupäeval'}</b>`});
+  const nm=S.clients.filter(c=>c.on&&c.ch!=='Ei saada'&&!c.em.includes('@')).length;
+  if(nm)out.push({s:'warn',t:`<b>${nm}</b> kliendil puudub e-post`});
+  if(S.deliv==='auto'&&!vqN())out.push({s:'ok',t:'Arved saadetakse ilma ülevaatuseta'});
+  out.push({s:'warn',t:'Eelmine jooks <b>30.06.2026</b> ebaõnnestus'});
+  return out;
+}
+function render(){
+  const c=lcols();document.documentElement.style.setProperty('--lcols',c.map(x=>x.w).join(' '));
+  $('lh').innerHTML=c.map(x=>`<div class="${x.r?'r':''}">${x.l}</div>`).join('');
+  $('rows').innerHTML=S.lines.map(rowHTML).join('')||'<div style="padding:14px;text-align:center;color:var(--text-3);font-size:12px">Ridu pole — lisa esimene rida</div>';
+  const t=totals(),runs=upcoming(4),a=active().length,f=fr();
+  $('crows').innerHTML=S.clients.map((x,i)=>clientHTML(x,i,runs[0],t)).join('')||'<div style="padding:12px;text-align:center;color:var(--text-3);font-size:12px">Kliente pole — lisa esimene klient</div>';
+  $('ccount').textContent=S.clients.length;$('lcnt').textContent=S.lines.length;
+  $('tabhint').textContent=TAB==='lines'?'Samad read lähevad igale kliendile':`${a} aktiivset · järgmine arve ${runs[0]&&S.active?dstr(runs[0]):'—'}`;
+  $('cpsub').textContent=`${S.clients.length} klienti kopeeritakse`;
+  $('ltot').innerHTML=[['Neto',fmt(t.net),''],[`KM ${rate()}%`,fmt(t.vat),''],['Arve kokku',fmt(t.tot),'big']].map(([k,v,c])=>`<div class="cell ${c}"><div class="k">${k}</div><div class="v mono">${v}</div></div>`).join('');
+  $('lcount').textContent=`${S.lines.length} rida · ühe kliendi arve`;
+  $('rtot').innerHTML=`${fmt(r2(t.tot*a))}<small> / ${f.s}</small>`;
+  $('rtotsub').textContent=`${a} aktiivset klienti × ${fmt(t.tot)}`;
+  const mrr=r2(t.net*a/S.m);
+  $('rsums').innerHTML=`<div class="kv"><span>Neto arve kohta</span><b>${fmt(t.net)}</b></div><div class="kv"><span>Käibemaks ${rate()}%</span><b>${fmt(t.vat)}</b></div><div class="kv"><span>Arve kokku</span><b>${fmt(t.tot)}</b></div><div class="kv tot"><span>Korduvtulu (neto) / kuu</span><b>${fmt(mrr)}</b></div>`;
+  const en=$('end').value.trim();
+  $('rper').innerHTML=[['Sagedus',f.l],['Väljastamine',S.day===31?'kuu viimasel päeval':S.day+'. kuupäeval'],['Arveldusperiood',$('per').selectedOptions[0].text],['Alates',$('start').value||'—'],['Kuni',en||'tähtajatu'],['Maksetähtaeg',`+${S.term} päeva`],['Edastamine',vqN()?'Mustand · ootab kogust':S.deliv==='auto'?'Autosaatmine':'Ülevaatusele']]
+   .map(([k,v])=>`<div class="kv"><span>${k}</span><b class="${k==='Edastamine'&&vqN()?'warnc':k==='Edastamine'&&S.deliv==='auto'?'pos':''} ${/\d/.test(v)?'mono':''}">${v}</b></div>`).join('');
+  $('runsub').textContent=S.active?`${a} arvet jooksu kohta${vqN()?' · ootavad kogust':''}`:'mall peatatud';
+  $('runs').innerHTML=runs.length?runs.map((d,i)=>`<div class="run ${i===0&&S.active?'next':''}"><span class="bul"></span><span class="d mono">${dstr(d)}</span><span class="p mono">${periodOf(d)} · tähtaeg ${dstr(dueOf(d)).slice(0,5)}</span><span class="a">${num(r2(t.tot*a))}</span></div>`).join(''):'<div style="font-size:11.5px;color:var(--text-3)">Tulevasi jookse pole</div>';
+  $('checks').innerHTML=checks().map(c=>`<div class="chk ${c.s==='ok'?'':c.s}"><span class="m">${c.s==='ok'?'✓':'!'}</span><span>${c.t}</span></div>`).join('');
+  [...$('freq').querySelectorAll('.chip[data-m]')].forEach(c=>c.classList.toggle('on',+c.dataset.m===S.m));
+  const known=[1,3,12].includes(S.m);$('freqmore').classList.toggle('on',!known);$('freqmore').textContent=known?'···':f.s;
+  [...$('terms').children].forEach(c=>c.classList.toggle('on',+c.dataset.t===S.term));
+  [...$('deliv').children].forEach(b=>b.classList.toggle('on',b.dataset.d===S.deliv));
+  $('crumbnm').textContent=$('tname').value||'Nimetu mall';
+  $('who').textContent=`${S.clients.length} klienti · järgmine ${runs[0]&&S.active?dstr(runs[0]):'—'}`;
+  $('stag').className='tag '+(S.active?'ok':'off');$('stag').lastChild.textContent=S.active?'Aktiivne':'Peatatud';
+  $('pause').textContent=S.active?'Peata mall':'Jätka malli';
+  $('dirty').classList.toggle('clean',!S.dirty);$('dirtytxt').textContent=S.dirty?'Salvestamata muudatused':'Salvestatud';$('save').disabled=!S.dirty;
+  if(coll)applyColl();
+}
+function dirty(){S.dirty=true}
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1900)}
+const parseN=v=>{const n=parseFloat(String(v).replace(/\s/g,'').replace(',','.'));return isNaN(n)?0:n};
+let rt;const soft=()=>{dirty();clearTimeout(rt);rt=setTimeout(()=>{const f=document.activeElement,fi=f&&f.closest('.lr')?[f.closest('.lr').dataset.i,f.dataset.f]:null;render();if(fi){const n=$('rows').querySelector(`.lr[data-i="${fi[0]}"] [data-f="${fi[1]}"]`);n&&n.focus()}},350)};
+$('rows').addEventListener('input',e=>{const row=e.target.closest('.lr');if(!row)return;const l=S.lines[+row.dataset.i],f=e.target.dataset.f;
+  if(['qty','price','disc'].includes(f))l[f]=parseN(e.target.value);else l[f]=e.target.value;
+  if(f==='desc')e.target.classList.toggle('miss',!l.desc.trim());
+  row.querySelector('.sum').textContent=num(netOf(l));soft()});
+$('rows').addEventListener('change',e=>{if(e.target.tagName==='SELECT'){const l=S.lines[+e.target.closest('.lr').dataset.i];l[e.target.dataset.f]=e.target.value;dirty();render()}});
+$('rows').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=+b.closest('.lr').dataset.i;
+  if(b.dataset.a==='vq'){const l=S.lines[i];l.vq=!l.vq;if(!l.vq&&!l.qty)l.qty=1;toast(l.vq?'Kogus sisestatakse iga kord · automaatne saatmine peatub':'Rida on püsiva kogusega');dirty();render();return}
+  if(b.dataset.a==='dup'){S.lines.splice(i+1,0,{...S.lines[i]});toast('Rida kopeeritud')}else{S.lines.splice(i,1);toast('Rida kustutatud')}dirty();render()});
+$('add').onclick=()=>{const last=S.lines[S.lines.length-1];S.lines.push({code:'',desc:'',acc:last?last.acc:'3002',qty:1,unit:last?last.unit:'kuu',price:0,disc:0});dirty();render();const r=$('rows').children;r[r.length-1].querySelector('[data-f="desc"]').focus()};
+document.querySelectorAll('.addrow code').forEach(c=>c.onclick=()=>{const f=document.querySelector('#rows .lr:last-child [data-f="desc"]');if(!f)return;const l=S.lines[S.lines.length-1];l.desc=(l.desc+' '+c.dataset.ph).trim();dirty();render();toast(c.dataset.ph+' lisatud viimasele reale')});
+$('crows').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const i=+b.closest('.cr').dataset.i,c=S.clients[i];
+  if(b.dataset.a==='tog'){c.on=!c.on;toast(c.n+(c.on?' aktiveeritud':' peatatud'))}else{S.clients.splice(i,1);toast(c.n+' eemaldatud mallilt')}dirty();render()});
+$('crows').addEventListener('input',e=>{const r=e.target.closest('.cr');if(!r)return;S.clients[+r.dataset.i][e.target.dataset.f]=e.target.value;dirty()});
+$('crows').addEventListener('change',e=>{const r=e.target.closest('.cr');if(!r)return;S.clients[+r.dataset.i][e.target.dataset.f]=e.target.value;dirty();render()});
+function renderCList(){const q=$('csearch').value.trim().toLowerCase();const used=new Set(S.clients.map(c=>c.reg));
+  const l=DIR.filter(c=>!used.has(c.reg)&&(c.n.toLowerCase().includes(q)||c.reg.includes(q)));
+  $('clist').innerHTML=l.map(c=>`<div class="mrow" data-reg="${c.reg}"><span>${c.n}<span class="msub mono">${c.reg} · ${c.ch}</span></span><span class="d">Lisa</span></div>`).join('')||'<div class="mrow" style="color:var(--text-3)">Kõik kliendid juba mallil</div>'}
+let TAB='lines';
+function setTab(t){TAB=t;document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));document.querySelectorAll('[data-tp]').forEach(p=>p.hidden=p.dataset.tp!==t);render()}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+$('fcadd').onclick=e=>{e.stopPropagation();$('cmenu').hidden?openCMenu('fcwrap'):closeMenus()};
+function openCMenu(w){const m=$('cmenu');if(m.parentNode!==document.body)document.body.appendChild(m);const b=(w==='fcwrap'?$('fcadd'):$('cadd')).getBoundingClientRect();closeMenus();m.style.position='fixed';m.style.zIndex=90;
+  if(w==='fcwrap'){m.style.top=(b.bottom+4)+'px';m.style.bottom='auto';m.style.left=Math.max(8,b.right-280)+'px';m.style.right='auto'}
+  else{m.style.top='auto';m.style.bottom=(innerHeight-b.top+4)+'px';m.style.left=b.left+'px';m.style.right='auto'}
+  m.style.maxHeight=(w==='fcwrap'?innerHeight-b.bottom-16:b.top-16)+'px';m.style.overflowY='auto';m.hidden=false;$('csearch').value='';renderCList();$('csearch').focus()}
+$('cadd').onclick=e=>{e.stopPropagation();$('cmenu').hidden?openCMenu('ccwrap'):closeMenus()};
+$('csearch').addEventListener('input',renderCList);
+$('csearch').addEventListener('keydown',e=>{if(e.key==='Enter'){const f=$('clist').querySelector('[data-reg]');f&&f.click()}if(e.key==='Escape'){e.stopPropagation();closeMenus()}});
+$('cmenu').addEventListener('click',e=>{e.stopPropagation();const r=e.target.closest('[data-reg]');if(!r)return;const c=DIR.find(x=>x.reg===r.dataset.reg);S.clients.push({...c,on:true});dirty();render();toast(c.n+' lisatud — saab järgmise jooksuga arve');$('csearch').value='';renderCList();$('csearch').focus()});
+$('freq').addEventListener('click',e=>{const c=e.target.closest('.chip[data-m]');if(!c)return;S.m=+c.dataset.m;dirty();render()});
+$('freqmore').onclick=e=>{e.stopPropagation();const o=$('freqmenu').hidden;closeMenus();if(o){$('freqlist').innerHTML=FREQ.map(f=>`<div class="mrow ${f.m===S.m?'on':''}" data-m="${f.m}">${f.l}<span class="d">${f.m} k</span></div>`).join('');$('freqmenu').hidden=false}};
+$('freqmenu').addEventListener('click',e=>{e.stopPropagation();const r=e.target.closest('.mrow');if(!r)return;S.m=+r.dataset.m;closeMenus();dirty();render()});
+$('terms').addEventListener('click',e=>{const c=e.target.closest('.chip');if(!c)return;S.term=+c.dataset.t;dirty();render()});
+$('deliv').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;S.deliv=b.dataset.d;dirty();render()});
+$('day').onchange=()=>{S.day=+$('day').value;dirty();render()};
+$('per').onchange=()=>{S.per=+$('per').value;dirty();render()};
+$('vatc').onchange=()=>{S.vatc=$('vatc').value;dirty();render()};
+$('user').onchange=()=>{S.user=$('user').value;dirty();render()};
+['tname','start','end','note','cur'].forEach(id=>$(id).addEventListener('input',()=>{dirty();render()}));
+$('copybtn').onclick=e=>{e.stopPropagation();const o=$('copymenu').hidden;closeMenus();$('copymenu').hidden=!o};
+$('copymenu').addEventListener('click',e=>{e.stopPropagation();const r=e.target.closest('[data-cp]');if(!r)return;
+  $('tname').value=($('tname').value||'Mall')+' (koopia)';if(r.dataset.cp==='empty')S.clients=[];S.active=false;dirty();closeMenus();render();
+  toast(r.dataset.cp==='empty'?'Mall kopeeritud — lisa kliendid':'Mall kopeeritud koos klientidega');if(r.dataset.cp==='empty')setTimeout(()=>openCMenu('fcwrap'),50)});
+function closeMenus(){['copymenu','cmenu','freqmenu'].forEach(id=>$(id).hidden=true)}
+document.addEventListener('click',closeMenus);
+$('save').onclick=()=>{S.dirty=false;render();toast('Mall salvestatud')};
+$('confirm').onclick=()=>{if(checks().some(c=>c.s==='err'))return toast('Paranda kontrolli vead enne aktiveerimist');S.active=true;S.dirty=false;render();toast('Mall salvestatud ja aktiivne')};
+$('pause').onclick=()=>{S.active=!S.active;dirty();render();toast(S.active?'Mall jätkub':'Mall peatatud — arveid ei genereerita')};
+$('gennow').onclick=()=>toast(`Genereeritakse ${active().length} arvet praegusele perioodile`);
+$('cancel').onclick=()=>toast(S.dirty?'Muudatused jäetakse salvestamata — küsitakse kinnitust':'Tagasi nimekirja');
+$('drop').onclick=()=>toast('Malli kustutamine — küsitakse kinnitust');
+$('preview').onclick=()=>toast('Esimese kliendi arve PDF eelvaade');
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='s'){e.preventDefault();$('save').click()}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();e.stopPropagation();if(coll&&TAB!=='cli')setTab('cli');openCMenu(TAB==='cli'?'ccwrap':'fcwrap')}
+  if(e.key==='Escape'&&$('cmenu').hidden)$('cancel').click();
+});
+const body=document.querySelector('.body');
+const PW='arvelo.rec.edit.pw',ROPEN='arvelo.rec.edit.rail';
+let pw=+(localStorage.getItem(PW)||0)||330,railOpen=localStorage.getItem(ROPEN)!=='0';
+function clampPW(v){const w=Math.max(1180,document.querySelector('.shell').clientWidth);return Math.max(260,Math.min(v,w-9-640))}
+function applyRail(){body.classList.toggle('norail',!railOpen);document.documentElement.style.setProperty('--pw',clampPW(pw)+'px');$('raillbl').textContent=railOpen?'Peida kokkuvõte':'Näita kokkuvõtet'}
+function setRail(v){railOpen=v;localStorage.setItem(ROPEN,v?'1':'0');applyRail()}
+$('railbtn').onclick=()=>setRail(!railOpen);$('railclose').onclick=()=>setRail(false);
+$('gutter').addEventListener('mousedown',e=>{e.preventDefault();const x0=e.clientX,w0=clampPW(pw);document.body.classList.add('pres');
+  const mv=ev=>{pw=clampPW(w0-(ev.clientX-x0));document.documentElement.style.setProperty('--pw',pw+'px')};
+  const up=()=>{document.body.classList.remove('pres');localStorage.setItem(PW,pw);removeEventListener('mousemove',mv);removeEventListener('mouseup',up)};
+  addEventListener('mousemove',mv);addEventListener('mouseup',up)});
+$('gutter').addEventListener('dblclick',()=>{pw=330;localStorage.setItem(PW,pw);applyRail()});
+addEventListener('resize',()=>document.documentElement.style.setProperty('--pw',clampPW(pw)+'px'));
+const CK='arvelo.rec.edit.coll';let coll=localStorage.getItem(CK)==='1';
+function applyColl(){$('formsec').classList.toggle('collapsed',coll);$('collbtn').textContent=coll?'▸':'▾';
+  if(coll)$('csum').innerHTML=`<b>${$('tname').value}</b><span class="s">·</span>${fr().l}, ${S.day===31?'viimane päev':S.day+'.'}<span class="s">·</span><span class="mono">${$('start').value}</span> → <span class="mono">${$('end').value||'tähtajatu'}</span><span class="s">·</span>+${S.term}p<span class="s">·</span>${S.deliv==='auto'?'Autosaatmine':'Ülevaatusele'}<span class="s">·</span>${VATC.find(c=>c.k===S.vatc).s}`}
+$('collbtn').onclick=e=>{e.stopPropagation();coll=!coll;localStorage.setItem(CK,coll?'1':'0');applyColl()};
+applyRail();applyColl();render();
+</script>
+<script src="kogused.js"></script>
+</body>
+</html>

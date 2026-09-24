@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arvelo · Korduvad arved</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--neg:#c0392b;--neg-soft:#fbeaea}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--surface-2);text-decoration:none;color:var(--text-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f;color:#fff}
+.btn .bd{font-size:10px;font-weight:700;padding:0 5px;border-radius:99px;background:#fbefd6;color:#8a5a0c}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 20px 10px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.tr1,.tr2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3)}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+h1{margin:0;font-size:17px;font-weight:700;letter-spacing:-.03em}
+.tr1 .acts{margin-left:auto;display:flex;gap:6px}
+.search{height:28px;width:260px;max-width:100%;border:1px solid var(--border);border-radius:7px;background:#fff;font:inherit;font-size:12.5px;padding:0 9px}
+.search:focus{outline:none;border-color:var(--text)}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:7px;background:var(--surface-2);padding:2px;gap:2px;flex-shrink:0}
+.seg button{white-space:nowrap;border:none;background:none;height:22px;padding:0 9px;border-radius:5px;font-size:11.5px;color:var(--text-2);font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.seg button.on{background:#fff;color:var(--text);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.seg .n{font-size:10px;color:var(--text-3);font-weight:600}
+.sum{margin-left:auto;font-size:12px;color:var(--text-2);display:flex;gap:12px;flex-wrap:wrap}
+.sum b{color:var(--text);font-weight:600}
+.main{padding:14px 20px 40px;max-width:1500px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;align-items:start}
+@media (max-width:1000px){.main{grid-template-columns:minmax(0,1fr)}.side{position:static!important}}
+.side{position:sticky;top:104px;background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden;display:flex;flex-direction:column;max-height:calc(100vh - 120px)}
+.side .sc{overflow-y:auto}
+.sd{padding:13px 14px;border-bottom:1px solid var(--border)}
+.sd:last-child{border-bottom:none}
+.sh{display:flex;align-items:center;gap:9px}
+.sh .av{width:30px;height:30px;font-size:10.5px;margin:0;box-shadow:none;border-radius:7px}
+.sh .t{min-width:0;flex:1}
+.sh .t b{display:block;font-weight:700;font-size:13.5px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sh .t span{font-size:11px;color:var(--text-3);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.big{font-size:26px;font-weight:700;letter-spacing:-.04em;margin-top:12px}
+.big small{font-size:12px;font-weight:500;color:var(--text-3);letter-spacing:0}
+.bsub{font-size:11px;color:var(--text-3);margin-top:2px}
+.kvg{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.kvg .k,.sl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3)}
+.kvg .v{font-size:12.5px;font-weight:600;margin-top:3px}
+.sl{display:flex;margin-bottom:8px}.sl .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+.srun{display:grid;grid-template-columns:10px 82px minmax(0,1fr) auto;gap:6px;align-items:center;padding:5px 0;font-size:12px;color:var(--text-2)}
+.srun .bu{width:7px;height:7px;border-radius:99px;background:var(--border-strong)}
+.srun.nx .bu{background:var(--accent)}.srun.nx .d{font-weight:700;color:var(--text)}
+.srun .p{font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scl{display:flex;align-items:center;gap:7px;padding:4px 0;font-size:12px}
+.scl .av{margin:0;box-shadow:none}
+.scl.off{color:var(--text-3)}.scl.off .av{background:var(--surface-2);color:var(--text-3)}
+.sgen{display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--border);border-radius:8px;font-size:11.5px;margin-top:5px}
+.sgen .st{margin-left:auto}
+.sft{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--border);background:#f9f7f1}
+.sft .btn{flex:1;justify-content:center}
+.sft .btn.del{flex:0 0 32px;padding:0;color:var(--neg);background:var(--neg-soft);border-color:transparent}
+tbody tr.sel td{background:#fff5f1}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);padding:0 12px;height:32px;background:var(--surface-2);border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--text-2)}
+th.sorted{color:var(--text)}
+th.r,td.r{text-align:right}
+td{border-bottom:1px solid #efece4;padding:0 12px;height:48px;white-space:nowrap}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:#fbfaf6}
+tbody tr:last-child td{border-bottom:none}
+tr.paused td{color:var(--text-3)}
+.nm b{display:block;font-weight:600;color:var(--text)}
+tr.paused .nm b{color:var(--text-2)}
+.nm span{font-size:11px;color:var(--text-3)}
+.avs{display:flex;align-items:center}
+.av{width:21px;height:21px;border-radius:5px;display:grid;place-items:center;font-size:8.5px;font-weight:700;background:var(--pos-soft);color:var(--pos);margin-left:-4px;box-shadow:0 0 0 2px #fff}
+.av:first-child{margin-left:0}
+.av.more{background:var(--surface-2);color:var(--text-3)}
+.avs .c{margin-left:7px;font-size:12px;color:var(--text-2)}
+.st{display:inline-flex;align-items:center;gap:5px;height:21px;padding:0 7px;border-radius:6px;font-size:10.5px;font-weight:600}
+.st i{width:5px;height:5px;border-radius:99px;background:currentColor}
+.st.ok{background:var(--pos-soft);color:var(--pos)}
+.st.w{background:#fbefd6;color:#8a5a0c}
+.st.bad{background:var(--neg-soft);color:var(--neg)}
+.st.off{background:var(--surface-2);color:var(--text-3)}
+.dl{font-size:11.5px;color:var(--text-2)}
+.nx .sub{display:block;font-size:10.5px;color:var(--text-3)}
+.ra{display:flex;gap:2px;justify-content:flex-end;opacity:0;transition:opacity .1s}
+tr:hover .ra{opacity:1}
+.ib{height:24px;padding:0 7px;border:1px solid transparent;border-radius:6px;background:none;color:var(--text-2);font-size:11.5px}
+.ib:hover{border-color:var(--border);background:#fff;color:var(--text)}
+.ft{display:flex;align-items:center;gap:12px;padding:0 12px;height:38px;border-top:1px solid var(--border);background:#f9f7f1;font-size:12px;color:var(--text-2)}
+.ft b{color:var(--text)}
+.ft .r{margin-left:auto}
+.empty{padding:40px;text-align:center;color:var(--text-3)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;transition:opacity .16s,transform .16s;background:#1a1815;color:#fff;font-size:12px;padding:8px 12px;border-radius:8px;z-index:9}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="top">
+<div class="tr1"><div class="crumb"><a href="#">Müük</a><span class="sep">/</span></div><h1>Korduvad arved</h1>
+<div class="acts"><a class="btn" href="Kogused.html" id="qlink">Sisesta kogused <span class="bd" id="qn"></span></a><a class="btn primary" href="Korduva arve mall.html">+ Uus mall</a></div></div>
+<div class="tr2"><input class="search" id="q" placeholder="Otsi malli, klienti või koodi" /><div class="seg" id="flt"></div><div class="sum" id="sum"></div></div>
+</div>
+<div class="main"><div class="card"><div class="tw"><table><thead><tr id="th"></tr></thead><tbody id="tb"></tbody></table></div><div class="ft" id="ft"></div></div><aside class="side" id="side"></aside></div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const num=n=>n.toLocaleString('et-EE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const ini=n=>n.replace(/\b(OÜ|AS|UAB)\b/g,'').trim().split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+const M=[
+ {id:'AFS_kuutasu',desc:'AutoFutur.net tarkvara ja serverid',freq:'Igakuine',next:'03.10.2026',per:'01.10–31.10',cl:['Milworks OÜ','Tartu Autokeskus AS','Rehvimaailm OÜ'],act:2,sum:667.12,fixed:true,vq:1,deliv:'auto',st:'wait',err:1},
+ {id:'Hooldus_kuutasu',desc:'Sõidukite hoolduse kuutasu',freq:'Igakuine',next:'01.10.2026',per:'01.10–31.10',cl:['Rehvimaailm OÜ','Nordic Fleet OÜ','Lõuna Transport AS','Viru Logistika OÜ'],act:4,sum:148.80,vq:2,deliv:'review',st:'wait'},
+ {id:'Serverid_lisamaht',desc:'Andmemahu ja varukoopiate ületus',freq:'Igakuine',next:'05.10.2026',per:'01.10–31.10',cl:['Milworks OÜ','Baltic Parts UAB'],act:2,sum:0,vq:2,deliv:'auto',st:'wait'},
+ {id:'Konsultatsioon_kvartal',desc:'Kvartaalne konsultatsioon',freq:'Kvartaalne',next:'30.09.2026',per:'01.07–30.09',cl:['Tartu Autokeskus AS'],act:1,sum:0,vq:1,deliv:'review',st:'late'},
+ {id:'Litsents_aasta',desc:'Aastalitsents, 25 kasutajat',freq:'Aastane',next:'15.01.2027',per:'2027',cl:['Milworks OÜ','Baltic Parts UAB','Nordic Fleet OÜ','Viru Logistika OÜ','Lõuna Transport AS','Rehvimaailm OÜ'],act:6,sum:3720,vq:0,deliv:'auto',st:'ok'},
+ {id:'Rendipind_kuu',desc:'Laopinna rent, Tartu mnt 84',freq:'Igakuine',next:'01.10.2026',per:'01.10–31.10',cl:['Lõuna Transport AS'],act:1,sum:1488,vq:0,deliv:'auto',st:'ok'},
+ {id:'Tugi_kvartal',desc:'Kvartaalne tugipakett',freq:'Kvartaalne',next:'01.10.2026',per:'01.10–31.12',cl:['Nordic Fleet OÜ','Viru Logistika OÜ'],act:2,sum:1116,vq:0,deliv:'review',st:'ok'},
+ {id:'Veebimajutus_vana',desc:'Veebimajutus (lõpetatud teenus)',freq:'Igakuine',next:'—',per:'—',cl:['Baltic Parts UAB'],act:0,sum:24.80,vq:0,deliv:'auto',st:'paused'}
+];
+const ST={ok:['ok','Aktiivne'],wait:['w','Ootab kogust'],late:['bad','Hilinenud'],paused:['off','Peatatud']};
+const FL=[['all','Kõik',()=>true],['ok','Aktiivsed',m=>m.st!=='paused'],['wait','Ootab kogust',m=>m.st==='wait'||m.st==='late'],['err','Vigadega',m=>m.err||m.st==='late'],['paused','Peatatud',m=>m.st==='paused']];
+const COLS=[['id','Mall'],['cl','Kliendid'],['freq','Sagedus'],['next','Järgmine arve'],['sum','Arve kohta','r'],['run','Jooksu summa','r'],['deliv','Edastamine'],['st','Olek'],['','']];
+let F='all',SORT='next',DIR=1,SEL='AFS_kuutasu';
+const pd=s=>{const m=s.match(/(\d+)\.(\d+)\.(\d+)/);return m?new Date(+m[3],m[2]-1,+m[1]).getTime():9e15};
+const runSum=m=>m.sum*m.act*1.24;
+function rows(){const q=$('q').value.trim().toLowerCase(),f=FL.find(x=>x[0]===F)[2];
+  let r=M.filter(f).filter(m=>!q||m.id.toLowerCase().includes(q)||m.desc.toLowerCase().includes(q)||m.cl.some(c=>c.toLowerCase().includes(q)));
+  const v=m=>SORT==='next'?pd(m.next):SORT==='sum'?m.sum:SORT==='run'?runSum(m):SORT==='cl'?m.act:String(m[SORT]);
+  return r.sort((a,b)=>(v(a)>v(b)?1:v(a)<v(b)?-1:0)*DIR)}
+function draw(){
+  $('flt').innerHTML=FL.map(([k,l,f])=>`<button data-f="${k}" class="${k===F?'on':''}">${l} <span class="n">${M.filter(f).length}</span></button>`).join('');
+  $('th').innerHTML=COLS.map(([k,l,c])=>`<th class="${c||''} ${k===SORT?'sorted':''}" data-s="${k}">${l}${k===SORT?(DIR>0?' ↑':' ↓'):''}</th>`).join('');
+  const r=rows();
+  $('tb').innerHTML=r.length?r.map(m=>{const s=ST[m.st],shown=m.cl.slice(0,3);return `<tr class="${m.st==='paused'?'paused':''} ${m.id===SEL?'sel':''}" data-id="${m.id}">
+<td class="nm"><b>${m.id}</b><span>${m.desc}</span></td>
+<td><div class="avs">${shown.map(c=>`<span class="av">${ini(c)}</span>`).join('')}${m.cl.length>3?`<span class="av more">+${m.cl.length-3}</span>`:''}<span class="c">${m.act}${m.act<m.cl.length?` / ${m.cl.length}`:''}</span></div></td>
+<td>${m.freq}</td>
+<td class="nx mono">${m.next}<span class="sub">periood ${m.per}</span></td>
+<td class="r mono">${num(m.sum)}${m.vq?'<span style="color:var(--text-3)"> +muutuv</span>':''}</td>
+<td class="r mono" style="font-weight:600">${m.st==='paused'?'—':num(runSum(m))}</td>
+<td class="dl">${m.vq?'Mustand':m.deliv==='auto'?'Automaatne':'Ülevaatusele'}</td>
+<td><span class="st ${s[0]}"><i></i>${s[1]}</span>${m.err?' <span class="st bad" title="Eelmine jooks ebaõnnestus">1 viga</span>':''}</td>
+<td><div class="ra">${m.vq&&m.st!=='paused'?`<button class="ib" data-a="qty">Kogused</button>`:''}<button class="ib" data-a="copy">Kopeeri</button><button class="ib" data-a="pause">${m.st==='paused'?'Aktiveeri':'Peata'}</button></div></td></tr>`}).join(''):`<tr><td colspan="9" class="empty">Ühtegi malli ei leitud</td></tr>`;
+  const act=M.filter(m=>m.st!=='paused'),wait=M.filter(m=>m.vq&&m.st!=='paused');
+  $('qn').textContent=wait.reduce((s,m)=>s+m.act,0);$('qn').style.display=wait.length?'':'none';
+  $('sum').innerHTML=`<span><b>${act.length}</b> aktiivset malli</span><span><b>${act.reduce((s,m)=>s+m.act,0)}</b> arvet jooksu kohta</span>`;
+  const oct=act.filter(m=>/\.10\.2026/.test(m.next));
+  $('ft').innerHTML=`<span>Näidatud <b>${r.length}</b> / ${M.length}</span><span class="r">Oktoobris väljastatakse <b>${oct.reduce((s,m)=>s+m.act,0)}</b> arvet · püsiosa <b class="mono">${num(oct.reduce((s,m)=>s+runSum(m),0))} €</b> km-ga</span>`;
+  if(!r.find(m=>m.id===SEL)&&r.length)SEL=r[0].id;side();
+}
+const FM={Igakuine:1,Kvartaalne:3,Aastane:12};
+const START={AFS_kuutasu:'03.06.2026',Hooldus_kuutasu:'01.01.2026',Serverid_lisamaht:'05.08.2026',Konsultatsioon_kvartal:'30.03.2026',Litsents_aasta:'15.01.2025',Rendipind_kuu:'01.03.2025',Tugi_kvartal:'01.04.2026',Veebimajutus_vana:'01.02.2024'};
+const GEN={AFS_kuutasu:[['01.06–30.06.2026','bad','Ebaõnnestus'],['01.07–31.07.2026','ok','Saadetud']],Rendipind_kuu:[['01.09–30.09.2026','ok','Saadetud']],Hooldus_kuutasu:[['01.09–30.09.2026','ok','Saadetud']]};
+const ds=d=>`${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+function side(){const m=M.find(x=>x.id===SEL);if(!m){$('side').innerHTML='<div class="empty">Vali mall</div>';return}
+  const s=ST[m.st],off=m.st==='paused',st=pd(m.next),runs=[];if(st<9e15){const d0=new Date(st);for(let i=0;i<3;i++)runs.push(new Date(d0.getFullYear(),d0.getMonth()+i*FM[m.freq],d0.getDate()))}
+  const gen=GEN[m.id]||[],del=m.vq?'Mustand · ootab kogust':m.deliv==='auto'?'Automaatne':'Ülevaatusele';
+  $('side').innerHTML=`<div class="sc"><div class="sd"><div class="sh"><span class="av">${ini(m.id.replace(/_/g,' '))}</span><div class="t"><b>${m.id}</b><span>${m.desc}</span></div><span class="st ${s[0]}"><i></i>${s[1]}</span></div>
+<div class="big mono">${num(m.sum*1.24)} €<small> / arve</small></div><div class="bsub">KM 24% · neto ${num(m.sum)} €${m.vq?' + muutuv osa':''}</div></div>
+<div class="sd kvg"><div><div class="k">Sagedus</div><div class="v">${m.freq}</div></div><div><div class="k">Edastamine</div><div class="v" style="color:${m.vq?'#8a5a0c':m.deliv==='auto'?'var(--pos)':'var(--text)'}">${del}</div></div><div><div class="k">Alustatud</div><div class="v mono">${START[m.id]||'—'}</div></div><div><div class="k">Lõpeb</div><div class="v">${off?'Peatatud':'—'}</div></div></div>
+<div class="sd"><div class="sl">Kliendid<span class="r">${m.act} / ${m.cl.length} aktiivset</span></div>${m.cl.slice(0,4).map((c,i)=>`<div class="scl ${i>=m.act?'off':''}"><span class="av">${ini(c)}</span>${c}</div>`).join('')}${m.cl.length>4?`<div class="scl" style="color:var(--text-3);font-size:11.5px">+${m.cl.length-4} veel</div>`:''}${m.cl.length?'':'<div style="font-size:12px;color:var(--text-3)">Kliente pole</div>'}</div>
+<div class="sd"><div class="sl">Tulevased jooksud<span class="r">${m.act} arvet jooksu kohta</span></div>${!off&&runs.length?runs.map((d,i)=>`<div class="srun ${i===0?'nx':''}"><span class="bu"></span><span class="d mono">${ds(d)}</span><span class="p">${i===0?(m.vq?'ootab kogust':m.deliv==='auto'?'järgmine · saadetakse':'järgmine · ülevaatusele'):'planeeritud'}</span><span class="mono">${num(runSum(m))}</span></div>`).join(''):'<div style="font-size:12px;color:var(--text-3)">Tulevasi jookse pole</div>'}</div>
+<div class="sd"><div class="sl">Genereeritud<span class="r">${gen.length}</span></div>${gen.length?gen.map(g=>`<div class="sgen"><span class="mono">${g[0]}</span><span class="st ${g[1]}"><i></i>${g[2]}</span></div>`).join(''):'<div style="font-size:12px;color:var(--text-3)">Arveid pole veel loodud</div>'}</div></div>
+<div class="sft"><button class="btn" data-sa="pause">${off?'Aktiveeri':'Peata'} <kbd>P</kbd></button><a class="btn" href="Korduva arve mall.html">Muuda <kbd>M</kbd></a><button class="btn del" data-sa="del" title="Kustuta mall">✕</button></div>`;
+}
+$('flt').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(b){F=b.dataset.f;draw()}});
+$('th').addEventListener('click',e=>{const t=e.target.closest('[data-s]');if(!t||!t.dataset.s)return;if(SORT===t.dataset.s)DIR=-DIR;else{SORT=t.dataset.s;DIR=1}draw()});
+$('q').addEventListener('input',draw);
+$('tb').addEventListener('click',e=>{const tr=e.target.closest('tr[data-id]');if(!tr)return;const m=M.find(x=>x.id===tr.dataset.id),b=e.target.closest('[data-a]');
+  if(!b){SEL=m.id;draw();return}
+  if(b.dataset.a==='qty'){location.href='Kogused.html?mall='+encodeURIComponent(m.id);return}
+  if(b.dataset.a==='copy'){const i=M.indexOf(m);M.splice(i+1,0,{...m,id:m.id+'_koopia',cl:[],act:0,st:'paused',err:0});draw();toast('Mall kopeeritud · lisa kliendid');return}
+  if(b.dataset.a==='pause'){m.st=m.st==='paused'?(m.vq?'wait':'ok'):'paused';draw();toast(m.id+(m.st==='paused'?' peatatud':' aktiveeritud'))}});
+$('tb').addEventListener('dblclick',e=>{if(e.target.closest('tr[data-id]')&&!e.target.closest('[data-a]'))location.href='Korduva arve mall.html'});
+$('side').addEventListener('click',e=>{const b=e.target.closest('[data-sa]');if(!b)return;const m=M.find(x=>x.id===SEL);if(b.dataset.sa==='pause'){m.st=m.st==='paused'?(m.vq?'wait':'ok'):'paused';draw();toast(m.id+(m.st==='paused'?' peatatud':' aktiveeritud'))}else toast('Malli kustutamine — küsitakse kinnitust')});
+document.addEventListener('keydown',e=>{if(document.activeElement===$('q'))return;const r=rows(),i=r.findIndex(m=>m.id===SEL);
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const n=r[Math.max(0,Math.min(r.length-1,i+(e.key==='ArrowDown'?1:-1)))];if(n){SEL=n.id;draw()}}
+  else if(e.key==='Enter'||e.key.toLowerCase()==='m'){if(SEL)location.href='Korduva arve mall.html'}
+  else if(e.key.toLowerCase()==='p'){const b=$('side').querySelector('[data-sa="pause"]');b&&b.click()}});
+document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==$('q')){e.preventDefault();$('q').focus()}});
+let tt;function toast(m){const el=$('toast');el.textContent=m;el.classList.add('on');clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('on'),1900)}
+draw();
+</script>
+</body>
+</html>
