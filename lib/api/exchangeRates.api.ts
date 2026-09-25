@@ -15,7 +15,7 @@ export type ExchangeRate = {
 
 export const exchangeRatesApi = {
   async list(filters?: { target_currency?: string }): Promise<ExchangeRate[]> {
-    const { data } = await apiClient.get<ApiResponse<ExchangeRate[]>>('/exchange-rates', { params: filters });
+    const { data } = await apiClient.get<ApiResponse<ExchangeRate[]>>('/api/exchange-rates', { params: filters });
     return data.data;
   },
 
@@ -25,17 +25,17 @@ export const exchangeRatesApi = {
     rate_date: string;
     rate: number;
   }): Promise<ExchangeRate> {
-    const { data } = await apiClient.post<ApiResponse<ExchangeRate>>('/exchange-rates', input);
+    const { data } = await apiClient.post<ApiResponse<ExchangeRate>>('/api/exchange-rates', input);
     return data.data;
   },
 
   async fetchEcb(): Promise<{ rates_stored: number }> {
-    const { data } = await apiClient.post<ApiResponse<{ rates_stored: number }>>('/exchange-rates/fetch-ecb');
+    const { data } = await apiClient.post<ApiResponse<{ rates_stored: number }>>('/api/exchange-rates/fetch-ecb');
     return data.data;
   },
 
   async convert(amount: number, fromCurrency: string, toCurrency: string, date: string): Promise<{ converted: number; rate: number }> {
-    const { data } = await apiClient.post<ApiResponse<{ converted: number; rate: number }>>('/exchange-rates/convert', {
+    const { data } = await apiClient.post<ApiResponse<{ converted: number; rate: number }>>('/api/exchange-rates/convert', {
       amount, from_currency: fromCurrency, to_currency: toCurrency, date,
     });
     return data.data;

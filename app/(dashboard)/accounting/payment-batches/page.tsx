@@ -192,7 +192,9 @@ export default function PaymentBatchesPage() {
         currency,
         lines: draftLines.map((line) => ({
           invoice_id: line.invoice_id || undefined,
-          amount: Number(line.amount || 0),
+          // Empty = pay the invoice's open amount (server default). "12,50" is
+          // a valid amount; Number() alone made it NaN → null → a silent full payment.
+          amount: String(line.amount ?? '').trim() ? Number(String(line.amount).trim().replace(',', '.')) : undefined,
           payee_name: line.payee_name || undefined,
           payee_iban: line.payee_iban || undefined,
           payee_bic: line.payee_bic || undefined,
