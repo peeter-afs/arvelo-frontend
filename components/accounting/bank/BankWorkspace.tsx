@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { FileUp, Landmark, ListChecks, Scale } from 'lucide-react';
+import { HelpLink } from '@/components/guides/HelpLink';
 import { BankTabBar, type BankTab } from './BankTabBar';
 import { BankInlineSummary, type BankInlineSummaryData } from './shared';
 import { ImportTab } from './ImportTab';
@@ -31,6 +32,7 @@ export function BankWorkspace() {
   // Drafts the commit auto-created, handed to the review tab so it can report
   // them and offer an undo. The import tab is hidden by then.
   const [autoDraftTxIds, setAutoDraftTxIds] = useState<string[]>([]);
+  const [reviewInitialPhase, setReviewInitialPhase] = useState<'auto' | 'rest'>('rest');
 
   const changeTab = useCallback(
     (tab: BankTab) => {
@@ -44,6 +46,7 @@ export function BankWorkspace() {
   // After an import commit, move the user to the review queue and force a refetch.
   const handleCommitted = useCallback((draftTxIds: string[] = []) => {
     setAutoDraftTxIds(draftTxIds);
+    setReviewInitialPhase('auto');
     setReviewRefreshKey((key) => key + 1);
     changeTab('review');
   }, [changeTab]);
@@ -60,7 +63,8 @@ export function BankWorkspace() {
       <div className="flex h-[30px] flex-shrink-0 items-baseline gap-2">
         <h1 className="text-[17px] font-bold text-slate-900">{t('bankWorkspace')}</h1>
         <p className="truncate text-xs text-slate-500">{t('bankWorkspaceSubtitle')}</p>
-        <button onClick={() => changeTab('import')} className="ml-auto inline-flex h-[30px] items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]">
+        <HelpLink slug="pangatehingud" className="ml-auto !h-[30px] !text-xs" />
+        <button onClick={() => changeTab('import')} className="inline-flex h-[30px] items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)]">
           <FileUp className="h-4 w-4" />
           {t('importStatement')}
         </button>
@@ -90,6 +94,7 @@ export function BankWorkspace() {
           onCountChange={setReviewCount}
           onSummaryChange={updateReviewSummary}
           autoDraftTxIds={autoDraftTxIds}
+          initialPhase={reviewInitialPhase}
           onAutoDraftsHandled={() => setAutoDraftTxIds([])}
         />
       </div>

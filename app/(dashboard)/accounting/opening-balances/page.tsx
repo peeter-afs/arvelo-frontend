@@ -32,7 +32,10 @@ import { RoleMappingDialog } from '@/components/accounting/RoleMappingDialog';
 import { OpeningSystemRolesStep } from '@/components/accounting/OpeningSystemRolesStep';
 import { SYSTEM_ROLES } from '@/lib/constants/systemRoles';
 import { Button } from '@/components/ui/Button';
+import { HelpLink } from '@/components/guides/HelpLink';
 import { getIsoToday } from '@/lib/utils/date';
+
+const OPENING_BALANCES_GUIDE = 'algsaldode-import';
 
 type Mode = 'general' | 'receivables' | 'payables';
 type Step = 'upload' | 'parsing' | 'review' | 'confirm';
@@ -962,7 +965,10 @@ export default function OpeningBalancesPage() {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-6">
-          <h2 className="text-[18px] font-semibold text-[var(--a-text)]">{t('obStrategyTitle')}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-[18px] font-semibold text-[var(--a-text)]">{t('obStrategyTitle')}</h2>
+            <HelpLink slug={OPENING_BALANCES_GUIDE} />
+          </div>
           <p className="mt-1.5 text-[13px] text-[var(--a-text-2)]">{t('obStrategyDescription')}</p>
           {errorMessage && (
             <div className="mt-3 rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-3 py-2 text-[12.5px] text-[var(--a-neg)]">{errorMessage}</div>
@@ -1049,6 +1055,7 @@ export default function OpeningBalancesPage() {
             <span>{t('obHistory')}</span>
             {batches.length > 0 && (<span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>)}
           </Button>
+          <HelpLink slug={OPENING_BALANCES_GUIDE} />
           {/* Nothing imported yet → allow re-picking the strategy. */}
           {!hasYearEnd && !hasTurnover && !hasReceivables && !hasPayables && (
             <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
@@ -1066,6 +1073,7 @@ export default function OpeningBalancesPage() {
             <span>{t('obHistory')}</span>
             {batches.length > 0 && (<span className="font-mono text-[12px] text-[var(--a-text-3)]">{batches.length}</span>)}
           </Button>
+          <HelpLink slug={OPENING_BALANCES_GUIDE} />
           {/* Nothing committed yet → let the accountant re-pick the import strategy. */}
           {strategy && committedModes.size === 0 && (
             <Button variant="default" onClick={() => setStrategy(null)} className="shrink-0">
