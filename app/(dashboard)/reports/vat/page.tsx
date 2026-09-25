@@ -12,6 +12,15 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { downloadCsv } from '@/lib/utils/csvExport';
 import { getIsoCurrentMonthEnd, getIsoCurrentMonthStart } from '@/lib/utils/date';
 
+// ?start_date=&end_date= (e.g. from the bureau dashboard) preselect the period.
+const DATE_PARAM = /^\d{4}-\d{2}-\d{2}$/;
+const fromQuery = (key: string, fallback: () => string) => () => {
+  const value = new URLSearchParams(window.location.search).get(key);
+  return value && DATE_PARAM.test(value) ? value : fallback();
+};
+const resolveStartDate = fromQuery('start_date', getIsoCurrentMonthStart);
+const resolveEndDate = fromQuery('end_date', getIsoCurrentMonthEnd);
+
 function formatCurrency(amount: number): string {
   return amount.toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -145,8 +154,8 @@ export default function VATReportPage() {
   const t = useTranslations('reports');
   const tc = useTranslations('common');
 
-  const [startDate, setStartDate] = useClientDateInput(getIsoCurrentMonthStart);
-  const [endDate, setEndDate] = useClientDateInput(getIsoCurrentMonthEnd);
+  const [startDate, setStartDate] = useClientDateInput(resolveStartDate);
+  const [endDate, setEndDate] = useClientDateInput(resolveEndDate);
   const [data, setData] = useState<VATReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

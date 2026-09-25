@@ -2705,6 +2705,27 @@
     "billedBy": "Arveldus toimub büroo kaudu: {bureau}. Ettevõttel pole eraldi tellimust.",
     "billedByBureau": "Arveldus toimub raamatupidamisbüroo kaudu. Ettevõttel pole eraldi tellimust.",
     "cannotManage": "Klientettevõte ei saa ise teisi ettevõtteid hallata.",
-    "noAccess": "Klientettevõtteid saavad hallata ainult omanik ja administraator."
+    "noAccess": "Klientettevõtteid saavad hallata ainult omanik ja administraator.",
+    "colCompany": "Ettevõte",
+    "colPurchases": "Ostuarved ootel",
+    "colBank": "Pank sidumata",
+    "colOverdue": "Üle tähtaja",
+    "colKmd": "KMD {period}",
+    "kmdPayable": "tasuda {amount}",
+    "kmdRefund": "tagastus {amount}",
+    "kmdZero": "0 €",
+    "notVatRegistered": "ei ole KMK",
+    "kmdWarningsHint": "{count, plural, one {# hoiatus} other {# hoiatust}} — vaata KMD aruannet",
+    "kmdDeadline": "KMD {period} tähtaeg {date}",
+    "kmdDueIn": "{days, plural, =0 {täna} one {# päeva pärast} other {# päeva pärast}}",
+    "kmdDeadlinePassed": "tähtaeg möödas",
+    "attentionTotals": "Ootel kokku: {purchases} ostuarvet · {bank} pangarida · {overdue} arvet üle tähtaja",
+    "figuresMembersOnly": "Numbrid on nähtavad ainult ettevõtete puhul, kus oled liige.",
+    "overviewFailed": "Klientide ülevaadet ei õnnestunud laadida.",
+    "kmdFailed": "KMD arvutus ebaõnnestus",
+    "openPurchases": "Ava ostuarved",
+    "openBank": "Ava panga ülevaatus",
+    "openReminders": "Ava meeldetuletused",
+    "openKmd": "Ava KMD aruanne"
   }
 }

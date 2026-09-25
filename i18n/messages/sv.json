@@ -1257,6 +1257,27 @@
     "billedBy": "Billed through the bureau: {bureau}. This company has no subscription of its own.",
     "billedByBureau": "Billed through an accounting bureau. This company has no subscription of its own.",
     "cannotManage": "A client company cannot manage other companies.",
-    "noAccess": "Only owners and admins can manage client companies."
+    "noAccess": "Only owners and admins can manage client companies.",
+    "colCompany": "Company",
+    "colPurchases": "Purchases pending",
+    "colBank": "Bank unmatched",
+    "colOverdue": "Overdue",
+    "colKmd": "VAT {period}",
+    "kmdPayable": "pay {amount}",
+    "kmdRefund": "refund {amount}",
+    "kmdZero": "€0",
+    "notVatRegistered": "not VAT registered",
+    "kmdWarningsHint": "{count, plural, one {# warning} other {# warnings}} — see the VAT report",
+    "kmdDeadline": "VAT return {period} due {date}",
+    "kmdDueIn": "{days, plural, =0 {today} one {in # day} other {in # days}}",
+    "kmdDeadlinePassed": "deadline passed",
+    "attentionTotals": "Pending in total: {purchases} purchase invoices · {bank} bank rows · {overdue} overdue invoices",
+    "figuresMembersOnly": "Figures are shown only for companies you are a member of.",
+    "overviewFailed": "Could not load the client overview.",
+    "kmdFailed": "VAT calculation failed",
+    "openPurchases": "Open purchase invoices",
+    "openBank": "Open bank review",
+    "openReminders": "Open reminders",
+    "openKmd": "Open VAT report"
   }
 }

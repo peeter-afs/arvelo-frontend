@@ -58,6 +58,19 @@ export type ManagedTenant = Tenant & {
   my_role: UserRole | null;
 };
 
+/** Bureau dashboard row: what needs attention in one client. */
+export type ClientOverview = {
+  tenant_id: string;
+  /** False when the user is not a member — figures are then zero and not shown. */
+  accessible: boolean;
+  purchases_to_process: number;
+  bank_unmatched: number;
+  sales_overdue: number;
+  sales_overdue_amount: number;
+  kmd: { period: string; due_date: string; payable: number; overpaid: number; warnings: number } | null;
+  error?: string;
+};
+
 export type TenantMembership = {
   tenant: Tenant;
   role: UserRole;
@@ -148,6 +161,11 @@ export const tenantsApi = {
   /** Client companies of the active tenant (accounting bureau). */
   async listManaged() {
     const response = await apiClient.get<ApiResponse<ManagedTenant[]>>('/api/tenants/managed');
+    return response.data.data;
+  },
+
+  async managedOverview() {
+    const response = await apiClient.get<ApiResponse<ClientOverview[]>>('/api/tenants/managed/overview');
     return response.data.data;
   },
 
