@@ -25,6 +25,7 @@ import AiInvoiceSettingsTab from '@/components/invoices/AiInvoiceSettingsTab';
 import { tenantsApi, type TenantMember, type PendingInvite } from '@/lib/api/tenants.api';
 import type { UserRole } from '@/lib/types/auth.types';
 import { BusinessRegistryTab } from './_tabs/BusinessRegistryTab';
+import { ManagedByNotice } from '@/components/tenants/ManagedByNotice';
 
 // All tab IDs that can appear in ?tab= (superset; permission-gated tabs render
 // their own access notice). Kept in sync with the `tabs` array inside the page.
@@ -103,7 +104,8 @@ export default function SettingsPage() {
     account_id: '',
     is_active: true,
   });
-  const canManageRegistry = role === 'owner' || role === 'admin';
+  // Registry credentials are platform-wide, so only a platform admin manages them.
+  const canManageRegistry = user?.is_platform_admin === true;
   const canManageIntegrations = role === 'owner' || role === 'admin';
   const canManageBilling = role === 'owner' || role === 'admin';
   const canManageData = role === 'owner' || role === 'admin';
@@ -129,7 +131,7 @@ export default function SettingsPage() {
     { id: 'notifications', label: t('notifications'), icon: Bell, category: 'preferences' },
     { id: 'security', label: t('security'), icon: Shield, category: 'account' },
     { id: 'localization', label: t('localization'), icon: Globe, category: 'preferences' },
-    { id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' },
+    ...(canManageRegistry ? [{ id: 'business-registry', label: t('businessRegistry'), icon: Settings, category: 'organization' as const }] : []),
     { id: 'integrations', label: t('integrations'), icon: Plug, category: 'organization' },
     { id: 'bank-connections', label: t('bankConnections'), icon: Landmark, category: 'organization' },
     { id: 'data-management', label: t('dataManagement'), icon: Database, category: 'organization' },
@@ -504,6 +506,7 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('companyInformation')}</h2>
                 <p className="text-sm text-slate-500 mb-6">{t('companyDescription')}</p>
+                {tenant?.managed_by_tenant_id && <ManagedByNotice bureauId={tenant.managed_by_tenant_id} />}
                 <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); void handleSaveCompany(); }}>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1.5">

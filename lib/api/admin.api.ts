@@ -10,7 +10,12 @@ export interface TenantMeta {
   created_at: string;
   updated_at: string;
   member_count: number;
+  /** For a bureau's client: the bureau's (effective) state. */
   entitlement_state: string | null;
+  /** Accounting bureau that manages and pays for this tenant. */
+  managed_by: { id: string; name: string | null } | null;
+  /** Number of client companies this tenant manages (it is a bureau when > 0). */
+  managed_count: number;
 }
 
 export interface TenantMember {

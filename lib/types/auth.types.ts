@@ -22,6 +22,9 @@ export interface Tenant {
   address?: string;
   email?: string;
   phone?: string;
+  legal_form?: string | null;
+  /** Set when an accounting bureau (another tenant) manages and pays for this company. */
+  managed_by_tenant_id?: string | null;
   base_currency: string;
   created_at: string;
   updated_at: string;

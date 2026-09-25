@@ -40,6 +40,7 @@ export type BusinessRegistryCompany = {
   postalCode?: string | null;
   city?: string | null;
   countryCode?: string | null;
+  legalForm?: string | null;
   country?: string;
   source: 'business_registry';
   sourceTimestamp: string;
@@ -111,6 +112,25 @@ export const businessRegistryApi = {
       correlation_id: string;
       company: BusinessRegistryCompany;
     }>>(`/api/business-registry/company/${registryCode}`);
+    return response.data.data;
+  },
+
+  /** Registry search without a tenant context — for creating a company. */
+  async lookupCompanies(q: string) {
+    const response = await apiClient.get<ApiResponse<{
+      correlation_id: string;
+      items: BusinessRegistrySearchItem[];
+    }>>('/api/business-registry/lookup/search', {
+      params: { q }
+    });
+    return response.data.data;
+  },
+
+  async lookupCompany(registryCode: string) {
+    const response = await apiClient.get<ApiResponse<{
+      correlation_id: string;
+      company: BusinessRegistryCompany;
+    }>>(`/api/business-registry/lookup/company/${encodeURIComponent(registryCode)}`);
     return response.data.data;
   },
 

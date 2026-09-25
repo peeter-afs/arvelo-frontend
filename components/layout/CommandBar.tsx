@@ -42,6 +42,7 @@ export function CommandBar({
   const tAccounting = useTranslations('accounting');
   const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
+  const tClients = useTranslations('clients');
   const labels = {
     accounting: tNavigation('books'),
     accounts: tAccounting('chartOfAccounts'),
@@ -72,6 +73,7 @@ export function CommandBar({
     security: tNavigation('security'),
     assets: tNavigation('fixedAssets'),
     help: tNavigation('help'),
+    clients: tClients('title'),
     new: tCommon('newEntry'),
     edit: tCommon('edit'),
     preview: tCommon('preview'),

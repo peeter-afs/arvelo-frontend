@@ -8,16 +8,12 @@ import {
   ArrowLeft,
   Loader2,
   Plus,
-  Search,
   ShieldAlert,
   X,
 } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import {
-  businessRegistryApi,
-  type BusinessRegistryCompany,
-  type BusinessRegistrySearchItem,
-} from '@/lib/api/businessRegistry.api';
+import type { BusinessRegistryCompany } from '@/lib/api/businessRegistry.api';
+import { RegistryCompanySearch } from '@/components/business-registry/RegistryCompanySearch';
 import {
   accountingApi,
   type AccountOption,
@@ -92,7 +88,6 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
   const t = useTranslations('accounting');
   const [step, setStep] = useState<1 | 2>(1);
   const [registryQuery, setRegistryQuery] = useState('');
-  const [registryResults, setRegistryResults] = useState<BusinessRegistrySearchItem[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<BusinessRegistryCompany | null>(null);
   const [form, setForm] = useState<PartnerFormState>(emptyForm());
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -134,7 +129,6 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
     // Seed the registry query too: with a name in hand the accountant is one
     // click from pulling the reg code and address out of the registry.
     setRegistryQuery(seededName);
-    setRegistryResults([]);
     setSelectedCompany(null);
     setForm({ ...emptyForm(), type: seedRef.current.defaultType ?? 'customer', name: seededName });
     setDuplicateWarnings([]);
@@ -148,49 +142,20 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
     [onClose],
   );
 
-  const handleRegistrySearch = async () => {
-    setLoading('search');
+  const handleSelectCompany = (company: BusinessRegistryCompany) => {
     setErrorMessage(null);
-    try {
-      const result = await businessRegistryApi.searchCompanies(registryQuery);
-      setRegistryResults(result.items);
-      if (result.items.length === 0) {
-        setErrorMessage(t('noBusinessRegistryMatchesFound'));
-      }
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleSelectCompany = async (item: BusinessRegistrySearchItem) => {
-    if (!item.registryCode) {
-      setErrorMessage(t('selectedResultHasNoRegistryCode'));
-      return;
-    }
-    setLoading(`company-${item.registryCode}`);
-    setErrorMessage(null);
-    try {
-      const result = await businessRegistryApi.getCompany(item.registryCode);
-      const company = result.company;
-      setSelectedCompany(company);
-      setForm((current) => ({
-        ...current,
-        name: company.name || current.name,
-        reg_code: company.registryCode || current.reg_code,
-        vat_number: company.vatNumber || current.vat_number,
-        address: company.legalAddress || current.address,
-        postal_code: company.postalCode || current.postal_code,
-        city: company.city || current.city,
-        country_code: company.countryCode || current.country_code,
-      }));
-      setStep(2);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setLoading(null);
-    }
+    setSelectedCompany(company);
+    setForm((current) => ({
+      ...current,
+      name: company.name || current.name,
+      reg_code: company.registryCode || current.reg_code,
+      vat_number: company.vatNumber || current.vat_number,
+      address: company.legalAddress || current.address,
+      postal_code: company.postalCode || current.postal_code,
+      city: company.city || current.city,
+      country_code: company.countryCode || current.country_code,
+    }));
+    setStep(2);
   };
 
   const handleCreateManually = () => {
@@ -327,17 +292,16 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
             </div>
           )}
 
-          {step === 1 ? (
-            <StepOne
-              registryQuery={registryQuery}
-              setRegistryQuery={setRegistryQuery}
-              registryResults={registryResults}
-              loading={loading}
-              onSearch={handleRegistrySearch}
-              onSelectCompany={handleSelectCompany}
+          {/* Kept mounted on step 2 so "Back" returns to the same results. */}
+          <div className={step === 1 ? undefined : 'hidden'}>
+            <RegistryCompanySearch
+              key={registryQuery}
+              initialQuery={registryQuery}
+              onSelect={handleSelectCompany}
               onCreateManually={handleCreateManually}
             />
-          ) : (
+          </div>
+          {step === 2 && (
             <StepTwo form={form} setForm={setForm} accounts={accounts} duplicateWarnings={duplicateWarnings} />
           )}
         </div>
@@ -357,91 +321,6 @@ export function AddPartnerModal({ open, onClose, onCreated, defaultType, prefill
         )}
       </div>
     </dialog>
-  );
-}
-
-function countryFlag(country: string): string {
-  const flags: Record<string, string> = { EE: '🇪🇪', FI: '🇫🇮' };
-  return flags[country.toUpperCase()] || '🏳️';
-}
-
-function StepOne({
-  registryQuery,
-  setRegistryQuery,
-  registryResults,
-  loading,
-  onSearch,
-  onSelectCompany,
-  onCreateManually,
-}: {
-  registryQuery: string;
-  setRegistryQuery: (q: string) => void;
-  registryResults: BusinessRegistrySearchItem[];
-  loading: string | null;
-  onSearch: () => void;
-  onSelectCompany: (item: BusinessRegistrySearchItem) => void;
-  onCreateManually: () => void;
-}) {
-  const t = useTranslations('accounting');
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-        <input
-          value={registryQuery}
-          onChange={(e) => setRegistryQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && registryQuery.trim().length >= 2) onSearch();
-          }}
-          placeholder={t('companyNameOrRegistryCode')}
-          className={fieldInput}
-          autoFocus
-        />
-        <Button variant="primary" onClick={onSearch} disabled={registryQuery.trim().length < 2 || loading === 'search'}>
-          {loading === 'search' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-          {t('searchRegistry')}
-        </Button>
-      </div>
-
-      {registryResults.length > 0 && (
-        <div className="space-y-2">
-          {registryResults.map((item) => (
-            <button
-              key={`${item.registryCode}-${item.name}`}
-              onClick={() => onSelectCompany(item)}
-              disabled={!item.registryCode || !!loading}
-              className="flex w-full items-center justify-between gap-3 rounded-lg border border-[var(--a-border)] p-3 text-left transition hover:border-[var(--a-accent)] hover:bg-[var(--a-accent-soft-2)] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-[var(--a-text)]">{item.name || t('unnamedCompany')}</span>
-                  {item.country && (
-                    <span className="inline-flex items-center rounded-full bg-[var(--a-surface-2)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--a-text-3)]">
-                      {countryFlag(item.country)} {item.country}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
-                  {item.registryCode || t('noRegistryCode')} · {item.vatNumber || t('noVat')} · {item.registryStatus || t('noStatus')}
-                </div>
-              </div>
-              {loading === `company-${item.registryCode}` ? (
-                <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin text-[var(--a-text-3)]" />
-              ) : (
-                <Plus className="h-4 w-4 flex-shrink-0 text-[var(--a-text-3)]" />
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-3 text-[12px] text-[var(--a-text-3)] before:h-px before:flex-1 before:bg-[var(--a-border)] after:h-px after:flex-1 after:bg-[var(--a-border)]">
-        {t('or')}
-      </div>
-
-      <Button className="w-full justify-center" onClick={onCreateManually}>
-        {t('createManually')}
-      </Button>
-    </div>
   );
 }
 

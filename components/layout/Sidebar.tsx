@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import {
   BarChart3,
   BookOpen,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   FileText,
@@ -28,6 +27,7 @@ import { formatMetricCount, useNavigationMetrics } from '@/lib/hooks/useNavigati
 import { isTaskRoute } from '@/lib/nav/task-routes';
 import { useSidebarStore } from '@/lib/stores/sidebar.store';
 import { Kbd } from '@/components/ui/Kbd';
+import { TenantSwitcher } from './TenantSwitcher';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -93,7 +93,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
   const tExpenses = useTranslations('recurringExpenses');
-  const { user, tenant, role, logout } = useAuthStore();
+  const { user, role, logout } = useAuthStore();
   const {
     isCollapsed,
     toggleSidebar,
@@ -320,22 +320,11 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           )}
         </div>
 
-        <button className={`mt-3.5 flex w-full items-center rounded-lg bg-white/[0.04] py-2 text-left ${effectiveCollapsed ? 'justify-center px-0' : 'gap-2 px-2.5'}`}>
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-white/[0.06] text-[11px] font-semibold text-white">
-            {initials(tenant?.name)}
-          </span>
-          {!effectiveCollapsed && (
-            <>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium text-white">{tenant?.name || tCommon('companyWorkspace')}</span>
-                <span className="mt-0.5 inline-flex rounded border border-white/10 px-1.5 py-0.5 font-mono text-[10px] text-[var(--a-side-muted)]">
-                  {navigationMetrics.fiscalYearLabel}
-                </span>
-              </span>
-              <ChevronDown className="h-3.5 w-3.5 text-[var(--a-side-muted)]" />
-            </>
-          )}
-        </button>
+        <TenantSwitcher
+          collapsed={effectiveCollapsed}
+          fiscalYearLabel={navigationMetrics.fiscalYearLabel}
+          onNavigate={handleNavClick}
+        />
       </div>
 
       <nav className="sidebar-scroll flex-1 overflow-y-auto px-2 py-3" aria-label={tCommon('mainNavigation')}>

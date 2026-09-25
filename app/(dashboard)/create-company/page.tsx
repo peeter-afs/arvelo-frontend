@@ -3,27 +3,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Tenant } from '@/lib/types/auth.types';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { authApi } from '@/lib/api/auth.api';
 import { tenantsApi } from '@/lib/api/tenants.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
-
-const DEFAULT_FORM = {
-  name: '',
-  registry_code: '',
-  vat_number: '',
-  is_vat_registered: true,
-  address: '',
-  email: '',
-  phone: '',
-};
+import type { CompanyInput } from '@/lib/api/tenants.api';
+import { NewCompanyForm } from '@/components/tenants/NewCompanyForm';
 
 export default function CreateCompanyPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, tenant, setTenant, setTokens } = useAuthStore();
-  const [form, setForm] = useState(DEFAULT_FORM);
   const [availableTenants, setAvailableTenants] = useState<Array<{
     tenant: { id: string; name: string; base_currency: string };
     role: 'owner' | 'admin' | 'accountant' | 'viewer';
@@ -46,10 +37,6 @@ export default function CreateCompanyPage() {
     []
   );
 
-  const handleChange = (field: keyof typeof DEFAULT_FORM, value: string | boolean) => {
-    setForm((current) => ({ ...current, [field]: value }));
-  };
-
   useEffect(() => {
     if (tenant) {
       return;
@@ -70,41 +57,18 @@ export default function CreateCompanyPage() {
     void loadTenants();
   }, [tenant]);
 
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  // Errors are shown inside the form; it re-throws nothing on success.
+  const handleCreate = async (payload: CompanyInput) => {
     setErrorMessage(null);
     setSuccessMessage(null);
-
-    if (!form.name.trim()) {
-      setErrorMessage('Company name is required.');
-      return;
-    }
-
-    setActionLoading('create');
-    try {
-      const createdTenant = await tenantsApi.createTenant({
-        name: form.name.trim(),
-        registry_code: form.registry_code.trim() || undefined,
-        vat_number: form.vat_number.trim() || undefined,
-        is_vat_registered: form.is_vat_registered,
-        address: form.address.trim() || undefined,
-        email: form.email.trim() || undefined,
-        phone: form.phone.trim() || undefined,
-      });
-
-      const switched = await authApi.switchTenant(createdTenant.id);
-      setTokens(switched.access_token, switched.refresh_token);
-      setTenant(createdTenant, 'owner');
-      setSuccessMessage(`Company ${createdTenant.name} created. Redirecting to your dashboard...`);
-
-      setTimeout(() => {
-        router.push('/');
-      }, 250);
-    } catch (error) {
-      setErrorMessage(getErrorMessage(error));
-    } finally {
-      setActionLoading(null);
-    }
+    const createdTenant = await tenantsApi.createTenant(payload);
+    const switched = await authApi.switchTenant(createdTenant.id);
+    setTokens(switched.access_token, switched.refresh_token);
+    setTenant(createdTenant, 'owner');
+    setSuccessMessage(`Company ${createdTenant.name} created. Redirecting to your dashboard...`);
+    setTimeout(() => {
+      router.push('/');
+    }, 250);
   };
 
   const handleSwitchTenant = async (tenantId: string, tenantName: string) => {
@@ -166,7 +130,7 @@ export default function CreateCompanyPage() {
             </div>
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
-            Finish the real backend bootstrap now. This creates the tenant, fiscal year, journals, default accounts,
+            Search the Estonian business registry to prefill your company details. This creates the tenant, fiscal year, journals, default accounts,
             VAT settings, and owner access in one step.
           </p>
           {fromRegister && (
@@ -181,7 +145,7 @@ export default function CreateCompanyPage() {
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <div className="space-y-6 p-6">
           {errorMessage && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <div className="flex items-start gap-3">
@@ -191,101 +155,17 @@ export default function CreateCompanyPage() {
             </div>
           )}
 
-          {successMessage && (
+          {successMessage ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <span>{successMessage}</span>
               </div>
             </div>
+          ) : (
+            <NewCompanyForm submitLabel="Create company workspace" onSubmit={handleCreate} />
           )}
-
-          <div className="grid gap-5 md:grid-cols-2">
-            <FormField label="Company name" required>
-              <input
-                value={form.name}
-                onChange={(event) => handleChange('name', event.target.value)}
-                placeholder="Your Company OÜ"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-
-            <FormField label="Registry code">
-              <input
-                value={form.registry_code}
-                onChange={(event) => handleChange('registry_code', event.target.value)}
-                placeholder="12345678"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-
-            <FormField label="VAT number">
-              <input
-                value={form.vat_number}
-                onChange={(event) => handleChange('vat_number', event.target.value)}
-                placeholder="EE123456789"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-
-            <FormField label="Company email">
-              <input
-                value={form.email}
-                onChange={(event) => handleChange('email', event.target.value)}
-                placeholder="finance@company.ee"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-
-            <FormField label="Phone">
-              <input
-                value={form.phone}
-                onChange={(event) => handleChange('phone', event.target.value)}
-                placeholder="+372 5555 5555"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-
-            <FormField label="Address">
-              <input
-                value={form.address}
-                onChange={(event) => handleChange('address', event.target.value)}
-                placeholder="Street, city"
-                className="h-11 w-full rounded-xl border border-slate-200 px-4"
-                disabled={actionLoading !== null}
-              />
-            </FormField>
-          </div>
-
-          <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={form.is_vat_registered}
-              onChange={(event) => handleChange('is_vat_registered', event.target.checked)}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300"
-              disabled={actionLoading !== null}
-            />
-            <span>
-              Mark this company as VAT registered from the start. You can change account and VAT configuration later in settings.
-            </span>
-          </label>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="submit"
-              disabled={actionLoading !== null}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-slate-900 px-5 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {actionLoading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              <span>Create company workspace</span>
-            </button>
-          </div>
-        </form>
+        </div>
       </section>
 
       <aside className="space-y-6">
@@ -375,24 +255,5 @@ export default function CreateCompanyPage() {
         </div>
       </aside>
     </div>
-  );
-}
-
-function FormField({
-  label,
-  children,
-  required = false,
-}: {
-  label: string;
-  children: React.ReactNode;
-  required?: boolean;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-sm font-medium text-slate-700">
-        {label} {required ? <span className="text-red-500">*</span> : null}
-      </span>
-      {children}
-    </label>
   );
 }

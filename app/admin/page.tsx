@@ -115,7 +115,10 @@ export default function AdminTenantsPage() {
               <tbody className="divide-y divide-slate-100">
                 {tenants.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{t.name}</td>
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-slate-900">{t.name}</div>
+                      <ManagementNote tenant={t} />
+                    </td>
                     <td className="px-4 py-3 text-slate-500">{t.registry_code ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-500">{t.member_count}</td>
                     <td className="px-4 py-3">
@@ -135,7 +138,8 @@ export default function AdminTenantsPage() {
                     <td className="px-4 py-3 text-right">
                       <button
                         onClick={() => handleSuspend(t.id, t.entitlement_state)}
-                        disabled={actionInProgress === t.id}
+                        disabled={actionInProgress === t.id || !!t.managed_by}
+                        title={t.managed_by ? 'Status follows the managing bureau' : undefined}
                         className="mr-2 text-xs text-slate-600 hover:text-slate-900 disabled:opacity-50"
                       >
                         {t.entitlement_state === 'locked' ? 'Reactivate' : 'Suspend'}
@@ -168,6 +172,7 @@ export default function AdminTenantsPage() {
                 <div className="mb-2 flex items-start justify-between">
                   <div>
                     <p className="font-medium text-slate-900">{t.name}</p>
+                    <ManagementNote tenant={t} />
                     <p className="text-sm text-slate-500">
                       {t.registry_code ?? '—'} · {t.member_count} members
                     </p>
@@ -185,7 +190,7 @@ export default function AdminTenantsPage() {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleSuspend(t.id, t.entitlement_state)}
-                    disabled={actionInProgress === t.id}
+                    disabled={actionInProgress === t.id || !!t.managed_by}
                     className="min-h-[44px] flex-1 rounded-lg border border-slate-300 text-sm font-medium text-slate-700 disabled:opacity-50"
                   >
                     {t.entitlement_state === 'locked' ? 'Reactivate' : 'Suspend'}
@@ -208,4 +213,19 @@ export default function AdminTenantsPage() {
       )}
     </div>
   );
+}
+
+/** Bureau ↔ client link: a client's status and billing follow its bureau. */
+function ManagementNote({ tenant }: { tenant: TenantMeta }) {
+  if (tenant.managed_by) {
+    return (
+      <div className="text-xs text-slate-500">
+        Client of {tenant.managed_by.name ?? 'a bureau'} · billed via bureau
+      </div>
+    );
+  }
+  if (tenant.managed_count > 0) {
+    return <div className="text-xs text-slate-500">Bureau · {tenant.managed_count} client companies</div>;
+  }
+  return null;
 }

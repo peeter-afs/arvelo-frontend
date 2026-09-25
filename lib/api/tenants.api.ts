@@ -42,6 +42,28 @@ export type InviteUserResult = EmailOutcome &
     | { mode: 'invited'; invite: PendingInvite }
   );
 
+export type CompanyInput = {
+  name: string;
+  registry_code?: string;
+  vat_number?: string;
+  is_vat_registered?: boolean;
+  address?: string;
+  email?: string;
+  phone?: string;
+  legal_form?: string;
+};
+
+export type ManagedTenant = Tenant & {
+  /** The current user's role in this client, or null when they are not a member. */
+  my_role: UserRole | null;
+};
+
+export type TenantMembership = {
+  tenant: Tenant;
+  role: UserRole;
+  is_default: boolean;
+};
+
 export const tenantsApi = {
   async getMembers(tenantId: string) {
     const response = await apiClient.get<ApiResponse<TenantMember[]>>(`/api/tenants/${tenantId}/members`);
@@ -105,15 +127,7 @@ export const tenantsApi = {
     return response.data;
   },
 
-  async createTenant(payload: {
-    name: string;
-    registry_code?: string;
-    vat_number?: string;
-    is_vat_registered?: boolean;
-    address?: string;
-    email?: string;
-    phone?: string;
-  }) {
+  async createTenant(payload: CompanyInput) {
     const response = await apiClient.post<ApiResponse<Tenant>>('/api/tenants', payload);
     return response.data.data;
   },
@@ -131,12 +145,19 @@ export const tenantsApi = {
     return response.data.data;
   },
 
+  /** Client companies of the active tenant (accounting bureau). */
+  async listManaged() {
+    const response = await apiClient.get<ApiResponse<ManagedTenant[]>>('/api/tenants/managed');
+    return response.data.data;
+  },
+
+  async createManaged(payload: CompanyInput) {
+    const response = await apiClient.post<ApiResponse<Tenant>>('/api/tenants/managed', payload);
+    return response.data.data;
+  },
+
   async listUserTenants() {
-    const response = await apiClient.get<ApiResponse<Array<{
-      tenant: Tenant;
-      role: 'owner' | 'admin' | 'accountant' | 'viewer';
-      is_default: boolean;
-    }>>>('/api/tenants');
+    const response = await apiClient.get<ApiResponse<TenantMembership[]>>('/api/tenants');
     return response.data.data;
   },
 };

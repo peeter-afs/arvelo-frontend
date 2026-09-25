@@ -8,10 +8,12 @@ import { bankingApi, type DraftExclusionRule } from '@/lib/api/banking.api';
 import { billingApi, type BillingInvoice, type BillingPlan, type BillingEntitlement, type BillingSettings, type BillingReminderHistoryItem, type BillingReminderOperationItem, type BillingAnnualBalanceHistoryItem, type BillingAnnualBalanceMismatchItem, type BillingAnnualBalanceNotificationItem, type BillingAnnualBalanceReport, type BillingMessagePreview } from '@/lib/api/billing.api';
 import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { BillingField, ReportStat, TabFeedback } from '../_components/fields';
+import { ManagedByNotice } from '@/components/tenants/ManagedByNotice';
 
 export function BillingTab({ canManage }: { canManage: boolean }) {
   const t = useTranslations('settings');
   const { tenant } = useAuthStore();
+  const isManaged = Boolean(tenant?.managed_by_tenant_id);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -333,6 +335,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
       <h2 className="text-lg font-semibold text-slate-900 mb-1">{t('billingTitle')}</h2>
       <p className="text-sm text-slate-500 mb-6">{t('billingDescription')}</p>
       <TabFeedback error={error} success={success} />
+      {tenant?.managed_by_tenant_id && <ManagedByNotice bureauId={tenant.managed_by_tenant_id} billing />}
 
       {!canManage ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -725,6 +728,8 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </div>
           </div>
 
+          {/* A bureau's client has no subscription of its own — the bureau pays. */}
+          {!isManaged && (
           <div className="rounded-xl border border-slate-200 p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -825,6 +830,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
               </button>
             </div>
           </div>
+          )}
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
