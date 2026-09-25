@@ -129,29 +129,33 @@ export type VATRateBreakdown = {
 
 export type VATInvoiceSummary = {
   id: string;
+  /** sales_invoice | sales_credit_note | purchase_invoice | purchase_credit_note — credit notes carry negative amounts. */
+  type: string;
   invoice_number: string;
   invoice_date: string;
-  partner_name?: string;
+  partner_name?: string | null;
   subtotal: number;
   tax_amount: number;
   total: number;
   tax_rate_breakdown: VATRateBreakdown[];
 };
 
+/** KMD form line keys: `1_2` is line 1², `3_1_1` is line 3.1.1. */
+export type KmdLineKey =
+  | '1' | '1_1' | '1_2' | '2' | '2_1' | '2_2'
+  | '3' | '3_1' | '3_1_1' | '3_2' | '3_2_1'
+  | '4' | '5' | '5_1' | '5_2' | '5_3' | '5_4'
+  | '6' | '6_1' | '7' | '7_1' | '8' | '9' | '10' | '11' | '12' | '13';
+
 export type VATReportData = {
-  line1_taxable_22: number;
-  line2_taxable_9: number;
-  line3_taxable_0: number;
-  line4_output_vat: number;
-  line5_input_vat: number;
-  line6_net_vat: number;
-  line7_intra_community_supply: number;
-  line8_intra_community_vat: number;
-  line9_reverse_charge_supply: number;
-  line10_reverse_charge_vat: number;
-  line11_third_country_supply: number;
+  lines: Record<KmdLineKey, number>;
   sales_invoices: VATInvoiceSummary[];
   purchase_invoices: VATInvoiceSummary[];
+  sales_annex_count: number;
+  purchases_annex_count: number;
+  warnings: string[];
+  /** Set when the range is exactly one calendar month (exportable to e-MTA). */
+  period: { year: number; month: number } | null;
   startDate: string;
   endDate: string;
 };
