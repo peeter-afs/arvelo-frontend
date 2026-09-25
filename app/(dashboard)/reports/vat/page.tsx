@@ -150,6 +150,8 @@ export default function VATReportPage() {
   const [data, setData] = useState<VATReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Export failures stay next to the buttons instead of replacing the report.
+  const [exportError, setExportError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!startDate || !endDate) {
@@ -179,22 +181,24 @@ export default function VATReportPage() {
   const handleExportKmd = async () => {
     if (!startDate || !endDate || !data?.period) return;
     try {
+      setExportError(null);
       const blob = await reportsApi.downloadKmdXml(startDate, endDate);
       const period = startDate.slice(0, 7);
       downloadBlob(blob, `KMD_${period}.xml`);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setExportError(getErrorMessage(err));
     }
   };
 
   const handleExportKmdInf = async () => {
     if (!startDate || !endDate || !data?.period) return;
     try {
+      setExportError(null);
       const blob = await reportsApi.downloadKmdInfXml(startDate, endDate);
       const period = startDate.slice(0, 7);
       downloadBlob(blob, `KMD_INF_${period}.xml`);
     } catch (err) {
-      setError(getErrorMessage(err));
+      setExportError(getErrorMessage(err));
     }
   };
 
@@ -323,6 +327,12 @@ export default function VATReportPage() {
           </div>
         </div>
       </div>
+
+      {exportError && (
+        <div className="card mb-6 p-4 text-sm" style={{ color: 'var(--danger, #dc2626)' }}>
+          {exportError}
+        </div>
+      )}
 
       {!canExport && (
         <div className="card mb-6 p-4 text-sm" style={{ color: 'var(--text-secondary)' }}>

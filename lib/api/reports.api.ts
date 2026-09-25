@@ -235,6 +235,31 @@ export type DimensionReportData = {
   lines: DimensionReportLine[];
 };
 
+/**
+ * With responseType 'blob' an error body arrives as a Blob too, so the
+ * server's message (e.g. "registry code is missing") has to be read out of it.
+ */
+async function downloadXml(url: string, startDate: string, endDate: string): Promise<Blob> {
+  try {
+    const response = await apiClient.get(url, {
+      params: { start_date: startDate, end_date: endDate },
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  } catch (error) {
+    const data = (error as { response?: { data?: unknown } }).response?.data;
+    if (data instanceof Blob) {
+      try {
+        const parsed = JSON.parse(await data.text()) as { error?: { message?: string } };
+        if (parsed.error?.message) throw new Error(parsed.error.message);
+      } catch (parseError) {
+        if (parseError instanceof Error && !(parseError instanceof SyntaxError)) throw parseError;
+      }
+    }
+    throw error;
+  }
+}
+
 export const reportsApi = {
   /** Revenue and costs by cost centre / project, from invoice lines. */
   async getDimensionReport(startDate: string, endDate: string, includeDrafts = false) {
@@ -300,18 +325,10 @@ export const reportsApi = {
   },
 
   async downloadKmdXml(startDate: string, endDate: string) {
-    const response = await apiClient.get('/api/reports/kmd', {
-      params: { start_date: startDate, end_date: endDate },
-      responseType: 'blob',
-    });
-    return response.data as Blob;
+    return downloadXml('/api/reports/kmd', startDate, endDate);
   },
 
   async downloadKmdInfXml(startDate: string, endDate: string) {
-    const response = await apiClient.get('/api/reports/kmd-inf', {
-      params: { start_date: startDate, end_date: endDate },
-      responseType: 'blob',
-    });
-    return response.data as Blob;
+    return downloadXml('/api/reports/kmd-inf', startDate, endDate);
   },
 };
