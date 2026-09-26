@@ -438,20 +438,23 @@ function PaymentModal({ ids, invoices, ctx, bankAccounts, onClose, onDone }: { i
   const [bankAccountId, setBankAccountId] = useState(bankAccounts[0]?.id || ''); const [date, setDate] = useState(new Date().toISOString().slice(0, 10)); const [grouping, setGrouping] = useState<'each' | 'payee'>('each'); const [prefill, setPrefill] = useState<Record<string, PaymentBatchPrefillLine>>({}); const [missing, setMissing] = useState<string[]>([]); const [busy, setBusy] = useState<null | 'save' | 'file'>(null);
   useEffect(() => { if (!bankAccountId && bankAccounts[0]) setBankAccountId(bankAccounts[0].id); }, [bankAccounts, bankAccountId]);
   useEffect(() => { if (!lines.length) return; let live = true; bankingApi.getPaymentBatchPrefillLines({ invoice_ids: lines.map((r) => r.id) }).then((res) => { if (!live) return; setPrefill(Object.fromEntries(res.lines.filter((l) => l.invoice_id).map((l) => [l.invoice_id!, l]))); setMissing(res.missing_supplier_bank_account_invoice_ids || []); }).catch((e) => showToast.error(getErrorMessage(e))); return () => { live = false; }; }, [ids]); // eslint-disable-line react-hooks/exhaustive-deps
+  // One entry per invoice — always what is sent, so every invoice keeps its own
+  // batch line and is settled when the batch is executed.
+  const base = useMemo(() => lines.map((r) => { const p = prefill[r.id]; return { inv: r, payee: p?.payee_name || partnerName(r, ctx.partnerMap), iban: p?.payee_iban || '', bic: p?.payee_bic || undefined, reference: p?.reference || r.payment_reference || '', description: p?.description || r.invoice_number || '', amount: Number(p?.amount ?? openAmount(r)), due: r.due_date, ids: [r.id] }; }), [lines, prefill, ctx.partnerMap]);
+  // What the bank sees: per payee, invoices are merged into one transfer.
   const rows = useMemo(() => {
-    const base = lines.map((r) => { const p = prefill[r.id]; return { inv: r, payee: p?.payee_name || partnerName(r, ctx.partnerMap), iban: p?.payee_iban || '', bic: p?.payee_bic || undefined, reference: p?.reference || r.payment_reference || '', description: p?.description || r.invoice_number || '', amount: Number(p?.amount ?? openAmount(r)), due: r.due_date, ids: [r.id] }; });
     if (grouping === 'each') return base;
     const byPayee = new Map<string, (typeof base)[number]>();
     for (const b of base) { const key = `${b.payee}|${b.iban}`; const cur = byPayee.get(key); if (!cur) byPayee.set(key, { ...b }); else { cur.amount += b.amount; cur.reference = [cur.reference, b.reference].filter(Boolean).join(', '); cur.description = [cur.description, b.description].filter(Boolean).join(', '); cur.ids = [...cur.ids, ...b.ids]; if (b.due && (!cur.due || b.due < cur.due)) cur.due = b.due; } }
     return [...byPayee.values()];
-  }, [lines, prefill, grouping, ctx.partnerMap]);
+  }, [base, grouping]);
   const total = rows.reduce((n, r) => n + r.amount, 0);
   const save = async (file: boolean) => {
     if (!bankAccountId) { showToast.error('Vali maksja konto'); return; }
     if (rows.some((r) => !r.iban)) { showToast.error('Mõnel saajal puudub IBAN — lisa see partneri kaardile'); return; }
     setBusy(file ? 'file' : 'save');
     try {
-      const created = await bankingApi.createPaymentBatch({ bank_account_id: bankAccountId, execution_date: date, lines: rows.map((r) => ({ invoice_id: grouping === 'each' ? r.ids[0] : null, amount: Math.round(r.amount * 100) / 100, payee_name: r.payee, payee_iban: r.iban, payee_bic: r.bic, reference: r.reference || undefined, description: r.description || undefined })) });
+      const created = await bankingApi.createPaymentBatch({ bank_account_id: bankAccountId, execution_date: date, lines: base.map((r) => ({ invoice_id: r.ids[0], amount: Math.round(r.amount * 100) / 100, payee_name: r.payee, payee_iban: r.iban, payee_bic: r.bic, reference: r.reference || undefined, description: r.description || undefined, transfer_group: grouping === 'payee' ? `${r.payee}|${r.iban}` : undefined })) });
       if (file) { const gen = await bankingApi.generatePaymentBatchPain001(created.batch.id); const content = gen.batch.exported_file_content; if (content) downloadBlob(new Blob([String(content)], { type: 'application/xml' }), gen.batch.exported_file_name || `${gen.batch.batch_name || 'maksepakk'}.xml`); showToast.success('Pangafail loodud ja alla laaditud'); }
       else showToast.success(`Maksepakk ${created.batch.batch_name || ''} salvestatud`);
       onDone(lines.map((r) => r.id));

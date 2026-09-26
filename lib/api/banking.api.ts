@@ -561,6 +561,8 @@ export const bankingApi = {
       reference?: string;
       description?: string;
       counterpart_account_id?: string | null;
+      /** Invoice lines sharing a group are paid as one combined bank transfer. */
+      transfer_group?: string;
     }>;
   }) {
     const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>('/api/banking/payment-batches', payload);

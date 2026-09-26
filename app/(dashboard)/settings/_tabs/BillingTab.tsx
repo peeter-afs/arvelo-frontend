@@ -10,6 +10,9 @@ import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
 import { BillingField, ReportStat, TabFeedback } from '../_components/fields';
 import { ManagedByNotice } from '@/components/tenants/ManagedByNotice';
 
+/** An emptied field falls back to the default; a typed 0 stays 0. */
+const numberOr = (value: string, fallback: number) => (String(value ?? '').trim() === '' ? fallback : Number(value));
+
 export function BillingTab({ canManage }: { canManage: boolean }) {
   const t = useTranslations('settings');
   const { tenant } = useAuthStore();
@@ -127,11 +130,11 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           bill_to_vat_number: overview.settings?.bill_to_vat_number || '',
           bill_to_address: overview.settings?.bill_to_address || '',
           bill_to_email: overview.settings?.bill_to_email || tenant?.email || '',
-          invoice_due_days: String(overview.settings?.invoice_due_days || 14),
+          invoice_due_days: String(overview.settings?.invoice_due_days ?? 14),
           reminders_enabled: overview.settings?.reminders_enabled ?? true,
-          reminder_weekday: String(overview.settings?.reminder_weekday || 2),
-          reminder_frequency_days: String(overview.settings?.reminder_frequency_days || 7),
-          reminder_start_after_days: String(overview.settings?.reminder_start_after_days || 7),
+          reminder_weekday: String(overview.settings?.reminder_weekday ?? 2),
+          reminder_frequency_days: String(overview.settings?.reminder_frequency_days ?? 7),
+          reminder_start_after_days: String(overview.settings?.reminder_start_after_days ?? 7),
           reminder_template_first: overview.settings?.reminder_template_first || 'Hello {{bill_to_name}}, this is a gentle reminder that invoice #{{invoice_no}} for {{total}} was due on {{due_date}}.',
           reminder_template_second: overview.settings?.reminder_template_second || 'Reminder {{reminder_index}}: invoice #{{invoice_no}} for {{total}} is still unpaid. The due date was {{due_date}}.',
           reminder_template_third: overview.settings?.reminder_template_third || 'Final reminder: invoice #{{invoice_no}} for {{total}} remains overdue since {{due_date}}. Please arrange payment as soon as possible.',
@@ -142,11 +145,11 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           annual_balance_report_end_date: new Date().toISOString().slice(0, 10),
           plan_id: overview.subscription?.plan_id || overview.plans[0]?.id || '',
           status: overview.subscription?.status || 'active',
-          billing_day: String(overview.subscription?.billing_day || 1),
-          unit_price: String(overview.subscription?.unit_price || 49),
-          quantity: String(overview.subscription?.quantity || 1),
-          discount_percent: String(overview.subscription?.discount_percent || 0),
-          vat_rate: String(overview.subscription?.vat_rate ?? overview.settings?.vat_rate ?? 22),
+          billing_day: String(overview.subscription?.billing_day ?? 1),
+          unit_price: String(overview.subscription?.unit_price ?? 49),
+          quantity: String(overview.subscription?.quantity ?? 1),
+          discount_percent: String(overview.subscription?.discount_percent ?? 0),
+          vat_rate: String(overview.subscription?.vat_rate ?? overview.settings?.vat_rate ?? 24),
           currency: overview.subscription?.currency || overview.settings?.currency || tenant?.base_currency || 'EUR',
           current_period_start: overview.subscription?.current_period_start || new Date().toISOString().slice(0, 10),
           current_period_end: overview.subscription?.current_period_end || new Date().toISOString().slice(0, 10),
@@ -212,8 +215,8 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
         is_enabled: missingReceiptForm.is_enabled,
         auto_create_drafts: missingReceiptForm.auto_create_drafts,
         responsible_email: missingReceiptForm.responsible_email || null,
-        frequency_days: Number(missingReceiptForm.frequency_days || 7),
-        start_after_days: Number(missingReceiptForm.start_after_days || 0),
+        frequency_days: numberOr(missingReceiptForm.frequency_days, 7),
+        start_after_days: numberOr(missingReceiptForm.start_after_days, 0),
         weekday: missingReceiptForm.weekday ? Number(missingReceiptForm.weekday) : null,
         max_reminders: missingReceiptForm.max_reminders ? Number(missingReceiptForm.max_reminders) : null,
         email_subject: missingReceiptForm.email_subject || null,
@@ -233,10 +236,10 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
       await billingApi.upsertSubscription({
         plan_id: billingForm.plan_id,
         status: billingForm.status,
-        billing_day: Number(billingForm.billing_day || 1),
-        unit_price: Number(billingForm.unit_price || 0),
-        quantity: Number(billingForm.quantity || 1),
-        discount_percent: Number(billingForm.discount_percent || 0),
+        billing_day: numberOr(billingForm.billing_day, 1),
+        unit_price: numberOr(billingForm.unit_price, 0),
+        quantity: numberOr(billingForm.quantity, 1),
+        discount_percent: numberOr(billingForm.discount_percent, 0),
         vat_rate: billingForm.vat_rate === '' ? null : Number(billingForm.vat_rate),
         currency: billingForm.currency,
         current_period_start: billingForm.current_period_start,
@@ -259,11 +262,11 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
     bill_to_registry_code: billingForm.bill_to_registry_code || null,
     bill_to_vat_number: billingForm.bill_to_vat_number || null,
     bill_to_address: billingForm.bill_to_address || null,
-    invoice_due_days: Number(billingForm.invoice_due_days || 14),
+    invoice_due_days: numberOr(billingForm.invoice_due_days, 14),
     reminders_enabled: billingForm.reminders_enabled,
-    reminder_weekday: Number(billingForm.reminder_weekday || 2),
-    reminder_frequency_days: Number(billingForm.reminder_frequency_days || 7),
-    reminder_start_after_days: Number(billingForm.reminder_start_after_days || 7),
+    reminder_weekday: numberOr(billingForm.reminder_weekday, 2),
+    reminder_frequency_days: numberOr(billingForm.reminder_frequency_days, 7),
+    reminder_start_after_days: numberOr(billingForm.reminder_start_after_days, 7),
     reminder_template_first: billingForm.reminder_template_first || null,
     reminder_template_second: billingForm.reminder_template_second || null,
     reminder_template_third: billingForm.reminder_template_third || null,
@@ -523,7 +526,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                 type="button"
                 onClick={() => void runBillingAction('preview-reminder', async () => {
                   const preview = await billingApi.previewReminder({
-                    reminder_index: Number(billingForm.preview_reminder_index || 1),
+                    reminder_index: numberOr(billingForm.preview_reminder_index, 1),
                     settings_override: currentBillingSettingsDraft,
                   });
                   setBillingMessagePreview(preview);
@@ -545,11 +548,11 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                     bill_to_registry_code: billingForm.bill_to_registry_code || null,
                     bill_to_vat_number: billingForm.bill_to_vat_number || null,
                     bill_to_address: billingForm.bill_to_address || null,
-                    invoice_due_days: Number(billingForm.invoice_due_days || 14),
+                    invoice_due_days: numberOr(billingForm.invoice_due_days, 14),
                     reminders_enabled: billingForm.reminders_enabled,
-                    reminder_weekday: Number(billingForm.reminder_weekday || 2),
-                    reminder_frequency_days: Number(billingForm.reminder_frequency_days || 7),
-                    reminder_start_after_days: Number(billingForm.reminder_start_after_days || 7),
+                    reminder_weekday: numberOr(billingForm.reminder_weekday, 2),
+                    reminder_frequency_days: numberOr(billingForm.reminder_frequency_days, 7),
+                    reminder_start_after_days: numberOr(billingForm.reminder_start_after_days, 7),
                     reminder_template_first: billingForm.reminder_template_first || null,
                     reminder_template_second: billingForm.reminder_template_second || null,
                     reminder_template_third: billingForm.reminder_template_third || null,
