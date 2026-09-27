@@ -51,6 +51,7 @@
     "reports": "Rapporter",
     "fixedAssets": "Anläggningstillgångar",
     "settings": "Inställningar",
+    "documents": "Dokument",
     "security": "Säkerhet",
     "auditLog": "Granskningslogg",
     "autoCollapse": "Minimera menyn under en uppgift",
@@ -566,7 +567,10 @@
     "duplicateSameRegistryCodeOtherRole": "same registry code, other role",
     "duplicateSameName": "same name (the legal form is only spelled differently)",
     "duplicateSameVat": "same VAT number",
-    "duplicateSameIban": "same IBAN"
+    "duplicateSameIban": "same IBAN",
+    "pdfTemplate": "PDF-mall",
+    "pdfTemplateDefault": "Standard",
+    "documentLanguage": "Dokumentspråk"
   },
   "reports": {
     "dimensionReport": "Kostnadsställen och projekt",

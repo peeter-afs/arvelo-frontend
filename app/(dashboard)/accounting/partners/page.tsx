@@ -28,6 +28,7 @@ import {
   type SupplierBankAccount,
   type AccountOption,
 } from '@/lib/api/accounting.api';
+import { invoiceTemplatesApi, type InvoiceTemplate } from '@/lib/api/invoiceTemplates.api';
 import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { Button } from '@/components/ui/Button';
 import { Kbd } from '@/components/ui/Kbd';
@@ -51,6 +52,8 @@ type PartnerFormState = {
   country_code: string;
   payment_terms_days: string;
   receipt_responsible_email: string;
+  invoice_template_id: string;
+  document_language: string;
   contact_name: string;
   credit_limit: string;
   default_expense_account_id: string;
@@ -94,6 +97,8 @@ const emptyPartnerForm = (): PartnerFormState => ({
   country_code: 'EE',
   payment_terms_days: '',
   receipt_responsible_email: '',
+  invoice_template_id: '',
+  document_language: '',
   contact_name: '',
   credit_limit: '',
   default_expense_account_id: '',
@@ -610,6 +615,10 @@ function PartnerDetailPanel({
 }) {
   const t = useTranslations('accounting');
   const [recentEntries, setRecentEntries] = useState<JournalEntryRecord[]>([]);
+  const [pdfTemplates, setPdfTemplates] = useState<InvoiceTemplate[]>([]);
+  useEffect(() => {
+    invoiceTemplatesApi.list().then(setPdfTemplates).catch(() => setPdfTemplates([]));
+  }, []);
 
   useEffect(() => {
     if (!partner) return;
@@ -686,6 +695,16 @@ function PartnerDetailPanel({
           <Field label={t('creditLimit')} value={form.credit_limit} onChange={(value) => setForm((current) => ({ ...current, credit_limit: value }))} />
           <Field label={t('countryCode')} value={form.country_code} onChange={(value) => setForm((current) => ({ ...current, country_code: value.toUpperCase() }))} />
           <Field label={t('receiptResponsibleEmail')} value={form.receipt_responsible_email || ''} onChange={(value) => setForm((current) => ({ ...current, receipt_responsible_email: value }))} />
+          <Field label={t('pdfTemplate')} value={form.invoice_template_id} onChange={(value) => setForm((current) => ({ ...current, invoice_template_id: value }))} as="select" options={[
+            { label: t('pdfTemplateDefault'), value: '' },
+            ...pdfTemplates.filter((tpl) => !tpl.is_default).map((tpl) => ({ label: tpl.name, value: tpl.id })),
+          ]} />
+          <Field label={t('documentLanguage')} value={form.document_language} onChange={(value) => setForm((current) => ({ ...current, document_language: value }))} as="select" options={[
+            { label: 'Eesti (ET)', value: '' },
+            { label: 'English (EN)', value: 'en' },
+            { label: 'Suomi (FI)', value: 'fi' },
+            { label: 'Svenska (SV)', value: 'sv' },
+          ]} />
         </Section>
 
         {form.type !== 'customer' && (
@@ -960,6 +979,8 @@ function mapPartnerToForm(partner: PartnerRecord): PartnerFormState {
     country_code: partner.country_code || 'EE',
     payment_terms_days: partner.payment_terms_days !== null && partner.payment_terms_days !== undefined ? String(partner.payment_terms_days) : '',
     receipt_responsible_email: partner.receipt_responsible_email || '',
+    invoice_template_id: partner.invoice_template_id || '',
+    document_language: partner.document_language || '',
     contact_name: partner.contact_name || '',
     credit_limit: partner.credit_limit !== null && partner.credit_limit !== undefined ? String(partner.credit_limit) : '',
     default_expense_account_id: partner.default_expense_account_id || '',
@@ -987,6 +1008,8 @@ function buildPartnerPayload(form: PartnerFormState) {
     country_code: form.country_code || undefined,
     payment_terms_days: form.payment_terms_days ? Number(form.payment_terms_days) : undefined,
     receipt_responsible_email: form.receipt_responsible_email || undefined,
+    invoice_template_id: form.invoice_template_id || null,
+    document_language: (form.document_language || null) as PartnerRecord['document_language'],
     contact_name: form.contact_name || undefined,
     credit_limit: form.credit_limit.trim() ? Number(form.credit_limit.replace(',', '.')) : null,
     default_expense_account_id: form.default_expense_account_id || null,

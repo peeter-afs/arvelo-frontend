@@ -78,6 +78,8 @@ export type RecurringTemplate = {
   delivery: Delivery;
   vat_code: string | null;
   author_user_id: string | null;
+  /** PDF template; null = the client's template */
+  invoice_template_id?: string | null;
   period_note_template: string | null;
   next_invoice_date: string;
   end_date: string | null;
@@ -131,6 +133,7 @@ export type TemplateInput = {
   next_invoice_date: string;
   end_date?: string | null;
   is_active?: boolean;
+  invoice_template_id?: string | null;
   lines: LineInput[];
   clients: ClientInput[];
 };

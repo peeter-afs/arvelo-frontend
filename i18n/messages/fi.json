@@ -51,6 +51,7 @@
     "reports": "Raportit",
     "fixedAssets": "Käyttöomaisuus",
     "settings": "Asetukset",
+    "documents": "Asiakirjat",
     "security": "Turvallisuus",
     "auditLog": "Tarkastusloki",
     "autoCollapse": "Pienennä valikko tehtävässä",
@@ -572,7 +573,10 @@
     "duplicateSameRegistryCodeOtherRole": "same registry code, other role",
     "duplicateSameName": "same name (the legal form is only spelled differently)",
     "duplicateSameVat": "same VAT number",
-    "duplicateSameIban": "same IBAN"
+    "duplicateSameIban": "same IBAN",
+    "pdfTemplate": "PDF-pohja",
+    "pdfTemplateDefault": "Oletus",
+    "documentLanguage": "Asiakirjan kieli"
   },
   "reports": {
     "dimensionReport": "Kustannuspaikat ja projektit",

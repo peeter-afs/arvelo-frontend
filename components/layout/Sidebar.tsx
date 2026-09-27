@@ -177,6 +177,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       icon: Settings,
       children: [
         { label: tNavigation('settings'), href: '/settings' },
+        { label: tNavigation('documents'), href: '/settings/documents' },
         { label: tNavigation('security'), href: '/settings/security' },
         { label: tNavigation('auditLog'), href: '/settings/audit-log' },
       ],

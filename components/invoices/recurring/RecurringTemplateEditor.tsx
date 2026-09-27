@@ -24,6 +24,8 @@ import {
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
+import { invoiceTemplatesApi, type InvoiceTemplate } from '@/lib/api/invoiceTemplates.api';
+import DocPreviewFrame from '@/components/documents/DocPreviewFrame';
 import { eur, frequencyMonths, initials, isoToEt, nextRun, num, periodFor, r2, toFrequency, todayIso } from './shared';
 import s from './RecurringTemplateEditor.module.css';
 
@@ -95,6 +97,8 @@ type Header = {
   note: string;
   vatc: string;
   authorId: string;
+  /** '' = the client's template */
+  pdfTemplateId: string;
   active: boolean;
 };
 
@@ -139,6 +143,7 @@ function headerFrom(t: RecurringTemplate): Header {
     note: t.notes || '',
     vatc: t.vat_code && VAT_CODES.some((c) => c.key === t.vat_code) ? t.vat_code : rateToCode(t.lines?.[0]?.tax_rate ?? 24),
     authorId: t.author_user_id || '',
+    pdfTemplateId: t.invoice_template_id || '',
     active: t.is_active,
   };
 }
@@ -160,7 +165,7 @@ function firstRunFor(day: number): string {
 
 const emptyHeader = (authorId: string): Header => ({
   name: '', description: '', currency: 'EUR', months: 1, day: 1, start: isoToEt(firstRunFor(1)), end: '', term: 14,
-  delivery: 'review', offset: 0, note: '', vatc: 'd24', authorId, active: true,
+  delivery: 'review', offset: 0, note: '', vatc: 'd24', authorId, pdfTemplateId: '', active: true,
 });
 
 const emptyLine = (account_id = '', unit = 'kuu'): Line => ({
@@ -191,6 +196,8 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
   const [settings, setSettings] = useState<AccountingSettings | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [members, setMembers] = useState<TenantMember[]>([]);
+  const [pdfTemplates, setPdfTemplates] = useState<InvoiceTemplate[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<{ html: string | null; fileName: string } | null>(null);
   const [productRow, setProductRow] = useState<number | null>(null);
   const [rail, setRail] = useState(true);
   const [pw, setPw] = useState(DEFAULT_PW);
@@ -215,6 +222,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
     accountingApi.getAccounts().then(setAccounts).catch(() => {});
     accountingApi.getAccountingSettings().then(setSettings).catch(() => {});
     productsApi.list().then(setProducts).catch(() => {});
+    invoiceTemplatesApi.list().then(setPdfTemplates).catch(() => {});
     if (tenant?.id) tenantsApi.getMembers(tenant.id).then(setMembers).catch(() => {});
   }, [tenant?.id]);
 
@@ -400,6 +408,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
       end_date: endIso,
       is_active: activate ? true : hdr.active,
       ...(hdr.authorId ? { author_user_id: hdr.authorId } : {}),
+      invoice_template_id: hdr.pdfTemplateId || null,
       lines: lines.map((l) => ({
         ...(l.id ? { id: l.id } : {}),
         code: l.code.trim() || null,
@@ -468,6 +477,34 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
     }
   };
 
+  const openPreview = async () => {
+    const saved = dirty || !id ? await save() : loaded;
+    if (!saved) return;
+    setPreviewDoc({ html: null, fileName: '' });
+    try {
+      const r = await invoiceTemplatesApi.recurringPreview(saved.id);
+      setPreviewDoc({ html: r.html, fileName: r.file_name });
+    } catch (e) {
+      setPreviewDoc(null);
+      showToast.error(getErrorMessage(e));
+    }
+  };
+
+  const downloadPreviewPdf = async () => {
+    if (!id) return;
+    try {
+      const blob = await invoiceTemplatesApi.recurringPreviewPdf(id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = previewDoc?.fileName || 'eelvaade.pdf';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch (e) {
+      showToast.error(getErrorMessage(e));
+    }
+  };
+
   const remove = async () => {
     if (!id) return router.push('/invoices/recurring');
     try {
@@ -497,6 +534,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
         return;
       }
       if (e.key === 'Escape') {
+        if (previewDoc) { setPreviewDoc(null); return; }
         if (cmenu || menu || productRow != null) { setCmenu(null); setMenu(null); setProductRow(null); return; }
         if (confirm) return;
         cancelRef.current();
@@ -504,7 +542,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [coll, tab, cmenu, menu, productRow, confirm]);
+  }, [coll, tab, cmenu, menu, productRow, confirm, previewDoc]);
 
   // Close menus on outside click (document-level so row buttons' stopPropagation is respected).
   useEffect(() => {
@@ -679,11 +717,18 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
                   <label>KM kood</label>
                   <select className={s.inp} value={hdr.vatc} onChange={(e) => setH({ vatc: e.target.value })}>{VAT_CODES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}</select>
                 </div>
-                <div className={`${s.fld} ${s.mid}`}>
+                <div className={s.fld}>
                   <label>Koostaja</label>
                   <select className={s.inp} value={hdr.authorId} onChange={(e) => setH({ authorId: e.target.value })}>
                     {!members.some((m) => m.user.id === hdr.authorId) && <option value={hdr.authorId}>{authorName}</option>}
                     {members.map((m) => <option key={m.user.id} value={m.user.id}>{m.user.name || m.user.email}</option>)}
+                  </select>
+                </div>
+                <div className={s.fld}>
+                  <label>PDF mall <Link className={s.lblLink} href="/settings/documents">Muuda</Link></label>
+                  <select className={s.inp} value={hdr.pdfTemplateId} onChange={(e) => setH({ pdfTemplateId: e.target.value })}>
+                    <option value="">Kliendi mall</option>
+                    {pdfTemplates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
                 </div>
               </div>
@@ -835,6 +880,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
             </div>
             <div className={s.footR}>
               {variableCount > 0 && id && <Link className={`${s.btn} ${s.sm}`} href={quantitiesHref}>Sisesta kogused</Link>}
+              <button className={`${s.btn} ${s.sm} ${s.ghost}`} disabled={saving || !clients.length} onClick={openPreview}>Eelvaade</button>
               <button className={`${s.btn} ${s.sm} ${s.ghost}`} disabled={saving || !clients.length} onClick={generateNow}>Genereeri kohe</button>
               <button className={`${s.btn} ${s.sm} ${s.ghost}`} onClick={() => { setH({ active: !hdr.active }); showToast.info(hdr.active ? 'Mall peatatud — salvesta, et arveid ei genereeritaks' : 'Mall jätkub — salvesta muudatus'); }}>
                 {hdr.active ? 'Peata mall' : 'Jätka malli'}
@@ -929,6 +975,24 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
               <span className={s.mrowD}>Lisa</span>
             </button>
           )) : <div className={s.mrow} style={{ color: 'var(--a-text-3)' }}>{partners.length ? 'Kliente ei leitud' : 'Kliente pole'}</div>}
+        </div>
+      )}
+
+      {previewDoc && (
+        <div className={s.pvBackdrop} onClick={() => setPreviewDoc(null)}>
+          <div className={s.pvModal} onClick={(e) => e.stopPropagation()}>
+            <div className={s.pvHead}>
+              <b>Eelvaade</b>
+              <span className={s.pvSub}>{clients.find((c) => c.active)?.name || ''} · järgmine arve {nextRunIso ? isoToEt(nextRunIso) : '—'}</span>
+              <span className={s.pvActs}>
+                <button className={`${s.btn} ${s.sm}`} onClick={downloadPreviewPdf}>↓ Laadi PDF</button>
+                <button className={`${s.btn} ${s.sm} ${s.ghost}`} onClick={() => setPreviewDoc(null)}>Sulge <kbd className={s.kbd}>Esc</kbd></button>
+              </span>
+            </div>
+            <div className={s.pvBody}>
+              {previewDoc.html ? <DocPreviewFrame html={previewDoc.html} zoom={0.8} /> : <div className={s.loading}><Loader2 className="h-5 w-5 animate-spin" /></div>}
+            </div>
+          </div>
         </div>
       )}
 

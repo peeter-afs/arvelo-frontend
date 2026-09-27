@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arvelo · Arve mallid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="invoice-tpl/templates.css">
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--accent-soft-2:#fff3ee;--pos:#0e7b5a;--warn:#b07d1f}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px;overflow:hidden}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+::-webkit-scrollbar{width:9px;height:9px}::-webkit-scrollbar-thumb{background:#dcd6c8;border-radius:99px;border:2.5px solid var(--bg)}
+svg.i{width:14px;height:14px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+.shell{height:100vh;min-width:0;padding:9px 14px 10px;display:flex;flex-direction:column;gap:7px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:11px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+.btn{display:inline-flex;align-items:center;gap:6px;height:27px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.icon{width:27px;padding:0;justify-content:center}
+.topbar{display:flex;align-items:center;gap:9px;height:27px;flex-shrink:0}
+.crumb{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3)}
+.crumb a{color:var(--text-2);font-weight:500}
+.crumb .sep{color:var(--border-strong)}
+.topbar h1{margin:0;white-space:nowrap;font-size:14.5px;font-weight:700;letter-spacing:-0.025em}
+.topbar .acts{margin-left:auto;display:flex;align-items:center;gap:6px}
+.dirty{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#7d5a13;margin-right:2px}
+.dirty .dot{width:6px;height:6px;border-radius:99px;background:var(--warn)}
+.dirty.clean{color:var(--text-3)}.dirty.clean .dot{background:var(--pos)}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:clamp(260px,28vw,318px) minmax(0,1fr);overflow:hidden}
+.left{border-right:1px solid var(--border);overflow-y:auto;overflow-x:hidden;min-width:0;background:#fbfaf6;border-radius:11px 0 0 11px}
+.sec{padding:12px 14px;border-bottom:1px solid var(--border)}
+.sech{display:flex;align-items:center;gap:8px;white-space:nowrap;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.11em;color:var(--text-3);margin-bottom:10px}
+.sech .r{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:500;font-size:11px}
+.hint{font-size:11px;color:var(--text-3);margin-top:8px;line-height:1.45}
+.inp{height:29px;width:100%;border:1px solid var(--border);border-radius:8px;background:var(--surface);font:inherit;font-size:12.5px;color:var(--text);padding:0 9px}
+.inp:hover{border-color:var(--border-strong)}.inp:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.inp:disabled{background:var(--surface-2);color:var(--text-2)}
+select.inp{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8c84' stroke-width='1.8' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 7px center;background-size:12px;padding-right:24px}
+.lib{display:flex;flex-direction:column;gap:4px}
+.lrow{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:9px;align-items:center;padding:7px 9px;border:1px solid transparent;border-radius:8px;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.lrow:hover{background:var(--surface-2)}
+.lrow.on{background:var(--accent-soft-2);border-color:#ffc9b8}
+.lrow .dot{width:10px;height:10px;border-radius:3px}
+.lrow .ln{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lrow .lm{font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.addbtn{margin-top:6px;width:100%;justify-content:center;border-style:dashed}
+.fl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--text-3);margin:0 0 5px;display:flex;align-items:center;gap:6px}
+.fl .r{margin-left:auto;white-space:nowrap;text-transform:none;letter-spacing:0;font-weight:500;font-size:10.5px}
+.pills{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+.pill{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 4px 0 8px;border-radius:6px;background:var(--surface);border:1px solid var(--border);font-size:11.5px;color:var(--text-2);max-width:100%}
+.pill span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill button{border:none;background:none;color:var(--text-3);width:18px;height:18px;border-radius:4px;display:grid;place-items:center;padding:0;flex-shrink:0}
+.pill button:hover{background:var(--surface-2);color:var(--text)}
+.pill.ro{padding-right:8px}
+.pill a{color:var(--text-2)}
+.prio{margin-top:10px;padding:8px 10px;border-radius:8px;background:var(--surface-2);font-size:11px;color:var(--text-2);line-height:1.5}
+.prio ol{margin:3px 0 0;padding-left:16px}
+.prio b{font-weight:600;color:var(--text)}
+.delbtn{margin-top:10px;color:#c0392b}
+.delbtn:hover{background:#fbeaea}
+.moved{font-size:11px;color:#7d5a13;margin-top:4px}
+.tpls{display:flex;flex-direction:column;gap:7px}
+.tpl{display:grid;grid-template-columns:84px minmax(0,1fr);gap:11px;align-items:center;padding:7px;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tpl:hover{border-color:var(--border-strong)}
+.tpl.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.tthumb{width:84px;height:92px;overflow:hidden;border-radius:5px;border:1px solid var(--border);background:#fff;position:relative}
+.tthumb .pg{zoom:.1058;box-shadow:none}
+.tpl>div:last-child{min-width:0}
+.tpl .tn{font-weight:600;font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px}
+.tpl .td{font-size:11.5px;color:var(--text-3);margin-top:2px;line-height:1.4}
+.badge{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 5px;border-radius:4px;background:var(--surface-2);color:var(--text-3)}
+.logo-row{display:flex;align-items:center;gap:10px}
+.drop{flex:1;height:52px;border:1px dashed var(--border-strong);border-radius:9px;display:flex;align-items:center;justify-content:center;gap:8px;color:var(--text-3);font-size:12px;cursor:pointer;background:var(--surface);overflow:hidden}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--text-2);background:var(--accent-soft-2)}
+.drop img{max-height:36px;max-width:150px;object-fit:contain}
+.swatches{display:flex;gap:7px;margin-top:12px}
+.sw{width:30px;height:30px;border-radius:8px;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);cursor:pointer;padding:0}
+.sw.on{box-shadow:0 0 0 2px var(--text)}
+.swl{font-size:11.5px;color:var(--text-2);margin-top:7px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{height:26px;padding:0 9px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:12px;font-weight:500}
+.chip:hover{background:var(--surface-2)}
+.chip.on{border-color:var(--accent);background:var(--accent-soft-2);color:#b8330f;font-weight:600}
+.tgrow{display:flex;align-items:center;gap:10px;padding:6px 0;cursor:pointer;user-select:none}
+.tgrow .tl{flex:1;min-width:0}
+.tgrow .tl b{display:block;font-weight:500;font-size:12.5px}
+.tgrow .tl span{display:block;font-size:11px;color:var(--text-3)}
+.tgrow .swc{width:30px;height:17px;border-radius:99px;background:#d9d4c6;position:relative;flex-shrink:0;transition:background .15s}
+.tgrow .swc:after{content:'';position:absolute;top:2px;left:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.tgrow.on .swc{background:var(--accent)}
+.tgrow.on .swc:after{transform:translateX(13px)}
+.tgrow.dis{opacity:.45;cursor:not-allowed}
+.right{display:flex;flex-direction:column;min-width:0;min-height:0;background:#ece8de;border-radius:0 11px 11px 0}
+.ptool{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface);border-radius:0 11px 0 0}
+.tabs{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:2px}
+.tabs button{border:none;background:none;height:23px;padding:0 11px;border-radius:6px;color:var(--text-3);font-weight:600;font-size:12px}
+.tabs button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pinfo{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ptool>*:not(.pinfo):not(.sp){flex-shrink:0}
+@media (max-width:1100px){.dirty{display:none}}
+.sp{flex:1}
+.zoom{display:inline-flex;align-items:center;gap:2px}
+.zoom span{min-width:42px;text-align:center;font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.scroll{flex:1;min-height:0;overflow:auto}
+.pages{--z:.7;display:flex;flex-direction:column;align-items:safe center;gap:22px;padding:24px;width:max-content;min-width:100%}
+.pages .pg{zoom:var(--z)}
+.mailv{padding:28px 24px;display:flex;justify-content:center}
+.mailv[hidden],.pages[hidden]{display:none}
+.mail{width:100%;max-width:660px;overflow:hidden}
+.mh{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:5px}
+.mr{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;font-size:12.5px;color:var(--text-2)}
+.mr .k{color:var(--text-3)}
+.mr b{color:var(--text);font-weight:600}
+.mb{padding:20px 18px;font-size:13.5px;line-height:1.6;color:var(--text)}
+.mb p{margin:0 0 12px}
+.mb .sig{color:var(--text-2)}
+.att{margin:0 18px 18px;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;border:1px solid var(--border);border-radius:10px;width:fit-content;max-width:calc(100% - 36px);cursor:pointer;background:var(--surface)}
+.att:hover{border-color:var(--border-strong)}
+.athumb{width:54px;height:72px;overflow:hidden;position:relative;border:1px solid var(--border);border-radius:4px;flex-shrink:0;background:#fff}
+.athumb .pg{zoom:.068;box-shadow:none}
+.att>div:last-child{min-width:0}
+.att .an{font-weight:600;font-size:12.5px;line-height:1.35;overflow-wrap:anywhere}
+.att .as{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.lpop{position:fixed;z-index:60;width:300px;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(40,30,10,.16);padding:12px 14px;font-size:12px;color:var(--text-2);line-height:1.45}
+.lpop[hidden]{display:none}
+.lpop .lt{font-weight:600;color:var(--text);font-size:13px;display:flex;align-items:center;gap:6px}
+.lpop .url{margin:8px 0;padding:6px 8px;background:var(--surface-2);border-radius:6px;font-size:11.5px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.lpop .la{display:flex;gap:6px;margin-top:10px}
+@media print{
+.lpop{display:none!important}
+@page{size:A4;margin:0}
+html,body{overflow:visible;height:auto;background:#fff}
+.topbar,.left,.ptool,.mailv{display:none!important}
+.shell,.main,.right,.scroll{display:block;padding:0;margin:0;border:0;height:auto;min-width:0;overflow:visible;background:none;box-shadow:none}
+.pages,.pages[hidden]{display:block!important;padding:0}
+.pages .pg{zoom:1;box-shadow:none;break-after:page}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+<div class="topbar">
+<div class="crumb"><a href="#">Seaded</a><span class="sep">/</span><span>Dokumendid</span></div>
+<h1>Arve mallid</h1>
+<div class="acts"><span class="dirty clean" id="dirty"><span class="dot"></span><span id="dirtyT">Salvestatud</span></span><button class="btn ghost" id="revert">Tühista muudatused</button><button class="btn primary" id="save">Salvesta</button></div>
+</div>
+<div class="main card">
+<aside class="left">
+<div class="sec"><div class="sech">Salvestatud mallid <span class="r" id="libn"></span></div><div class="lib" id="lib"></div><button class="btn addbtn" id="newT">+ Uus mall</button></div>
+<div class="sec"><div class="fl">Malli nimi <span class="r" id="nameHint"></span></div><input class="inp" id="tname"></div>
+<div class="sec"><div class="sech">Kujundus</div><div class="tpls" id="tpls"></div><div class="hint">Kujundus kehtib kõigile dokumenditüüpidele: arved, kreeditarved, ettemaksuarved, pakkumised ja meeldetuletused.</div></div>
+<div class="sec"><div class="sech">Bränd</div>
+<div class="logo-row"><label class="drop" id="drop"><input type="file" accept="image/*" id="file" hidden><span id="dropIn">Lohista logo siia või vali fail</span></label><button class="btn icon" id="rmLogo" title="Eemalda logo" hidden><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"></path></svg></button></div>
+<div class="hint" style="margin-top:6px">PNG või SVG, läbipaistva taustaga. Logota kasutatakse ettevõtte algustähte.</div>
+<div class="swatches" id="sw"></div><div class="swl" id="swl"></div>
+</div>
+<div class="sec"><div class="sech">Sisu</div><div id="settings"></div></div>
+<div class="sec"><div class="sech">Kasutus</div><div id="usage"></div></div>
+<div class="sec"><div class="sech">Eelvaade <span class="r">ei salvestu</span></div>
+<div class="chips" id="docs"></div>
+<div class="chips" id="langs" style="margin-top:8px"></div>
+<div id="samples" style="margin-top:8px"></div>
+</div>
+</aside>
+<section class="right">
+<div class="ptool">
+<div class="tabs" id="tabs"><button data-tab="pdf" class="on">PDF</button><button data-tab="mail">E-kiri</button></div>
+<span class="pinfo" id="pinfo"></span><div class="sp"></div>
+<div class="zoom" id="zoomc"><button class="btn icon ghost" data-z="-1">−</button><span id="zv">70%</span><button class="btn icon ghost" data-z="1">+</button><button class="btn ghost" data-z="0">Mahuta</button></div>
+<button class="btn" onclick="window.print()"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg>Laadi PDF</button>
+</div>
+<div class="scroll" id="scroll"><div class="pages" id="pages"></div><div class="mailv" id="mailv" hidden></div></div>
+</section>
+</div>
+</div>
+<div class="lpop" id="lpop" hidden></div>
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#ff4e2c"></rect><rect x="30" y="20" width="40" height="60" rx="3" fill="#fff"></rect><rect x="30" y="20" width="40" height="14" fill="#2849d6"></rect><rect x="36" y="62" width="28" height="6" rx="2" fill="#0a0a0a"></rect></svg></template>
+<script src="invoice-tpl/i18n.js"></script>
+<script src="invoice-tpl/render.js"></script>
+<script>
+const TPLS=[{id:'bal',n:'Standard',d:'Selge ja neutraalne, rekvisiidid jaluses'},{id:'mod',n:'Modernne',d:'Värviline päis, rõhutatud kogusumma'}];
+const COLORS=[{n:'Sinine',v:'#2849d6'},{n:'Roheline',v:'#0b6e50'},{n:'Punane',v:'#c8391a'},{n:'Ploom',v:'#6b3fa0'},{n:'Grafiit',v:'#2b2b2b'}];
+const DOCS=[['invoice','Arve'],['credit','Kreeditarve'],['prepay','Ettemaksuarve'],['quote','Hinnapakkumine'],['reminder','Meeldetuletus']];
+const LANGS=['et','en','fi','sv'];
+const SETTINGS=[['unpaid','Varasemad tasumata arved','Lisatakse arvele ja ettemaksuarvele'],['note','Lisamärkus','Arve märkuse väli trükitakse PDF-ile']];
+const SAMPLES=[['disc','Allahindlus rea kaupa'],['multivat','Mitu KM määra','24% ja 9%'],['rc','Pöördkäibemaks','EL ostja, KM 0%'],['multipage','Mitu lehekülge','30 rida']];
+const DOCN=Object.fromEntries(DOCS);
+const SKEYS=['tpl','accent','logo','unpaid','note'];
+const CLIENTS=['Stuudio Veski OÜ','Kivi Design Oy','Nordic Pixel Oy','Tartu Pagarid OÜ','AFS Logistics OÜ','Merekivi MTÜ','Lumo Studio AB'];
+const LIB0=[
+ {id:'t0',def:true,name:'Vaikimisi',tpl:'bal',accent:'#2849d6',logo:null,unpaid:true,note:true,clients:[],recurring:[]},
+ {id:'t1',name:'Põhjamaade kliendid',tpl:'mod',accent:'#0b6e50',logo:null,unpaid:false,note:true,clients:['Kivi Design Oy','Nordic Pixel Oy','Lumo Studio AB'],recurring:[]},
+ {id:'t2',name:'Hooldusleping',tpl:'bal',accent:'#2b2b2b',logo:null,unpaid:true,note:false,clients:[],recurring:['AFS_kuutasu']}];
+const KS='arvelo-invtpl-lib',KV='arvelo-invtpl-view2';
+const load=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const clone=o=>JSON.parse(JSON.stringify(o));
+let savedLib=load(KS)||clone(LIB0);
+const V=load(KV)||{};
+let lib=V.draft||clone(savedLib);
+let cur=lib.find(t=>t.id===V.cur)?V.cur:lib[0].id;
+let S={doc:'invoice',lang:'et',disc:false,multivat:false,rc:false,multipage:false,...(V.view||{})};
+let moved=null;
+const T=()=>lib.find(t=>t.id===cur);
+function loadCur(){const t=T();SKEYS.forEach(k=>S[k]=t[k]);if(!['bal','mod'].includes(S.tpl))S.tpl='bal'}
+function syncCur(){const t=T();SKEYS.forEach(k=>t[k]=S[k])}
+loadCur();
+let tab='pdf',zoom=null,userZoom=false;
+const $=id=>document.getElementById(id);
+
+function persistView(){syncCur();const view={};['doc','lang','disc','multivat','rc','multipage'].forEach(k=>view[k]=S[k]);try{localStorage.setItem(KV,JSON.stringify({view,cur,draft:lib}))}catch(e){}}
+function set(k,v){S[k]=v;if(SKEYS.includes(k))moved=null;persistView();render()}
+function isDirty(){syncCur();return JSON.stringify(lib)!==JSON.stringify(savedLib)}
+const TPLN={bal:'Standard',mod:'Modernne'};
+const plural=(n,a,b)=>n+' '+(n===1?a:b);
+function renderLib(){
+  $('libn').textContent=lib.length;
+  $('lib').innerHTML=lib.map(t=>{const m=[TPLN[t.tpl]||'Standard'];if(t.def)m.push('kõik teised');else{if(t.clients.length)m.push(plural(t.clients.length,'klient','klienti'));if(t.recurring.length)m.push(plural(t.recurring.length,'korduv arve','korduvat arvet'));if(!t.clients.length&&!t.recurring.length)m.push('kasutamata')}
+    return `<button class="lrow${t.id===cur?' on':''}" data-t="${t.id}"><span class="dot" style="background:${t.accent}"></span><span style="min-width:0"><div class="ln">${esc(t.name)}</div><div class="lm">${m.join(' · ')}</div></span>${t.def?'<span class="badge">Vaikimisi</span>':''}</button>`}).join('');
+  const t=T();if($('tname').value!==t.name&&document.activeElement!==$('tname'))$('tname').value=t.name;$('tname').disabled=!!t.def;$('nameHint').textContent=t.def?'vaikemall':'ei ole arvel';
+}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function renderUsage(){
+  const t=T();let h='';
+  if(t.def){h=`<div class="hint" style="margin-top:0">Kasutatakse kõigile klientidele ja korduvatele arvetele, millele pole muud malli määratud.</div>`}
+  else{
+    const free=CLIENTS.filter(c=>!t.clients.includes(c));
+    h=`<div class="fl">Kliendid <span class="r">selle kliendi dokumendid</span></div><div class="pills">${t.clients.map(c=>`<span class="pill"><span>${esc(c)}</span><button data-rmc="${esc(c)}" title="Eemalda">×</button></span>`).join('')||'<span class="hint" style="margin:0">Ühtegi klienti pole lisatud.</span>'}</div>
+    <select class="inp" id="addc"><option value="">+ Lisa klient</option>${free.map(c=>{const o=lib.find(x=>x.id!==t.id&&x.clients.includes(c));return `<option value="${esc(c)}">${esc(c)}${o?' (praegu: '+esc(o.name)+')':''}</option>`}).join('')}</select>
+    ${moved?`<div class="moved">${esc(moved.c)} tõsteti mallist „${esc(moved.from)}“.</div>`:''}
+    <div class="fl" style="margin-top:12px">Korduvad arved</div><div class="pills">${t.recurring.map(r=>`<span class="pill ro"><a href="Korduva arve mall.html">${esc(r)}</a></span>`).join('')||'<span class="hint" style="margin:0">Pole määratud.</span>'}</div>
+    <div class="hint" style="margin-top:0">Korduva arve PDF-malli saab valida korduva arve seadetest.</div>`;
+  }
+  h+=`<div class="prio">Kui dokumendile valitakse mall, kehtib esimene sobiv:<ol><li><b>Korduva arve</b> mall</li><li><b>Kliendi</b> mall</li><li><b>Vaikimisi</b> mall</li></ol></div>`;
+  if(!t.def)h+=`<button class="btn ghost delbtn" id="delT">Kustuta mall</button>`;
+  $('usage').innerHTML=h;
+  const ac=$('addc');if(ac)ac.onchange=()=>{const c=ac.value;if(!c)return;const o=lib.find(x=>x.id!==t.id&&x.clients.includes(c));if(o){o.clients=o.clients.filter(x=>x!==c);moved={c,from:o.name}}else moved=null;t.clients.push(c);persistView();render()};
+  const d=$('delT');if(d)d.onclick=()=>{lib=lib.filter(x=>x.id!==t.id);cur=lib[0].id;moved=null;loadCur();persistView();render()};
+}
+
+function toggleRow(k,label,sub){
+  const ok=INV.APPLY[k].includes(S.doc);
+  const reason=ok?sub||'':'Ei kehti: '+DOCN[S.doc];
+  return `<div class="tgrow${S[k]&&ok?' on':''}${ok?'':' dis'}" data-k="${k}"><div class="tl"><b>${label}</b>${reason?`<span>${reason}</span>`:''}</div><span class="swc"></span></div>`;
+}
+function renderSide(){renderLib();renderUsage();
+  $('sw').innerHTML=COLORS.map(c=>`<button class="sw${S.accent===c.v?' on':''}" style="background:${c.v}" data-c="${c.v}" title="${c.n}"></button>`).join('');
+  $('swl').textContent='Aktsentvärv: '+(COLORS.find(c=>c.v===S.accent)||{n:''}).n;
+  $('dropIn').innerHTML=S.logo?`<img src="${S.logo}" alt="Logo">`:'Lohista logo siia või vali fail';
+  $('rmLogo').hidden=!S.logo;
+  $('settings').innerHTML=SETTINGS.map(x=>toggleRow(...x)).join('');
+  $('docs').innerHTML=DOCS.map(d=>`<button class="chip${S.doc===d[0]?' on':''}" data-doc="${d[0]}">${d[1]}</button>`).join('');
+  $('langs').innerHTML=LANGS.map(l=>`<button class="chip${S.lang===l?' on':''}" data-lang="${l}">${l.toUpperCase()}</button>`).join('');
+  $('samples').innerHTML=SAMPLES.map(x=>toggleRow(...x)).join('');
+  const d=isDirty();$('dirty').classList.toggle('clean',!d);$('dirtyT').textContent=d?'Salvestamata muudatused':'Salvestatud';
+}
+function renderThumbs(){
+  $('tpls').innerHTML=TPLS.map(t=>`<button class="tpl${S.tpl===t.id?' on':''}" data-tpl="${t.id}"><div class="tthumb"></div><div><div class="tn">${t.n}</div><div class="td">${t.d}</div></div></button>`).join('');
+  document.querySelectorAll('.tpl').forEach(b=>INV.paginate(b.querySelector('.tthumb'),{...S,tpl:b.dataset.tpl,multipage:false},{max:1}));
+}
+let pageCount=1;
+function renderPreview(){
+  const{pages}=INV.paginate($('pages'),S);pageCount=pages.length;
+  $('pinfo').textContent=`${DOCN[S.doc]} · ${S.lang.toUpperCase()} · A4 · ${pageCount} lk`;
+  if(zoom==null||!userZoom)fit();else applyZoom();
+  renderMail();
+}
+function renderMail(){
+  const e=INV.email(S),x=s=>s.replace(/</g,'&lt;');
+  $('mailv').innerHTML=`<div class="mail card"><div class="mh"><div class="mr"><span class="k">Saatja</span><span>${x(e.from)}</span></div><div class="mr"><span class="k">Saaja</span><span>${x(e.to)}</span></div><div class="mr"><span class="k">Teema</span><b>${x(e.subject)}</b></div></div><div class="mb"><p>${e.hello}</p><p>${e.body}</p><p class="sig">${e.bye}<br>${e.sender}<br>${e.company}</p></div><div class="att" id="att" title="Ava PDF eelvaade"><div class="athumb"></div><div><div class="an">${e.file}</div><div class="as">PDF · ${pageCount} lk</div></div></div></div>`;
+  INV.paginate($('mailv').querySelector('.athumb'),S,{max:1});
+  $('att').onclick=()=>setTab('pdf');
+}
+function render(){renderSide();renderThumbs();renderPreview()}
+function fit(){const w=$('scroll').clientWidth-48;zoom=Math.max(.3,Math.min(1,Math.floor(w/794*20)/20));applyZoom()}
+function applyZoom(){$('pages').style.setProperty('--z',zoom);$('zv').textContent=Math.round(zoom*100)+'%'}
+function setTab(t){tab=t;document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));$('pages').hidden=t!=='pdf';$('mailv').hidden=t!=='mail';$('zoomc').style.visibility=t==='pdf'?'visible':'hidden'}
+
+function showLink(a){
+  const p=$('lpop'),no=a.dataset.docNo,r=a.getBoundingClientRect();
+  p.innerHTML=`<div class="lt"><svg class="i" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"></path></svg>Arve ${no} PDF</div><div>PDF-is on see number klikitav link. Klient avab sama arve PDF-i, mis talle algselt saadeti (R2 salvestus).</div><div class="url">${a.href}</div><div class="hint" style="margin-top:0">Püsiv link: Arvelo kontrollib õigust ja suunab lühiajalisele allkirjastatud R2 aadressile.</div><div class="la"><button class="btn primary" data-copy="${a.href}">Kopeeri link</button><button class="btn ghost" data-close-pop>Sulge</button></div>`;
+  p.hidden=false;
+  const x=Math.min(window.innerWidth-316,Math.max(8,r.left)),y=r.bottom+8+220>window.innerHeight?r.top-p.offsetHeight-8:r.bottom+8;
+  p.style.left=x+'px';p.style.top=y+'px';
+}
+document.addEventListener('click',e=>{
+  const g=(s)=>e.target.closest(s);let el;
+  if(el=g('a.dl')){e.preventDefault();return showLink(el)}
+  if(el=g('[data-copy]')){navigator.clipboard&&navigator.clipboard.writeText(el.dataset.copy).catch(()=>{});el.textContent='Kopeeritud';return}
+  if(!g('#lpop'))$('lpop').hidden=true;
+  if(g('[data-close-pop]'))return;
+  if(el=g('[data-t]')){syncCur();cur=el.dataset.t;moved=null;loadCur();persistView();return render()}
+  if(el=g('[data-rmc]')){const t=T();t.clients=t.clients.filter(c=>c!==el.dataset.rmc);moved=null;persistView();return render()}
+  if(el=g('[data-tpl]'))return set('tpl',el.dataset.tpl);
+  if(el=g('[data-c]'))return set('accent',el.dataset.c);
+  if(el=g('[data-doc]'))return set('doc',el.dataset.doc);
+  if(el=g('[data-lang]'))return set('lang',el.dataset.lang);
+  if(el=g('.tgrow')){if(el.classList.contains('dis'))return;return set(el.dataset.k,!S[el.dataset.k])}
+  if(el=g('[data-tab]'))return setTab(el.dataset.tab);
+  if(el=g('[data-z]')){const z=+el.dataset.z;if(!z){userZoom=false;fit()}else{userZoom=true;zoom=Math.max(.3,Math.min(1.5,Math.round((zoom+z*.1)*10)/10));applyZoom()}return}
+});
+$('rmLogo').onclick=()=>set('logo',null);
+function readLogo(f){if(!f||!f.type.startsWith('image/'))return;const r=new FileReader();r.onload=()=>set('logo',r.result);r.readAsDataURL(f)}
+$('file').onchange=e=>readLogo(e.target.files[0]);
+const dr=$('drop');
+dr.addEventListener('dragover',e=>{e.preventDefault();dr.classList.add('over')});
+dr.addEventListener('dragleave',()=>dr.classList.remove('over'));
+dr.addEventListener('drop',e=>{e.preventDefault();dr.classList.remove('over');readLogo(e.dataTransfer.files[0])});
+$('save').onclick=()=>{syncCur();savedLib=clone(lib);try{localStorage.setItem(KS,JSON.stringify(savedLib))}catch(e){}moved=null;persistView();render()};
+$('revert').onclick=()=>{lib=clone(savedLib);if(!T())cur=lib[0].id;moved=null;loadCur();persistView();render()};
+$('newT').onclick=()=>{syncCur();const src=T(),n=lib.filter(t=>t.name.startsWith('Uus mall')).length+1;const t={...clone(src),id:'t'+Date.now(),def:false,name:'Uus mall'+(n>1?' '+n:''),clients:[],recurring:[]};lib.push(t);cur=t.id;moved=null;loadCur();persistView();render();$('tname').focus();$('tname').select()};
+$('tname').oninput=e=>{T().name=e.target.value||'Nimetu mall';persistView();renderLib();const d=isDirty();$('dirty').classList.toggle('clean',!d);$('dirtyT').textContent=d?'Salvestamata muudatused':'Salvestatud'};
+let rt;new ResizeObserver(()=>{clearTimeout(rt);rt=setTimeout(()=>{if(tab==='pdf'&&!userZoom)fit()},60)}).observe($('scroll'));
+render();
+document.fonts.ready.then(()=>{render();requestAnimationFrame(()=>{if(!userZoom)fit()})});
+</script>
+</body>
+</html>

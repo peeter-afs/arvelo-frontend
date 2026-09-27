@@ -152,6 +152,8 @@ export type PartnerRecord = {
   tax_arrears_note?: string | null;
   duplicate_warning_acknowledged?: boolean | null;
   notes?: string | null;
+  invoice_template_id?: string | null;
+  document_language?: 'et' | 'en' | 'fi' | 'sv' | null;
   einvoice_iban?: string | null;
   country_code?: string | null;
   payment_terms_days?: number | null;

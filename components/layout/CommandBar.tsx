@@ -70,6 +70,7 @@ export function CommandBar({
     'annual-report': tReports('annualReport'),
     vat: tReports('vatReport'),
     settings: tNavigation('settings'),
+    documents: tNavigation('documents'),
     security: tNavigation('security'),
     assets: tNavigation('fixedAssets'),
     help: tNavigation('help'),
