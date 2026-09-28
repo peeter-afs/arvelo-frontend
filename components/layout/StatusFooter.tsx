@@ -77,8 +77,12 @@ export function StatusFooter() {
         </span>
         <span className="uppercase">{tCommon('sync')} <span className="text-[var(--a-text)]">{syncLabel}</span></span>
         <span className="flex-1" />
-        <span>⌘K {tCommon('search')}</span>
-        {/\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '') && (
+        {/^\/invoices\/[^/]+\/preview/.test(pathname || '') ? (
+          <span>F täisekraan · +/− suum · Esc tagasi</span>
+        ) : (
+          <span>⌘K {tCommon('search')}</span>
+        )}
+        {!/\/preview$/.test(pathname || '') && /\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '') && (
           <span>⏎ {tCommon('open')}</span>
         )}
       </div>
