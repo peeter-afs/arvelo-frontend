@@ -19,6 +19,8 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const { tenant, isAuthenticated, isLoading } = useAuthStore();
   const isCreateCompanyPage = pathname === '/create-company';
+  // The invoice preview has its own header with breadcrumb and actions (design_handoff_arve_eelvaade).
+  const hideCommandBar = /^\/invoices\/[^/]+\/preview$/.test(pathname || '');
 
   useEffect(() => {
     if (isLoading || !isAuthenticated) {
@@ -50,7 +52,7 @@ export default function DashboardLayout({
             </div>
 
             <main className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0">
-              <CommandBar />
+              <div className={hideCommandBar ? 'hidden' : undefined}><CommandBar /></div>
               <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6 lg:px-7">
                 <TwoFactorNotice />
                 {children}
