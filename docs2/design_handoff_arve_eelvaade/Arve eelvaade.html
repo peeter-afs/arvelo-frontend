@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="et">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Arvelo · Arve 25930 eelvaade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="invoice-tpl/templates.css">
+<style>
+:root{--bg:#f6f4ee;--surface:#fff;--surface-2:#f0ede5;--border:#e6e1d4;--border-strong:#d4cebe;--text:#0a0a0a;--text-2:#4a4946;--text-3:#8e8c84;--accent:#ff4e2c;--accent-soft:#ffe7df;--pos:#0e7b5a;--pos-soft:#e2efe9;--warn:#b07d1f;--warn-soft:#f5ecd6;--viewer:#e9e6de}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg)}
+body{font-family:'Inter',system-ui,sans-serif;color:var(--text);letter-spacing:-0.01em;-webkit-font-smoothing:antialiased;font-size:13px;overflow:hidden}
+a{color:var(--accent);text-decoration:none}a:hover{color:#d93c1d;text-decoration:underline}
+button{font-family:inherit;font-size:inherit;cursor:pointer}
+kbd{font-size:10px;padding:1px 4px;border:1px solid var(--border-strong);border-radius:4px;color:var(--text-3);background:var(--surface-2);font-family:inherit}
+svg.i{width:15px;height:15px;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke:currentColor;flex-shrink:0}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#cfc8b8;border-radius:99px;border:3px solid var(--viewer)}
+.app{height:100vh;display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:minmax(0,1fr) 24px}
+.rail{grid-row:1/3;background:#111;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:6px}
+.rail .av{width:32px;height:32px;border-radius:8px;background:#2a2a2a;color:#fff;font-weight:700;font-size:11px;display:grid;place-items:center;margin-bottom:10px}
+.rail button{width:36px;height:36px;border-radius:8px;border:0;background:transparent;color:#8a877f;display:grid;place-items:center;position:relative}
+.rail button:hover{background:#222;color:#ddd}
+.rail button.on{background:#262626;color:#fff}
+.rail button.on:before{content:'';position:absolute;left:-10px;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--accent)}
+.rail svg.i{width:17px;height:17px}
+.main{display:flex;flex-direction:column;min-height:0;min-width:0}
+.bar{height:48px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;background:var(--surface);border-bottom:1px solid var(--border)}
+.back{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);display:grid;place-items:center;flex-shrink:0}
+.back:hover{background:var(--surface-2)}
+.ttl{display:flex;flex-direction:column;min-width:0;gap:1px}
+.crumb{font-size:11px;color:var(--text-3);display:flex;gap:5px;white-space:nowrap}
+.crumb a{color:var(--text-3)}
+.ttl h1{margin:0;font-size:14px;font-weight:650;letter-spacing:-0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:8px}
+.ttl h1 .who{font-weight:450;color:var(--text-2)}
+.tag{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:5px;background:var(--warn-soft);color:#7d5a13;display:inline-flex;align-items:center;gap:4px}
+.tag:before{content:'';width:5px;height:5px;border-radius:99px;background:currentColor}
+.ctl{margin:0 auto;display:flex;align-items:center;gap:2px;padding:3px;border:1px solid var(--border);border-radius:9px;background:var(--surface-2)}
+.ctl button{height:26px;min-width:26px;padding:0 6px;border:0;border-radius:6px;background:transparent;color:var(--text-2);display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500}
+.ctl button:hover{background:var(--surface)}
+.ctl button.on{background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.08);color:var(--text)}
+.ctl .v{min-width:44px;text-align:center;font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.ctl .sep{width:1px;height:16px;background:var(--border-strong);margin:0 4px}
+.acts{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn.ic{width:30px;padding:0;justify-content:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.btn.primary:hover{background:#e8431f}
+.viewer{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable;background:var(--viewer);position:relative}
+.pages{--z:1;display:flex;flex-direction:column;align-items:safe center;gap:16px;padding:16px;width:max-content;min-width:100%}
+.pages .pg{zoom:var(--z);box-shadow:0 1px 3px rgba(0,0,0,.08),0 6px 24px rgba(0,0,0,.06)}
+.pgind{position:absolute;right:18px;bottom:14px;font-size:11.5px;color:#fff;background:rgba(20,20,20,.72);padding:4px 9px;border-radius:99px;font-variant-numeric:tabular-nums;opacity:0;transition:opacity .2s;pointer-events:none}
+.pgind.show{opacity:1}
+.status{grid-column:2;display:flex;align-items:center;gap:16px;padding:0 14px;font:11px 'JetBrains Mono',monospace;color:var(--text-3);border-top:1px solid var(--border);background:var(--bg);white-space:nowrap;overflow:hidden}
+.status b{color:var(--text);font-weight:500}
+.status .ok{color:var(--pos)}
+.status .r{margin-left:auto}
+body.focus .app{grid-template-columns:0 minmax(0,1fr);grid-template-rows:minmax(0,1fr) 0}
+body.focus .rail,body.focus .status{display:none}
+body.focus .crumb{display:none}
+.hint{position:fixed;left:50%;top:60px;transform:translateX(-50%);background:#161616;color:#eee;font-size:12px;padding:6px 12px;border-radius:8px;display:flex;gap:8px;align-items:center;opacity:0;transition:opacity .2s;pointer-events:none;z-index:5}
+.hint.show{opacity:1}
+.hint kbd{background:#333;border-color:#444;color:#ddd}
+@media (max-width:980px){.crumb,.btn .lbl{display:none}.ctl .fitlbl{display:none}}
+@media print{@page{size:A4;margin:0}body{overflow:visible;background:#fff}.rail,.bar,.status,.pgind,.hint{display:none!important}.app,.main,.viewer{display:block;height:auto;overflow:visible;background:none}.pages{display:block;padding:0}.pages .pg{zoom:1;box-shadow:none;break-after:page}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="rail">
+<div class="av">AS</div>
+<button title="Töölaud"><svg class="i" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"></path></svg></button>
+<button class="on" title="Arvete keskus"><svg class="i" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"></path></svg></button>
+<button title="Pank"><svg class="i" viewBox="0 0 24 24"><path d="M3 10l9-6 9 6M5 10v8M10 10v8M14 10v8M19 10v8M3 21h18"></path></svg></button>
+<button title="Aruanded"><svg class="i" viewBox="0 0 24 24"><path d="M5 20V10M11 20V4M17 20v-7"></path></svg></button>
+<button title="Seaded"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"></path></svg></button>
+</nav>
+<main class="main">
+<header class="bar">
+<button class="back" title="Tagasi arvete juurde (Esc)" onclick="history.back()"><svg class="i" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"></path></svg></button>
+<div class="ttl">
+<div class="crumb"><a href="#">Arvete keskus</a><span>›</span><a href="#">Kirje</a><span>›</span><span>Eelvaade</span></div>
+<h1>Arve 25930 <span class="who">Milworks OÜ</span><span class="tag">Saatmata</span></h1>
+</div>
+<div class="ctl">
+<button id="zo" title="Vähenda (−)"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"></path></svg></button>
+<span class="v" id="zv">100%</span>
+<button id="zi" title="Suurenda (+)"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
+<span class="sep"></span>
+<button id="fw" title="Sobita laiusele (W)"><svg class="i" viewBox="0 0 24 24"><path d="M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4"></path></svg><span class="fitlbl">Laius</span></button>
+<button id="fp" title="Terve lehekülg (0)"><svg class="i" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="1.5"></rect></svg><span class="fitlbl">Lehekülg</span></button>
+<span class="sep"></span>
+<span class="v" id="pv">1 / 1</span>
+</div>
+<div class="acts">
+<button class="btn ic" id="focus" title="Täisekraan (F)"><svg class="i" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg></button>
+<button class="btn ic" title="Prindi" onclick="window.print()"><svg class="i" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-7h16v7h-3M7 14h10v7H7z"></path></svg></button>
+<button class="btn"><svg class="i" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-2-7z"></path></svg><span class="lbl">Saada</span></button>
+<button class="btn primary" onclick="window.print()"><svg class="i" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"></path></svg><span class="lbl">Laadi PDF alla</span></button>
+</div>
+</header>
+<div class="viewer" id="viewer"><div class="pages" id="pages"></div><div class="pgind" id="pgind"></div></div>
+</main>
+<footer class="status"><span>RAAMATUPIDAMINE <b>SEPT 2026</b></span><span>VAADE <b>ARVETE KESKUS</b></span><span class="ok">● Tasakaalus</span><span>SÜNK <b>10:40</b></span><span class="r">F täisekraan · +/− suum · Esc tagasi</span></footer>
+</div>
+<div class="hint" id="hint">Täisekraan · <kbd>Esc</kbd> või <kbd>F</kbd> väljumiseks</div>
+<template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="#ff4e2c"></rect><rect x="30" y="20" width="40" height="60" rx="3" fill="#fff"></rect></svg></template>
+<script src="invoice-tpl/i18n.js"></script>
+<script src="invoice-tpl/render.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const S={doc:'invoice',lang:'et',tpl:'bal',accent:'#2849d6',logo:null,unpaid:true,note:true,disc:false,multivat:false,rc:false,multipage:new URLSearchParams(location.search).has('multi')};
+const PW=794,PH=1123,KZ='arvelo-preview-zoom';
+let mode=localStorage.getItem(KZ)||'width',zoom=1,pageCount=1;
+const V=$('viewer'),P=$('pages');
+function render(){pageCount=INV.paginate(P,S).pages.length;apply();onScroll()}
+function calc(){const w=V.clientWidth-32,h=V.clientHeight-32;
+ if(mode==='width')return Math.min(1.6,w/PW);
+ if(mode==='page')return Math.min(w/PW,h/PH);
+ return zoom}
+function apply(){if(V.clientWidth<100)return;zoom=Math.max(.3,Math.min(2.5,calc()));P.style.setProperty('--z',zoom);$('zv').textContent=Math.round(zoom*100)+'%';$('fw').classList.toggle('on',mode==='width');$('fp').classList.toggle('on',mode==='page');try{localStorage.setItem(KZ,mode==='width'||mode==='page'?mode:'width')}catch(e){}}
+function step(d){const z=Math.round((zoom+d)*10)/10;mode='manual';zoom=z;apply()}
+$('zi').onclick=()=>step(.1);$('zo').onclick=()=>step(-.1);
+$('fw').onclick=()=>{mode='width';apply()};$('fp').onclick=()=>{mode='page';apply()};
+let ht;function onScroll(){const pgs=[...P.children];const mid=V.scrollTop+V.clientHeight/3;let n=1;pgs.forEach((p,i)=>{if(p.offsetTop*1<=mid)n=i+1});$('pv').textContent=n+' / '+pageCount;if(pageCount>1){$('pgind').textContent='Lk '+n+' / '+pageCount;$('pgind').classList.add('show');clearTimeout(ht);ht=setTimeout(()=>$('pgind').classList.remove('show'),900)}}
+V.addEventListener('scroll',onScroll);
+let hh;function toggleFocus(on){const f=document.body.classList.toggle('focus',on);if(f){$('hint').classList.add('show');clearTimeout(hh);hh=setTimeout(()=>$('hint').classList.remove('show'),1800)}requestAnimationFrame(apply)}
+$('focus').onclick=()=>toggleFocus();
+addEventListener('keydown',e=>{if(e.target.closest('input,textarea'))return;
+ if(e.key==='f'||e.key==='F')toggleFocus();
+ else if(e.key==='Escape'&&document.body.classList.contains('focus'))toggleFocus(false);
+ else if(e.key==='+'||e.key==='=')step(.1);else if(e.key==='-')step(-.1);
+ else if(e.key==='0'){mode='page';apply()}else if(e.key==='w'||e.key==='W'){mode='width';apply()}});
+new ResizeObserver(()=>{if(mode!=='manual')apply();else if(!P.style.getPropertyValue('--z'))apply()}).observe(V);
+render();setTimeout(apply,0);addEventListener('load',apply);document.fonts.ready.then(()=>{render();setTimeout(apply,0)});
+</script>
+</body>
+</html>
