@@ -4,6 +4,7 @@ import { Fragment, type ReactNode } from 'react';
 import Link from 'next/link';
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import type { GuideBlock, GuideCallout } from '@/lib/guides/types';
+import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
 import { headingSlug } from '@/lib/guides/types';
 
 /**
@@ -143,6 +144,13 @@ function Block({ block }: { block: GuideBlock }) {
             <figcaption className="mt-1.5 text-[12px] text-[var(--a-text-3)]">{block.caption}</figcaption>
           )}
         </figure>
+      );
+
+    case 'action':
+      return (
+        <div className="mt-4">
+          <AskAssistantButton prompt={block.prompt} label={block.label} />
+        </div>
       );
 
     default:

@@ -59,6 +59,11 @@ export const pangatehingud: Guide = {
         'Kontoplaanis peavad olema pangakonto ja süsteemikontod määratud, muidu ei saa kannet luua.',
       ],
     },
+    {
+      type: 'action',
+      label: 'Kontrolli minu pangakontod üle',
+      prompt: 'Kontrolli, kas mu pangakontod ja süsteemikontod on pangaimpordiks õigesti seadistatud. Kui midagi on puudu, aita see ära seadistada.',
+    },
 
     { type: 'heading', text: '1. samm: import' },
     {

@@ -19,7 +19,12 @@ export type GuideBlock =
   | { type: 'list'; ordered?: boolean; items: string[] }
   | { type: 'callout'; tone: GuideCallout; title?: string; text: string }
   | { type: 'table'; headers: string[]; rows: string[][] }
-  | { type: 'image'; src: string; alt: string; caption?: string };
+  | { type: 'image'; src: string; alt: string; caption?: string }
+  /**
+   * "Do it for me" button: opens the assistant and sends `prompt` as the user's
+   * message. The assistant then proposes the change on a confirmation card.
+   */
+  | { type: 'action'; label: string; prompt: string };
 
 export type GuideCategory = 'alustamine' | 'raamatupidamine' | 'arved' | 'pank';
 

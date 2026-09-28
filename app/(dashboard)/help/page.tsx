@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from 'next-intl';
 import { BookOpen } from 'lucide-react';
 import { GuideCard } from '@/components/guides/GuideCard';
+import { HelpAskBox } from '@/components/assistant/HelpAskBox';
 import { listGuides } from '@/lib/guides/registry';
 import { GUIDE_CATEGORY_ORDER } from '@/lib/guides/types';
 import type { Locale } from '@/i18n/config';
@@ -23,6 +24,8 @@ export default function GuidesIndexPage() {
           <p className="mt-1 text-[13.5px] leading-6 text-[var(--a-text-2)]">{t('subtitle')}</p>
         </div>
       </div>
+
+      <HelpAskBox />
 
       {isFallback && (
         <div className="mt-4 rounded-[10px] border border-[var(--a-border-strong)] bg-[var(--a-surface-2)] px-3 py-2 text-[12.5px] text-[var(--a-text-2)]">

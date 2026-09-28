@@ -2,8 +2,9 @@
 
 import { usePathname } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronRight, Command } from 'lucide-react';
+import { ChevronRight, Command, Sparkles } from 'lucide-react';
 import { Kbd } from '@/components/ui/Kbd';
+import { useAssistantStore } from '@/lib/stores/assistant.store';
 
 function isoWeek(date: Date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -30,11 +31,16 @@ export function CommandBar({
   crumbs,
   actions,
   hints = true,
+  assistantToggle = false,
 }: {
   crumbs?: string[];
   actions?: React.ReactNode;
   hints?: boolean;
+  /** Only the layout's bar shows it — pages that render their own bar would duplicate it. */
+  assistantToggle?: boolean;
 }) {
+  const tAssistant = useTranslations('assistant');
+  const toggleAssistant = useAssistantStore((state) => state.toggle);
   const pathname = usePathname();
   const locale = useLocale();
   const tCommon = useTranslations('common');
@@ -112,6 +118,17 @@ export function CommandBar({
         <Kbd>K</Kbd>
       </div>
       {actions && <div className="hidden shrink-0 items-center gap-2 lg:flex">{actions}</div>}
+      {assistantToggle && (
+        <button
+          type="button"
+          onClick={toggleAssistant}
+          title={tAssistant('open')}
+          className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] transition-colors hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-[var(--a-accent)]" />
+          <span className="hidden sm:inline">{tAssistant('askShort')}</span>
+        </button>
+      )}
     </div>
   );
 }

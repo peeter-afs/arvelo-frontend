@@ -7,6 +7,7 @@ import MobileNav from '@/components/layout/MobileNav';
 import { CommandBar } from '@/components/layout/CommandBar';
 import { StatusFooter } from '@/components/layout/StatusFooter';
 import { TwoFactorNotice } from '@/components/layout/TwoFactorNotice';
+import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
@@ -46,22 +47,25 @@ export default function DashboardLayout({
         </div>
       ) : (
         <>
-          <div className="flex h-screen overflow-hidden bg-[var(--a-bg)]">
-            <div className="hidden lg:block">
+          <div className="flex h-screen overflow-hidden bg-[var(--a-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
+            <div className="hidden lg:block print:hidden">
               <Sidebar />
             </div>
 
-            <main className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0">
-              <div className={hideCommandBar ? 'hidden' : undefined}><CommandBar /></div>
-              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6 lg:px-7">
+            <main className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0 print:block print:pt-0">
+              <div className={hideCommandBar ? 'hidden' : 'print:hidden'}><CommandBar assistantToggle /></div>
+              <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6 sm:px-6 lg:px-7 print:overflow-visible print:p-0">
                 <TwoFactorNotice />
                 {children}
               </div>
-              <StatusFooter />
+              <div className="print:hidden"><StatusFooter /></div>
             </main>
           </div>
 
-          <MobileNav />
+          <div className="print:hidden">
+            <MobileNav />
+            <AssistantPanel />
+          </div>
         </>
       )}
     </ProtectedRoute>

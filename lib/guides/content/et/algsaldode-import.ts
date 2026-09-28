@@ -297,6 +297,11 @@ export const algsaldodeImport: Guide = {
       type: 'paragraph',
       text: 'Pärast kontoplaani importi küsib Arvelo, millised kontod täidavad süsteemi rolle (nõuded, kohustused, käibemaks, pank jne). Neid kasutavad arvete kinnitamine, pangaread ja käibemaksuarvestus. **Määramata roll peatab arvete kandmise pearaamatusse**, mistõttu jääb määramata rollide kohta püsiv hoiatusriba. Määramise saab edasi lükata („Määran hiljem"), aga mitte ära jätta.',
     },
+    {
+      type: 'action',
+      label: 'Aita süsteemikontod määrata',
+      prompt: 'Vaata üle, millised süsteemikontod on määramata, ja paku minu kontoplaani põhjal sobivad kontod.',
+    },
 
     { type: 'heading', text: 'Kuidas viga parandada' },
     {

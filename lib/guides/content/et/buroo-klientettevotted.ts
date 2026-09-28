@@ -78,6 +78,11 @@ export const burooKlientettevotted: Guide = {
         'näha – ava klientettevõte ja kutsu kolleegid **Seaded → Meeskond** alt, valides neile sobiva rolli. ' +
         'Klientettevõtete lehel on ettevõtted, kus sa ise liige ei ole, märgitud „pole liige" ja neid avada ei saa.',
     },
+    {
+      type: 'action',
+      label: 'Kutsu kolleeg selle ettevõtte juurde',
+      prompt: 'Aita mul kutsuda kolleeg praeguse ettevõtte juurde.',
+    },
     { type: 'heading', text: 'Arveldus' },
     {
       type: 'list',
