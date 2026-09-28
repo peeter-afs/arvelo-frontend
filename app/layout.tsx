@@ -1,30 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Inter, Plus_Jakarta_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import { Toaster } from '@/components/ui/Toast';
+// Self-hosted fonts (all unicode subsets incl. latin-ext). next/font/google broke
+// Turbopack builds when Google started returning /l/font?kit=…&skey=… URLs.
+import '@fontsource-variable/inter';
+import '@fontsource-variable/plus-jakarta-sans';
+import '@fontsource-variable/geist-mono';
 import "./globals.css";
-
-const inter = Inter({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-inter',
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
-  display: 'swap',
-  variable: '--font-jakarta',
-});
-
-const geistMono = Geist_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-geist-mono',
-});
 
 export const metadata: Metadata = {
   title: "Arvelo — Estonian Bookkeeping",
@@ -47,8 +30,8 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${inter.variable} ${plusJakartaSans.variable} ${geistMono.variable}`}>
-      <body className={inter.className}>
+    <html lang={locale}>
+      <body>
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster />

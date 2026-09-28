@@ -1,6 +1,10 @@
 @import "tailwindcss";
 
 :root {
+  /* Font families from @fontsource-variable (imported in app/layout.tsx) */
+  --font-inter: 'Inter Variable';
+  --font-jakarta: 'Plus Jakarta Sans Variable';
+  --font-geist-mono: 'Geist Mono Variable';
   /* Halo Pro */
   --a-bg: #f6f4ee;
   --a-surface: #ffffff;
