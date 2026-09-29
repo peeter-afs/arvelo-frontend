@@ -22,6 +22,7 @@ import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCe
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
+import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import styles from './SalesInvoiceEditor.module.css';
 
 type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
@@ -334,6 +335,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const isDraft = !invoice || invoice.status === 'draft' || invoice.status === 'rejected';
   // Confirmed / sent / paid: view only — a mistake is corrected with a credit note.
   const locked = !isDraft;
+  useLastCrumb(locked ? 'Vaata' : null);
   const voided = invoice?.status === 'cancelled' || invoice?.status === 'void';
   const authorName = useMemo(() => {
     const m = members.find((x) => x.user.id === hdr.authorId);

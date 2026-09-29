@@ -25,6 +25,7 @@ import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCe
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
+import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import styles from './PurchaseInvoiceEditor.module.css';
 
 const PdfViewer = dynamic(() => import('./PdfViewer'), { ssr: false });
@@ -358,6 +359,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const editable = isDraft;
   // Approved / paid: view only (pending approval keeps its Kinnita / Lükka tagasi actions).
   const locked = !isDraft && !isPending;
+  useLastCrumb(locked ? 'Vaata' : null);
   const voided = status === 'cancelled' || status === 'void';
   const payableNow = locked && !voided && status !== 'paid' && Number(invoice?.open_amount ?? invoice?.total ?? 0) > 0.005;
   const approverName = useMemo(() => {

@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ChevronRight, Command, Sparkles } from 'lucide-react';
 import { Kbd } from '@/components/ui/Kbd';
 import { useAssistantStore } from '@/lib/stores/assistant.store';
+import { applyCrumbOverride, useCrumbOverride } from '@/lib/stores/crumbs.store';
 
 function isoWeek(date: Date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -89,7 +90,8 @@ export function CommandBar({
   const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
   const todayCrumb = `${new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }).format(now)} · ${tCommon('weekNumber', { week: isoWeek(now) })}`;
   const isListView = /\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '');
-  const computedCrumbs = crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb);
+  const crumbOverride = useCrumbOverride();
+  const computedCrumbs = applyCrumbOverride(crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb), crumbOverride);
 
   return (
     <div className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 lg:px-7">
