@@ -48,7 +48,7 @@ export type DepreciationEntry = {
 export const fixedAssetsApi = {
   // Categories
   async listCategories(): Promise<AssetCategory[]> {
-    const { data } = await apiClient.get<ApiResponse<AssetCategory[]>>('/fixed-assets/categories');
+    const { data } = await apiClient.get<ApiResponse<AssetCategory[]>>('/api/fixed-assets/categories');
     return data.data;
   },
 
@@ -59,19 +59,19 @@ export const fixedAssetsApi = {
     expense_account_id: string;
     default_useful_life_months?: number;
   }): Promise<AssetCategory> {
-    const { data } = await apiClient.post<ApiResponse<AssetCategory>>('/fixed-assets/categories', input);
+    const { data } = await apiClient.post<ApiResponse<AssetCategory>>('/api/fixed-assets/categories', input);
     return data.data;
   },
 
   // Assets
   async listAssets(status?: string): Promise<FixedAsset[]> {
     const params = status ? { status } : {};
-    const { data } = await apiClient.get<ApiResponse<FixedAsset[]>>('/fixed-assets', { params });
+    const { data } = await apiClient.get<ApiResponse<FixedAsset[]>>('/api/fixed-assets', { params });
     return data.data;
   },
 
   async getAsset(id: string): Promise<FixedAsset> {
-    const { data } = await apiClient.get<ApiResponse<FixedAsset>>(`/fixed-assets/${id}`);
+    const { data } = await apiClient.get<ApiResponse<FixedAsset>>(`/api/fixed-assets/${id}`);
     return data.data;
   },
 
@@ -87,7 +87,7 @@ export const fixedAssetsApi = {
     useful_life_months: number;
     depreciation_method: 'straight_line' | 'declining_balance';
   }): Promise<FixedAsset> {
-    const { data } = await apiClient.post<ApiResponse<FixedAsset>>('/fixed-assets', input);
+    const { data } = await apiClient.post<ApiResponse<FixedAsset>>('/api/fixed-assets', input);
     return data.data;
   },
 
@@ -97,7 +97,7 @@ export const fixedAssetsApi = {
     salvage_value: number;
     useful_life_months: number;
   }>): Promise<FixedAsset> {
-    const { data } = await apiClient.put<ApiResponse<FixedAsset>>(`/fixed-assets/${id}`, input);
+    const { data } = await apiClient.put<ApiResponse<FixedAsset>>(`/api/fixed-assets/${id}`, input);
     return data.data;
   },
 
@@ -105,18 +105,18 @@ export const fixedAssetsApi = {
     disposal_date: string;
     disposal_amount: number;
   }): Promise<FixedAsset> {
-    const { data } = await apiClient.post<ApiResponse<FixedAsset>>(`/fixed-assets/${id}/dispose`, input);
+    const { data } = await apiClient.post<ApiResponse<FixedAsset>>(`/api/fixed-assets/${id}/dispose`, input);
     return data.data;
   },
 
   // Depreciation
   async getDepreciationSchedule(assetId: string): Promise<DepreciationEntry[]> {
-    const { data } = await apiClient.get<ApiResponse<DepreciationEntry[]>>(`/fixed-assets/${assetId}/depreciation`);
+    const { data } = await apiClient.get<ApiResponse<DepreciationEntry[]>>(`/api/fixed-assets/${assetId}/depreciation`);
     return data.data;
   },
 
   async generateDepreciation(assetId: string, upToDate: string): Promise<DepreciationEntry[]> {
-    const { data } = await apiClient.post<ApiResponse<DepreciationEntry[]>>(`/fixed-assets/${assetId}/depreciation/generate`, { up_to_date: upToDate });
+    const { data } = await apiClient.post<ApiResponse<DepreciationEntry[]>>(`/api/fixed-assets/${assetId}/depreciation/generate`, { up_to_date: upToDate });
     return data.data;
   },
 };

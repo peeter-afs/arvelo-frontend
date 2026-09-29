@@ -30,7 +30,7 @@ export const auditLogApi = {
     limit?: number;
     offset?: number;
   }): Promise<AuditLogResponse> {
-    const { data } = await apiClient.get<ApiResponse<AuditLogResponse>>('/audit-log', { params: filters });
+    const { data } = await apiClient.get<ApiResponse<AuditLogResponse>>('/api/audit-log', { params: filters });
     return data.data;
   },
 };
