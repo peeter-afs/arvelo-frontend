@@ -12,6 +12,9 @@ interface SidebarStore {
   expandedSection: string | null;
   setExpandedSection: (id: string | null) => void;
   manualOverrides: string[];
+  /** Compact density starts as the icon rail; this remembers the user opening it there. */
+  expandedInCompact: boolean;
+  setExpandedInCompact: (value: boolean) => void;
 }
 
 export const useSidebarStore = create<SidebarStore>()(
@@ -25,6 +28,8 @@ export const useSidebarStore = create<SidebarStore>()(
       expandedSection: null,
       setExpandedSection: (id) => set({ expandedSection: id }),
       manualOverrides: [],
+      expandedInCompact: false,
+      setExpandedInCompact: (value) => set({ expandedInCompact: value }),
     }),
     {
       name: 'sidebar-storage',
@@ -32,6 +37,7 @@ export const useSidebarStore = create<SidebarStore>()(
         isCollapsed: state.isCollapsed,
         autoCollapseOnTask: state.autoCollapseOnTask,
         expandedSection: state.expandedSection,
+        expandedInCompact: state.expandedInCompact,
       }),
     }
   )

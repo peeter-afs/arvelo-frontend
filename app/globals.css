@@ -62,6 +62,47 @@
     "Liberation Mono", "Courier New", monospace;
 }
 
+/* ── Density (lib/density.ts): `compact` / `comfy` class on <html> ──
+   Compact is for laptop viewports (1080p @125% ≈ 1536×730). Views read these
+   tokens instead of hard-coding sizes, so each one doesn't solve it again. */
+@custom-variant compact (&:is(.compact, .compact *));
+
+:root {
+  --d-page-pad-y: 12px;
+  --d-page-pad-x: 16px;
+  --d-gap: 9px;
+  --d-row-pad-y: 6px;
+  --d-table-head-h: 32px;
+  --d-list-head-h: 33px;
+  --d-list-foot-h: 30px;
+  --d-avatar: 20px;
+  --d-section-pad: 10px 13px;
+}
+.compact {
+  --d-page-pad-y: 8px;
+  --d-page-pad-x: 12px;
+  --d-gap: 6px;
+  --d-row-pad-y: 4px;
+  --d-table-head-h: 28px;
+  --d-list-head-h: 30px;
+  --d-list-foot-h: 28px;
+  --d-avatar: 18px;
+  --d-section-pad: 8px 12px;
+}
+
+/* App command bar (breadcrumbs + assistant): slimmer in compact. */
+.compact .app-commandbar > div {
+  padding-top: 8px;
+  padding-bottom: 6px;
+}
+.compact .app-commandbar > div > div:first-child {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.compact .app-commandbar > div > button {
+  height: 32px;
+}
+
 /* Global Styles */
 * {
   -webkit-tap-highlight-color: transparent;

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import { Toaster } from '@/components/ui/Toast';
+import { DensitySync } from '@/components/layout/DensitySync';
+import { DENSITY_BOOT_SCRIPT } from '@/lib/density';
 // Self-hosted fonts (all unicode subsets incl. latin-ext). next/font/google broke
 // Turbopack builds when Google started returning /l/font?kit=…&skey=… URLs.
 import '@fontsource-variable/inter';
@@ -30,8 +32,13 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale}>
+    // The density class is set by the boot script before React hydrates.
+    <html lang={locale} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: DENSITY_BOOT_SCRIPT }} />
+      </head>
       <body>
+        <DensitySync />
         <NextIntlClientProvider messages={messages}>
           {children}
           <Toaster />

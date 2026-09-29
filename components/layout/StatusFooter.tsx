@@ -63,7 +63,7 @@ export function StatusFooter() {
   const syncLabel = formatSyncTime(locale, navigationMetrics.lastUpdatedAt) || (navigationMetrics.isLoading ? tCommon('loading') : tCommon('unknown'));
 
   return (
-    <footer className="hidden border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)] lg:flex">
+    <footer className="hidden border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] compact:py-[3px] compact:text-[10.5px] text-[var(--a-text-3)] lg:flex">
       <div className="flex min-w-0 flex-1 items-center gap-3.5 overflow-hidden">
         <span className="uppercase">
           {tNavigation('books')} <span className="text-[var(--a-text)]">{items.period}</span>

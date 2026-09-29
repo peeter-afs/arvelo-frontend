@@ -26,6 +26,7 @@ import { authApi } from '@/lib/api/auth.api';
 import { formatMetricCount, useNavigationMetrics } from '@/lib/hooks/useNavigationMetrics';
 import { isTaskRoute } from '@/lib/nav/task-routes';
 import { useSidebarStore } from '@/lib/stores/sidebar.store';
+import { useCompact } from '@/lib/density';
 import { Kbd } from '@/components/ui/Kbd';
 import { TenantSwitcher } from './TenantSwitcher';
 
@@ -103,7 +104,10 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     expandedSection,
     setExpandedSection,
     manualOverrides,
+    expandedInCompact,
+    setExpandedInCompact,
   } = useSidebarStore();
+  const compact = useCompact();
   const navigationMetrics = useNavigationMetrics();
   const currentPath = pathname || '/';
   const previousPathRef = useRef(currentPath);
@@ -184,7 +188,8 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
     },
   ];
 
-  const effectiveCollapsed = isMobile ? false : isCollapsed;
+  // Compact density (laptops) defaults to the icon rail; the toggle then remembers its own choice.
+  const effectiveCollapsed = isMobile ? false : compact ? !expandedInCompact : isCollapsed;
 
   useEffect(() => {
     const activeSection = activeSectionForPath(navigation, currentPath);
@@ -229,6 +234,10 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   };
 
   const handleSidebarToggle = () => {
+    if (compact) {
+      setExpandedInCompact(!expandedInCompact);
+      return;
+    }
     if (isCollapsed && isTaskRoute(currentPath) && !manualOverrides.includes(currentPath)) {
       useSidebarStore.setState((state) => ({
         manualOverrides: [...state.manualOverrides, currentPath],

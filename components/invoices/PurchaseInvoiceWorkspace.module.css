@@ -58,3 +58,35 @@
 .relativeCard{position:relative}
 .dangerGhost{color:#c0392b}.dangerGhost:hover{background:#fbeaea}
 .workspace .fullLineHead,.workspace .fullLineRow{grid-template-columns:minmax(0,1fr) 54px 84px 52px 90px 90px}
+/* ── density (tihe režiim, lib/density.ts) ── */
+.hdr{display:flex;flex-direction:column;gap:9px;flex:none;min-width:0}
+.noRoom{margin-left:auto;padding:1px 5px;border-radius:4px;background:var(--a-surface-2);color:var(--a-text-3);font-size:10px;font-weight:600;white-space:nowrap}
+/* One scroll container for both axes (the inner .rows scroller gave a second sideways scrollbar); the header sticks. */
+.tableScroll{display:block;overflow:auto}.tableHead{position:sticky;top:0;z-index:2}.rows{overflow:visible;min-height:calc(100% - var(--d-table-head-h))}.row{scroll-margin-top:var(--d-table-head-h)}
+.detailBody{overflow-x:hidden}.detailSplit{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+/* The grid row must not grow past the viewport, or the panel's action bar ends up below the fold. */
+.body{grid-template-rows:minmax(0,1fr)}
+.warningText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.warning .button{flex-shrink:0}
+@media(max-width:1399px){.actions .key{display:none}}
+@media(min-width:1024px){
+:global(.compact) .workspace{min-width:0;min-height:420px;gap:var(--d-gap);padding:0 0 2px}
+:global(.compact) .hdr{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 8px}
+:global(.compact) .hdr>.topbar,:global(.compact) .hdr>.filterbar{display:contents}
+:global(.compact) .topbar>h1{order:0;margin-right:2px}
+:global(.compact) .sub,:global(.compact) .topbar>.metrics,:global(.compact) .btnLabel{display:none}
+:global(.compact) .topbar>.actions{order:2;margin-left:auto}
+:global(.compact) .filterbar>*{order:1}
+:global(.compact) .search{flex:1 1 140px;max-width:200px}
+:global(.compact) .tabs{gap:2px}:global(.compact) .tab{padding:0 7px;gap:5px}:global(.compact) .picker{padding:0 8px;gap:6px}:global(.compact) .actions{gap:6px}:global(.compact) .actions .key{display:none}
+:global(.compact) .listHeader{height:var(--d-list-head-h)}
+:global(.compact) .listMetrics{display:flex;align-items:baseline;min-width:0;overflow:hidden}.listMetrics .metric{padding:0 9px}.listMetrics .metric:first-child{border-left:1px solid var(--a-border);margin-left:4px}.listMetrics .metricValue{font-size:12.5px}
+:global(.compact) .listMetrics+span{display:none}
+:global(.compact) .tableHead,:global(.compact) .headerCell,:global(.compact) .grip{height:var(--d-table-head-h)}
+:global(.compact) .row{padding:var(--d-row-pad-y) 0}
+:global(.compact) .customerMeta{display:none}
+:global(.compact) .avatar{width:var(--d-avatar);height:var(--d-avatar)}
+:global(.compact) .footer{height:var(--d-list-foot-h)}
+:global(.compact) .section{padding:var(--d-section-pad)}
+:global(.compact) .grow{min-height:120px}
+:global(.compact) .detailHeader{padding:8px 12px;gap:5px}
+}
