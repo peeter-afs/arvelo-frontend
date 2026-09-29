@@ -254,3 +254,6 @@ textarea.inp{height:auto;min-height:29px;padding:6px 9px;resize:vertical;line-he
 .pend{background:var(--a-warn-soft);color:#7d5a13}
 .rej{background:#fbeaea;color:#c0392b}
 .shell{position:relative}.dropHint{position:absolute;inset:4px 0;z-index:40;display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--a-accent);border-radius:11px;background:rgba(255,243,238,.88);color:#b8330f;font-weight:600;font-size:14px;pointer-events:none}
+/* Locked (confirmed / paid) invoice: the form is a disabled fieldset — reset its browser chrome. */
+.lockset{border:0;margin:0;padding:0;min-width:0}
+.lockNote{margin:0 0 7px;padding:6px 11px;border:1px solid var(--a-border);border-radius:8px;background:var(--a-surface-2);color:var(--a-text-2);font-size:12px;flex:none}

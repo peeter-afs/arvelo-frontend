@@ -179,7 +179,9 @@ type Props = { mode: 'create' | 'edit'; invoiceId?: string; initial?: InvoiceDet
 export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) {
   const router = useRouter();
   const { tenant, user } = useAuthStore();
-  const vatEnabled = tenant ? Boolean(tenant.is_vat_registered) : true;
+  // An existing invoice keeps the VAT it was issued with (e.g. 24% Futursoft imports on a
+  // company whose VAT flag is off) — loading it must never rewrite its lines to 0%.
+  const vatEnabled = (tenant ? Boolean(tenant.is_vat_registered) : true) || (initial?.lines || []).some((l) => Number(l.tax_rate || 0) > 0);
 
   const [id, setId] = useState<string | null>(invoiceId || null);
   const [invoice, setInvoice] = useState<InvoiceListItem | null>(initial?.invoice || null);
@@ -189,7 +191,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [busy, setBusy] = useState<null | 'save' | 'confirm' | 'delete'>(null);
+  const [busy, setBusy] = useState<null | 'save' | 'confirm' | 'delete' | 'send'>(null);
 
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -222,7 +224,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const descRefs = useRef(new Map<number, HTMLInputElement | null>());
   const pendingFocus = useRef<number | null>(null);
   const focusTab = useRef(false);
-  const importMoved = useRef(initial ? headerFrom(initial, vatEnabled).movedImportNote : false);
+  const importMoved = useRef(initial && ['draft', 'rejected'].includes(initial.invoice.status) ? headerFrom(initial, vatEnabled).movedImportNote : false);
 
   const touch = useCallback(() => setDirty(true), []);
   const setH = useCallback((patch: Partial<Header>) => { setHdr((h) => ({ ...h, ...patch })); setDirty(true); }, []);
@@ -263,7 +265,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       if (!live) return;
       const { header, movedImportNote } = headerFrom(detail, vatEnabled);
       setInvoice(detail.invoice); setHdr(header); setLines(detail.lines.map(lineFrom));
-      if (movedImportNote) setDirty(true);
+      if (movedImportNote && ['draft', 'rejected'].includes(detail.invoice.status)) setDirty(true);
     }).catch((e) => live && setLoadError(getErrorMessage(e))).finally(() => live && setLoading(false));
     return () => { live = false; };
   }, [mode, invoiceId, initial, vatEnabled]);
@@ -330,6 +332,9 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const imported = invoice?.source === 'futursoft' || FUTURSOFT_NOTE.test(hdr.inote) || FUTURSOFT_NOTE.test(invoice?.notes || '');
   const importTx = /tx (\d+)/.exec(hdr.inote || invoice?.notes || '')?.[1];
   const isDraft = !invoice || invoice.status === 'draft' || invoice.status === 'rejected';
+  // Confirmed / sent / paid: view only — a mistake is corrected with a credit note.
+  const locked = !isDraft;
+  const voided = invoice?.status === 'cancelled' || invoice?.status === 'void';
   const authorName = useMemo(() => {
     const m = members.find((x) => x.user.id === hdr.authorId);
     if (m) return memberName(m);
@@ -578,6 +583,13 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     finally { setBusy(null); }
   };
   const cancel = () => { if (dirty) setConfirmCancel(true); else router.push('/invoices/sales'); };
+  const resend = async () => {
+    if (!id) return;
+    setBusy('send');
+    try { const sent = await invoicesApi.sendInvoice(id, { to: hdr.contactEmail.trim() || partner?.email || undefined }); showToast.success(`Arve saadetud aadressile ${sent.sent_to}`); }
+    catch (e) { showToast.error(getErrorMessage(e)); }
+    finally { setBusy(null); }
+  };
   const preview = () => { if (!id || dirty) { showToast.info('Salvesta mustand enne eelvaadet'); return; } window.open(`/invoices/${id}/preview`, '_blank', 'noopener'); };
 
   /* ── keyboard: ⌘S save · ⌘K client · Esc cancel ── */
@@ -618,19 +630,32 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
         {imported && <span className={`${styles.tag} ${styles.info}`} title={`Imporditud Futursoftist${importTx ? ` · tx ${importTx}` : ''}`}><span className={styles.dot} />Futursofti import</span>}
         <div className={styles.acts}>
           <span className={`${styles.dirty} ${dirty ? '' : styles.clean}`}><span className={styles.dot} />{dirty ? 'Salvestamata muudatused' : savedText}</span>
-          <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Loobu <kbd className={styles.kbd}>Esc</kbd></button>
-          <button type="button" className={styles.btn} disabled={!dirty || !!busy || loading} onClick={() => void save()}>{busy === 'save' && <Loader2 size={13} className="animate-spin" />}Salvesta mustand <kbd className={styles.kbd}>⌘S</kbd></button>
-          <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading || !isDraft} onClick={() => void confirmAndSend()}>{busy === 'confirm' && <Loader2 size={13} className="animate-spin" />}Kinnita ja saada</button>
+          {locked ? (
+            <>
+              <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Sulge <kbd className={styles.kbd}>Esc</kbd></button>
+              {!voided && <Link className={styles.btn} href={`/invoices/new?type=sales_credit_note&credit_note_for=${id}`}>Kreediteeri</Link>}
+              {!voided && invoice?.status !== 'paid' && <Link className={styles.btn} href={`/accounting/payments?invoice=${id}`}>Registreeri laekumine</Link>}
+              <Link className={styles.btn} href={`/invoices/${id}/preview`}>Prindi</Link>
+              {!voided && <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading} onClick={() => void resend()}>{busy === 'send' && <Loader2 size={13} className="animate-spin" />}Saada uuesti</button>}
+            </>
+          ) : (
+            <>
+              <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Loobu <kbd className={styles.kbd}>Esc</kbd></button>
+              <button type="button" className={styles.btn} disabled={!dirty || !!busy || loading} onClick={() => void save()}>{busy === 'save' && <Loader2 size={13} className="animate-spin" />}Salvesta mustand <kbd className={styles.kbd}>⌘S</kbd></button>
+              <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading || !isDraft} onClick={() => void confirmAndSend()}>{busy === 'confirm' && <Loader2 size={13} className="animate-spin" />}Kinnita ja saada</button>
+            </>
+          )}
           <button type="button" className={`${styles.btn} ${styles.ghost}`} title={rail ? 'Peida kokkuvõtte paneel' : 'Näita kokkuvõtte paneeli'} onClick={() => toggleRail(!rail)}>
             <svg className={styles.icon} viewBox="0 0 24 24"><path d="M3 5h18v14H3zM15 5v14" /></svg> <span className={styles.raillbl}>{rail ? 'Peida kokkuvõte' : 'Näita kokkuvõtet'}</span>
           </button>
         </div>
       </div>
 
+      {locked && <div className={styles.lockNote}>{invoice?.status === 'paid' ? 'Arve on makstud' : voided ? 'Arve on tühistatud' : 'Arve on kinnitatud'} — seda ei saa muuta. Vajadusel paranda kreeditarvega.</div>}
       <div className={`${styles.body} ${rail ? '' : styles.norail}`} style={{ '--pw': `${clampPw(pw)}px` } as CSSProperties}>
         <div className={styles.left}>
           {loading ? <div className={styles.loading}><Loader2 size={20} className="animate-spin" /></div> : (
-            <div className={styles.lscroll}>
+            <fieldset disabled={locked} className={`${styles.lscroll} ${styles.lockset}`}>
               {loadError && <div className={styles.notice} style={{ marginTop: 10 }}>{loadError}</div>}
               <div className={`${styles.sec} ${styles.form} ${coll ? styles.collapsed : ''}`}>
                 <div className={styles.fbar}>
@@ -807,7 +832,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                   </div>
                 </div>
               </div>
-            </div>
+            </fieldset>
           )}
           <div className={styles.footbar}>
             <div className={styles.fhint}><span><kbd className={styles.kbd}>⌘S</kbd> salvesta</span><span><kbd className={styles.kbd}>⏎</kbd> uus rida</span><span><kbd className={styles.kbd}>Esc</kbd> loobu</span></div>

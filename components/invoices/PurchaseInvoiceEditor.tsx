@@ -180,7 +180,9 @@ type Props = { mode: 'create' | 'edit'; invoiceId?: string; initial?: InvoiceDet
 export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Props) {
   const router = useRouter();
   const { tenant, user } = useAuthStore();
-  const vatEnabled = tenant ? Boolean(tenant.is_vat_registered) : true;
+  // An existing invoice keeps the VAT it was issued with (e.g. 24% Futursoft imports on a
+  // company whose VAT flag is off) — loading it must never rewrite its lines to 0%.
+  const vatEnabled = (tenant ? Boolean(tenant.is_vat_registered) : true) || (initial?.lines || []).some((l) => Number(l.tax_rate || 0) > 0);
 
   const [id, setId] = useState<string | null>(invoiceId || null);
   const [invoice, setInvoice] = useState<InvoiceListItem | null>(initial?.invoice || null);
@@ -354,6 +356,10 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const isDraft = !invoice || status === 'draft' || status === 'rejected';
   const isPending = status === 'pending_approval';
   const editable = isDraft;
+  // Approved / paid: view only (pending approval keeps its Kinnita / Lükka tagasi actions).
+  const locked = !isDraft && !isPending;
+  const voided = status === 'cancelled' || status === 'void';
+  const payableNow = locked && !voided && status !== 'paid' && Number(invoice?.open_amount ?? invoice?.total ?? 0) > 0.005;
   const approverName = useMemo(() => {
     const m = members.find((x) => x.user.id === hdr.approverId);
     return m ? memberName(m) : '';
@@ -814,11 +820,17 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         {srcInfo && <span className={`${styles.tag} ${styles.info}`} title={srcInfo.t}><span className={styles.dot} />{srcInfo.l}</span>}
         <div className={styles.acts}>
           <span className={`${styles.dirty} ${dirty ? '' : styles.clean}`}><span className={styles.dot} />{dirty ? 'Salvestamata muudatused' : savedText}</span>
-          <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Loobu <kbd className={styles.kbd}>Esc</kbd></button>
+          <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>{locked ? 'Sulge' : 'Loobu'} <kbd className={styles.kbd}>Esc</kbd></button>
           {isPending ? (
             <>
               <button type="button" className={styles.btn} disabled={!!busy || loading} onClick={() => void reject()}>{busy === 'reject' && <Loader2 size={13} className="animate-spin" />}Lükka tagasi</button>
               <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading} onClick={() => void approve()}>{busy === 'approve' && <Loader2 size={13} className="animate-spin" />}Kinnita</button>
+            </>
+          ) : locked ? (
+            <>
+              {!voided && <Link className={styles.btn} href={`/invoices/new?type=purchase_credit_note&credit_note_for=${id}`}>Kreeditarve</Link>}
+              {payableNow && <Link className={styles.btn} href={`/accounting/payments?invoice=${id}`}>Registreeri tasumine</Link>}
+              {payableNow && <Link className={`${styles.btn} ${styles.primary}`} href="/accounting/payment-batches">Lisa maksekorraldusse</Link>}
             </>
           ) : (
             <>
@@ -832,10 +844,11 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         </div>
       </div>
 
+      {locked && <div className={styles.lockNote}>{status === 'paid' ? 'Arve on makstud' : voided ? 'Arve on tühistatud' : 'Arve on kinnitatud'} — seda ei saa muuta. Vajadusel koosta kreeditarve.</div>}
       <div className={`${styles.body} ${rail ? '' : styles.norail}`} style={{ '--pw': `${clampPw(pw, rtab)}px` } as CSSProperties}>
         <div className={styles.left}>
           {loading ? <div className={styles.loading}><Loader2 size={20} className="animate-spin" /></div> : (
-            <div className={styles.lscroll}>
+            <fieldset disabled={!editable} className={`${styles.lscroll} ${styles.lockset}`}>
               {loadError && <div className={styles.notice} style={{ marginTop: 10 }}>{loadError}</div>}
               {status === 'rejected' && <div className={styles.rejectNote} style={{ marginTop: 10 }}>Tagasi lükatud: {invoice?.rejection_reason || 'põhjus märkimata'}. Paranda ja saada uuesti kinnitamiseks.</div>}
               <div className={`${styles.sec} ${styles.form} ${coll ? styles.collapsed : ''}`}>
@@ -976,7 +989,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                   </div>
                 </div>
               </div>
-            </div>
+            </fieldset>
           )}
           <div className={styles.footbar}>
             <div className={styles.fhint}><span><kbd className={styles.kbd}>⌘S</kbd> salvesta</span><span><kbd className={styles.kbd}>⌘O</kbd> originaal</span><span><kbd className={styles.kbd}>Esc</kbd> loobu</span></div>
