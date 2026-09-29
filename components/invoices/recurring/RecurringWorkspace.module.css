@@ -107,3 +107,12 @@
 .sft .btn{flex:1;justify-content:center}
 .del{flex:0 0 32px!important;padding:0!important;color:#c0392b!important;background:#fbeaea!important;border-color:transparent!important}
 .loading{padding:60px;display:grid;place-items:center;color:var(--a-text-3)}
+/* ── density (tihe režiim, lib/density.ts) ──
+   The sticky side panel's height ignored the command bar and status bar, so on a
+   laptop its action buttons (Peata / Muuda) ended up below the fold. */
+@media(min-width:1024px){
+:global(.compact) .top{padding:8px 0 7px;gap:7px}
+:global(.compact) .side{top:84px;max-height:calc(100vh - 170px)}
+:global(.compact) .tw th,:global(.compact) .tw td{padding:0 8px}:global(.compact) .tw td{height:36px}
+:global(.compact) .main{padding:10px 0 12px;grid-template-columns:minmax(0,1fr) 300px;gap:10px}
+}
