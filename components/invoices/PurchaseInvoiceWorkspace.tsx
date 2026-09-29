@@ -52,7 +52,6 @@ const ST: Record<StKey, { label: string; cls: string; snr: string }> = {
 };
 const SRC: Record<SrcKey, { l: string; d: string }> = { eai: { l: 'E-arve', d: 'Operaatori kaudu' }, pdf: { l: 'PDF', d: 'Üles laaditud / skaneeritud' }, man: { l: 'Käsitsi', d: 'Sisestatud käsitsi' }, bank: { l: 'Pank', d: 'Pangatehingust loodud mustand' }, csv: { l: 'CSV', d: 'Bolt / CSV import' } };
 const VAT_CODES = [{ key: 'all', label: 'Kõik käibemaksukoodid', short: 'kõik' }, { key: 'd24', label: 'Siseriiklik 24%', short: '24%' }, { key: 'd22', label: 'Siseriiklik 22%', short: '22%' }, { key: 'd9', label: 'Siseriiklik 9%', short: '9%' }, { key: 'eus', label: 'EU teenus (pöördmaks)', short: 'EU teenus' }, { key: 'ex', label: 'Maksuvaba', short: 'Maksuvaba' }];
-const OPEN_BATCH_STATUSES = new Set(['draft', 'generated', 'uploaded', 'submitted', 'pending', 'confirmed']);
 
 function money(value: number | string | null | undefined, currency = 'EUR') { return new Intl.NumberFormat('et-EE', { style: 'currency', currency, minimumFractionDigits: 2 }).format(Number(value || 0)); }
 function dateText(value?: string | Date | null) { if (!value) return '—'; const d = new Date(value); return Number.isNaN(+d) ? String(value) : new Intl.DateTimeFormat('et-EE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d); }
@@ -119,10 +118,9 @@ export default function PurchaseInvoiceWorkspace() {
   }, []);
   const loadBatches = useCallback(async () => {
     try {
-      const list = await bankingApi.listPaymentBatches({ limit: 40 });
-      const open = list.items.filter((b) => OPEN_BATCH_STATUSES.has(String(b.status))).slice(0, 12);
+      const rows = await bankingApi.listOpenPaymentBatchLines();
       const map = new Map<string, BatchRef>();
-      await Promise.all(open.map(async (b) => { const full = await bankingApi.getPaymentBatch(b.id).catch(() => null); full?.lines?.forEach((line) => { if (line.invoice_id) map.set(line.invoice_id, { batch: full.batch, line }); }); }));
+      rows.forEach((row) => { if (row.line.invoice_id && !map.has(row.line.invoice_id)) map.set(row.line.invoice_id, row); });
       setBatches(map);
     } catch { /* payment batches are optional context */ }
   }, []);

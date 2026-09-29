@@ -530,6 +530,14 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  /** Invoice lines of open (not yet executed/voided) batches, newest batch first. */
+  async listOpenPaymentBatchLines() {
+    const response = await apiClient.get<ApiResponse<Array<{ batch: PaymentBatchListItem; line: PaymentBatchLine }>>>(
+      '/api/banking/payment-batches/open-lines'
+    );
+    return response.data.data;
+  },
+
   async getPaymentBatch(id: string) {
     const response = await apiClient.get<ApiResponse<{
       batch: PaymentBatchListItem;

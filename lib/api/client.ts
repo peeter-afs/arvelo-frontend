@@ -46,6 +46,28 @@ apiClient.interceptors.request.use(
   }
 );
 
+// A screen fires 15–30 requests at once; when the access token has expired they
+// all get 401 together. Share one refresh between them instead of sending one
+// each (that doubled the burst toward the rate limit, and with rotating refresh
+// tokens every refresh after the first failed and logged the user out).
+let refreshInFlight: Promise<string | null> | null = null;
+
+function refreshAccessToken(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      const refreshToken = getAuthStore().getState().refreshToken;
+      if (!refreshToken) return null;
+      const response = await axios.post(`${API_URL}/api/auth/refresh`, { refresh_token: refreshToken });
+      const { access_token, refresh_token } = response.data.data;
+      getAuthStore().getState().setTokens(access_token, refresh_token);
+      return access_token as string;
+    })().finally(() => {
+      refreshInFlight = null;
+    });
+  }
+  return refreshInFlight;
+}
+
 // Response interceptor to handle token refresh
 apiClient.interceptors.response.use(
   (response) => response,
@@ -58,19 +80,13 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = getAuthStore().getState().refreshToken;
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/api/auth/refresh`, {
-            refresh_token: refreshToken,
-          });
-
-          const { access_token, refresh_token } = response.data.data;
-
-          // Update tokens in store
-          getAuthStore().getState().setTokens(access_token, refresh_token);
-
+        // Already refreshed by a parallel request after this one was sent: just retry.
+        const current = getAuthStore().getState().accessToken;
+        const sentWith = String(originalRequest.headers.Authorization || '').replace(/^Bearer /, '');
+        const accessToken = current && current !== sentWith ? current : await refreshAccessToken();
+        if (accessToken) {
           // Retry original request with new token
-          originalRequest.headers.Authorization = `Bearer ${access_token}`;
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
