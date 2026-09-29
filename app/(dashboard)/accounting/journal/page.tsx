@@ -176,12 +176,12 @@ export default function JournalEntriesPage() {
   const firstCredit = (entry: JournalEntryWithRows) => entry.rows?.find((row) => Number(row.credit || 0) > 0);
 
   return (
-    <div className="flex min-h-full flex-col gap-4">
-      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
+    <div className="flex min-h-full flex-col gap-4 compact:lg:gap-2">
+      <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between compact:lg:flex-row compact:lg:items-center compact:lg:justify-between compact:lg:pb-2">
         <div>
-          <div className="micro text-[var(--a-text-3)]">{t('journalWorkspace')}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('journalEntries')}</h1>
-          <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('entriesInView', { count: filtered.length })}</p>
+          <div className="micro text-[var(--a-text-3)] compact:lg:hidden">{t('journalWorkspace')}</div>
+          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)] compact:lg:mt-0 compact:lg:text-[17px]">{t('journalEntries')}</h1>
+          <p className="mt-2 text-[13px] text-[var(--a-text-2)] compact:lg:hidden">{t('entriesInView', { count: filtered.length })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button>
@@ -200,7 +200,7 @@ export default function JournalEntriesPage() {
         </div>
       </div>
 
-      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
+      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4 compact:lg:hidden">
         <Stat label={t('postedEntries')} value={postedCount} subtle={t('currentLedger')} delta="+8.4%" />
         <Stat label={t('draftsToReview')} value={draftCount} subtle={t('oldestDraftFirst')} tone="warning" />
         <Stat label={t('visibleMovement')} value={formatEUR(visibleAmount)} subtle={t('rowsCount', { count: filtered.length })} />
@@ -231,7 +231,7 @@ export default function JournalEntriesPage() {
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="relative block w-full sm:w-80">
+          <label className="relative block w-full sm:w-80 compact:lg:w-64">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
             <input
               ref={searchRef}
@@ -245,7 +245,7 @@ export default function JournalEntriesPage() {
             <Filter className="h-3.5 w-3.5" />
             {t('filter')}
           </Button>
-          <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex">
+          <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex compact:lg:hidden">
             <Kbd>J</Kbd>
             <Kbd>K</Kbd>
             <span>{t('navigateHint')}</span>
@@ -262,8 +262,8 @@ export default function JournalEntriesPage() {
       {error && <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-4 text-sm text-[var(--a-neg)]">{error}</div>}
 
       <SplitPane className="flex-1">
-        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
-          <div className="grid grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] compact:lg:min-h-0">
+          <div className="grid grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
             <div>{t('jeCode')}</div>
             <div>{t('date')}</div>
@@ -274,7 +274,7 @@ export default function JournalEntriesPage() {
             <div className="text-right">{t('status')}</div>
           </div>
 
-          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+          <div className="max-h-[calc(100vh-390px)] compact:lg:max-h-[calc(100vh-242px)] compact:lg:min-h-[200px] min-h-[430px] overflow-y-auto">
             {isLoading ? (
               <div className="flex h-48 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
@@ -292,7 +292,7 @@ export default function JournalEntriesPage() {
                   <button
                     key={entry.id}
                     onClick={() => void handleSelect(entry)}
-                    className={`grid w-full grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] transition-colors ${
+                    className={`grid w-full grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] transition-colors compact:lg:py-1.5 ${
                       selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
                     }`}
                   >
@@ -305,7 +305,7 @@ export default function JournalEntriesPage() {
                     <span className="truncate font-mono text-[11.5px] text-[var(--a-text-2)]">{formatDate(entry.entry_date)}</span>
                     <span className="min-w-0">
                       <span className="block truncate font-medium text-[var(--a-text)]">{entry.description || humanize(entry.entry_type)}</span>
-                      <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">
+                      <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)] compact:lg:hidden">
                         {entry.reference_number || humanize(entry.entry_type)}
                       </span>
                     </span>
@@ -379,8 +379,8 @@ function EntryDetailPanel({
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
-      <div className="border-b border-[var(--a-border)] px-5 py-4">
+    <div className="flex max-h-[calc(100vh-190px)] compact:lg:max-h-[calc(100vh-180px)] compact:lg:min-h-0 min-h-[520px] flex-col">
+      <div className="border-b border-[var(--a-border)] px-5 py-4 compact:lg:py-2.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="font-mono text-[12px] text-[var(--a-text-3)]">{entry.entry_number || entry.id.slice(0, 8)}</div>
@@ -395,9 +395,9 @@ function EntryDetailPanel({
         </div>
       </div>
 
-      <div className="border-b border-[var(--a-border)] bg-[var(--a-bg)] px-5 py-4">
+      <div className="border-b border-[var(--a-border)] bg-[var(--a-bg)] px-5 py-4 compact:lg:py-2.5">
         <div className="micro text-[var(--a-text-3)]">{t('total')}</div>
-        <div className="mt-1 font-mono text-[30px] font-semibold leading-none text-[var(--a-text)] tabular-nums">
+        <div className="mt-1 font-mono text-[30px] font-semibold compact:lg:text-[22px] leading-none text-[var(--a-text)] tabular-nums">
           {formatEUR(Math.max(totalDebit, totalCredit))}
         </div>
         <div className="mt-2 text-[12px] text-[var(--a-text-3)]">
