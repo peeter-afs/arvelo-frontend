@@ -13,7 +13,7 @@ import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import {
   useCallback, useEffect, useMemo, useRef, useState,
-  type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode,
+  type CSSProperties, type DragEvent as ReactDragEvent, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode,
 } from 'react';
 import { Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type AccountingSettings, type PartnerRecord, type SupplierBankAccount } from '@/lib/api/accounting.api';
@@ -191,7 +191,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [busy, setBusy] = useState<null | 'save' | 'submit' | 'approve' | 'reject' | 'delete' | 'upload'>(null);
+  const [busy, setBusy] = useState<null | 'save' | 'submit' | 'approve' | 'reject' | 'delete' | 'upload' | 'import'>(null);
 
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -684,6 +684,64 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   };
   const downloadDoc = () => { if (!docUrl) return; const a = document.createElement('a'); a.href = docUrl.url; a.download = doc?.file_name || 'originaal'; a.click(); };
 
+  /* ── drop a file on a new, untouched invoice: import it (as on the list page) and open the draft ── */
+  const [dragOver, setDragOver] = useState(false);
+  const importDropped = async (files: File[]) => {
+    setBusy('import');
+    try {
+      if (files.length > 1 || /\.csv$/i.test(files[0].name)) {
+        for (const f of files) { if (/\.csv$/i.test(f.name)) await importApi.importBoltCsv(f); else await importApi.uploadPurchaseInvoicePdf(f); }
+        showToast.success(files.length === 1 ? `${files[0].name} imporditud` : `${files.length} faili laaditud üles — tuvastame andmed`);
+        router.push('/invoices/purchase');
+        return;
+      }
+      const result = await importApi.uploadPurchaseInvoicePdf(files[0]);
+      const record = result.import;
+      if (result.status === 'attached' && result.linked_invoice_id) {
+        showToast.success('Originaal seoti olemasoleva pangamustandiga');
+        router.push(`/invoices/${result.linked_invoice_id}/edit`);
+        return;
+      }
+      if (record.draft_invoice_id) {
+        showToast.info('See fail on juba imporditud — avan olemasoleva arve');
+        router.push(`/invoices/${record.draft_invoice_id}/edit`);
+        return;
+      }
+      const review = `/invoices/purchase-imports?import=${record.id}`;
+      if (record.status !== 'supplier_resolved') {
+        showToast.info('Tarnijat ei tuvastatud — vali see impordi ülevaatuses');
+        router.push(review);
+        return;
+      }
+      try {
+        const created = await importApi.createDraftInvoice(record.id, {});
+        const draftId = created.draft_invoice?.invoice?.id;
+        if (!draftId) throw new Error('Mustandit ei loodud');
+        showToast.success('Arve tuvastatud — kontrolli andmed üle');
+        router.push(`/invoices/${draftId}/edit`);
+      } catch (e) {
+        showToast.info(`Vaata import üle: ${getErrorMessage(e)}`);
+        router.push(review);
+      }
+    } catch (e) {
+      showToast.error(getErrorMessage(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+  const onDropFiles = (e: ReactDragEvent) => {
+    if (!e.dataTransfer.files.length) return;
+    e.preventDefault();
+    setDragOver(false);
+    if (busy) return;
+    const files = Array.from(e.dataTransfer.files);
+    // A new invoice nobody has typed into yet becomes the imported one; once there
+    // is data (or on an existing invoice) a dropped PDF is this invoice's original.
+    if (mode === 'create' && !dirty) void importDropped(files);
+    else if (editable) void uploadOriginal(files[0]);
+  };
+
+
   /* ── keyboard: ⌘S save · ⌘K supplier · ⌘O original · Esc cancel · + − 0 zoom ── */
   const latest = useRef({ save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete, editable });
   latest.current = { save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete, editable };
@@ -743,7 +801,11 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   }, [firstImport, invoice, srcInfo, dirty, savedAt, status, isPending, approverShort, ocr, members]);
 
   return (
-    <div ref={shellRef} className={`${styles.shell} ${resizing ? styles.resizing : ''}`}>
+    <div ref={shellRef} className={`${styles.shell} ${resizing ? styles.resizing : ''}`}
+      onDragOver={(e) => { if (e.dataTransfer.types.includes('Files') && (mode === 'create' || editable)) { e.preventDefault(); setDragOver(true); } }}
+      onDragLeave={(e) => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false); }}
+      onDrop={onDropFiles}>
+      {(dragOver || busy === 'import') && <div className={styles.dropHint}>{busy === 'import' ? <><Loader2 size={16} className="animate-spin" /> Tuvastame arve andmed…</> : mode === 'create' && !dirty ? 'Lase lahti — impordime arve failist' : 'Lase lahti — seome originaalina'}</div>}
       <input ref={fileRef} type="file" accept=".pdf,image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadOriginal(f); e.target.value = ''; }} />
       <div className={styles.topbar}>
         <div className={styles.crumb}><Link href="/invoices/purchase">← Ostuarved</Link><span className={styles.sep}>/</span></div>

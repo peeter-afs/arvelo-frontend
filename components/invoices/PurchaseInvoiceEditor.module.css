@@ -253,3 +253,4 @@ textarea.inp{height:auto;min-height:29px;padding:6px 9px;resize:vertical;line-he
 .rejectNote{margin:0 13px 8px;padding:7px 10px;border:1px solid #f0c9c4;border-radius:8px;background:#fbeaea;color:#a33125;font-size:12px}
 .pend{background:var(--a-warn-soft);color:#7d5a13}
 .rej{background:#fbeaea;color:#c0392b}
+.shell{position:relative}.dropHint{position:absolute;inset:4px 0;z-index:40;display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed var(--a-accent);border-radius:11px;background:rgba(255,243,238,.88);color:#b8330f;font-weight:600;font-size:14px;pointer-events:none}

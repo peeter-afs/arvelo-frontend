@@ -81,8 +81,11 @@ export default function PurchaseInvoiceImportsPage() {
         ]);
         setImports(importResult.items);
         setPartners(partnerResult);
-        if (importResult.items[0]?.id) {
-          setSelectedId(importResult.items[0].id);
+        // ?import=<id>: opened from a file dropped on the new purchase invoice page.
+        const wanted = new URLSearchParams(window.location.search).get('import');
+        const firstId = wanted || importResult.items[0]?.id;
+        if (firstId) {
+          setSelectedId(firstId);
         }
       } catch (error) {
         setErrorMessage(getErrorMessage(error));
