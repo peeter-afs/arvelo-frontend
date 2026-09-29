@@ -101,7 +101,10 @@ export default function InvoicePreview({ id }: { id: string }) {
     if (!v || v.clientWidth < 100) return;
     const w = v.clientWidth - PAD;
     const h = v.clientHeight - PAD;
-    if (modeRef.current === 'width') setZoom(clampZoom(Math.min(1.6, w / A4_W)));
+    // Laptop (compact) screens are short: at 160% only the top third of the page shows.
+    // Cap the width fit by the height there (never below 100%).
+    const widthCap = document.documentElement.classList.contains('compact') ? Math.max(1, Math.min(1.6, (1.6 * h) / A4_H)) : 1.6;
+    if (modeRef.current === 'width') setZoom(clampZoom(Math.min(widthCap, w / A4_W)));
     if (modeRef.current === 'page') setZoom(clampZoom(Math.min(w / A4_W, h / A4_H)));
   }, []);
 

@@ -2,6 +2,8 @@
 /* Full-bleed inside the dashboard content column (cancels its padding). */
 .shell{height:calc(100% + 1.5rem);margin:0 -1.5rem -1.5rem;display:flex;flex-direction:column;min-height:0;color:var(--a-text);font-size:13px;letter-spacing:-.01em;background:var(--a-bg)}
 @media (min-width:1024px){.shell{margin:0 -1.75rem -1.5rem}}
+/* Compact density narrows the dashboard content padding to 1rem / .5rem (app/(dashboard)/layout.tsx). */
+@media (min-width:1024px){:global(.compact) .shell{height:calc(100% + .5rem);margin:0 -1rem -.5rem}}
 .focus{position:fixed;inset:0;z-index:70;height:auto;margin:0}
 .bar{height:48px;flex-shrink:0;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;background:var(--a-surface);border-bottom:1px solid var(--a-border)}
 .back{width:30px;height:30px;border-radius:7px;border:1px solid var(--a-border);background:var(--a-surface);color:var(--a-text-2);display:grid;place-items:center;flex-shrink:0;cursor:pointer;padding:0}

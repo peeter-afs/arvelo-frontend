@@ -1399,7 +1399,7 @@ export default function OpeningBalancesPage() {
 
       {/* Sticky action bar */}
       {showActionBar && (
-        <div className="-mx-4 -mb-6 flex shrink-0 items-center gap-5 border-t border-[var(--a-border)] bg-[var(--a-surface)] px-7 py-3 sm:-mx-6 lg:-mx-7">
+        <div className="-mx-4 -mb-6 flex shrink-0 items-center gap-5 border-t border-[var(--a-border)] bg-[var(--a-surface)] px-7 py-3 sm:-mx-6 lg:-mx-7 compact:lg:-mx-4 compact:lg:-mb-2 compact:lg:px-4">
           <div className="flex items-center gap-[18px]">
             <OBTotal label={t('obDebit')} value={liveDebit} />
             <OBTotal label={t('obCredit')} value={liveCredit} />
