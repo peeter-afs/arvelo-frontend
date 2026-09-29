@@ -15,3 +15,34 @@
 .full{flex:1;min-height:0}.fullHeader{padding:10px 13px;border-bottom:1px solid var(--a-border);background:var(--a-surface-2);display:flex;align-items:center;gap:12px}.fullTitle{min-width:0}.crumb{color:var(--a-text-3);font-size:12px}.fullTitle h2{margin:3px 0 0;font-size:15px}.fullHeaderActions{margin-left:auto;display:flex;align-items:center;gap:4px}.fullSplit{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px}.fullLeft{min-height:0;overflow:auto}.fullLineHead,.fullLineRow{display:grid;grid-template-columns:minmax(0,1fr) 54px 74px 118px 52px 82px 82px;gap:10px;padding:7px 14px;align-items:baseline}.fullLineHead{position:sticky;top:0;border-bottom:1px solid var(--a-border);background:var(--a-surface-2);color:var(--a-text-3);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.09em}.fullLineRow{border-bottom:1px solid #f1eee7;font-size:12.5px}.fullLineRow:nth-child(odd){background:#faf8f3}.accountMeta{display:block;margin-top:2px;color:var(--a-text-3);font-size:10.5px}.totals{padding:9px 14px;border-bottom:1px solid var(--a-border);display:flex;justify-content:flex-end;gap:20px;color:var(--a-text-2)}.totals b{color:var(--a-text)}.rail{min-height:0;padding:14px;border-left:1px solid var(--a-border);background:#faf8f3;overflow:auto}.balance{font-size:22px;font-weight:700;letter-spacing:-.035em}.progress{height:4px;margin:6px 0;border-radius:99px;background:var(--a-surface-2);overflow:hidden}.progress span{display:block;height:100%;background:var(--a-pos)}.journal{padding:12px 14px}.journalRow{display:grid;grid-template-columns:64px minmax(0,1fr) 90px 90px;gap:10px;padding:4px 0;border-top:1px dashed #ece8dd;font-size:12px}.journalRow:first-of-type{border-top:0}
 .modalBackdrop{position:fixed;inset:0;z-index:80;padding:24px;background:rgba(20,18,14,.34);display:grid;place-items:center}.modal{width:min(660px,100%);max-height:86vh;border:1px solid var(--a-border);border-radius:12px;background:var(--a-surface);box-shadow:0 22px 60px rgba(0,0,0,.24);overflow:hidden;display:flex;flex-direction:column}.modalHeader{padding:12px 14px;border-bottom:1px solid var(--a-border);background:var(--a-surface-2);display:flex;align-items:flex-start;gap:10px}.modalHeader h3{margin:0;font-size:15px}.modalHeader .button{margin-left:auto}.modalBody{overflow:auto}.journalGroup{padding:7px 14px;border-bottom:1px solid var(--a-border);background:#faf8f3;color:var(--a-text-2);font-size:11.5px}.journalHead,.journalLine,.journalSum{display:grid;grid-template-columns:60px minmax(0,1fr) 104px 104px;gap:10px;padding:6px 14px}.journalHead{border-bottom:1px solid var(--a-border);color:var(--a-text-3);font-size:9.5px;font-weight:700;text-transform:uppercase}.journalLine{border-bottom:1px solid #f1eee7;font-size:12.5px}.journalSum{background:var(--a-surface-2);font-weight:700}.modalFooter{padding:10px 14px;border-top:1px solid var(--a-border);display:flex;align-items:center;gap:8px}.modalFooterActions{margin-left:auto;display:flex;gap:7px}.notice{padding:7px 10px;border:1px solid #f0c9c4;border-radius:8px;background:#fbeaea;color:#a33125;font-size:12px}
 @media(max-width:1420px){.metric:last-child{display:none}}@media(max-width:1300px){.tab .pill{display:none}}
+/* ── density (tihe režiim, lib/density.ts) ── */
+.hdr{display:flex;flex-direction:column;gap:9px;flex:none;min-width:0}
+.noRoom{margin-left:auto;padding:1px 5px;border-radius:4px;background:var(--a-surface-2);color:var(--a-text-3);font-size:10px;font-weight:600;white-space:nowrap}
+/* One scroll container for both axes; the header sticks. */
+.tableScroll{display:block;overflow:auto}.tableHead{position:sticky;top:0;z-index:2}.rows{overflow:visible;min-height:calc(100% - var(--d-table-head-h))}.row{scroll-margin-top:var(--d-table-head-h)}
+.detailBody{overflow-x:hidden}.detailSplit{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+/* The grid row must not grow past the viewport, or the panel's action bar ends up below the fold. */
+.body{grid-template-rows:minmax(0,1fr)}
+.warningText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.warning .button{flex-shrink:0}
+@media(max-width:1399px){.actions .key{display:none}}
+@media(min-width:1024px){
+:global(.compact) .workspace{height:100%;min-width:0;min-height:420px;gap:var(--d-gap);padding:0 0 2px}
+:global(.compact) .hdr{flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px 8px}
+:global(.compact) .hdr>.topbar,:global(.compact) .hdr>.filterbar{display:contents}
+:global(.compact) .topbar>h1{order:0;margin-right:2px}
+:global(.compact) .sub,:global(.compact) .topbar>.metrics,:global(.compact) .btnLabel{display:none}
+:global(.compact) .topbar>.actions{order:2;margin-left:auto}
+:global(.compact) .filterbar>*{order:1}
+:global(.compact) .search{flex:1 1 140px;max-width:200px}
+:global(.compact) .tabs{gap:2px}:global(.compact) .tab{padding:0 7px;gap:5px}:global(.compact) .picker{padding:0 8px;gap:6px}:global(.compact) .actions{gap:6px}:global(.compact) .actions .key{display:none}
+:global(.compact) .listHeader{height:var(--d-list-head-h)}
+:global(.compact) .listMetrics{display:flex;align-items:baseline;min-width:0;overflow:hidden}.listMetrics .metric{padding:0 9px}.listMetrics .metric:first-child{border-left:1px solid var(--a-border);margin-left:4px}.listMetrics .metricValue{font-size:12.5px}
+:global(.compact) .tableHead,:global(.compact) .headerCell,:global(.compact) .grip{height:var(--d-table-head-h)}
+:global(.compact) .row{padding:var(--d-row-pad-y) 0}
+:global(.compact) .customerMeta{display:none}
+:global(.compact) .avatar{width:var(--d-avatar);height:var(--d-avatar)}
+:global(.compact) .footer{height:var(--d-list-foot-h)}
+:global(.compact) .section{padding:var(--d-section-pad)}
+:global(.compact) .grow{min-height:120px}
+:global(.compact) .detailHeader{padding:8px 12px;gap:5px}
+}
