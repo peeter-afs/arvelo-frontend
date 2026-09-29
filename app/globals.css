@@ -103,6 +103,21 @@
   height: 32px;
 }
 
+/* Older pages open with a 24–30px title and a description line; on a laptop that
+   costs ~70px before any content. The dense views use 17px titles and are untouched. */
+@media (min-width: 1024px) {
+  .compact main h1[class*='text-2xl'],
+  .compact main h1[class*='text-3xl'] {
+    font-size: 19px;
+    line-height: 1.25;
+  }
+  .compact main h1[class*='text-2xl'] + p,
+  .compact main h1[class*='text-3xl'] + p {
+    margin-top: 2px;
+    font-size: 12.5px;
+  }
+}
+
 /* Global Styles */
 * {
   -webkit-tap-highlight-color: transparent;
