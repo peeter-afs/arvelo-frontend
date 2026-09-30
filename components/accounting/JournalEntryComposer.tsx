@@ -124,10 +124,10 @@ function AccountCombo({
         }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={t('searchAccount')}
-        className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[11.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
+        className="h-10 w-full md:h-8 rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 font-mono text-[11.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
       />
       {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 w-72 overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 w-72 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] shadow-lg">
           {filtered.map((a) => (
             <button
               key={a.id}
@@ -195,10 +195,10 @@ function PartnerCombo({
         }}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
         placeholder={t('noPartner')}
-        className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
+        className="h-9 w-full lg:h-8 rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
       />
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 w-64 overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] shadow-lg">
+        <div className="absolute left-0 top-full z-50 mt-0.5 max-h-48 w-64 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] shadow-lg">
           <button
             type="button"
             onMouseDown={() => {
@@ -495,7 +495,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
   if (isLoading) {
     return (
       <div className="flex min-h-full flex-col">
-        <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} />
+        <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} actionsOnMobile={false} />
         <div className="flex flex-1 items-center justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-[var(--a-text-3)]" />
         </div>
@@ -505,15 +505,15 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
 
   return (
     <div className="flex min-h-full flex-col bg-[var(--a-surface)]">
-      <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} />
+      <CommandBar crumbs={[t('journal'), modeLabel]} actions={commandBarActions} actionsOnMobile={false} />
 
-      <div className="flex flex-1 gap-6 px-4 pb-8 pt-4 sm:px-6 lg:px-7">
+      <div className="flex flex-1 flex-col gap-4 pb-8 pt-4 sm:px-6 lg:flex-row lg:gap-6 lg:px-7">
         {/* ── Left sticky card ─────────────────────────────────────────────── */}
-        <aside className="w-72 shrink-0">
-          <div className="sticky top-4 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
+        <aside className="w-full shrink-0 lg:w-72">
+          <div className="rounded-[10px] lg:sticky lg:top-4 border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
             <div className="micro mb-4 text-[var(--a-text-3)]">{t('entryDetails')}</div>
 
-            <div className="space-y-3.5">
+            <div className="grid gap-3.5 sm:grid-cols-2 lg:block lg:space-y-3.5">
               {/* Date */}
               <div>
                 <label className="micro mb-1.5 block text-[var(--a-text-3)]">
@@ -600,26 +600,6 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               </div>
             </div>
 
-            {/* Mobile action buttons */}
-            <div className="mt-5 flex flex-col gap-2 lg:hidden">
-              <Button
-                className="w-full"
-                onClick={() => void handleSaveDraft()}
-                disabled={isWorking}
-              >
-                {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {t('saveDraft')}
-              </Button>
-              <Button
-                variant="primary"
-                className="w-full"
-                onClick={() => void handlePost()}
-                disabled={isWorking || !isBalanced}
-              >
-                {isPosting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                {t('postEntry')}
-              </Button>
-            </div>
           </div>
         </aside>
 
@@ -638,9 +618,9 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           )}
 
           {/* Lines table */}
-          <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
+          <div className="rounded-[10px] border border-[var(--a-border)] md:overflow-x-auto">
             {/* Header */}
-            <div className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]`}>
+            <div className={`hidden ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} md:grid gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]`}>
               <div>{t('account')}</div>
               <div>{t('description')}</div>
               {dims && <div>{t('journalProject')}</div>}
@@ -654,15 +634,17 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               {lines.map((line, index) => (
                 <div
                   key={line._key}
-                  className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2`}
+                  className={`grid grid-cols-[1fr_1fr_36px] items-end gap-2 border-b border-[var(--a-border)] px-3 py-3 ${dims ? 'md:grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'md:grid-cols-[1fr_180px_96px_96px_32px]'} md:items-center md:px-3.5 md:py-2`}
                   onFocus={() => { lastFocusedLineRef.current = index; }}
                 >
                   {/* Account picker */}
-                  <AccountCombo
-                    value={line.account_id}
-                    accounts={accounts}
-                    onChange={(id) => updateLine(index, { account_id: id })}
-                  />
+                  <div className="col-span-2 max-md:min-w-0 md:col-span-1">
+                    <AccountCombo
+                      value={line.account_id}
+                      accounts={accounts}
+                      onChange={(id) => updateLine(index, { account_id: id })}
+                    />
+                  </div>
 
                   {/* Line description */}
                   <input
@@ -672,7 +654,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                       updateLine(index, { description: e.target.value })
                     }
                     placeholder={t('description')}
-                    className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
+                    className="col-span-3 row-start-2 h-10 w-full rounded border md:col-span-1 md:row-start-auto md:h-8 border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
 
                   {/* Project (brings its cost centre along) */}
@@ -684,7 +666,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                         updateLine(index, { project_id: e.target.value, cost_center_id: e.target.value ? project?.cost_center_id || line.cost_center_id || '' : '' });
                       }}
                       aria-label={t('journalProject')}
-                      className="h-8 w-full min-w-0 rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-1.5 text-[12.5px] text-[var(--a-text)] outline-none focus:border-[var(--a-accent)]"
+                      className="col-span-3 h-10 w-full min-w-0 rounded border md:col-span-1 md:h-8 border-[var(--a-border)] bg-[var(--a-surface)] px-1.5 text-[12.5px] text-[var(--a-text)] outline-none focus:border-[var(--a-accent)]"
                     >
                       <option value="">{t('journalNoProject')}</option>
                       {line.project_id && !projects.some((p) => p.id === line.project_id) && <option value={line.project_id}>…</option>}
@@ -693,6 +675,8 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                   )}
 
                   {/* Debit */}
+                  <label className="flex min-w-0 flex-col gap-1 md:contents">
+                  <span className="micro text-[var(--a-text-3)] md:hidden">{t('debit')}</span>
                   <input
                     type="text"
                     inputMode="decimal"
@@ -701,10 +685,14 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                       updateLine(index, { debit: e.target.value })
                     }
                     placeholder={t('amountPlaceholder')}
-                    className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
+                    className="h-10 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 md:h-8 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
 
+                  </label>
+
                   {/* Credit */}
+                  <label className="flex min-w-0 flex-col gap-1 md:contents">
+                  <span className="micro text-[var(--a-text-3)] md:hidden">{t('credit')}</span>
                   <input
                     type="text"
                     inputMode="decimal"
@@ -713,14 +701,17 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                       updateLine(index, { credit: e.target.value })
                     }
                     placeholder={t('amountPlaceholder')}
-                    className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
+                    className="h-10 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 md:h-8 text-right font-mono text-[12.5px] tabular-nums text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
+
+                  </label>
 
                   {/* Delete */}
                   <button
                     type="button"
                     onClick={() => removeLine(index)}
-                    className="flex h-7 w-7 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)]"
+                    aria-label={t('removeLine')}
+                    className="col-start-3 row-start-1 flex h-10 w-9 items-center self-center md:col-start-auto md:row-start-auto md:h-7 md:w-7 justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -733,7 +724,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               <button
                 type="button"
                 onClick={addLine}
-                className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
+                className="inline-flex min-h-9 items-center gap-1.5 md:min-h-0 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {t('addLine')}
@@ -741,14 +732,16 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
             </div>
 
             {/* Totals row */}
-            <div className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5`}>
-              <div className="text-[11.5px] font-medium text-[var(--a-text-2)]">{t('totals')}</div>
-              <div />
-              {dims && <div />}
+            <div className={`flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 md:grid ${dims ? 'md:grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'md:grid-cols-[1fr_180px_96px_96px_32px]'} md:gap-2`}>
+              <div className="flex-1 text-[11.5px] font-medium text-[var(--a-text-2)]">{t('totals')}</div>
+              <div className="max-md:hidden" />
+              {dims && <div className="max-md:hidden" />}
               <div className="text-right font-mono text-[12.5px] font-semibold tabular-nums text-[var(--a-text)]">
+                <span className="mr-1 font-normal text-[var(--a-text-3)] md:hidden">{t('debitAbbr')}</span>
                 {totalDebit.toFixed(2)}
               </div>
               <div className="text-right font-mono text-[12.5px] font-semibold tabular-nums text-[var(--a-text)]">
+                <span className="mr-1 font-normal text-[var(--a-text-3)] md:hidden">{t('creditAbbr')}</span>
                 {totalCredit.toFixed(2)}
               </div>
               <div />
@@ -782,7 +775,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           </div>
 
           {/* Keyboard hint footer */}
-          <div className="mt-4 flex items-center gap-3 font-mono text-[11px] text-[var(--a-text-3)]">
+          <div className="mt-4 hidden items-center gap-3 font-mono text-[11px] text-[var(--a-text-3)] lg:flex">
             <span>
               <Kbd>⌘⏎</Kbd>
               {' '}{t('postHint')}
@@ -802,6 +795,27 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               <Kbd>Esc</Kbd>
               {' '}{t('backHint')}
             </span>
+          </div>
+
+          {/* Mobile action bar */}
+          <div className="sticky bottom-0 z-10 -mx-4 mt-4 flex gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:px-6 lg:hidden">
+            <Button
+              className="flex-1"
+              onClick={() => void handleSaveDraft()}
+              disabled={isWorking}
+            >
+              {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('saveDraft')}
+            </Button>
+            <Button
+              variant="primary"
+              className="flex-1"
+              onClick={() => void handlePost()}
+              disabled={isWorking || !isBalanced}
+            >
+              {isPosting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {t('postEntry')}
+            </Button>
           </div>
         </div>
       </div>

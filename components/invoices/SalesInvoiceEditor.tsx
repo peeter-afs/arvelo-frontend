@@ -646,7 +646,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
         <span className={`${styles.tag} ${statusTag.c}`}><span className={styles.dot} />{statusTag.l}</span>
         {imported && <span className={`${styles.tag} ${styles.info}`} title={`Imporditud Futursoftist${importTx ? ` · tx ${importTx}` : ''}`}><span className={styles.dot} />Futursofti import</span>}
         <div className={styles.acts}>
-          <span className={`${styles.dirty} ${dirty ? '' : styles.clean}`}><span className={styles.dot} />{dirty ? 'Salvestamata muudatused' : savedText}</span>
+          <span className={`${styles.dirty} ${dirty ? '' : styles.clean}`} title={dirty ? 'Salvestamata muudatused' : savedText}><span className={styles.dot} /><span className={styles.dirtyTxt}>{dirty ? 'Salvestamata muudatused' : savedText}</span></span>
           {locked ? (
             <>
               <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Sulge <kbd className={styles.kbd}>Esc</kbd></button>
@@ -662,7 +662,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
               <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading || !isDraft} onClick={() => void confirmAndSend()}>{busy === 'confirm' && <Loader2 size={13} className="animate-spin" />}Kinnita ja saada</button>
             </>
           )}
-          <button type="button" className={`${styles.btn} ${styles.ghost}`} title={rail ? 'Peida kokkuvõtte paneel' : 'Näita kokkuvõtte paneeli'} onClick={() => toggleRail(!rail)}>
+          <button type="button" className={`${styles.btn} ${styles.ghost} ${styles.railbtn}`} title={rail ? 'Peida kokkuvõtte paneel' : 'Näita kokkuvõtte paneeli'} onClick={() => toggleRail(!rail)}>
             <svg className={styles.icon} viewBox="0 0 24 24"><path d="M3 5h18v14H3zM15 5v14" /></svg> <span className={styles.raillbl}>{rail ? 'Peida kokkuvõte' : 'Näita kokkuvõtet'}</span>
           </button>
         </div>
@@ -705,7 +705,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                       <input ref={partnerRef} value={hdr.partnerName} placeholder="Otsi klienti…" onChange={(e) => { setHdr((h) => ({ ...h, partnerName: e.target.value })); setMenu('partner'); }} onFocus={() => setMenu('partner')}
                         onBlur={() => { setMenu((m) => (m === 'partner' ? null : m)); if (partner) setHdr((h) => ({ ...h, partnerName: partner.name })); }}
                         onKeyDown={(e) => { if (e.key === 'Enter' && partnerMatches[0]) { e.preventDefault(); pickPartner(partnerMatches[0]); } }} />
-                      <button type="button" className={styles.pmeta} tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); partnerRef.current?.focus(); partnerRef.current?.select(); setMenu('partner'); }}>Vaheta ⌘K</button>
+                      <button type="button" className={styles.pmeta} tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); partnerRef.current?.focus(); partnerRef.current?.select(); setMenu('partner'); }}>Vaheta<span className={styles.kh}> ⌘K</span></button>
                       {menu === 'partner' && (
                         <div className={styles.plist}>
                           {partnerMatches.length ? partnerMatches.map((p) => (
@@ -796,9 +796,9 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                         <div key={l.key} className={`${styles.lr} ${dragIndex === i ? styles.dragging : ''} ${overIndex === i ? styles.over : ''}`}
                           onDragOver={(e) => { e.preventDefault(); if (overIndex !== i) setOverIndex(i); }} onDrop={(e) => { e.preventDefault(); if (dragIndex !== null) moveLine(dragIndex, i); setDragIndex(null); setOverIndex(null); }}
                           onKeyDown={(e) => rowKeys(e, i)}>
-                          <div className={`${styles.ix} ${styles.mono}`} title="Lohista järjestamiseks" draggable onDragStart={() => setDragIndex(i)} onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}>{i + 1}</div>
-                          <div><input className={styles.in} value={l.code} placeholder="Kood" onChange={(e) => updateLine(i, { code: e.target.value })} /></div>
-                          <div>
+                          <div data-col="ix" className={`${styles.ix} ${styles.mono}`} title="Lohista järjestamiseks" draggable onDragStart={() => setDragIndex(i)} onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}>{i + 1}</div>
+                          <div data-col="code" data-l="Kood"><input className={styles.in} value={l.code} placeholder="Kood" onChange={(e) => updateLine(i, { code: e.target.value })} /></div>
+                          <div data-col="desc" data-l="Kirjeldus">
                             <input ref={(el) => { descRefs.current.set(l.key, el); }} className={`${styles.in} ${l.description.trim() ? '' : styles.miss}`} value={l.description} placeholder="Kirjeldus"
                               onChange={(e) => { updateLine(i, { description: e.target.value }); setCatalogAll(false); setProductRow(i); }} onFocus={() => setProductRow(i)}
                               onBlur={() => setTimeout(() => setProductRow((r) => (r === i ? null : r)), 150)} />
@@ -812,20 +812,20 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                               </div>
                             )}
                           </div>
-                          <div>
+                          <div data-col="acc" data-l="Konto">
                             <select className={`${styles.in} ${styles.sel} ${l.account_id ? '' : styles.miss}`} value={l.account_id} title={l.account_id ? `${accountMap.get(l.account_id)?.code || ''} ${accountMap.get(l.account_id)?.name || ''}` : 'Konto määramata'} onChange={(e) => updateLine(i, { account_id: e.target.value })}>
                               <option value="">—</option>{revenueAccounts.map((a) => <option key={a.id} value={a.id} title={a.name}>{a.code}</option>)}
                             </select>
                           </div>
-                          {extra.lcc && <div><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
-                          {extra.lprj && <div><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} onChange={(e) => { const patch = projectPatch(e.target.value); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }}><ProjectOptions current={l.project} /></select></div>}
-                          <div><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
-                          <div><select className={`${styles.in} ${styles.sel}`} value={l.unit} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
-                          <div><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>
-                          <div><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.discount_percent} onChange={(e) => updateLine(i, { discount_percent: e.target.value })} /></div>
-                          <div className={styles.rate}>{vatEnabled ? vat.rate : 0}%</div>
-                          <div className={styles.sum}>{fmtNum(net)}{cut > 0 && <span className={styles.cut}>−{fmtNum(cut)}</span>}</div>
-                          <div className={styles.ra}>
+                          {extra.lcc && <div data-col="cc" data-l="Kulukoht"><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
+                          {extra.lprj && <div data-col="prj" data-l="Projekt"><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} onChange={(e) => { const patch = projectPatch(e.target.value); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }}><ProjectOptions current={l.project} /></select></div>}
+                          <div data-col="qty" data-l="Kogus"><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
+                          <div data-col="unit" data-l="Ühik"><select className={`${styles.in} ${styles.sel}`} value={l.unit} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
+                          <div data-col="price" data-l="Ühikuhind"><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>
+                          <div data-col="disc" data-l="Ale %"><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.discount_percent} onChange={(e) => updateLine(i, { discount_percent: e.target.value })} /></div>
+                          <div data-col="vat" data-l="KM" className={styles.rate}>{vatEnabled ? vat.rate : 0}%</div>
+                          <div data-col="sum" data-l="Rea summa" className={styles.sum}>{fmtNum(net)}{cut > 0 && <span className={styles.cut}>−{fmtNum(cut)}</span>}</div>
+                          <div data-col="act" className={styles.ra}>
                             <button type="button" className={styles.iconbtn} title="Kopeeri rida" tabIndex={-1} onClick={() => dupLine(i)}>⧉</button>
                             <button type="button" className={`${styles.iconbtn} ${styles.del}`} title="Kustuta rida" tabIndex={-1} onClick={() => removeLine(i)}>✕</button>
                           </div>

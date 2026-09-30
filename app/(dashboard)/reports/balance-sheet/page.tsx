@@ -26,7 +26,7 @@ function formatCurrency(value: number): string {
 function DiffCell({ current, previous }: { current: number; previous: number }) {
   const diff = current - previous;
   return (
-    <span className="w-32 shrink-0 text-right font-medium" style={{ color: 'var(--text-primary)' }}>
+    <span className="hidden sm:inline w-32 shrink-0 text-right font-medium" style={{ color: 'var(--text-primary)' }}>
       {diff > 0 ? '+' : ''}
       {formatCurrency(diff)}
     </span>
@@ -83,16 +83,16 @@ function SectionLineItems({ items, comparing }: { items: BalanceSheetLine[]; com
             key={item.special || item.account_code}
             className="card p-3"
           >
-            <div className="flex justify-between items-start">
-              <div>
+            <div className="flex justify-between items-start gap-3">
+              <div className="min-w-0 flex-1">
                 <p className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                   {item.account_code}
                 </p>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                <p className="text-sm font-medium break-words" style={{ color: 'var(--text-primary)' }}>
                   {lineName(item)}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="shrink-0 whitespace-nowrap text-right">
                 <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
                   {formatCurrency(item.balance)}
                 </p>
@@ -123,7 +123,7 @@ function SectionTotal({
 }) {
   return (
     <div
-      className="flex justify-between gap-4 pt-3 mt-3 font-bold text-lg p-3 rounded"
+      className="flex justify-between gap-3 sm:gap-4 pt-3 mt-3 font-bold text-base sm:text-lg p-3 rounded"
       style={{
         borderTop: '3px solid var(--text-primary)',
         backgroundColor: 'var(--surface)',
@@ -131,7 +131,7 @@ function SectionTotal({
       }}
     >
       <span className="min-w-0 flex-1">{label}</span>
-      <span className="w-32 shrink-0 text-right">{formatCurrency(amount)}</span>
+      <span className="shrink-0 whitespace-nowrap sm:whitespace-normal sm:w-32 text-right">{formatCurrency(amount)}</span>
       {comparing && (
         <>
           <span className="hidden sm:inline w-32 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
@@ -388,14 +388,14 @@ export default function BalanceSheetPage() {
               </h3>
               <SectionLineItems items={data.liabilities} comparing={comparing} />
               <div
-                className="hidden sm:flex ml-4 justify-between gap-4 pt-2 mt-2 font-semibold"
+                className="flex sm:ml-4 justify-between gap-3 sm:gap-4 pt-2 mt-2 font-semibold"
                 style={{ borderTop: '2px solid var(--border)', color: 'var(--text-primary)' }}
               >
                 <span className="min-w-0 flex-1">{tc('total', { fallback: 'Total' })} {t('liabilities')}</span>
-                <span className="w-32 shrink-0 text-right">{formatCurrency(data.totalLiabilities)}</span>
+                <span className="shrink-0 whitespace-nowrap sm:whitespace-normal sm:w-32 text-right">{formatCurrency(data.totalLiabilities)}</span>
                 {comparing && (
                   <>
-                    <span className="w-32 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="hidden sm:inline w-32 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
                       {formatCurrency(data.compareTotalLiabilities ?? 0)}
                     </span>
                     <DiffCell current={data.totalLiabilities} previous={data.compareTotalLiabilities ?? 0} />
@@ -414,14 +414,14 @@ export default function BalanceSheetPage() {
               </h3>
               <SectionLineItems items={data.equity} comparing={comparing} />
               <div
-                className="hidden sm:flex ml-4 justify-between gap-4 pt-2 mt-2 font-semibold"
+                className="flex sm:ml-4 justify-between gap-3 sm:gap-4 pt-2 mt-2 font-semibold"
                 style={{ borderTop: '2px solid var(--border)', color: 'var(--text-primary)' }}
               >
                 <span className="min-w-0 flex-1">{tc('total', { fallback: 'Total' })} {t('equity')}</span>
-                <span className="w-32 shrink-0 text-right">{formatCurrency(data.totalEquity)}</span>
+                <span className="shrink-0 whitespace-nowrap sm:whitespace-normal sm:w-32 text-right">{formatCurrency(data.totalEquity)}</span>
                 {comparing && (
                   <>
-                    <span className="w-32 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="hidden sm:inline w-32 shrink-0 text-right" style={{ color: 'var(--text-secondary)' }}>
                       {formatCurrency(data.compareTotalEquity ?? 0)}
                     </span>
                     <DiffCell current={data.totalEquity} previous={data.compareTotalEquity ?? 0} />

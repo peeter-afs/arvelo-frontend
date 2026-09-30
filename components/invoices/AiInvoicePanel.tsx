@@ -295,14 +295,14 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[85vh] w-full max-w-2xl -translate-x-1/2 -translate-y-1/2 flex-col rounded-xl bg-[var(--a-surface)] shadow-xl">
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 flex max-h-[90dvh] w-full max-w-[calc(100vw-1rem)] -translate-x-1/2 sm:max-h-[85vh] sm:max-w-2xl -translate-y-1/2 flex-col rounded-xl bg-[var(--a-surface)] shadow-xl">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[var(--a-border)] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--a-border)] px-4 py-3 sm:px-6 sm:py-4">
             <div className="flex items-center gap-2">
               {step === 'preview' && (
                 <button
                   onClick={() => setStep('capture')}
-                  className="mr-1 rounded p-1 hover:bg-[var(--a-surface-2)]"
+                  className="mr-1 rounded p-1 max-sm:p-2 hover:bg-[var(--a-surface-2)]"
                 >
                   <ArrowLeft className="h-4 w-4 text-[var(--a-text-2)]" />
                 </button>
@@ -313,14 +313,14 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
               </Dialog.Title>
             </div>
             <Dialog.Close asChild>
-              <button className="rounded p-1 hover:bg-[var(--a-surface-2)]">
+              <button className="rounded p-1 max-sm:p-2 hover:bg-[var(--a-surface-2)]">
                 <X className="h-4 w-4 text-[var(--a-text-2)]" />
               </button>
             </Dialog.Close>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto px-6 py-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6">
             {error && (
               <div className="mb-4 flex items-start gap-2 rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-3 text-sm text-[var(--a-neg)]">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -457,7 +457,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                   <div className="flex gap-2">
                     <button
                       onClick={() => setKind('regular')}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      className={`rounded-md px-3 py-1.5 max-sm:py-2.5 text-xs font-medium transition-colors ${
                         kind === 'regular'
                           ? 'bg-[var(--a-accent)] text-white'
                           : 'bg-[var(--a-surface-2)] text-[var(--a-text-2)] hover:bg-[var(--a-surface-3)]'
@@ -467,7 +467,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                     </button>
                     <button
                       onClick={() => setKind('recurring')}
-                      className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                      className={`rounded-md px-3 py-1.5 max-sm:py-2.5 text-xs font-medium transition-colors ${
                         kind === 'recurring'
                           ? 'bg-[var(--a-accent)] text-white'
                           : 'bg-[var(--a-surface-2)] text-[var(--a-text-2)] hover:bg-[var(--a-surface-3)]'
@@ -480,7 +480,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
 
                 {/* Dates & currency (regular only) */}
                 {kind === 'regular' && (
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-[var(--a-text-2)]">{t('invoiceDate')}</label>
                       <input
@@ -516,7 +516,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[var(--a-text-2)]">{t('lines')}</label>
                   <div className="overflow-x-auto rounded-lg border border-[var(--a-border)]">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[480px] text-sm">
                       <thead>
                         <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
                           <th className="px-3 py-2 text-left text-xs font-medium text-[var(--a-text-2)]">{t('description')}</th>
@@ -575,7 +575,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                               </td>
                               <td className="px-1 py-1.5">
                                 {editableLines.length > 1 && (
-                                  <button onClick={() => removeLine(i)} className="rounded p-0.5 text-[var(--a-text-3)] hover:text-[var(--a-neg)]">
+                                  <button onClick={() => removeLine(i)} className="rounded p-0.5 max-sm:p-2 text-[var(--a-text-3)] hover:text-[var(--a-neg)]">
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
                                 )}
@@ -596,7 +596,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
                 </div>
 
                 {/* Totals */}
-                <div className="flex justify-end gap-6 text-sm">
+                <div className="flex flex-wrap justify-end gap-x-6 gap-y-1 text-sm">
                   <span className="text-[var(--a-text-2)]">Subtotal: <strong className="text-[var(--a-text)]">{subtotal.toFixed(2)}</strong></span>
                   <span className="text-[var(--a-text-2)]">VAT: <strong className="text-[var(--a-text)]">{taxTotal.toFixed(2)}</strong></span>
                   <span className="text-[var(--a-text-2)]">Total: <strong className="text-[var(--a-text)]">{(subtotal + taxTotal).toFixed(2)}</strong></span>
@@ -623,7 +623,7 @@ export default function AiInvoicePanel({ open, onOpenChange, onDraftCreated, par
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 border-t border-[var(--a-border)] px-6 py-4">
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[var(--a-border)] px-4 py-3 sm:px-6 sm:py-4">
             {step === 'capture' && (
               <button
                 onClick={handleGenerate}

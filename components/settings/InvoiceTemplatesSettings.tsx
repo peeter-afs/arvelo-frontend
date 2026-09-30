@@ -560,7 +560,7 @@ export default function InvoiceTemplatesSettings() {
       </div>
 
       {link && (
-        <div className={s.lpop} style={{ left: Math.min(link.x - 150, window.innerWidth - 316), top: link.y }} onClick={(e) => e.stopPropagation()}>
+        <div className={s.lpop} style={{ left: Math.max(8, Math.min(link.x - 150, window.innerWidth - 316)), top: link.y }} onClick={(e) => e.stopPropagation()}>
           <div className={s.lt}>Arve {link.no} PDF</div>
           <div>PDF-is on see number klikitav link, mis avab kliendile saadetud arve.</div>
           <div className={s.url}>{link.href}</div>

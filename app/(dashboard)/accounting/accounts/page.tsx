@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Edit2, Filter, Loader2, Plus, Search, Upload, X } from 'lucide-react';
@@ -37,6 +37,7 @@ export default function ChartOfAccountsPage() {
   const [selectedAccount, setSelectedAccount] = useState<AccountRecord | null>(null);
   const [creatingDefaults, setCreatingDefaults] = useState(false);
   const [collapsedTypes, setCollapsedTypes] = useState<Set<string>>(new Set());
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const toggleGroup = (type: string) => {
     setCollapsedTypes((current) => {
@@ -119,7 +120,7 @@ export default function ChartOfAccountsPage() {
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="micro text-[var(--a-text-3)]">{t('masterRegister')}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('chartOfAccounts')}</h1>
+          <h1 className="mt-1 text-[24px] font-semibold lg:text-[28px] leading-none text-[var(--a-text)]">{t('chartOfAccounts')}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('accountsActiveSystem', { total: accounts.length, active: activeCount, system: systemCount })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -138,15 +139,15 @@ export default function ChartOfAccountsPage() {
         </div>
       </div>
 
-      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
-        <Stat label={t('accountsLabel')} value={accounts.length} subtle={`${activeCount} ${t('active')}`} />
-        <Stat label={t('assetsLabel')} value={accounts.filter((account) => account.type === 'asset').length} subtle={t('balanceSheet')} />
-        <Stat label={t('revenueLabel')} value={accounts.filter((account) => account.type === 'revenue').length} subtle={t('incomeStatement')} tone="positive" />
-        <Stat label={t('expensesLabel')} value={accounts.filter((account) => account.type === 'expense').length} subtle={t('incomeStatement')} tone="danger" />
+      <div className="grid grid-cols-2 gap-y-3 border-b border-[var(--a-border)] pb-4 md:grid-cols-4 md:gap-y-0">
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('accountsLabel')} value={accounts.length} subtle={`${activeCount} ${t('active')}`} />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('assetsLabel')} value={accounts.filter((account) => account.type === 'asset').length} subtle={t('balanceSheet')} />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('revenueLabel')} value={accounts.filter((account) => account.type === 'revenue').length} subtle={t('incomeStatement')} tone="positive" />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('expensesLabel')} value={accounts.filter((account) => account.type === 'expense').length} subtle={t('incomeStatement')} tone="danger" />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative block w-full max-w-md">
+        <label className="relative block w-full lg:max-w-md">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
           <input
             ref={searchRef}
@@ -157,12 +158,12 @@ export default function ChartOfAccountsPage() {
           />
         </label>
         <div className="flex flex-wrap items-center gap-2">
-          <Button>
+          <Button className="max-sm:flex-1">
             <Filter className="h-3.5 w-3.5" />
             {t('type')}: {t('all')}
             <ChevronDown className="h-3 w-3" />
           </Button>
-          <Button>
+          <Button className="max-sm:flex-1">
             {t('status')}: {t('active')}
             <ChevronDown className="h-3 w-3" />
           </Button>
@@ -180,8 +181,8 @@ export default function ChartOfAccountsPage() {
       {error && <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-4 text-sm text-[var(--a-neg)]">{error}</div>}
 
       <SplitPane className="flex-1">
-        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
-          <div className="grid grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+        <section className="min-w-0 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] md:min-h-[520px] md:overflow-hidden">
+          <div className="hidden grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 md:grid text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
             <div>{t('code')}</div>
             <div>{t('accountName')}</div>
@@ -191,7 +192,7 @@ export default function ChartOfAccountsPage() {
             <div className="text-right">{t('locked')}</div>
           </div>
 
-          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+          <div className="md:max-h-[calc(100vh-390px)] md:min-h-[430px] md:overflow-y-auto">
             {isLoading ? (
               <div className="flex h-48 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
@@ -217,7 +218,7 @@ export default function ChartOfAccountsPage() {
                     aria-expanded={!collapsed}
                     className="sticky top-0 z-10 flex w-full items-center justify-between border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-left transition-colors hover:bg-[var(--a-surface-3,var(--a-surface-2))]"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
                       <ChevronDown className={`h-3.5 w-3.5 text-[var(--a-text-2)] transition-transform ${collapsed ? '-rotate-90' : ''}`} />
                       <TypeBadge type={group.type} label={labelOfType(group.type)} />
                       <span className="text-[11.5px] text-[var(--a-text-3)]">· {t('accountsCount', { count: group.rows.length })}</span>
@@ -227,11 +228,32 @@ export default function ChartOfAccountsPage() {
                   {!collapsed && group.rows.map((account) => {
                     const selected = selectedAccount?.id === account.id;
 
+                    const open = () => {
+                      setSelectedAccount(account);
+                      setDetailOpen(true);
+                    };
+
                     return (
+                      <Fragment key={account.id}>
                       <button
-                        key={account.id}
-                        onClick={() => setSelectedAccount(account)}
-                        className={`grid w-full grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                        type="button"
+                        onClick={open}
+                        className={`flex w-full items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] md:hidden ${
+                          selected ? 'bg-[var(--a-accent-soft-2)]' : 'active:bg-[var(--a-surface-2)]'
+                        }`}
+                      >
+                        <span className={`h-2 w-2 shrink-0 rounded-full ${account.is_active ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-text-3)]'}`} />
+                        <span className="w-14 shrink-0 font-mono text-[13px] tabular-nums text-[var(--a-text-2)]">{account.code}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium text-[var(--a-text)]">{account.name}</span>
+                          <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? t('systemLabel') : t('editable')}</span>
+                        </span>
+                        <StatusPill tone={account.is_active ? 'success' : 'neutral'}>{account.is_active ? t('active') : t('inactive')}</StatusPill>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={open}
+                        className={`hidden w-full grid-cols-[34px_92px_minmax(220px,1fr)_120px_110px_125px_90px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors md:grid ${
                           selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
                         }`}
                       >
@@ -246,6 +268,7 @@ export default function ChartOfAccountsPage() {
                         <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(account.updated_at)}</span>
                         <span className="text-right text-[11.5px] text-[var(--a-text-3)]">{account.is_system ? t('systemLabel') : t('editable')}</span>
                       </button>
+                      </Fragment>
                     );
                   })}
                 </div>
@@ -254,19 +277,23 @@ export default function ChartOfAccountsPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)] lg:flex-nowrap lg:gap-y-0">
             <span>{t('showing')} <span className="text-[var(--a-text)]">{filtered.length}</span></span>
             <span><span className="text-[var(--a-text)]">{grouped.filter((group) => group.rows.length > 0).length}</span> types</span>
             <span className="inline-flex items-center gap-1.5 text-[var(--a-pos)]">
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {t('balanced')}
             </span>
-            <span className="flex-1" />
-            <span>{t('pressJkNavigate')}</span>
+            <span className="hidden flex-1 lg:block" />
+            <span className="hidden lg:inline">{t('pressJkNavigate')}</span>
           </div>
         </section>
 
-        <SplitPaneDetail>
+        <SplitPaneDetail
+          mobileOpen={detailOpen}
+          onMobileClose={() => setDetailOpen(false)}
+          mobileTitle={selectedAccount ? `${selectedAccount.code} · ${selectedAccount.name}` : t('chartOfAccounts')}
+        >
           <AccountDetailPanel
             account={selectedAccount}
             onUpdated={loadAccounts}
@@ -328,7 +355,7 @@ function AccountDetailPanel({
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+    <div className="flex flex-col xl:max-h-[calc(100vh-190px)] xl:min-h-[520px]">
       <div className="border-b border-[var(--a-border)] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -351,7 +378,7 @@ function AccountDetailPanel({
 
       {error && <div className="mx-5 mt-4 rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-3 text-sm text-[var(--a-neg)]">{error}</div>}
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 p-5 xl:overflow-y-auto">
         <div className="space-y-4">
           <DetailRow label={t('code')} value={<span className="font-mono">{account.code}</span>} />
           <div>
@@ -389,7 +416,7 @@ function AccountDetailPanel({
         </div>
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+      <div className="flex items-center justify-end gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 max-xl:sticky max-xl:bottom-0">
         {isEditing ? (
           <>
             <Button onClick={() => { setIsEditing(false); setEditName(account.name); setEditType(account.type); }}>{t('cancel')}</Button>
@@ -449,10 +476,10 @@ function CreateAccountModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/45 p-2 sm:items-center sm:p-4" onClick={onClose}>
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-5"
+        className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-5"
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-5 flex items-center justify-between">
@@ -460,7 +487,7 @@ function CreateAccountModal({
             <div className="micro text-[var(--a-text-3)]">{t('chartOfAccounts')}</div>
             <h2 className="mt-1 text-lg font-semibold text-[var(--a-text)]">{t('newAccount')}</h2>
           </div>
-          <button type="button" onClick={onClose} className="rounded-md p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]">
+          <button type="button" onClick={onClose} aria-label={t('cancel')} className="rounded-md p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] max-lg:p-2.5">
             <X className="h-4 w-4" />
           </button>
         </div>

@@ -14,6 +14,7 @@ const fieldInput =
 
 export default function ProductsPage() {
   const t = useTranslations('invoices');
+  const tCommon = useTranslations('common');
   const [products, setProducts] = useState<Product[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [search, setSearch] = useState('');
@@ -72,7 +73,7 @@ export default function ProductsPage() {
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="micro text-[var(--a-text-3)]">{t('productsSubtitle')}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('productsTitle')}</h1>
+          <h1 className="mt-1 text-[22px] lg:text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('productsTitle')}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('productsCount', { count: products.length })}</p>
         </div>
         <Button variant="primary" onClick={openCreate}>
@@ -87,7 +88,7 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <div className="relative max-w-md">
+      <div className="relative w-full max-w-md">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--a-text-3)]" />
         <input
           value={search}
@@ -97,7 +98,31 @@ export default function ProductsPage() {
         />
       </div>
 
-      <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
+      <div className="overflow-hidden rounded-[10px] border border-[var(--a-border)] md:hidden">
+        {isLoading ? (
+          <div className="px-3.5 py-8 text-center text-[13px] text-[var(--a-text-3)]"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></div>
+        ) : products.length === 0 ? (
+          <div className="px-3.5 py-10 text-center text-[13px] text-[var(--a-text-3)]">
+            <Package className="mx-auto mb-2 h-5 w-5" />{t('noProducts')}
+          </div>
+        ) : (
+          products.map((p) => (
+            <div key={p.id} className="flex items-center gap-2 border-t border-[var(--a-border)] px-3 py-2.5 first:border-t-0">
+              <button type="button" onClick={() => openEdit(p)} className="min-w-0 flex-1 text-left">
+                <span className="block truncate text-[13.5px] font-medium text-[var(--a-text)]">{p.name}</span>
+                <span className="block truncate text-[11.5px] text-[var(--a-text-3)]">
+                  {[p.code, fmt(p.tax_rate) !== '—' ? `${fmt(p.tax_rate)}%` : null, p.sales_account_id ? accountLabel.get(p.sales_account_id) : null].filter(Boolean).join(' · ') || '—'}
+                </span>
+              </button>
+              <span className="shrink-0 text-right font-mono text-[13px] tabular-nums text-[var(--a-text)]">{fmt(p.unit_price)}</span>
+              <button type="button" onClick={() => openEdit(p)} aria-label={t('editProduct')} title={t('editProduct')} className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)]"><Pencil className="h-4 w-4" /></button>
+              <button type="button" onClick={() => void handleDelete(p)} aria-label={tCommon('delete')} title={tCommon('delete')} className="flex h-9 w-9 shrink-0 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)]"><Trash2 className="h-4 w-4" /></button>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-[10px] border border-[var(--a-border)] md:block">
         <table className="min-w-full">
           <thead className="bg-[var(--a-surface-2)] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <tr>

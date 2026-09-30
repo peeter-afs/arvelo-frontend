@@ -287,7 +287,7 @@ export function MeritPalkTab({ canManage }: { canManage: boolean }) {
             </button>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-slate-900">{t('meritPalkAccountMapTitle')}</h3>
             <p className="mt-1 text-xs text-slate-500">{t('meritPalkAccountMapHint')}</p>
 
@@ -323,8 +323,8 @@ export function MeritPalkTab({ canManage }: { canManage: boolean }) {
             {codeRows.length === 0 ? (
               <div className="mt-4 text-xs text-slate-400">{t('meritPalkNoCodes')}</div>
             ) : (
-              <div className="mt-4 overflow-hidden rounded-lg border border-slate-200">
-                <table className="w-full text-sm">
+              <div className="mt-4 overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-sm max-md:min-w-[560px]">
                   <thead className="bg-slate-100 text-xs text-slate-500">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">{t('meritPalkMeritCode')}</th>
@@ -380,10 +380,10 @@ export function MeritPalkTab({ canManage }: { canManage: boolean }) {
           </div>
 
           {(settings?.batches?.length ?? 0) > 0 && (
-            <div className="rounded-xl border border-slate-200 p-5">
+            <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
               <h3 className="text-base font-semibold text-slate-900">{t('meritPalkBatchesTitle')}</h3>
-              <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
-                <table className="w-full text-sm">
+              <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-sm max-md:min-w-[560px]">
                   <thead className="bg-slate-100 text-xs text-slate-500">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">{t('meritPalkMonth')}</th>

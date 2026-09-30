@@ -39,17 +39,17 @@ export function RoundingSettlementPanel({ accounts, settings, saving = false, on
   const options = profitAndLoss.length > 0 ? profitAndLoss : accounts.filter((a) => a.is_active);
 
   return (
-    <div className="rounded-xl border border-slate-200 p-6">
+    <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">{tA('roundingSettlementTitle')}</h3>
       <p className="mt-1 text-sm text-slate-500">{tA('roundingSettlementDescription')}</p>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <label className="block">
+        <label className="block max-md:min-w-0">
           <span className="mb-1 block text-sm font-medium text-slate-700">{tA('roundingAccount')}</span>
           <select
             value={value.accountId}
             onChange={(event) => update({ accountId: event.target.value })}
-            className="h-11 w-full rounded-lg border border-slate-200 px-3"
+            className="h-11 w-full max-w-full rounded-lg border border-slate-200 px-3"
           >
             <option value="">{tA('roundingAccountOff')}</option>
             {options.map((account) => (
@@ -61,7 +61,7 @@ export function RoundingSettlementPanel({ accounts, settings, saving = false, on
         </label>
 
         {value.accountId && (
-          <label className="block">
+          <label className="block max-md:min-w-0">
             <span className="mb-1 block text-sm font-medium text-slate-700">{tA('roundingTolerance')}</span>
             <input
               type="number"
@@ -70,7 +70,7 @@ export function RoundingSettlementPanel({ accounts, settings, saving = false, on
               step="0.01"
               value={value.tolerance}
               onChange={(event) => update({ tolerance: event.target.value })}
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
+              className="h-11 w-full max-w-full rounded-lg border border-slate-200 px-3"
             />
             <span className="mt-1 block text-xs text-slate-500">{tA('roundingToleranceHint')}</span>
           </label>
@@ -86,7 +86,7 @@ export function RoundingSettlementPanel({ accounts, settings, saving = false, on
           })
         }
         disabled={saving}
-        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 max-sm:w-full text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         <span>{tA('roundingSettlementSave')}</span>

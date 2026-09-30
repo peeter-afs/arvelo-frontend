@@ -21,7 +21,7 @@ export type InvoiceAllocation = {
 // A bank transaction has exactly five possible outcomes. They are mutually
 // exclusive, so they are routes with one commit button — not eight buttons of
 // equal weight spread over three cards.
-type Route = 'match' | 'invoice' | 'account' | 'doc' | 'ignore';
+type Route = 'match' | 'card' | 'invoice' | 'account' | 'doc' | 'ignore';
 
 // Literal keys so t() stays type-checked against the catalogue.
 const AUTO_MATCH_REASON_KEY = {
@@ -57,6 +57,8 @@ type Props = {
   onMarkMissingReceipt: () => void;
   onDismissMissingReceipt: () => void;
   onManualPost: () => void;
+  /** Card / web shop payout: bank + provider fee = clearing account. */
+  onCardSettlement: () => void;
   onSingleMatch: (candidate: BankMatchCandidate) => void;
   onMatchInvoices: (allocations: Array<{ invoice_id: string; amount: number }>) => void;
   onAccountCreated?: (message: string) => void;
@@ -100,6 +102,7 @@ export function ReviewActionPanel({
   onMarkMissingReceipt,
   onDismissMissingReceipt,
   onManualPost,
+  onCardSettlement,
   onSingleMatch,
   onMatchInvoices,
   onAccountCreated,
@@ -134,10 +137,13 @@ export function ReviewActionPanel({
   const hasDraft = selectedItem.has_missing_receipt_placeholder;
   const gross = Math.abs(selectedItem.amount);
 
+  const cardPlan = selectedItem.card_settlement_plan ?? null;
   const activeRoute: Route = route
     ?? (autoMatchPlan
       ? 'match'
-      : suggestedCandidates.length > 0
+      : cardPlan
+        ? 'card'
+        : suggestedCandidates.length > 0
         ? 'invoice'
         : isOutgoing && !hasKnownCounterparty
           ? 'doc'
@@ -223,6 +229,7 @@ export function ReviewActionPanel({
 
   const routes: Array<{ key: Route; label: string; count?: number; hidden?: boolean }> = [
     { key: 'match', label: t('routeMatch'), hidden: !autoMatchPlan },
+    { key: 'card', label: t('routeCardPayout'), hidden: !cardPlan },
     { key: 'invoice', label: t('routeInvoice'), count: suggestedCandidates.length },
     { key: 'account', label: t('routeAccount') },
     { key: 'doc', label: t('routeDoc'), hidden: !isOutgoing },
@@ -232,6 +239,7 @@ export function ReviewActionPanel({
   const commit = () => {
     if (busy) return;
     if (activeRoute === 'match' && autoMatchPlan) onAutoMatch();
+    else if (activeRoute === 'card' && cardPlan) onCardSettlement();
     else if (activeRoute === 'invoice' && invoiceSelection.length > 0) {
       // One invoice taking its whole open amount is the original single-match
       // call. Keep it: it is the path that lets the server apply a rounding
@@ -249,6 +257,7 @@ export function ReviewActionPanel({
 
   const commitDisabled = busy
     || (activeRoute === 'match' && !autoMatchPlan)
+    || (activeRoute === 'card' && !cardPlan)
     || (activeRoute === 'invoice' && (
       invoiceSelection.length === 0
       // With one invoice the server still decides (it may write off a rounding
@@ -261,6 +270,7 @@ export function ReviewActionPanel({
 
   const commitLabel = {
     match: t('confirmMatch'),
+    card: t('confirmCardPayout'),
     invoice: invoiceSelection.length > 1 ? t('linkSelectedInvoices') : t('linkSelectedInvoice'),
     account: t('createEntry'),
     doc: t('createDraft'),
@@ -272,6 +282,9 @@ export function ReviewActionPanel({
       return planInvoices.length > 1
         ? t('linksToNInvoices', { count: planInvoices.length })
         : t('willLinkAndPost', { invoice: planInvoices[0].invoice_number, amount: gross.toFixed(2) });
+    }
+    if (activeRoute === 'card' && cardPlan) {
+      return t('willPostCardPayout', { count: cardPlan.payment_count, fee: cardPlan.fee.toFixed(2) });
     }
     if (activeRoute === 'invoice') {
       if (invoiceSelection.length > 1) {
@@ -316,7 +329,7 @@ export function ReviewActionPanel({
     >
       {/* Route tabs — one row, the active one underlined. Stay put while the
           workspace below them scrolls. */}
-      <div className="sticky top-0 z-20 flex flex-shrink-0 gap-4 border-b border-slate-200 bg-white px-1">
+      <div className="no-scrollbar sticky top-0 z-20 flex flex-shrink-0 gap-4 overflow-x-auto whitespace-nowrap border-b border-slate-200 bg-white px-1 lg:overflow-visible lg:whitespace-normal">
         {routes.filter((entry) => !entry.hidden).map((entry) => (
           <button
             key={entry.key}
@@ -340,7 +353,7 @@ export function ReviewActionPanel({
 
       {/* Workspace — exactly one route at a time. This is the only scroller. */}
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto py-3">
-        {!selectedItem.counterparty_partner_id && !manualPartnerId && (
+        {activeRoute !== 'card' && !selectedItem.counterparty_partner_id && !manualPartnerId && (
           <PanelNotice tone="warning">{t('counterpartyUnknownWarning')}</PanelNotice>
         )}
         {activeRoute === 'match' && (
@@ -410,16 +423,74 @@ export function ReviewActionPanel({
           )
         )}
 
+        {activeRoute === 'card' && cardPlan && (
+          <div className="grid items-stretch gap-2 lg:grid-cols-[minmax(0,1fr)_20px_minmax(0,1.15fr)]">
+            <div className="rounded-lg border border-slate-200 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-slate-500">{t('cardPayoutTitle')}</div>
+              <div className="mt-1 text-[13px] font-bold text-slate-900">{cardPlan.payment_method_name}</div>
+              <div className="text-xs text-slate-600">
+                {t('cardPayoutReceipts', { count: cardPlan.payment_count, from: cardPlan.date_from, to: cardPlan.date_to })}
+              </div>
+              <div className="my-2 border-t border-dashed border-slate-200" />
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 text-[11.5px]">
+                <span className="text-slate-500">{t('cardPayoutGross')}</span>
+                <span className="font-mono font-semibold tabular-nums">{cardPlan.gross.toFixed(2)}</span>
+                <span className="text-slate-500">{t('cardPayoutFee')}</span>
+                <span className="font-mono font-semibold tabular-nums">−{cardPlan.fee.toFixed(2)}</span>
+                <span className="text-slate-500">{t('cardPayoutNet')}</span>
+                <span className="font-mono font-semibold tabular-nums">{cardPlan.net.toFixed(2)}</span>
+                {cardPlan.expected_fee !== null && (
+                  <>
+                    <span className="text-slate-500">{t('cardPayoutExpectedFee')}</span>
+                    <span className="font-mono tabular-nums text-slate-500">{cardPlan.expected_fee.toFixed(2)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="hidden items-center justify-center lg:flex"><ArrowRight className="h-4 w-4 text-slate-400" /></div>
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-800">
+                {t('createsEntry', { date: selectedItem.value_date || selectedItem.tx_date })}
+              </div>
+              <div className="mt-2 space-y-1.5 text-[11.5px]">
+                <div className="grid grid-cols-[52px_minmax(0,1fr)_auto] gap-2">
+                  <span />
+                  <span className="truncate text-slate-700">{selectedItem.bank_account_name || t('bankAccount')}</span>
+                  <span className="font-mono font-semibold tabular-nums text-slate-900">+{cardPlan.net.toFixed(2)}</span>
+                </div>
+                {cardPlan.fee > 0 && (
+                  <div className="grid grid-cols-[52px_minmax(0,1fr)_auto] gap-2">
+                    <span className="font-mono text-slate-500">{cardPlan.fee_account.code}</span>
+                    <span className="truncate text-slate-700">{cardPlan.fee_account.name}</span>
+                    <span className="font-mono font-semibold tabular-nums text-slate-900">+{cardPlan.fee.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="grid grid-cols-[52px_minmax(0,1fr)_auto] gap-2">
+                  <span className="font-mono text-slate-500">{cardPlan.clearing_account.code}</span>
+                  <span className="truncate text-slate-700">{cardPlan.clearing_account.name}</span>
+                  <span className="font-mono font-semibold tabular-nums text-slate-900">−{cardPlan.gross.toFixed(2)}</span>
+                </div>
+              </div>
+              <p className="mt-3 text-[11.5px] leading-4 text-slate-500">{t('cardPayoutEntryNote')}</p>
+            </div>
+            {!cardPlan.confident && (
+              <div className="lg:col-span-3">
+                <PanelNotice tone="warning">{t('cardPayoutNotConfident')}</PanelNotice>
+              </div>
+            )}
+          </div>
+        )}
+
         {activeRoute === 'invoice' && (
           <div className="space-y-3">
             <input
               value={invoiceQuery}
               onChange={(event) => setInvoiceQuery(event.target.value)}
               placeholder={t('searchInvoicePlaceholder')}
-              className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm lg:h-8"
             />
             {/* Fixed-height scroll box: the candidate list must never grow the panel. */}
-            <div className="max-h-[206px] overflow-y-auto rounded-lg border border-slate-200">
+            <div className="rounded-lg border border-slate-200 lg:max-h-[206px] lg:overflow-y-auto">
               {isCandidateLoading ? (
                 <div className="p-3 text-sm text-slate-500">{t('loadingCandidates')}</div>
               ) : filteredCandidates.length === 0 ? (
@@ -515,7 +586,7 @@ export function ReviewActionPanel({
               value={manualDescription}
               onChange={(event) => setManualDescription(event.target.value)}
               placeholder={t('manualPostingDescriptionPlaceholder')}
-              className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm lg:h-8"
             />
             {manualPreviewLines.length > 1 && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
@@ -598,7 +669,7 @@ export function ReviewActionPanel({
               value={ignoreReason}
               onChange={(event) => setIgnoreReason(event.target.value)}
               placeholder={t('reasonPlaceholder')}
-              className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm lg:h-8"
             />
             <PanelNotice>{t('willIgnore')} {t('broughtBackHint')}</PanelNotice>
           </div>
@@ -609,7 +680,7 @@ export function ReviewActionPanel({
             value={reviewNote}
             onChange={(event) => setReviewNote(event.target.value)}
             placeholder={t('reviewNote')}
-            className="h-8 w-full rounded-lg border border-slate-200 px-3 text-sm"
+            className="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm lg:h-8"
           />
         )}
 
@@ -647,12 +718,12 @@ export function ReviewActionPanel({
 
         <button
           onClick={() => setShowNoteInput((value) => !value)}
-          className="h-6 rounded-lg px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50"
+          className="h-9 rounded-lg px-2 text-[11px] font-medium text-slate-500 hover:bg-slate-50 lg:h-6"
         >
           {t('note')}
         </button>
 
-        <div className="flex h-6 items-center overflow-hidden rounded-lg border border-slate-200">
+        <div className="flex h-9 items-center overflow-hidden rounded-lg border border-slate-200 lg:h-6">
           {(['pending', 'reviewed'] as const).map((state) => (
             <button
               key={state}
@@ -672,7 +743,7 @@ export function ReviewActionPanel({
         <button
           onClick={commit}
           disabled={commitDisabled}
-          className={`inline-flex h-8 items-center gap-2 rounded-lg px-3 text-xs font-semibold disabled:opacity-50 ${
+          className={`inline-flex h-10 items-center gap-2 rounded-lg px-3 text-xs font-semibold disabled:opacity-50 max-lg:ml-auto lg:h-8 ${
             activeRoute === 'ignore'
               ? 'border border-red-200 text-red-700 hover:bg-red-50'
               : 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]'
@@ -681,7 +752,7 @@ export function ReviewActionPanel({
           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : activeRoute === 'match' ? <Sparkles className="h-4 w-4" /> : null}
           {commitLabel}
           {activeRoute !== 'doc' && activeRoute !== 'ignore' && (
-            <kbd className="rounded border border-white/30 px-1 text-[10px]">↵</kbd>
+            <kbd className="hidden rounded border border-white/30 px-1 text-[10px] lg:inline">↵</kbd>
           )}
         </button>
       </div>

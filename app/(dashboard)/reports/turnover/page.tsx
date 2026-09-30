@@ -108,14 +108,14 @@ export default function TurnoverReportPage() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('turnoverReport')}</h1>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>{t('turnoverReport')}</h1>
         <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>{t('turnoverReportDescription')}</p>
       </div>
 
-      <div className="card mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
+      <div className="card mb-6 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 p-4 sm:p-6">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 sm:gap-4 items-end">
+          <div className="min-w-0">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               <Calendar className="inline h-4 w-4 mr-1" />
               {tAccounting('startDate')}
@@ -124,11 +124,11 @@ export default function TurnoverReportPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              className="px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
               style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
             />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               <Calendar className="inline h-4 w-4 mr-1" />
               {tAccounting('endDate')}
@@ -137,14 +137,14 @@ export default function TurnoverReportPage() {
               type="date"
               value={endDate}
               onChange={(e) => setEndDate(e.target.value)}
-              className="px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+              className="w-full sm:w-auto px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
               style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text-primary)' }}
             />
           </div>
         </div>
         <button
           onClick={handleExport}
-          className="px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
+          className="max-sm:justify-center px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
           style={{ backgroundColor: 'var(--primary)' }}
         >
           <Download className="h-5 w-5" />
@@ -154,7 +154,7 @@ export default function TurnoverReportPage() {
 
       {/* Desktop Table */}
       <div className="card overflow-hidden hidden md:block">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-visible">
           <table className="min-w-full">
             <thead style={{ backgroundColor: 'var(--surface-elevated)' }}>
               <tr>
@@ -259,25 +259,25 @@ export default function TurnoverReportPage() {
         {accounts.map((a) => (
           <div key={a.account_code} onClick={() => openLedger(a.account_id)} className="card p-4 cursor-pointer active:bg-slate-50">
             <div className="flex items-center justify-between mb-3">
-              <div>
+              <div className="min-w-0">
                 <span className="text-xs font-mono font-bold" style={{ color: 'var(--text-muted)' }}>{a.account_code}</span>
-                <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{a.account_name}</p>
+                <p className="text-sm font-medium break-words" style={{ color: 'var(--text-primary)' }}>{a.account_name}</p>
               </div>
             </div>
             <div className="space-y-2 text-sm" style={{ borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <span style={{ color: 'var(--text-muted)' }}>{tc('openingBalance')}</span>
                 <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
                   {a.opening_debit > 0 ? `D ${fmt(a.opening_debit)}` : a.opening_credit > 0 ? `C ${fmt(a.opening_credit)}` : '-'}
                 </span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between gap-3">
                 <span style={{ color: 'var(--text-muted)' }}>{t('periodTurnover')}</span>
                 <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
                   D {fmt(a.period_debit)} / C {fmt(a.period_credit)}
                 </span>
               </div>
-              <div className="flex justify-between font-medium">
+              <div className="flex justify-between gap-3 font-medium">
                 <span style={{ color: 'var(--text-muted)' }}>{tc('closingBalance')}</span>
                 <span className="font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
                   {a.closing_debit > 0 ? `D ${fmt(a.closing_debit)}` : a.closing_credit > 0 ? `C ${fmt(a.closing_credit)}` : '-'}
@@ -286,6 +286,31 @@ export default function TurnoverReportPage() {
             </div>
           </div>
         ))}
+
+        {/* Mobile totals card */}
+        <div className="card p-4 text-sm" style={{ borderTop: '3px solid var(--text-primary)' }}>
+          <p className="mb-2 font-bold" style={{ color: 'var(--text-primary)' }}>{tc('total')}</p>
+          <div className="space-y-2">
+            <div className="flex justify-between gap-3">
+              <span className="min-w-0" style={{ color: 'var(--text-muted)' }}>{tc('openingBalance')}</span>
+              <span className="text-right font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                D {fmt(totals.opening_debit)} / C {fmt(totals.opening_credit)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3">
+              <span className="min-w-0" style={{ color: 'var(--text-muted)' }}>{t('periodTurnover')}</span>
+              <span className="text-right font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                D {fmt(totals.period_debit)} / C {fmt(totals.period_credit)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-3 font-medium">
+              <span className="min-w-0" style={{ color: 'var(--text-muted)' }}>{tc('closingBalance')}</span>
+              <span className="text-right font-mono tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                D {fmt(totals.closing_debit)} / C {fmt(totals.closing_credit)}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -92,8 +92,8 @@ export default function TrialBalancePage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
           {t('trialBalance')}
         </h1>
         <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
@@ -103,10 +103,10 @@ export default function TrialBalancePage() {
 
       {/* Date Selector */}
       <div
-        className="card mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6"
+        className="card mb-6 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 p-4 sm:p-6"
       >
         <div className="flex space-x-4 items-end">
-          <div>
+          <div className="max-sm:flex-1">
             <label
               className="block text-sm font-medium mb-2"
               style={{ color: 'var(--text-secondary)' }}
@@ -118,7 +118,7 @@ export default function TrialBalancePage() {
               type="date"
               value={asOfDate}
               onChange={(e) => setAsOfDate(e.target.value)}
-              className="px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
+              className="max-sm:w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
               style={{
                 border: '1px solid var(--border)',
                 backgroundColor: 'var(--surface)',
@@ -130,7 +130,7 @@ export default function TrialBalancePage() {
 
         <div className="flex space-x-2">
           <button
-            className="px-4 py-2 rounded-lg flex items-center space-x-2 hover:opacity-80 transition-opacity"
+            className="max-sm:flex-1 max-sm:justify-center px-4 py-2 rounded-lg flex items-center space-x-2 hover:opacity-80 transition-opacity"
             style={{
               border: '1px solid var(--border)',
               color: 'var(--text-primary)',
@@ -158,7 +158,7 @@ export default function TrialBalancePage() {
                 { key: 'balance', label: 'Balance' },
               ]);
             }}
-            className="px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
+            className="max-sm:flex-1 max-sm:justify-center px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Download className="h-5 w-5" />
@@ -168,7 +168,7 @@ export default function TrialBalancePage() {
       </div>
 
       {/* Desktop Table */}
-      <div className="card overflow-hidden hidden md:block">
+      <div className="card overflow-hidden max-lg:overflow-x-auto hidden md:block">
         <table className="min-w-full">
           <thead style={{ backgroundColor: 'var(--surface-elevated)' }}>
             <tr>
@@ -287,8 +287,8 @@ export default function TrialBalancePage() {
             key={account.account_code}
             className="card p-4"
           >
-            <div className="flex justify-between items-start mb-2">
-              <div>
+            <div className="flex justify-between items-start gap-3 mb-2">
+              <div className="min-w-0">
                 <span
                   className="text-xs font-mono font-bold"
                   style={{ color: 'var(--text-muted)' }}
@@ -296,14 +296,14 @@ export default function TrialBalancePage() {
                   {account.account_code}
                 </span>
                 <p
-                  className="text-sm font-medium"
+                  className="text-sm font-medium break-words"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   {account.account_name}
                 </p>
               </div>
               <span
-                className="text-xs px-2 py-0.5 rounded"
+                className="shrink-0 text-xs px-2 py-0.5 rounded"
                 style={{
                   backgroundColor: 'var(--surface-elevated)',
                   color: 'var(--text-secondary)',
@@ -362,29 +362,29 @@ export default function TrialBalancePage() {
       </div>
 
       {/* Balance Status Cards */}
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card p-6">
+      <div className="mt-6 md:mt-8 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+        <div className="card min-w-0 p-4 md:p-6">
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {tAccounting('debit')}
           </p>
-          <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-lg md:text-2xl font-bold mt-2 break-words" style={{ color: 'var(--text-primary)' }}>
             {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="card p-6">
+        <div className="card min-w-0 p-4 md:p-6">
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {tAccounting('credit')}
           </p>
-          <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-lg md:text-2xl font-bold mt-2 break-words" style={{ color: 'var(--text-primary)' }}>
             {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="card p-6">
+        <div className="card col-span-2 md:col-span-1 min-w-0 p-4 md:p-6">
           <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
             {tCommon('status')}
           </p>
           <p
-            className="text-2xl font-bold mt-2"
+            className="text-lg md:text-2xl font-bold mt-2 break-words"
             style={{ color: isBalanced ? 'var(--success)' : 'var(--danger)' }}
           >
             {isBalanced

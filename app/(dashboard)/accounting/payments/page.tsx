@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw, RotateCcw, Stamp, Wallet } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, RotateCcw, Stamp, Wallet, X } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { paymentsApi, type PaymentDetail, type PaymentListItem } from '@/lib/api/payments.api';
 
@@ -23,6 +23,22 @@ export default function PaymentsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  // Below xl the detail is a full-screen sheet, opened by a row tap (or a deep link).
+  const [detailOpen, setDetailOpen] = useState(Boolean(searchParams.get('payment_id')));
+
+  useEffect(() => {
+    if (!detailOpen || window.matchMedia('(min-width: 1280px)').matches) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setDetailOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [detailOpen]);
 
   const invoiceFilter = searchParams.get('invoice_id') || undefined;
 
@@ -143,7 +159,7 @@ export default function PaymentsPage() {
             await loadPayments(selectedPaymentId);
             setSuccessMessage(t('paymentsRefreshed'));
           })}
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50"
+          className="inline-flex h-10 items-center gap-2 self-start rounded-lg border border-slate-200 px-4 text-sm text-slate-700 hover:bg-slate-50 lg:self-auto"
         >
           {actionLoading === 'refresh' ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           <span>{t('refreshPayments')}</span>
@@ -168,7 +184,7 @@ export default function PaymentsPage() {
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Metric label={t('draft')} value={summary.draft} />
         <Metric label={t('posted')} value={summary.posted} tone="success" />
         <Metric label={t('reversed')} value={summary.reversed} tone="danger" />
@@ -178,13 +194,13 @@ export default function PaymentsPage() {
 
       <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="flex flex-wrap gap-2">
+          <div className="card p-4 lg:p-5">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible">
               {FILTERS.map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setStatusFilter(filter)}
-                  className={`rounded-full px-3 py-2 text-sm transition-colors ${
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm transition-colors ${
                     statusFilter === filter
                       ? 'bg-[var(--primary)] text-white'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -214,7 +230,10 @@ export default function PaymentsPage() {
                 filteredPayments.map((payment) => (
                   <button
                     key={payment.id}
-                    onClick={() => setSelectedPaymentId(payment.id)}
+                    onClick={() => {
+                      setSelectedPaymentId(payment.id);
+                      setDetailOpen(true);
+                    }}
                     className={`block w-full px-4 py-3 text-left transition-colors ${selectedPaymentId === payment.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -226,7 +245,7 @@ export default function PaymentsPage() {
                           {payment.partner_name || t('unknownPartner')} · {t(payment.direction)}
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="shrink-0 text-right">
                         <div className="font-mono text-sm text-slate-900">
                           {Number(payment.amount || 0).toFixed(2)}
                         </div>
@@ -246,7 +265,26 @@ export default function PaymentsPage() {
           </div>
         </aside>
 
-        <section className="space-y-4">
+        <section
+          className={`space-y-4 ${
+            detailOpen
+              ? 'max-xl:fixed max-xl:inset-0 max-xl:z-50 max-xl:overflow-y-auto max-xl:bg-[var(--a-bg)] max-xl:px-3 max-xl:pb-[max(0.75rem,env(safe-area-inset-bottom))]'
+              : 'max-xl:hidden'
+          }`}
+        >
+          <div className="sticky top-0 z-10 -mx-3 flex h-12 items-center gap-2 border-b border-slate-200 bg-white px-2 xl:hidden">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(false)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
+              aria-label={t('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1 truncate text-[14px] font-semibold text-slate-900">
+              {selectedPayment?.reference || selectedPayment?.invoice_number || t('paymentsTitle')}
+            </div>
+          </div>
           {!selectedPayment ? (
             <div className="card p-8 text-sm text-slate-500">{t('selectPaymentToInspect')}</div>
           ) : isDetailLoading ? (
@@ -254,10 +292,10 @@ export default function PaymentsPage() {
           ) : (
             <>
               <div className="card overflow-hidden">
-                <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+                <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-4 lg:px-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                      <h2 className="text-base font-semibold text-slate-900">
+                      <h2 className="text-base max-lg:break-all font-semibold text-slate-900">
                         {selectedPayment.reference || selectedPayment.invoice_number || selectedPayment.id}
                       </h2>
                       <p className="mt-1 text-sm text-slate-500">
@@ -273,24 +311,24 @@ export default function PaymentsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 p-4 lg:gap-4 lg:p-5 xl:grid-cols-4">
                   <InfoBox label={t('invoice')} value={selectedPayment.invoice_number || '-'} />
                   <InfoBox label={t('invoiceStatus')} value={selectedPayment.invoice_status || '-'} />
                   <InfoBox label={t('invoiceOpenAmount')} value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
                   <InfoBox label={t('journalEntry')} value={selectedPayment.journal_entry_id || '-'} />
                 </div>
 
-                <div className="border-t border-slate-200 p-5">
+                <div className="border-t border-slate-200 p-4 lg:p-5">
                   <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-900">
                     <Wallet className="h-4 w-4" />
                     <span>{t('invoiceSettlement')}</span>
                   </div>
-                  <div className="grid gap-4 md:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:gap-4">
                     <InfoBox label={t('invoiceTotal')} value={selectedPayment.invoice_total !== null && selectedPayment.invoice_total !== undefined ? Number(selectedPayment.invoice_total).toFixed(2) : '-'} />
                     <InfoBox label={t('paidAmount')} value={selectedPayment.invoice_paid_amount !== null && selectedPayment.invoice_paid_amount !== undefined ? Number(selectedPayment.invoice_paid_amount).toFixed(2) : '-'} />
                     <InfoBox label={t('openAmount')} value={selectedPayment.invoice_open_amount !== null && selectedPayment.invoice_open_amount !== undefined ? Number(selectedPayment.invoice_open_amount).toFixed(2) : '-'} />
                   </div>
-                  <div className="mt-4 text-sm text-slate-500">
+                  <div className="mt-4 text-sm text-slate-500 max-lg:break-words">
                     {t('due')} {selectedPayment.due_date ? selectedPayment.due_date.slice(0, 10) : '-'} · {t('paymentReference')} {selectedPayment.payment_reference || '-'}
                   </div>
                   <div className="mt-4">
@@ -303,7 +341,7 @@ export default function PaymentsPage() {
                   </div>
                 </div>
 
-                <div className="border-t border-slate-200 p-5">
+                <div className="border-t border-slate-200 p-4 lg:p-5">
                   <div className="mb-3 text-sm font-semibold text-slate-900">{t('paymentActions')}</div>
                   <div className="flex flex-wrap gap-3">
                     <button
@@ -318,7 +356,7 @@ export default function PaymentsPage() {
                       value={reverseReason}
                       onChange={(event) => setReverseReason(event.target.value)}
                       placeholder={t('reversalReason')}
-                      className="h-10 min-w-[240px] rounded-lg border border-slate-200 px-3"
+                      className="h-10 w-full rounded-lg border border-slate-200 px-3 sm:w-auto sm:min-w-[240px]"
                     />
                     <button
                       onClick={handleReverse}
@@ -350,18 +388,18 @@ function Metric({ label, value, tone = 'neutral' }: { label: string; value: stri
           : 'border-slate-200 bg-white text-slate-700';
 
   return (
-    <div className={`card border p-4 ${toneClass}`}>
+    <div className={`card min-w-0 border p-3 md:p-4 ${toneClass}`}>
       <div className="text-xs font-medium uppercase tracking-wide text-current/80">{label}</div>
-      <div className="mt-2 text-2xl font-semibold text-slate-900">{value}</div>
+      <div className="mt-1 text-[20px] font-semibold max-md:truncate text-slate-900 md:mt-2 md:text-2xl">{value}</div>
     </div>
   );
 }
 
 function InfoBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white/80 p-4">
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white/80 p-3 lg:p-4">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
-      <div className="mt-2 text-sm font-medium text-slate-900">{value}</div>
+      <div className="mt-2 text-sm font-medium text-slate-900 max-lg:break-all">{value}</div>
     </div>
   );
 }

@@ -300,7 +300,7 @@ export default function PurchaseInvoiceImportsPage() {
 
       <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <div className="card p-5">
+          <div className="card p-4 md:p-5">
             <div className="mb-4 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--primary)] text-white">
                 <FileUp className="h-5 w-5" />
@@ -359,7 +359,13 @@ export default function PurchaseInvoiceImportsPage() {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setSelectedId(item.id)}
+                      onClick={() => {
+                        setSelectedId(item.id);
+                        // Below xl the detail stacks under the queue — bring it into view.
+                        if (window.matchMedia('(max-width: 1279px)').matches) {
+                          requestAnimationFrame(() => document.getElementById('purchase-import-detail')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+                        }
+                      }}
                       className={`block w-full px-4 py-3 text-left transition-colors ${isActive ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -367,7 +373,7 @@ export default function PurchaseInvoiceImportsPage() {
                           <div className="truncate text-sm font-medium text-slate-900">{item.file_name || t('importedPdf')}</div>
                           <div className="mt-1 text-xs text-slate-500">{formatDateTime(item.created_at, locale, tCommon('noTimestamp'))}</div>
                         </div>
-                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${statusBadge(item.status)}`}>
+                        <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${statusBadge(item.status)}`}>
                           {formatLabel(item.status)}
                         </span>
                       </div>
@@ -383,7 +389,7 @@ export default function PurchaseInvoiceImportsPage() {
           </div>
         </aside>
 
-        <section className="space-y-4">
+        <section id="purchase-import-detail" className="min-w-0 scroll-mt-4 space-y-4">
           {errorMessage && (
             <div className="card border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <div className="flex items-start gap-3">
@@ -475,20 +481,20 @@ export default function PurchaseInvoiceImportsPage() {
               <div className="card overflow-hidden">
                 <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="text-base font-semibold text-slate-900">{detail.import.file_name || t('purchaseInvoiceImport')}</h2>
+                    <div className="min-w-0">
+                      <h2 className="text-base font-semibold text-slate-900 [overflow-wrap:anywhere]">{detail.import.file_name || t('purchaseInvoiceImport')}</h2>
                       <p className="mt-1 text-sm text-slate-500">
                         {t('status')} {formatLabel(detail.import.status)}. {t('reviewHeaderLinesSupplierDuplicate')}
                       </p>
                     </div>
-                    <div className="text-right text-xs text-slate-500">
+                    <div className="shrink-0 text-right text-xs text-slate-500">
                       <div>{detail.import.source_type}</div>
                       <div className="mt-1">{formatDateTime(detail.import.created_at, locale, tCommon('noTimestamp'))}</div>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-6 p-5">
+                <div className="space-y-6 p-4 md:p-5">
                   {isCreditNote && (
                     <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 text-sm text-violet-900">{t('creditNoteDetected')}</div>
                   )}

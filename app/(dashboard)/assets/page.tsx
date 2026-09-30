@@ -103,21 +103,21 @@ export default function AssetsPage() {
       {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6 sm:items-center sm:justify-between">
         <div className="flex gap-3 items-center">
-          <div className="relative">
+          <div className="relative min-w-0 flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--text-muted)' }} />
             <input
               type="text"
               placeholder={t('searchPlaceholder')}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-lg text-sm"
+              className="w-full pl-9 pr-4 py-2 rounded-lg text-sm sm:w-auto"
               style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
             />
           </div>
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="px-3 py-2 rounded-lg text-sm"
+            className="shrink-0 px-3 py-2 rounded-lg text-sm"
             style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
           >
             <option value="">{t('allStatuses')}</option>
@@ -125,7 +125,7 @@ export default function AssetsPage() {
             <option value="disposed">{t('disposed')}</option>
           </select>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {filtered.length > 0 && (
             <button
               onClick={() => {
@@ -165,27 +165,27 @@ export default function AssetsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div className="card p-4">
-          <div className="flex items-center gap-3 mb-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+        <div className="card min-w-0 p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
             <DollarSign className="h-5 w-5" style={{ color: 'var(--primary)' }} />
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('totalCost')}</span>
           </div>
-          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>&euro;{fmt(totalCost)}</p>
+          <p className="truncate text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>&euro;{fmt(totalCost)}</p>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3 mb-1">
+        <div className="card min-w-0 p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
             <TrendingDown className="h-5 w-5" style={{ color: '#f59e0b' }} />
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('totalDepreciable')}</span>
           </div>
-          <p className="text-xl font-bold" style={{ color: '#f59e0b' }}>&euro;{fmt(totalCost - totalSalvage)}</p>
+          <p className="truncate text-lg sm:text-xl font-bold" style={{ color: '#f59e0b' }}>&euro;{fmt(totalCost - totalSalvage)}</p>
         </div>
-        <div className="card p-4">
-          <div className="flex items-center gap-3 mb-1">
+        <div className="card min-w-0 p-3 sm:p-4">
+          <div className="flex items-center gap-2 sm:gap-3 mb-1">
             <Wallet className="h-5 w-5" style={{ color: 'var(--success, #16a34a)' }} />
             <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('assetCount')}</span>
           </div>
-          <p className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{filtered.length}</p>
+          <p className="truncate text-lg sm:text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{filtered.length}</p>
         </div>
       </div>
 
@@ -193,7 +193,67 @@ export default function AssetsPage() {
       {filtered.length === 0 ? (
         <EmptyState icon={DollarSign} title={t('title')} message={t('noAssets')} />
       ) : (
-        <div className="card overflow-hidden">
+        <>
+        {/* Mobile cards: tap to expand the depreciation schedule */}
+        <div className="card overflow-hidden md:hidden">
+          {filtered.map(asset => (
+            <div key={asset.id} style={{ borderBottom: '1px solid var(--border)' }}>
+              <button
+                type="button"
+                onClick={() => toggleExpand(asset.id)}
+                className="flex w-full items-center gap-2 px-3 py-3 text-left"
+                aria-expanded={expandedAsset === asset.id}
+              >
+                {expandedAsset === asset.id ? <ChevronDown className="h-4 w-4 shrink-0" style={{ color: 'var(--text-muted)' }} /> : <ChevronRight className="h-4 w-4 shrink-0" style={{ color: 'var(--text-muted)' }} />}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{asset.name}</span>
+                  <span className="mt-0.5 block truncate text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="font-mono">{asset.asset_code}</span> · {getCategoryName(asset.category_id)} · {asset.acquisition_date}
+                  </span>
+                </span>
+                <span className="shrink-0 text-right">
+                  <span className="block text-sm" style={{ color: 'var(--text-primary)' }}>&euro;{fmt(asset.acquisition_cost)}</span>
+                  <span className="mt-0.5 inline-block px-2 py-0.5 rounded text-xs font-medium" style={{
+                    backgroundColor: asset.status === 'active' ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: asset.status === 'active' ? '#16a34a' : '#ef4444',
+                  }}>
+                    {asset.status === 'active' ? t('active') : t('disposed')}
+                  </span>
+                </span>
+              </button>
+              {expandedAsset === asset.id && (
+                <div className="space-y-3 px-3 pb-3" style={{ backgroundColor: 'var(--surface-elevated)' }}>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 pt-3 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                    <span>{t('salvageValue')}: &euro;{fmt(asset.salvage_value)}</span>
+                    <span>{t('method')}: {asset.depreciation_method === 'straight_line' ? t('straightLine') : t('decliningBalance')}</span>
+                  </div>
+                  {asset.status === 'active' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowGenerate(asset.id)}
+                        className="h-9 px-3 rounded-lg text-sm"
+                        style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                      >
+                        {t('depreciate')}
+                      </button>
+                      <button
+                        onClick={() => setShowDispose(asset.id)}
+                        className="h-9 px-3 rounded-lg text-sm"
+                        style={{ border: '1px solid var(--border)', color: '#ef4444' }}
+                      >
+                        {t('dispose')}
+                      </button>
+                    </div>
+                  )}
+                  <div className="max-w-full overflow-x-auto">
+                    <DepreciationTable entries={depreciation[asset.id] || []} t={t} />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="card hidden overflow-hidden md:block">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
@@ -273,6 +333,7 @@ export default function AssetsPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Create Asset Modal */}
@@ -354,10 +415,11 @@ function DepreciationTable({ entries, t }: { entries: DepreciationEntry[]; t: (k
 }
 
 function ModalOverlay({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  const tc = useTranslations('common');
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-4 right-4" style={{ color: 'var(--text-muted)' }}><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] w-full max-w-lg max-h-[90dvh] overflow-y-auto relative max-sm:rounded-b-none sm:p-6 sm:max-h-[90vh]" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} aria-label={tc('close')} className="absolute top-2 right-2 inline-flex h-9 w-9 items-center justify-center sm:top-4 sm:right-4 sm:h-auto sm:w-auto" style={{ color: 'var(--text-muted)' }}><X className="h-5 w-5" /></button>
         {children}
       </div>
     </div>
@@ -408,14 +470,14 @@ function CreateAssetModal({ categories, onClose, onCreated, t, tc }: {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('newAsset')}</h2>
+      <h2 className="text-lg font-bold mb-4 pr-8" style={{ color: 'var(--text-primary)' }}>{t('newAsset')}</h2>
       <div className="space-y-3">
         <Field label={t('category')}>
           <select value={form.category_id} onChange={e => upd('category_id', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}>
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </Field>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Field label={t('code')}><input value={form.asset_code} onChange={e => upd('asset_code', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
           <Field label={t('assetName')}><input value={form.name} onChange={e => upd('name', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
         </div>
@@ -424,7 +486,7 @@ function CreateAssetModal({ categories, onClose, onCreated, t, tc }: {
           <Field label={t('acquisitionDate')}><input type="date" value={form.acquisition_date} onChange={e => upd('acquisition_date', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
           <Field label={t('inServiceDate')}><input type="date" value={form.in_service_date} onChange={e => upd('in_service_date', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <Field label={t('cost')}><input type="number" step="0.01" value={form.acquisition_cost} onChange={e => upd('acquisition_cost', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
           <Field label={t('salvageValue')}><input type="number" step="0.01" value={form.salvage_value} onChange={e => upd('salvage_value', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
           <Field label={t('usefulLifeMonths')}><input type="number" value={form.useful_life_months} onChange={e => upd('useful_life_months', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
@@ -488,7 +550,7 @@ function CreateCategoryModal({ accounts, onClose, onCreated, t, tc }: {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('newCategory')}</h2>
+      <h2 className="text-lg font-bold mb-4 pr-8" style={{ color: 'var(--text-primary)' }}>{t('newCategory')}</h2>
       <div className="space-y-3">
         <Field label={t('categoryName')}><input value={form.name} onChange={e => upd('name', e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
         <Field label={t('assetAccount')}>
@@ -549,7 +611,7 @@ function DisposeModal({ assetId, onClose, onDisposed, t, tc }: {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('disposeAsset')}</h2>
+      <h2 className="text-lg font-bold mb-4 pr-8" style={{ color: 'var(--text-primary)' }}>{t('disposeAsset')}</h2>
       <div className="space-y-3">
         <Field label={t('disposalDate')}><input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
         <Field label={t('disposalAmount')}><input type="number" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} /></Field>
@@ -591,7 +653,7 @@ function GenerateDepreciationModal({ assetId, onClose, onGenerated, t, tc }: {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('generateDepreciation')}</h2>
+      <h2 className="text-lg font-bold mb-4 pr-8" style={{ color: 'var(--text-primary)' }}>{t('generateDepreciation')}</h2>
       <div className="space-y-3">
         <Field label={t('upToDate')}>
           <input type="date" value={upToDate} onChange={e => setUpToDate(e.target.value)} className="w-full px-3 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }} />

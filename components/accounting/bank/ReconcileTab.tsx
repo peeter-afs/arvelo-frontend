@@ -251,7 +251,7 @@ export function ReconcileTab({
           value={bankAccountId}
           onChange={(event) => setBankAccountId(event.target.value)}
           aria-label={t('bankAccount')}
-          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+          className="h-9 min-w-0 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700 max-lg:w-full"
         >
           <option value="">{t('filterAll')}</option>
           {bankAccounts.map((account) => (
@@ -264,7 +264,7 @@ export function ReconcileTab({
           value={reconciledFilter}
           onChange={(event) => setReconciledFilter(event.target.value as ReconciledFilter)}
           aria-label={t('status')}
-          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+          className="h-9 min-w-0 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700 max-lg:w-full"
         >
           <option value="all">{t('filterAll')}</option>
           <option value="unreconciled">{t('filterUnreconciled')}</option>
@@ -275,14 +275,14 @@ export function ReconcileTab({
           value={dateFrom}
           onChange={(event) => setDateFrom(event.target.value)}
           aria-label={t('reconDateFrom')}
-          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+          className="h-9 min-w-0 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700 max-lg:flex-1"
         />
         <input
           type="date"
           value={dateTo}
           onChange={(event) => setDateTo(event.target.value)}
           aria-label={t('reconDateTo')}
-          className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700"
+          className="h-9 min-w-0 rounded-lg border border-slate-200 px-2.5 text-sm text-slate-700 max-lg:flex-1"
         />
         {usingManualBalance && (
           <label className="ml-auto inline-flex items-center gap-2 text-xs text-slate-500">
@@ -301,7 +301,7 @@ export function ReconcileTab({
       </BankFilterRow>
 
       <div className="card overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-3 lg:px-5 lg:py-4">
           <div className="flex items-center gap-2 text-sm text-slate-600">
             <Landmark className="h-4 w-4 text-slate-400" />
             {selected.size > 0 ? (
@@ -320,7 +320,7 @@ export function ReconcileTab({
           <div className="p-8 text-sm text-slate-500">{t('noTransactionsToReconcile')}</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full">
+            <table className="min-w-[760px] lg:min-w-full">
               <thead className="bg-slate-50/80">
                 <tr>
                   <th className="px-4 py-3 text-left">
@@ -420,6 +420,7 @@ export function ReconcileTab({
       </div>
 
       <BankFooterBar
+        className="max-lg:sticky max-lg:bottom-0 max-lg:z-10"
         status={t('reconciledCountOfTotal', { done: summary.reconciled_count, total: totalCount })}
       >
         <button

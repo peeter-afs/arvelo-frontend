@@ -61,6 +61,9 @@ function getDetectedMerchantName(item: BankReviewQueueItem): string {
     || '';
 }
 
+/** Bulk auto-match takes invoice matches and card payouts whose fee is as expected. */
+const isBulkReady = (item: BankReviewQueueItem) => Boolean(item.auto_match_summary || item.card_settlement_plan?.confident);
+
 export function ReviewTab({
   refreshKey = 0,
   onCountChange,
@@ -80,6 +83,9 @@ export function ReviewTab({
   const [items, setItems] = useState<BankReviewQueueItem[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null);
+  // Below lg the action panel is a full-screen sheet, opened only by an explicit
+  // row tap (never by the automatic first-row selection).
+  const [detailOpen, setDetailOpen] = useState(false);
   const [suggestedCandidates, setSuggestedCandidates] = useState<BankMatchCandidate[]>([]);
   const [autoMatchPlan, setAutoMatchPlan] = useState<BankAutoMatchPlan | undefined>();
   const [autoMatchReason, setAutoMatchReason] = useState<BankAutoMatchReason | undefined>();
@@ -345,6 +351,17 @@ export function ReviewTab({
     });
   };
 
+  const handleCardSettlement = async () => {
+    if (!selectedItem?.card_settlement_plan) return;
+    const currentIndex = items.findIndex((item) => item.transaction_id === selectedItem.transaction_id);
+    const nextId = items[currentIndex + 1]?.transaction_id || items[currentIndex - 1]?.transaction_id || null;
+    await runAction('card-settlement', async () => {
+      const result = await bankingApi.cardSettlement(selectedItem.transaction_id);
+      await refreshQueue(nextId);
+      setSuccessMessage(t('cardPayoutPosted', { count: result.plan.payment_count, fee: result.plan.fee.toFixed(2) }));
+    });
+  };
+
   const handleReview = async (state: 'pending' | 'reviewed') => {
     if (!selectedItem) return;
     await runAction(`review-${state}`, async () => {
@@ -497,7 +514,7 @@ export function ReviewTab({
 
   const handleBulkAutoMatch = async () => {
     const ids = items
-      .filter((item) => selectedIds.has(item.transaction_id) && item.auto_match_summary && !droppedIds.has(item.transaction_id))
+      .filter((item) => selectedIds.has(item.transaction_id) && isBulkReady(item) && !droppedIds.has(item.transaction_id))
       .map((item) => item.transaction_id);
     if (ids.length === 0) return;
     await runAction('bulk-auto-match', async () => {
@@ -564,7 +581,7 @@ export function ReviewTab({
   const selectedIndex = selectedItem
     ? items.findIndex((item) => item.transaction_id === selectedItem.transaction_id)
     : -1;
-  const autoReadySelected = items.filter((item) => selectedIds.has(item.transaction_id) && item.auto_match_summary);
+  const autoReadySelected = items.filter((item) => selectedIds.has(item.transaction_id) && isBulkReady(item));
   const bulkItems = autoReadySelected;
   const bulkConfirmCount = bulkItems.filter((item) => !droppedIds.has(item.transaction_id)).length;
 
@@ -592,6 +609,11 @@ export function ReviewTab({
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLElement && event.target.matches('input, select, textarea')) return;
+      // Only the mobile sheet reacts to detailOpen, so this is a no-op on desktop.
+      if (event.key === 'Escape' && detailOpen) {
+        setDetailOpen(false);
+        return;
+      }
       if ((event.key === 'j' || event.key === 'J' || event.key === 'ArrowDown') && selectedIndex < items.length - 1) {
         event.preventDefault();
         setSelectedTransactionId(items[selectedIndex + 1].transaction_id);
@@ -625,33 +647,33 @@ export function ReviewTab({
   const merchantPrefill = selectedItem ? getDetectedMerchantName(selectedItem) : '';
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col gap-2 overflow-hidden">
+    <div className="relative flex min-h-0 flex-col gap-2 lg:h-full lg:overflow-hidden">
       <div className="card flex h-[34px] flex-shrink-0 items-center overflow-hidden text-[11.5px]">
-        <div className={`flex h-full flex-1 items-center gap-2 border-r border-slate-200 px-3 ${reviewPhase === 'auto' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
+        <div className={`flex h-full min-w-0 flex-1 items-center gap-2 border-r border-slate-200 px-3 ${reviewPhase === 'auto' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
           <span className="font-mono font-bold">1.</span>
-          <span className="font-semibold">{t('reviewPhaseAuto', { count: queueBreakdown.auto_ready })}</span>
+          <span className="truncate font-semibold">{t('reviewPhaseAuto', { count: queueBreakdown.auto_ready })}</span>
         </div>
-        <div className={`flex h-full flex-1 items-center gap-2 px-3 ${reviewPhase === 'rest' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
+        <div className={`flex h-full min-w-0 flex-1 items-center gap-2 px-3 ${reviewPhase === 'rest' ? 'bg-orange-50 text-[var(--primary)]' : 'text-slate-500'}`}>
           <span className="font-mono font-bold">2.</span>
-          <span className="font-semibold">{t('reviewPhaseRest', { count: queueBreakdown.pending_other })}</span>
+          <span className="truncate font-semibold">{t('reviewPhaseRest', { count: queueBreakdown.pending_other })}</span>
         </div>
       </div>
       <div className="grid min-h-0 flex-1 gap-3 xl:grid-cols-[420px_minmax(0,1fr)]">
-        <aside className="card flex min-h-0 flex-col overflow-hidden">
-          <div className="flex h-[38px] flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-[11px]">
-            <input ref={selectAllRef} type="checkbox" checked={allSelected} onChange={toggleSelectAll} disabled={items.length === 0} aria-label={t('all')} className="h-4 w-4 flex-shrink-0" />
+        <aside className="card flex min-h-0 min-w-0 flex-col overflow-hidden">
+          <div className="flex min-h-[38px] flex-shrink-0 flex-wrap items-center gap-2 border-b border-slate-200 bg-slate-50/80 px-[11px] py-1.5 lg:h-[38px] lg:flex-nowrap lg:py-0">
+            <input ref={selectAllRef} type="checkbox" checked={allSelected} onChange={toggleSelectAll} disabled={items.length === 0} aria-label={t('all')} className="h-5 w-5 flex-shrink-0 lg:h-4 lg:w-4" />
             <h2 className="whitespace-nowrap text-[12.5px] font-bold text-slate-900">
               {t('transactions')} · {items.length < queueTotal ? `${items.length}/${queueTotal}` : items.length}
             </h2>
             <div className="flex-1" />
-            {reviewPhase === 'rest' && <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
+            {reviewPhase === 'rest' && <select value={reviewFilter} onChange={(event) => setReviewFilter(event.target.value as ReviewStateFilter)} aria-label={t('reviewState')} className="h-8 lg:h-[26px] max-w-[92px] rounded-md border border-slate-200 bg-white px-1.5 text-[11px] text-slate-700">
               <option value="all">{t('all')}</option><option value="pending">{t('pending')}</option><option value="reviewed">{t('reviewed')}</option>
             </select>}
-            {reviewPhase === 'rest' && <button onClick={() => setAutoMatchableOnly((value) => !value)} aria-pressed={autoMatchableOnly} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${autoMatchableOnly ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>{t('onlyAutoReady')}</button>}
-            {reviewPhase === 'rest' && <button onClick={() => setHideDrafted((value) => !value)} role="switch" aria-checked={!hideDrafted} className={`h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${!hideDrafted ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>
+            {reviewPhase === 'rest' && <button onClick={() => setAutoMatchableOnly((value) => !value)} aria-pressed={autoMatchableOnly} className={`h-8 lg:h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${autoMatchableOnly ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>{t('onlyAutoReady')}</button>}
+            {reviewPhase === 'rest' && <button onClick={() => setHideDrafted((value) => !value)} role="switch" aria-checked={!hideDrafted} className={`h-8 lg:h-[26px] whitespace-nowrap rounded-md border px-2 text-[10.5px] font-semibold ${!hideDrafted ? 'border-[var(--primary)] bg-orange-50 text-[var(--primary)]' : 'border-slate-200 bg-white text-slate-600'}`}>
               {hideDrafted ? t('draftedHiddenCount', { count: queueBreakdown.drafted }) : t('showDraftedRows')}
             </button>}
-            <button onClick={() => void refreshQueue(selectedTransactionId)} aria-label="Refresh" className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><RefreshCw className="h-4 w-4" /></button>
+            <button onClick={() => void refreshQueue(selectedTransactionId)} aria-label="Refresh" className="inline-flex h-8 lg:h-[26px] w-8 lg:w-[26px] items-center justify-center rounded-md border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><RefreshCw className="h-4 w-4" /></button>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto">
             {isQueueLoading ? <div className="p-4 text-sm text-slate-500">{t('loadingQueue')}</div> : <>
@@ -661,15 +683,15 @@ export function ReviewTab({
               return (
                 <div key={item.transaction_id} role="row" className={`grid min-h-[46px] grid-cols-[18px_minmax(0,1fr)] gap-2 border-b border-slate-100 px-[11px] py-2 transition-colors ${rowIndex % 2 ? 'bg-slate-50/55' : ''} ${selectedTransactionId === item.transaction_id ? '!bg-blue-50' : 'hover:bg-slate-50'} ${posted ? 'opacity-55' : ''}`}>
                   <input type="checkbox" checked={selectedIds.has(item.transaction_id)} onChange={() => toggleSelected(item.transaction_id)} onClick={(event) => event.stopPropagation()} aria-label={item.counterparty_name || t('unknownCounterparty')} className="mt-0.5 h-4 w-4" />
-                  <button onClick={() => setSelectedTransactionId(item.transaction_id)} className="min-w-0 text-left">
+                  <button onClick={() => { setSelectedTransactionId(item.transaction_id); setDetailOpen(true); }} className="min-w-0 text-left">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</span>
                       <span className={`flex-shrink-0 font-mono text-[12.5px] font-semibold tabular-nums ${item.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{item.amount.toFixed(2)} {item.currency}</span>
                     </div>
                     <div className="mt-0.5 flex min-w-0 items-center gap-1.5 overflow-hidden text-[11px] text-slate-500">
                       <span className="min-w-0 truncate">{item.reference || item.description || t('noReference')}</span><span className="flex-shrink-0">· {item.tx_date}</span>
-                      <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary ? 'bg-emerald-50 text-emerald-700' : item.has_missing_receipt_placeholder ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'}`}>
-                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? ((item.auto_match_invoice_count || 1) > 1 ? t('matchTagMulti', { count: item.auto_match_invoice_count || 1 }) : t('matchTag', { invoice: item.auto_match_summary.invoice_number })) : item.has_missing_receipt_placeholder ? t('draftTag') : t('awaitingDecision')}
+                      <span className={`ml-auto flex-shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ${posted ? 'bg-slate-100 text-slate-600' : item.auto_match_summary || item.card_settlement_plan ? 'bg-emerald-50 text-emerald-700' : item.has_missing_receipt_placeholder ? 'bg-sky-50 text-sky-700' : 'bg-amber-50 text-amber-700'}`}>
+                        {posted ? t('postedTag', { invoice: item.auto_match_summary?.invoice_number || '' }) : item.auto_match_summary ? ((item.auto_match_invoice_count || 1) > 1 ? t('matchTagMulti', { count: item.auto_match_invoice_count || 1 }) : t('matchTag', { invoice: item.auto_match_summary.invoice_number })) : item.card_settlement_plan ? t('cardPayoutTag') : item.has_missing_receipt_placeholder ? t('draftTag') : t('awaitingDecision')}
                       </span>
                     </div>
                   </button>
@@ -692,37 +714,64 @@ export function ReviewTab({
           </div>
         </aside>
 
-        <section className="card flex min-h-0 flex-col overflow-hidden">
+        <section className={`card flex min-h-0 min-w-0 flex-col overflow-hidden ${(detailOpen || bulkConfirmOpen) ? 'max-lg:fixed max-lg:inset-0 max-lg:z-50 max-lg:!rounded-none max-lg:!border-0 max-lg:pb-[env(safe-area-inset-bottom)]' : 'max-lg:hidden'}`}>
+          {/* Mobile sheet header: the action panel covers the whole screen below lg. */}
+          <div className="flex h-12 flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => (bulkConfirmOpen ? setBulkConfirmOpen(false) : setDetailOpen(false))}
+              aria-label={t('close')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-600 hover:bg-slate-50"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1 truncate text-[14px] font-semibold text-slate-900">
+              {bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : t('bankTransaction')}
+            </div>
+          </div>
           {bulkConfirmOpen ? (
             <>
-              <div className="flex flex-shrink-0 items-start gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-3">
-                <div><h2 className="text-base font-bold text-slate-900">{t('bulkConfirmTitle', { count: bulkConfirmCount })}</h2><p className="mt-0.5 text-xs text-slate-500">{t('bulkConfirmDescription')}</p></div>
+              <div className="flex flex-shrink-0 flex-wrap items-start gap-x-4 gap-y-2 border-b border-slate-200 bg-slate-50/80 px-3 py-3 lg:flex-nowrap lg:px-5">
+                <div className="min-w-0"><h2 className="text-base font-bold text-slate-900">{t('bulkConfirmTitle', { count: bulkConfirmCount })}</h2><p className="mt-0.5 text-xs text-slate-500">{t('bulkConfirmDescription')}</p></div>
                 <div className="ml-auto text-right"><div className="font-mono text-[19px] font-bold tabular-nums text-slate-900">{bulkTotal.toFixed(2)} EUR</div><div className="text-[11px] text-slate-500">{t('invoicesToSettle', { count: bulkConfirmCount })}</div></div>
               </div>
-              <div className="grid flex-shrink-0 grid-cols-[18px_1.15fr_88px_1fr_110px_54px] gap-2 border-b border-slate-200 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
+              <div className="hidden flex-shrink-0 grid-cols-[18px_1.15fr_88px_1fr_110px_54px] gap-2 border-b lg:grid border-slate-200 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-500">
                 <span /><span>{t('transactions')}</span><span>{t('amount')}</span><span>{t('linksToInvoice')}</span><span>{t('invoiceOpenAfter')}</span><span>{t('matchScore')}</span>
               </div>
               <div className="min-h-0 flex-1 overflow-y-auto">
                 {bulkItems.map((item) => {
-                  const summary = item.auto_match_summary!; const dropped = droppedIds.has(item.transaction_id);
-                  return <div key={item.transaction_id} className={`grid grid-cols-[18px_1.15fr_88px_1fr_110px_54px] items-center gap-2 border-b border-slate-100 px-4 py-2 text-[11.5px] ${dropped ? 'opacity-40' : ''}`}>
+                  const summary = item.auto_match_summary; const card = item.card_settlement_plan; const dropped = droppedIds.has(item.transaction_id);
+                  // Below lg: checkbox · transaction · amount, with the invoice on a
+                  // second line; the before→after and score columns are desktop-only.
+                  return <div key={item.transaction_id} className={`grid grid-cols-[18px_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 border-b border-slate-100 px-3 py-2 text-[11.5px] lg:grid-cols-[18px_1.15fr_88px_1fr_110px_54px] lg:gap-2 lg:px-4 ${dropped ? 'opacity-40' : ''}`}>
                     <input type="checkbox" checked={!dropped} onChange={() => setDroppedIds((current) => { const next = new Set(current); if (next.has(item.transaction_id)) next.delete(item.transaction_id); else next.add(item.transaction_id); return next; })} className="h-4 w-4" />
                     <div className="min-w-0"><div className="truncate font-semibold text-slate-900">{item.counterparty_name || t('unknownCounterparty')}</div><div className="truncate font-mono text-[10.5px] text-slate-500">{item.reference || t('noReference')} · {item.tx_date}</div></div>
                     <span className="font-mono font-semibold tabular-nums">{item.amount.toFixed(2)}</span>
-                    <div className="min-w-0"><div className="truncate font-semibold">{summary.invoice_number}</div><div className="truncate text-[10.5px] text-slate-500">{summary.partner_name}</div></div>
-                    <span className="font-mono text-[10.5px] tabular-nums">{summary.open_amount_before.toFixed(2)} → {summary.open_amount_after.toFixed(2)}</span>
-                    <span className="font-mono font-semibold tabular-nums">{summary.score}%</span>
+                    {summary ? <>
+                    <div className="col-span-2 col-start-2 min-w-0 lg:col-span-1 lg:col-start-auto"><div className="truncate font-semibold">{summary.invoice_number}</div><div className="truncate text-[10.5px] text-slate-500">{summary.partner_name}</div></div>
+                    <span className="hidden font-mono text-[10.5px] tabular-nums lg:inline">{summary.open_amount_before.toFixed(2)} → {summary.open_amount_after.toFixed(2)}</span>
+                    <span className="hidden font-mono font-semibold tabular-nums lg:inline">{summary.score}%</span>
+                    </> : card ? <>
+                    <div className="col-span-2 col-start-2 min-w-0 lg:col-span-1 lg:col-start-auto"><div className="truncate font-semibold">{card.payment_method_name}</div><div className="truncate text-[10.5px] text-slate-500">{t('cardPayoutReceipts', { count: card.payment_count, from: card.date_from, to: card.date_to })}</div></div>
+                    <span className="hidden font-mono text-[10.5px] tabular-nums lg:inline">{t('cardPayoutFeeShort', { fee: card.fee.toFixed(2) })}</span>
+                    <span className="hidden font-mono font-semibold tabular-nums lg:inline">—</span>
+                    </> : null}
                   </div>;
                 })}
               </div>
-              <div className="flex-shrink-0 border-t border-slate-200 px-5 py-2 text-[11.5px] text-slate-500">{t('bulkEntriesNote', { count: bulkConfirmCount })}</div>
+              <div className="flex-shrink-0 border-t border-slate-200 px-3 py-2 text-[11.5px] text-slate-500 lg:px-5">{t('bulkEntriesNote', { count: bulkConfirmCount })}</div>
+              {/* The page footer is covered by the sheet on mobile, so repeat its two buttons here. */}
+              <div className="flex flex-shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-white px-3 py-2 lg:hidden">
+                <button onClick={() => setBulkConfirmOpen(false)} className="h-10 rounded-lg px-3 text-sm text-slate-600 hover:bg-slate-50">{t('back')}</button>
+                <button onClick={handleBulkAutoMatch} disabled={bulkConfirmCount === 0 || !!actionLoading} className="inline-flex h-10 items-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {t('confirmNMatches', { count: bulkConfirmCount })}</button>
+              </div>
             </>
           ) : !selectedItem ? (
             <div className="p-8 text-sm text-slate-500">{t('selectQueueItem')}</div>
           ) : (
             <>
-              <div className="flex flex-shrink-0 items-center gap-4 border-b border-slate-200 bg-slate-50/80 px-5 py-2.5">
-                <div className="min-w-0">
+              <div className="flex flex-shrink-0 flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-200 bg-slate-50/80 px-3 py-2.5 lg:flex-nowrap lg:gap-4 lg:px-5">
+                <div className="min-w-0 max-lg:basis-full">
                   <div className="flex min-w-0 items-center gap-2">
                     {!selectedItem.counterparty_partner_id ? (
                       <PartnerPicker
@@ -752,22 +801,22 @@ export function ReviewTab({
                   </div>
                   <p className="truncate text-[11.5px] text-slate-500">{selectedItem.reference || selectedItem.description || t('noFreeTextReference')} · {selectedItem.tx_date}</p>
                 </div>
-                <div className="ml-auto flex items-center gap-2">
-                  <button onClick={() => selectedIndex > 0 && setSelectedTransactionId(items[selectedIndex - 1].transaction_id)} disabled={selectedIndex <= 0} className="inline-flex h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><ChevronUp className="h-4 w-4" /><kbd>K</kbd></button>
+                <div className="flex items-center gap-2 lg:ml-auto">
+                  <button onClick={() => selectedIndex > 0 && setSelectedTransactionId(items[selectedIndex - 1].transaction_id)} disabled={selectedIndex <= 0} className="inline-flex h-9 lg:h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><ChevronUp className="h-4 w-4" /><kbd className="hidden lg:inline">K</kbd></button>
                   <span className="font-mono text-xs tabular-nums text-slate-500">{selectedIndex + 1} / {items.length}</span>
-                  <button onClick={() => selectedIndex < items.length - 1 && setSelectedTransactionId(items[selectedIndex + 1].transaction_id)} disabled={selectedIndex < 0 || selectedIndex >= items.length - 1} className="inline-flex h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><kbd>J</kbd><ChevronDown className="h-4 w-4" /></button>
+                  <button onClick={() => selectedIndex < items.length - 1 && setSelectedTransactionId(items[selectedIndex + 1].transaction_id)} disabled={selectedIndex < 0 || selectedIndex >= items.length - 1} className="inline-flex h-9 lg:h-[26px] items-center gap-1 rounded-md border border-slate-200 bg-white px-2 text-xs disabled:opacity-35"><kbd className="hidden lg:inline">J</kbd><ChevronDown className="h-4 w-4" /></button>
                 </div>
-                <div className="text-right"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
+                <div className="text-right max-lg:ml-auto"><div className={`font-mono text-lg font-semibold tabular-nums ${selectedItem.amount > 0 ? 'text-emerald-700' : 'text-slate-900'}`}>{selectedItem.amount.toFixed(2)} {selectedItem.currency}</div><div className="text-[11px] text-slate-500">{t('reviewStateValue', { state: t(selectedItem.review_state || 'pending') })}</div></div>
               </div>
               <div className="flex min-h-0 flex-1 flex-col px-3 pb-1">
-                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualLines={manualLines} setManualLines={setManualLines} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onSingleMatch={handleSingleMatch} onMatchInvoices={handleMatchInvoices} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
+                <ReviewActionPanel selectedItem={selectedItem} accounts={accounts} suggestedCandidates={suggestedCandidates} autoMatchPlan={autoMatchPlan} autoMatchReason={autoMatchReason} isCandidateLoading={isCandidateLoading} actionLoading={actionLoading} reviewNote={reviewNote} setReviewNote={setReviewNote} ignoreReason={ignoreReason} setIgnoreReason={setIgnoreReason} manualLines={manualLines} setManualLines={setManualLines} manualDescription={manualDescription} setManualDescription={(value) => { setManualDescriptionDirty(true); setManualDescription(value); }} manualPartnerId={manualPartnerId} manualPartnerName={manualPartnerName} dismissReason={dismissReason} setDismissReason={setDismissReason} onAutoMatch={handleAutoMatch} onReview={handleReview} onIgnore={handleIgnore} onMarkMissingReceipt={handleMarkMissingReceipt} onDismissMissingReceipt={handleDismissMissingReceipt} onManualPost={handleManualPost} onCardSettlement={handleCardSettlement} onSingleMatch={handleSingleMatch} onMatchInvoices={handleMatchInvoices} onAccountCreated={(message) => { setSuccessMessage(message); void accountingApi.getAccounts({ force: true }).then(setAccounts).catch(() => {}); }} />
               </div>
             </>
           )}
         </section>
       </div>
 
-      <BankFooterBar status={bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : selectedIds.size > 0 ? `${t('selectedCount', { count: selectedIds.size })} · ${autoReadySelected.length} ${t('autoReady')}` : t('autoReadyCount', { count: queueCounts.autoReady })}>
+      <BankFooterBar className="max-lg:sticky max-lg:bottom-0 max-lg:z-10" status={bulkConfirmOpen ? t('toConfirmCount', { count: bulkConfirmCount }) : selectedIds.size > 0 ? `${t('selectedCount', { count: selectedIds.size })} · ${autoReadySelected.length} ${t('autoReady')}` : t('autoReadyCount', { count: queueCounts.autoReady })}>
         {bulkConfirmOpen ? <button onClick={() => setBulkConfirmOpen(false)} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('back')}</button> : selectedIds.size > 0 ? <button onClick={() => setSelectedIds(new Set())} className="h-8 rounded-lg px-3 text-xs text-slate-600 hover:bg-slate-50">{t('clearSelection')}</button> : queueCounts.autoReady > 0 ? <button onClick={selectAutoReady} className="h-8 rounded-lg px-3 text-xs text-[var(--primary)] hover:bg-orange-50">{t('selectAllAutoReady')}</button> : null}
         {!hideDrafted && !bulkConfirmOpen && draftableSelected.length > 0 && <button onClick={handleBulkCreateDrafts} disabled={!!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">{actionLoading === 'bulk-drafts' ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileQuestion className="h-4 w-4" />} {t('createDraftsButton', { count: draftableSelected.length })}</button>}
         <button onClick={bulkConfirmOpen ? handleBulkAutoMatch : openBulkConfirm} disabled={(bulkConfirmOpen ? bulkConfirmCount : reviewCount) === 0 || !!actionLoading} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{actionLoading === 'bulk-auto-match' && <Loader2 className="h-4 w-4 animate-spin" />} {bulkConfirmOpen ? t('confirmNMatches', { count: bulkConfirmCount }) : t('reviewAndConfirm', { count: reviewCount })}</button>

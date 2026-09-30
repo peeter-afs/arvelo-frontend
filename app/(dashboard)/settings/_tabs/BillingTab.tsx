@@ -348,16 +348,16 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
         <div className="text-sm text-slate-500">{t('loadingBillingConfiguration')}</div>
       ) : (
         <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:p-4">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingAccessState')}</div>
               <div className="mt-2 text-lg font-semibold text-slate-900">{billingEntitlement?.access_state || t('statusActive')}</div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:p-4">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingInvoiceNextNumber')}</div>
               <div className="mt-2 text-lg font-semibold text-slate-900">{billingSettingsState?.invoice_next_no ?? 1}</div>
             </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 md:p-4">
               <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('billingOpenInvoices')}</div>
               <div className="mt-2 text-lg font-semibold text-slate-900">
                 {billingInvoices.filter((invoice) => invoice.status !== 'paid' && invoice.status !== 'void').length}
@@ -365,7 +365,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceConfirmation')}</h3>
             <p className="mt-1 text-sm text-slate-500">
               {t('annualBalanceDescription')}
@@ -436,7 +436,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900">{t('reminderAutomation')}</h3>
             <p className="mt-1 text-sm text-slate-500">
               {t('reminderAutomationDescription')}
@@ -475,7 +475,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
               <BillingField label={t('startAfterOverdueDays')}>
                 <input value={billingForm.reminder_start_after_days} onChange={(event) => setBillingForm((current) => ({ ...current, reminder_start_after_days: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
               </BillingField>
-              <label className="flex items-center gap-3 pt-8">
+              <label className="flex items-center gap-3 max-md:pt-0 pt-8">
                 <input type="checkbox" checked={billingForm.reminders_enabled} onChange={(event) => setBillingForm((current) => ({ ...current, reminders_enabled: event.target.checked }))} />
                 <span className="text-sm text-slate-700">{t('enableReminders')}</span>
               </label>
@@ -590,7 +590,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </p>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900">{t('missingReceiptReminders')}</h3>
             <p className="mt-1 text-sm text-slate-500">
               {t('missingReceiptRemindersDescription')}
@@ -658,7 +658,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-sm font-semibold text-slate-900">{t('draftExclusionRulesTitle')}</h3>
             <p className="mt-1 text-sm text-slate-500">{t('draftExclusionRulesDescription')}</p>
             <div className="mt-4 space-y-2">
@@ -713,7 +713,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                 </div>
               ))}
             </div>
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={addDraftRule}
@@ -733,7 +733,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
 
           {/* A bureau's client has no subscription of its own — the bureau pays. */}
           {!isManaged && (
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-semibold text-slate-900">{t('subscription')}</h3>
@@ -793,7 +793,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
               <BillingField label={t('nextInvoiceDate')}>
                 <input type="date" value={billingForm.next_invoice_date} onChange={(event) => setBillingForm((current) => ({ ...current, next_invoice_date: event.target.value }))} className="w-full h-11 px-4 border border-slate-200 rounded-lg" style={{ fontSize: '16px' }} />
               </BillingField>
-              <label className="flex items-center gap-3 pt-8">
+              <label className="flex items-center gap-3 max-md:pt-0 pt-8">
                 <input type="checkbox" checked={billingForm.cancel_at_period_end} onChange={(event) => setBillingForm((current) => ({ ...current, cancel_at_period_end: event.target.checked }))} />
                 <span className="text-sm text-slate-700">{t('cancelAtPeriodEnd')}</span>
               </label>
@@ -836,13 +836,13 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           )}
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('messagePreview')}</h3>
             </div>
             {!billingMessagePreview ? (
-              <div className="p-5 text-sm text-slate-500">{t('loadPreviewHint')}</div>
+              <div className="p-4 sm:p-5 text-sm text-slate-500">{t('loadPreviewHint')}</div>
             ) : (
-              <div className="space-y-4 p-5">
+              <div className="space-y-4 p-4 sm:p-5">
                 <div>
                   <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{t('subject')}</div>
                   <div className="mt-1 text-sm font-medium text-slate-900">{billingMessagePreview.subject}</div>
@@ -863,13 +863,13 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                     </div>
                   </div>
                 </div>
-                <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">{billingMessagePreview.text}</pre>
+                <pre className="whitespace-pre-wrap max-md:break-words rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-700">{billingMessagePreview.text}</pre>
               </div>
             )}
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceReporting')}</h3>
@@ -917,10 +917,10 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
               </div>
             </div>
             {!annualBalanceReport ? (
-              <div className="p-5 text-sm text-slate-500">{t('loadPeriodForAnnualBalance')}</div>
+              <div className="p-4 sm:p-5 text-sm text-slate-500">{t('loadPeriodForAnnualBalance')}</div>
             ) : (
-              <div className="space-y-4 p-5">
-                <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+              <div className="space-y-4 p-4 sm:p-5">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
                   <ReportStat label={t('sent')} value={annualBalanceReport.summary.sent_count} />
                   <ReportStat label={t('responded')} value={annualBalanceReport.summary.responded_count} />
                   <ReportStat label={t('confirmed')} value={annualBalanceReport.summary.confirmed_count} />
@@ -984,16 +984,16 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('reminderOperations')}</h3>
               <p className="mt-1 text-xs text-slate-600">{t('reminderOperationsDescription')}</p>
             </div>
             <div className="divide-y divide-slate-100">
               {billingReminderOperations.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">{t('noReminderOperations')}</div>
+                <div className="p-4 sm:p-5 text-sm text-slate-500">{t('noReminderOperations')}</div>
               ) : (
                 billingReminderOperations.map((invoice) => (
-                  <div key={invoice.id} className="flex flex-col gap-3 p-5 xl:flex-row xl:items-center xl:justify-between">
+                  <div key={invoice.id} className="flex flex-col gap-3 p-4 sm:p-5 xl:flex-row xl:items-center xl:justify-between">
                     <div className="space-y-1">
                       <div className="text-sm font-medium text-slate-900">
                         Invoice #{invoice.invoice_no} · {Number(invoice.total || 0).toFixed(2)} {invoice.currency}
@@ -1057,15 +1057,15 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('billingInvoices')}</h3>
             </div>
             <div className="divide-y divide-slate-100">
               {billingInvoices.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">{t('noBillingInvoices')}</div>
+                <div className="p-4 sm:p-5 text-sm text-slate-500">{t('noBillingInvoices')}</div>
               ) : (
                 billingInvoices.map((invoice) => (
-                  <div key={invoice.id} className="flex flex-col gap-3 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div key={invoice.id} className="flex flex-col gap-3 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="text-sm font-medium text-slate-900">#{invoice.invoice_no} · {invoice.status}</div>
                       <div className="mt-1 text-xs text-slate-500">
@@ -1096,16 +1096,16 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('internalNotificationStatus')}</h3>
               <p className="mt-1 text-xs text-slate-600">{t('internalNotificationDescription')}</p>
             </div>
             <div className="divide-y divide-slate-100">
               {billingAnnualBalanceNotifications.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">{t('noInternalNotifications')}</div>
+                <div className="p-4 sm:p-5 text-sm text-slate-500">{t('noInternalNotifications')}</div>
               ) : (
                 billingAnnualBalanceNotifications.map((event) => (
-                  <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div key={event.id} className="flex flex-col gap-2 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="text-sm font-medium text-slate-900">
                         {event.payload?.status === 'sent'
@@ -1134,7 +1134,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-amber-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-amber-50 px-4 sm:px-5 py-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceMismatchInbox')}</h3>
@@ -1160,7 +1160,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
             </div>
             <div className="divide-y divide-slate-100">
               {visibleBillingMismatches.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">
+                <div className="p-4 sm:p-5 text-sm text-slate-500">
                   {billingMismatchFilter === 'resolved'
                     ? t('noResolvedBalanceMismatches')
                     : billingMismatchFilter === 'all'
@@ -1169,7 +1169,7 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
                 </div>
               ) : (
                 visibleBillingMismatches.map((event) => (
-                  <div key={event.id} className="space-y-3 p-5">
+                  <div key={event.id} className="space-y-3 p-4 sm:p-5">
                     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <div className="text-sm font-medium text-slate-900">
@@ -1229,15 +1229,15 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('reminderHistory')}</h3>
             </div>
             <div className="divide-y divide-slate-100">
               {billingReminderHistory.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">{t('noRemindersSentYet')}</div>
+                <div className="p-4 sm:p-5 text-sm text-slate-500">{t('noRemindersSentYet')}</div>
               ) : (
                 billingReminderHistory.map((event) => (
-                  <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div key={event.id} className="flex flex-col gap-2 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="text-sm font-medium text-slate-900">
                         {t('reminderHistoryItem', { index: event.payload?.reminder_index || '?', kind: event.payload?.template_kind || t('custom') })}
@@ -1256,15 +1256,15 @@ export function BillingTab({ canManage }: { canManage: boolean }) {
           </div>
 
           <div className="rounded-xl border border-slate-200 overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50 px-4 sm:px-5 py-4">
               <h3 className="text-sm font-semibold text-slate-900">{t('annualBalanceHistory')}</h3>
             </div>
             <div className="divide-y divide-slate-100">
               {billingAnnualBalanceHistory.length === 0 ? (
-                <div className="p-5 text-sm text-slate-500">{t('noAnnualBalanceHistory')}</div>
+                <div className="p-4 sm:p-5 text-sm text-slate-500">{t('noAnnualBalanceHistory')}</div>
               ) : (
                 billingAnnualBalanceHistory.map((event) => (
-                  <div key={event.id} className="flex flex-col gap-2 p-5 lg:flex-row lg:items-center lg:justify-between">
+                  <div key={event.id} className="flex flex-col gap-2 p-4 sm:p-5 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="text-sm font-medium text-slate-900">
                         {event.type === 'annual_balance_confirmation_response'

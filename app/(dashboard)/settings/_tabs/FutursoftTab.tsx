@@ -306,7 +306,7 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
             </div>
           </div>
 
-          <div className="rounded-xl border border-slate-200 p-5">
+          <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
             <h3 className="text-base font-semibold text-slate-900">{t('futursoftPostingTitle')}</h3>
             <p className="mt-1 text-xs text-slate-500">{t('futursoftPostingHint')}</p>
 
@@ -404,8 +404,8 @@ export function FutursoftTab({ canManage }: { canManage: boolean }) {
                     <div className="mt-3 text-xs text-slate-400">{t('futursoftDiscoverEmpty')}</div>
                   ) : (
                     <div className="mt-4">
-                      <div className="overflow-hidden rounded-lg border border-slate-200">
-                        <table className="w-full text-sm">
+                      <div className="overflow-x-auto rounded-lg border border-slate-200">
+                        <table className="w-full text-sm max-md:min-w-[560px]">
                           <thead className="bg-slate-100 text-xs text-slate-500">
                             <tr>
                               <th className="px-3 py-2 text-left font-medium">{t('futursoftRuleProductCode')}</th>

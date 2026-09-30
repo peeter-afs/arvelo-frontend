@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { AlertCircle, CheckCircle2, ExternalLink, FileCheck2, FileX2, Loader2, RefreshCw, Send, Stamp } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ExternalLink, FileCheck2, FileX2, Loader2, RefreshCw, Send, Stamp, X } from 'lucide-react';
 import { accountingApi, type PartnerRecord } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { invoicesApi, type InvoiceListItem } from '@/lib/api/invoices.api';
@@ -27,6 +27,8 @@ const QUEUE_FILTERS = ['pending_approval', 'approved', 'rejected', 'draft', 'pay
 
 export default function PurchaseApprovalQueuePage() {
   const t = useTranslations('invoices');
+  const tCommon = useTranslations('common');
+  const [detailOpen, setDetailOpen] = useState(false);
   const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
@@ -219,7 +221,7 @@ export default function PurchaseApprovalQueuePage() {
         </div>
       )}
 
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label={t('pendingApproval')} value={summary.pendingCount} helper={`${summary.pendingTotal.toFixed(2)} ${t('openTotal').toLowerCase()}`} tone="warning" />
         <MetricCard label={t('approved')} value={summary.approvedCount} helper={t('readyForPosting')} tone="success" />
         <MetricCard label={t('rejected')} value={summary.rejectedCount} helper={t('needsCorrection')} tone="danger" />
@@ -228,13 +230,13 @@ export default function PurchaseApprovalQueuePage() {
 
       <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
         <aside className="space-y-4">
-          <div className="card p-5">
-            <div className="flex flex-wrap gap-2">
+          <div className="card p-3 md:p-5">
+            <div className="no-scrollbar flex gap-2 overflow-x-auto lg:flex-wrap lg:overflow-visible">
               {QUEUE_FILTERS.map((filter) => (
                 <button
                   key={filter}
                   onClick={() => setQueueFilter(filter)}
-                  className={`rounded-full px-3 py-2 text-sm transition-colors ${
+                  className={`shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm transition-colors ${
                     queueFilter === filter
                       ? 'bg-[var(--primary)] text-white'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -259,7 +261,7 @@ export default function PurchaseApprovalQueuePage() {
                 queueInvoices.map((invoice) => (
                   <button
                     key={invoice.id}
-                    onClick={() => setSelectedInvoiceId(invoice.id)}
+                    onClick={() => { setSelectedInvoiceId(invoice.id); setDetailOpen(true); }}
                     className={`block w-full px-4 py-3 text-left transition-colors ${selectedInvoiceId === invoice.id ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -288,7 +290,20 @@ export default function PurchaseApprovalQueuePage() {
           </div>
         </aside>
 
-        <section className="space-y-4">
+        <section
+          className={`space-y-4 ${detailOpen ? 'max-xl:fixed max-xl:inset-0 max-xl:z-50 max-xl:overflow-y-auto max-xl:bg-[var(--a-bg)] max-xl:px-4 max-xl:pb-[max(1rem,env(safe-area-inset-bottom))]' : 'max-xl:hidden'}`}
+        >
+          <div className="sticky top-0 z-10 -mx-4 flex h-12 items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface)] px-2 xl:hidden">
+            <button
+              type="button"
+              onClick={() => setDetailOpen(false)}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+              aria-label={tCommon('close')}
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <div className="min-w-0 flex-1 truncate text-[14px] font-semibold text-[var(--a-text)]">{selectedInvoice?.invoice_number || t('purchaseApprovals')}</div>
+          </div>
           {!selectedInvoice ? (
             <div className="card p-8 text-sm text-slate-500">{t('selectPurchaseInvoiceToReview')}</div>
           ) : isDetailLoading ? (
@@ -440,9 +455,9 @@ function MetricCard({
           : 'text-slate-900';
 
   return (
-    <div className="card p-5">
+    <div className="card p-3 md:p-5">
       <div className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className={`mt-2 text-2xl font-semibold ${color}`}>{value}</div>
+      <div className={`mt-2 text-[22px] font-semibold md:text-2xl ${color}`}>{value}</div>
       <div className="mt-1 text-xs text-slate-500">{helper}</div>
     </div>
   );

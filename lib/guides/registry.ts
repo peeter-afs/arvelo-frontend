@@ -9,6 +9,9 @@ import { korduvadArved } from './content/et/korduvad-arved';
 import { arveMallid } from './content/et/arve-mallid';
 import { maksedJaMaksepaketid } from './content/et/maksed-ja-maksepaketid';
 import { kuuloppJaAruanded } from './content/et/kuulopp-ja-aruanded';
+import { makseviisid } from './content/et/makseviisid';
+import { kassaJaKuluaruanded } from './content/et/kassa-ja-kuluaruanded';
+import { eArved } from './content/et/e-arved';
 import { projektiKuluarvestus } from './content/et/projekti-kuluarvestus';
 
 /**
@@ -16,7 +19,7 @@ import { projektiKuluarvestus } from './content/et/projekti-kuluarvestus';
  * new `content/<locale>/` folder plus one entry here — nothing else changes.
  */
 const GUIDES_BY_LOCALE: Partial<Record<Locale, Guide[]>> = {
-  et: [algsaldodeImport, pangatehingud, burooKlientettevotted, muugiarved, ostuarved, korduvadArved, arveMallid, maksedJaMaksepaketid, kuuloppJaAruanded, projektiKuluarvestus],
+  et: [algsaldodeImport, pangatehingud, burooKlientettevotted, muugiarved, ostuarved, korduvadArved, arveMallid, maksedJaMaksepaketid, kuuloppJaAruanded, makseviisid, kassaJaKuluaruanded, eArved, projektiKuluarvestus],
 };
 
 export function listGuides(locale: Locale): { guides: Guide[]; isFallback: boolean } {

@@ -174,7 +174,7 @@ export default function AnnualReportPage() {
         <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
           {t('newSubmission')}
         </h2>
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               {t('fiscalYear')}
@@ -195,7 +195,7 @@ export default function AnnualReportPage() {
           <button
             onClick={handleCreate}
             disabled={!selectedFiscalYear || actionLoading === 'create'}
-            className="px-4 py-2 text-white rounded-lg flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             {actionLoading === 'create' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
@@ -216,8 +216,8 @@ export default function AnnualReportPage() {
           {submissions.map((sub) => (
             <div key={sub.id} className="card p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
                     <StatusBadge status={sub.status} />
                     {sub.fiscal_year && (
                       <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -230,10 +230,10 @@ export default function AnnualReportPage() {
                     {sub.submitted_at && ` | ${t('submitted')}: ${new Date(sub.submitted_at).toLocaleDateString()}`}
                   </p>
                   {sub.error_message && (
-                    <p className="text-xs text-red-600 mt-1">{sub.error_message}</p>
+                    <p className="text-xs text-red-600 mt-1 break-words">{sub.error_message}</p>
                   )}
                   {sub.rik_document_id && (
-                    <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+                    <p className="text-xs mt-1 break-all" style={{ color: 'var(--text-muted)' }}>
                       RIK ID: {sub.rik_document_id}
                     </p>
                   )}
@@ -244,7 +244,7 @@ export default function AnnualReportPage() {
                     <button
                       onClick={() => handleGenerate(sub.id)}
                       disabled={actionLoading === sub.id}
-                      className="px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
+                      className="max-lg:min-h-9 px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
                       style={{ backgroundColor: 'var(--primary)' }}
                     >
                       {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
@@ -255,7 +255,7 @@ export default function AnnualReportPage() {
                   {(sub.status === 'generated' || sub.status === 'submitted' || sub.status === 'accepted') && (
                     <button
                       onClick={() => handleDownload(sub.id)}
-                      className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
+                      className="max-lg:min-h-9 px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
                       style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                     >
                       <Download className="h-4 w-4" />
@@ -267,7 +267,7 @@ export default function AnnualReportPage() {
                     <button
                       onClick={() => handleSubmit(sub.id)}
                       disabled={actionLoading === sub.id}
-                      className="px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
+                      className="max-lg:min-h-9 px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
                       style={{ backgroundColor: 'var(--success, #16a34a)' }}
                     >
                       {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -279,7 +279,7 @@ export default function AnnualReportPage() {
                     <button
                       onClick={() => handleCheckStatus(sub.id)}
                       disabled={actionLoading === sub.id}
-                      className="px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
+                      className="max-lg:min-h-9 px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
                       style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                     >
                       {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}

@@ -10,6 +10,7 @@ import { useSwitchTenant } from '@/lib/hooks/useSwitchTenant';
 import { Button } from '@/components/ui/Button';
 import { AddClientCompanyModal } from '@/components/tenants/AddClientCompanyModal';
 import { HelpLink } from '@/components/guides/HelpLink';
+import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
 
 const money = (value: number) =>
   new Intl.NumberFormat('et-EE', { style: 'currency', currency: 'EUR' }).format(value);
@@ -101,6 +102,29 @@ export default function ClientsPage() {
     void switchTenant(client, client.my_role, path);
   };
 
+  /** Per-client figure cells, shared by the desktop table and the mobile cards. */
+  const figureCells = (client: ManagedTenant) => {
+    const row = overview?.get(client.id);
+    const loadingFigures = overview === null;
+    const hidden = row ? !row.accessible : !client.my_role;
+    const cell = (value: number, path: string, hint: string, extra?: string) => {
+      if (loadingFigures) return <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-[var(--a-text-3)]" />;
+      if (hidden || !row) return <span className="text-[var(--a-text-3)]">—</span>;
+      if (value === 0) return <span className="text-[var(--a-text-3)]">0</span>;
+      return (
+        <button
+          type="button"
+          onClick={() => openClient(client, path)}
+          title={hint}
+          className="font-medium text-[var(--a-text)] underline-offset-2 hover:text-[var(--a-accent)] hover:underline"
+        >
+          {value}{extra ? <span className="ml-1 font-normal text-[var(--a-text-3)]">{extra}</span> : null}
+        </button>
+      );
+    };
+    return { row, loadingFigures, cell };
+  };
+
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return clients;
@@ -112,7 +136,7 @@ export default function ClientsPage() {
   if (!canManage) {
     return (
       <div className="flex min-h-full flex-col gap-4">
-        <h1 className="text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('title')}</h1>
+        <h1 className="text-[22px] lg:text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('title')}</h1>
         <p className="text-[13px] text-[var(--a-text-2)]">{isClientCompany ? t('cannotManage') : t('noAccess')}</p>
       </div>
     );
@@ -123,10 +147,11 @@ export default function ClientsPage() {
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="micro text-[var(--a-text-3)]">{tenant?.name}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('title')}</h1>
+          <h1 className="mt-1 text-[22px] lg:text-[28px] font-semibold leading-none text-[var(--a-text)]">{t('title')}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{t('subtitle', { count: clients.length })}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <AskAssistantButton className="max-lg:hidden" />
           <HelpLink slug="buroo-klientettevotted" />
           <Button variant="primary" onClick={() => setModalOpen(true)}>
             <Plus className="h-3.5 w-3.5" />
@@ -162,7 +187,7 @@ export default function ClientsPage() {
       )}
 
       {clients.length > 8 && (
-        <div className="relative max-w-md">
+        <div className="relative w-full max-w-md">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--a-text-3)]" />
           <input
             value={search}
@@ -173,7 +198,63 @@ export default function ClientsPage() {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
+      {/* Mobile: one card per client; the table below takes over from md up. */}
+      <div className="space-y-2 md:hidden">
+        {isLoading ? (
+          <div className="rounded-[10px] border border-[var(--a-border)] px-3.5 py-8 text-center text-[var(--a-text-3)]"><Loader2 className="mx-auto h-4 w-4 animate-spin" /></div>
+        ) : visible.length === 0 ? (
+          <div className="rounded-[10px] border border-[var(--a-border)] px-3.5 py-10 text-center text-[13px] text-[var(--a-text-3)]">
+            <Building2 className="mx-auto mb-2 h-5 w-5" />{search ? t('noMatches') : t('empty')}
+          </div>
+        ) : (
+          visible.map((client) => {
+            const { row, loadingFigures, cell } = figureCells(client);
+            return (
+              <div key={client.id} className="rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-[14px] font-medium text-[var(--a-text)]">{client.name}</div>
+                    <div className="mt-0.5 truncate text-[11.5px] text-[var(--a-text-3)]">
+                      <span className="font-mono">{client.registry_code || '—'}</span>
+                      {' · '}
+                      {client.my_role ? <span className="capitalize">{client.my_role}</span> : t('notMember')}
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => openClient(client)}
+                    disabled={!client.my_role || !!switchingId}
+                    title={client.my_role ? undefined : t('notMemberHint')}
+                    className="shrink-0"
+                  >
+                    {switchingId === client.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                    {t('open')}
+                  </Button>
+                </div>
+                <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-[var(--a-border)] pt-2.5 text-[13px] tabular-nums">
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="truncate text-[11.5px] text-[var(--a-text-3)]">{t('colPurchases')}</dt>
+                    <dd>{cell(row?.purchases_to_process ?? 0, '/invoices/purchase', t('openPurchases'))}</dd>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <dt className="truncate text-[11.5px] text-[var(--a-text-3)]">{t('colBank')}</dt>
+                    <dd>{cell(row?.bank_unmatched ?? 0, '/accounting/bank?tab=review', t('openBank'))}</dd>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between gap-2">
+                    <dt className="truncate text-[11.5px] text-[var(--a-text-3)]">{t('colOverdue')}</dt>
+                    <dd>{cell(row?.sales_overdue ?? 0, '/invoices/reminders', t('openReminders'), row?.sales_overdue ? money(row.sales_overdue_amount) : undefined)}</dd>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between gap-2">
+                    <dt className="truncate text-[11.5px] text-[var(--a-text-3)]">{t('colKmd', { period: totals.kmdPeriod ? totals.kmdPeriod.split('-').reverse().join('.') : '' })}</dt>
+                    <dd className="min-w-0 text-right"><KmdCell client={client} row={row} loading={loadingFigures} onOpen={openClient} /></dd>
+                  </div>
+                </dl>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-[10px] border border-[var(--a-border)] md:block">
         <table className="min-w-full">
           <thead className="bg-[var(--a-surface-2)] text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <tr>
@@ -195,24 +276,7 @@ export default function ClientsPage() {
               </td></tr>
             ) : (
               visible.map((client) => {
-                const row = overview?.get(client.id);
-                const loadingFigures = overview === null;
-                const hidden = row ? !row.accessible : !client.my_role;
-                const cell = (value: number, path: string, hint: string, extra?: string) => {
-                  if (loadingFigures) return <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-[var(--a-text-3)]" />;
-                  if (hidden || !row) return <span className="text-[var(--a-text-3)]">—</span>;
-                  if (value === 0) return <span className="text-[var(--a-text-3)]">0</span>;
-                  return (
-                    <button
-                      type="button"
-                      onClick={() => openClient(client, path)}
-                      title={hint}
-                      className="font-medium text-[var(--a-text)] underline-offset-2 hover:text-[var(--a-accent)] hover:underline"
-                    >
-                      {value}{extra ? <span className="ml-1 font-normal text-[var(--a-text-3)]">{extra}</span> : null}
-                    </button>
-                  );
-                };
+                const { row, loadingFigures, cell } = figureCells(client);
                 return (
                   <tr key={client.id} className="border-t border-[var(--a-border)] hover:bg-[var(--a-surface-2)]">
                     <td className="px-3.5 py-2.5">

@@ -66,8 +66,8 @@ export default function AdminTenantsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Tenants</h1>
+      <div className="mb-4 sm:mb-6 flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Tenants</h1>
         <span className="text-sm text-slate-500">{total} total</span>
       </div>
 
@@ -169,16 +169,16 @@ export default function AdminTenantsPage() {
           <div className="space-y-3 md:hidden">
             {tenants.map((t) => (
               <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-2 flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-slate-900">{t.name}</p>
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-words font-medium text-slate-900">{t.name}</p>
                     <ManagementNote tenant={t} />
                     <p className="text-sm text-slate-500">
                       {t.registry_code ?? '—'} · {t.member_count} members
                     </p>
                   </div>
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                       t.entitlement_state === 'locked'
                         ? 'bg-red-100 text-red-700'
                         : 'bg-green-100 text-green-700'

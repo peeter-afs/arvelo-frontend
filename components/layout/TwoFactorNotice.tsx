@@ -39,14 +39,14 @@ export function TwoFactorNotice() {
 
   return (
     <div
-      className="mt-3 flex items-center gap-3 rounded-lg px-4 py-3 text-sm"
+      className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-lg px-3 py-2.5 text-sm sm:flex-nowrap sm:px-4 sm:py-3"
       style={{ backgroundColor: 'var(--a-warn-soft, #fef3c7)', color: 'var(--a-warn, #b45309)' }}
     >
       <ShieldAlert className="h-4 w-4 flex-shrink-0" />
-      <span className="flex-1">
+      <span className="min-w-0 flex-1">
         {status.blocked || !deadline ? t('noticeBlocked') : t('noticeGrace', { date: deadline })}
       </span>
-      <Link href="/settings/security" className="font-semibold underline">
+      <Link href="/settings/security" className="shrink-0 font-semibold underline max-sm:ml-7 max-sm:py-1">
         {t('noticeAction')}
       </Link>
     </div>

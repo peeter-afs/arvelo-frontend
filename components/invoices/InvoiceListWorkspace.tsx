@@ -110,6 +110,7 @@ export default function InvoiceListWorkspace({
   const [bulkConfirming, setBulkConfirming] = useState(false);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const partnerMap = useMemo(() => new Map(partners.map((partner) => [partner.id, partner])), [partners]);
 
@@ -437,7 +438,7 @@ export default function InvoiceListWorkspace({
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <div className="micro text-[var(--a-text-3)]">{isPurchase ? 'Accounts payable' : 'Accounts receivable'}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)]">{title}</h1>
+          <h1 className="mt-1 text-[22px] lg:text-[28px] font-semibold leading-none text-[var(--a-text)]">{title}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)]">{description}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -474,7 +475,7 @@ export default function InvoiceListWorkspace({
       {errorMessage && <Notice tone="danger" icon={<AlertCircle className="h-4 w-4" />}>{errorMessage}</Notice>}
       {successMessage && <Notice tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>{successMessage}</Notice>}
 
-      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 border-b border-[var(--a-border)] pb-4 md:grid-cols-4">
         {isPurchase ? (
           <>
             <Stat label={t('draft')} value={summary.draft} subtle="not posted" />
@@ -493,12 +494,12 @@ export default function InvoiceListWorkspace({
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap gap-1">
+        <div className="no-scrollbar -mx-4 flex gap-1 overflow-x-auto whitespace-nowrap px-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:whitespace-normal lg:px-0">
           {statusTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
                 activeTab === tab.id
                   ? 'bg-[var(--a-text)] text-white'
                   : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
@@ -547,8 +548,8 @@ export default function InvoiceListWorkspace({
       )}
 
       <SplitPane className="flex-1">
-        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
-          <div className="grid grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+        <section className="overflow-hidden rounded-[10px] md:min-h-[520px] border border-[var(--a-border)] bg-[var(--a-surface)]">
+          <div className="hidden md:grid grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
             <div>Invoice</div>
             <div>{isPurchase ? 'Supplier' : 'Customer'}</div>
@@ -558,7 +559,7 @@ export default function InvoiceListWorkspace({
             <div className="text-right">Status</div>
           </div>
 
-          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+          <div className="md:max-h-[calc(100vh-390px)] md:min-h-[430px] md:overflow-y-auto">
             {isBootLoading ? (
               <div className="flex h-48 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
@@ -576,15 +577,15 @@ export default function InvoiceListWorkspace({
                 return (
                   <button
                     key={invoice.id}
-                    onClick={() => setSelectedInvoiceId(invoice.id)}
-                    className={`grid w-full grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                    onClick={() => { setSelectedInvoiceId(invoice.id); setDetailOpen(true); }}
+                    className={`grid w-full grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[24px_132px_minmax(180px,1fr)_110px_108px_120px_100px] items-center gap-x-3 gap-y-1 md:gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
                       selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
                     }`}
                   >
-                    <span className={`font-mono text-[10.5px] ${selected ? 'font-semibold text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}`}>
+                    <span className={`hidden md:inline font-mono text-[10.5px] ${selected ? 'font-semibold text-[var(--a-accent)]' : 'text-[var(--a-text-3)]'}`}>
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <span className="min-w-0">
+                    <span className="order-3 min-w-0 md:order-none">
                       <span className="block truncate font-mono text-[12px] font-medium text-[var(--a-accent)]">
                         {invoice.invoice_number || invoice.id.slice(0, 8)}
                       </span>
@@ -594,7 +595,7 @@ export default function InvoiceListWorkspace({
                         </span>
                       )}
                     </span>
-                    <span className="flex min-w-0 items-center gap-2">
+                    <span className="order-1 flex min-w-0 items-center gap-2 md:order-none">
                       <Avatar name={partner?.name || t('unknownPartner')} />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-[var(--a-text)]">{partner?.name || t('unknownPartner')}</span>
@@ -603,13 +604,13 @@ export default function InvoiceListWorkspace({
                         </span>
                       </span>
                     </span>
-                    <span className="text-right font-mono text-[13px] font-medium tabular-nums text-[var(--a-text)]">{formatMoney(invoice.total, invoice.currency)}</span>
-                    <span className="font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(invoice.invoice_date)}</span>
-                    <span>
+                    <span className="order-2 text-right font-mono text-[13px] font-medium tabular-nums text-[var(--a-text)] md:order-none">{formatMoney(invoice.total, invoice.currency)}</span>
+                    <span className="hidden md:inline font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(invoice.invoice_date)}</span>
+                    <span className="hidden md:inline">
                       <span className="block font-mono text-[11.5px] tabular-nums text-[var(--a-text-2)]">{formatDate(invoice.due_date)}</span>
                       <span className="text-[10.5px] font-medium text-[var(--a-text-3)]">{status.label}</span>
                     </span>
-                    <span className="flex items-center justify-end gap-1.5">
+                    <span className="order-4 flex flex-wrap items-center justify-end gap-1.5 md:order-none md:flex-nowrap">
                       <StatusPill tone={status.tone} meta={status.meta}>{status.label}</StatusPill>
                       {invoice.source === 'bank_missing_receipt' && invoice.receipt_reminder_state === 'active' && (
                         <StatusPill tone="warning">{tAccounting('missingReceiptDraft')}</StatusPill>
@@ -621,7 +622,7 @@ export default function InvoiceListWorkspace({
             )}
           </div>
 
-          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+          <div className="flex flex-wrap items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
             <span>Showing <span className="text-[var(--a-text)]">{filteredInvoices.length}</span></span>
             <span>Open <span className="text-[var(--a-text)]">{formatMoney(summary.openTotal)}</span></span>
             {summary.overdue > 0 && (
@@ -635,7 +636,11 @@ export default function InvoiceListWorkspace({
           </div>
         </section>
 
-        <SplitPaneDetail>
+        <SplitPaneDetail
+          mobileOpen={detailOpen}
+          onMobileClose={() => setDetailOpen(false)}
+          mobileTitle={selectedInvoiceDetail?.invoice.invoice_number || selectedPartnerName}
+        >
           <InvoiceDetailPanel
             detail={selectedInvoiceDetail}
             selectedPartnerName={selectedPartnerName}
@@ -737,7 +742,7 @@ function InvoiceDetailPanel({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[520px] items-center justify-center">
+      <div className="flex min-h-[240px] items-center justify-center xl:min-h-[520px]">
         <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
       </div>
     );
@@ -747,7 +752,7 @@ function InvoiceDetailPanel({
   const status = invoiceStatus(invoice, isPurchase);
 
   return (
-    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
+    <div className="flex flex-col xl:max-h-[calc(100vh-190px)] xl:min-h-[520px]">
       <div className="border-b border-[var(--a-border)] px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

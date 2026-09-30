@@ -218,7 +218,7 @@ export function AccountPicker({
         type="button"
         onClick={() => (open ? setOpen(false) : openPanel())}
         disabled={disabled}
-        className="flex h-8 w-full items-center gap-2 rounded-lg border border-slate-200 px-3 text-left text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-10 w-full items-center gap-2 rounded-lg border border-slate-200 px-3 text-left lg:h-8 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {selected ? (
           <>
@@ -256,7 +256,7 @@ export function AccountPicker({
                   key={entry.key}
                   type="button"
                   onClick={() => { setScope(entry.key); setHotIndex(0); }}
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${scope === entry.key ? 'bg-[var(--primary)] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  className={`rounded-full px-2 py-1.5 text-[11px] font-medium lg:py-0.5 ${scope === entry.key ? 'bg-[var(--primary)] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
                 >
                   {t(entry.labelKey)}
                 </button>
@@ -328,7 +328,7 @@ export function AccountPicker({
                     className="h-8 w-full rounded-md border border-slate-200 px-2 text-sm"
                   />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
                   <label className="text-[11px] text-slate-500">{t('accountClass')}</label>
                   <select
                     value={createClass}
@@ -364,7 +364,7 @@ export function AccountPicker({
                   <Plus className="h-4 w-4" />
                   {t('addNewAccount')}
                 </button>
-                <span className="ml-auto text-[11px] text-slate-400">↑ ↓ · ↵ · Esc</span>
+                <span className="ml-auto hidden text-[11px] text-slate-400 lg:inline">↑ ↓ · ↵ · Esc</span>
               </div>
             )
           )}
@@ -392,7 +392,7 @@ function AccountRow({
       type="button"
       data-row-index={index}
       onClick={() => onPick(account)}
-      className={`grid w-full grid-cols-[46px_minmax(0,1fr)] items-center gap-2 px-3 py-1.5 text-left text-sm ${hot ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
+      className={`grid w-full grid-cols-[46px_minmax(0,1fr)] items-center gap-2 px-3 py-2.5 text-left lg:py-1.5 text-sm ${hot ? 'bg-blue-50' : 'hover:bg-slate-50'}`}
     >
       <span className="font-mono text-xs text-slate-500">{highlight(account.code, query)}</span>
       <span className="truncate text-slate-700">{highlight(account.name, query)}</span>

@@ -12,7 +12,7 @@ export type BankInlineSummaryData = {
 export function BankInlineSummary({ data }: { data?: BankInlineSummaryData }) {
   if (!data) return null;
   return (
-    <div className="flex min-w-0 items-center gap-3 overflow-hidden">
+    <div className="no-scrollbar flex min-w-0 items-center gap-3 overflow-x-auto lg:overflow-hidden">
       {data.cells.map((cell, index) => (
         <div key={`${cell.label}-${index}`} className={`flex items-baseline gap-1.5 whitespace-nowrap ${index > 0 ? 'border-l border-slate-200 pl-3' : ''}`}>
           <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-500">{cell.label}</span>
@@ -85,7 +85,7 @@ export function InfoBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 p-4">
       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm text-slate-800">{value}</div>
+      <div className="mt-2 text-sm text-slate-800 [overflow-wrap:anywhere]">{value}</div>
     </div>
   );
 }
@@ -180,13 +180,13 @@ export function BankProgress({
 // Fixed-height slot for each tab's filter controls so the filter row sits at
 // the same vertical position on every tab.
 export function BankFilterRow({ children }: { children: ReactNode }) {
-  return <div className="flex h-[38px] flex-shrink-0 items-center gap-3">{children}</div>;
+  return <div className="flex min-h-[38px] flex-shrink-0 flex-wrap items-center gap-2 lg:h-[38px] lg:flex-nowrap lg:gap-3">{children}</div>;
 }
 
 // Bottom action bar: status text on the left, action buttons on the right.
-export function BankFooterBar({ status, children }: { status: ReactNode; children: ReactNode }) {
+export function BankFooterBar({ status, children, className = '' }: { status: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <div className="card flex h-11 flex-shrink-0 items-center gap-3 px-4">
+    <div className={`card flex min-h-11 flex-shrink-0 flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2 lg:h-11 lg:flex-nowrap lg:gap-3 lg:py-0 ${className}`}>
       <div className="text-xs text-slate-500">{status}</div>
       <div className="flex-1" />
       {children}

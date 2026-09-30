@@ -28,20 +28,8 @@ function crumbsForPath(pathname: string, labels: Record<string, string>, recordL
   return crumbs.length ? crumbs : [dashboardLabel];
 }
 
-export function CommandBar({
-  crumbs,
-  actions,
-  hints = true,
-  assistantToggle = false,
-}: {
-  crumbs?: string[];
-  actions?: React.ReactNode;
-  hints?: boolean;
-  /** Only the layout's bar shows it — pages that render their own bar would duplicate it. */
-  assistantToggle?: boolean;
-}) {
-  const tAssistant = useTranslations('assistant');
-  const toggleAssistant = useAssistantStore((state) => state.toggle);
+/** Breadcrumbs for the current route; also used as the page title in the mobile top bar. */
+export function usePathCrumbs(crumbs?: string[]) {
   const pathname = usePathname();
   const locale = useLocale();
   const tCommon = useTranslations('common');
@@ -59,6 +47,9 @@ export function CommandBar({
     wip: tAccounting('projectWip'),
     'payment-batches': tAccounting('paymentBatches'),
     payments: tAccounting('payments'),
+    cash: tNavigation('cashDesk'),
+    'expense-reports': tNavigation('expenseReports'),
+    orders: tNavigation('cashOrder'),
     journal: tAccounting('journalEntries'),
     'opening-balances': tAccounting('openingBalances'),
     partners: tAccounting('partners'),
@@ -79,6 +70,7 @@ export function CommandBar({
     turnover: tReports('turnoverReport'),
     dimensions: tReports('dimensionReport'),
     aging: tReports('agingReport'),
+    'partner-statement': tReports('partnerStatement'),
     'annual-report': tReports('annualReport'),
     vat: tReports('vatReport'),
     settings: tNavigation('settings'),
@@ -94,13 +86,38 @@ export function CommandBar({
   const now = new Date();
   const dateLocale = locale === 'et' ? 'et-EE' : locale === 'en' ? 'en-GB' : locale;
   const todayCrumb = `${new Intl.DateTimeFormat(dateLocale, { day: 'numeric', month: 'long', year: 'numeric' }).format(now)} · ${tCommon('weekNumber', { week: isoWeek(now) })}`;
-  const isListView = /\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '');
+
   const crumbOverride = useCrumbOverride();
-  const computedCrumbs = applyCrumbOverride(crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb), crumbOverride);
+  return applyCrumbOverride(crumbs || crumbsForPath(pathname || '/', labels, tCommon('record'), tNavigation('dashboard'), todayCrumb), crumbOverride);
+}
+
+export function CommandBar({
+  crumbs,
+  actions,
+  hints = true,
+  assistantToggle = false,
+  actionsOnMobile = true,
+}: {
+  crumbs?: string[];
+  actions?: React.ReactNode;
+  hints?: boolean;
+  /** Only the layout's bar shows it — pages that render their own bar would duplicate it. */
+  assistantToggle?: boolean;
+  /** False when the page already has its own sticky mobile action bar. */
+  actionsOnMobile?: boolean;
+}) {
+  const tAssistant = useTranslations('assistant');
+  const toggleAssistant = useAssistantStore((state) => state.toggle);
+  const pathname = usePathname();
+  const tCommon = useTranslations('common');
+  const isListView = /\/(journal|accounts|partners|invoices|sales|purchase)/.test(pathname || '');
+  const computedCrumbs = usePathCrumbs(crumbs);
 
   return (
-    <div className="flex items-center gap-2 px-4 pb-3 pt-4 sm:px-6 lg:px-7">
-      <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3.5 py-2 text-[13px] text-[var(--a-text-2)]">
+    // Below lg the mobile top bar carries the page title and the assistant button, so the bar only
+    // renders when a page hands it actions (e.g. save buttons of the editors).
+    <div className={`${actions && actionsOnMobile ? 'flex' : 'hidden lg:flex'} items-center gap-2 px-4 pb-3 pt-4 sm:px-6 lg:px-7`}>
+      <div className="hidden min-w-0 flex-1 items-center gap-2.5 rounded-[10px] lg:flex border border-[var(--a-border)] bg-[var(--a-surface)] px-3.5 py-2 text-[13px] text-[var(--a-text-2)]">
         <Command className="h-3.5 w-3.5 shrink-0 text-[var(--a-accent)]" />
         {computedCrumbs.map((crumb, index) => (
           <span key={`${crumb}-${index}`} className="contents">
@@ -124,13 +141,13 @@ export function CommandBar({
         <Kbd>⌘</Kbd>
         <Kbd>K</Kbd>
       </div>
-      {actions && <div className="hidden shrink-0 items-center gap-2 lg:flex">{actions}</div>}
+      {actions && <div className={`${actionsOnMobile ? 'flex' : 'hidden lg:flex'} min-w-0 flex-1 flex-wrap items-center justify-end gap-2 lg:flex-none lg:shrink-0 lg:flex-nowrap`}>{actions}</div>}
       {assistantToggle && (
         <button
           type="button"
           onClick={toggleAssistant}
           title={tAssistant('open')}
-          className="inline-flex h-[38px] shrink-0 items-center gap-2 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] transition-colors hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
+          className="hidden h-[38px] shrink-0 items-center gap-2 lg:inline-flex rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] transition-colors hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
         >
           <Sparkles className="h-3.5 w-3.5 text-[var(--a-accent)]" />
           <span className="hidden sm:inline">{tAssistant('askShort')}</span>

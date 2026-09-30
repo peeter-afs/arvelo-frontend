@@ -37,27 +37,27 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-[var(--a-bg)]">
-      <header className="border-b border-slate-200 bg-white px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+      <header className="border-b border-slate-200 bg-white px-4 py-3 sm:px-6 sm:py-4">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div>
             <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
               Platform Admin
             </span>
-            <nav className="mt-1 flex gap-4 text-sm font-medium">
-              <Link href="/admin" className="text-slate-700 hover:text-slate-900">
+            <nav className="mt-1 flex gap-4 text-sm font-medium max-sm:-my-1">
+              <Link href="/admin" className="max-sm:py-2 text-slate-700 hover:text-slate-900">
                 Tenants
               </Link>
-              <Link href="/admin/users" className="text-slate-700 hover:text-slate-900">
+              <Link href="/admin/users" className="max-sm:py-2 text-slate-700 hover:text-slate-900">
                 Users
               </Link>
             </nav>
           </div>
-          <Link href="/" className="text-sm text-slate-500 hover:text-slate-700">
+          <Link href="/" className="shrink-0 max-sm:py-2 text-sm text-slate-500 hover:text-slate-700">
             Back to app
           </Link>
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-6 py-8">{children}</main>
+      <main className="mx-auto max-w-7xl px-4 py-5 sm:px-6 sm:py-8">{children}</main>
     </div>
   );
 }

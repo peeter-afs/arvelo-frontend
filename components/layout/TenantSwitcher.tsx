@@ -161,25 +161,26 @@ export function TenantSwitcher({
         <div
           ref={panelRef}
           role="menu"
-          className="fixed z-50 w-[272px] overflow-hidden rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] text-[var(--a-text)] shadow-xl"
-          style={{ top: anchor.top, left: anchor.left }}
+          className="fixed z-50 flex w-[272px] max-w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] text-[var(--a-text)] shadow-xl"
+          // Clamped to the viewport so the list stays scrollable on short (phone) screens.
+          style={{ top: anchor.top, left: anchor.left, maxHeight: `calc(100dvh - ${anchor.top + 12}px)` }}
         >
           {(memberships?.length ?? 0) >= 8 && (
-            <div className="border-b border-[var(--a-border)] p-2">
+            <div className="shrink-0 border-b border-[var(--a-border)] p-2">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder={t('searchPlaceholder')}
-                  className="h-8 w-full rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] pl-8 pr-2 text-[12.5px] outline-none focus:border-[var(--a-accent)]"
+                  className="h-8 max-lg:h-10 w-full rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] pl-8 pr-2 text-[12.5px] outline-none focus:border-[var(--a-accent)]"
                   autoFocus
                 />
               </div>
             </div>
           )}
 
-          <div className="max-h-[360px] overflow-y-auto py-1">
+          <div className="max-h-[360px] min-h-0 flex-1 overflow-y-auto py-1">
             {memberships === null ? (
               <div className="flex justify-center py-4"><Loader2 className="h-4 w-4 animate-spin text-[var(--a-text-3)]" /></div>
             ) : groups.length === 0 ? (
@@ -201,7 +202,7 @@ export function TenantSwitcher({
                         role="menuitem"
                         disabled={current || !!switchingId}
                         onClick={() => void switchTenant(m.tenant, m.role)}
-                        className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px] ${current ? 'font-medium' : 'hover:bg-[var(--a-surface-2)]'} disabled:cursor-default`}
+                        className={`flex w-full items-center gap-2 px-3 py-1.5 max-lg:py-2.5 text-left text-[13px] ${current ? 'font-medium' : 'hover:bg-[var(--a-surface-2)]'} disabled:cursor-default`}
                       >
                         <span className="min-w-0 flex-1 truncate">{m.tenant.name}</span>
                         {switchingId === m.tenant.id ? (
@@ -219,11 +220,11 @@ export function TenantSwitcher({
           </div>
 
           {canManageClients && (
-            <div className="border-t border-[var(--a-border)] py-1">
+            <div className="shrink-0 border-t border-[var(--a-border)] py-1">
               <Link
                 href="/clients"
                 onClick={() => { setOpen(false); onNavigate?.(); }}
-                className="flex items-center gap-2 px-3 py-1.5 text-[13px] hover:bg-[var(--a-surface-2)]"
+                className="flex items-center gap-2 px-3 py-1.5 max-lg:py-2.5 text-[13px] hover:bg-[var(--a-surface-2)]"
               >
                 <Building2 className="h-3.5 w-3.5 text-[var(--a-text-3)]" />
                 {t('manageClients')}
@@ -231,7 +232,7 @@ export function TenantSwitcher({
               <Link
                 href="/clients?add=1"
                 onClick={() => { setOpen(false); onNavigate?.(); }}
-                className="flex items-center gap-2 px-3 py-1.5 text-[13px] hover:bg-[var(--a-surface-2)]"
+                className="flex items-center gap-2 px-3 py-1.5 max-lg:py-2.5 text-[13px] hover:bg-[var(--a-surface-2)]"
               >
                 <Plus className="h-3.5 w-3.5 text-[var(--a-text-3)]" />
                 {t('addClient')}

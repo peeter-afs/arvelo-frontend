@@ -138,7 +138,7 @@ export default function AiInvoiceSettingsTab() {
       {!isDisabled && (
         <div>
           <label className="mb-1 block text-sm font-medium text-[var(--a-text)]">{t('model')}</label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
             <select
               value={customModel ? '__custom__' : model}
               onChange={(e) => handleModelChange(e.target.value)}

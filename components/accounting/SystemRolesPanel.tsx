@@ -56,7 +56,7 @@ export function SystemRolesPanel({
   const showCreateDefaults = !hasAccounts || allRolesUnset;
 
   return (
-    <div className="rounded-xl border border-slate-200 p-6">
+    <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">{labels.title}</h3>
       <p className="mt-1 text-sm text-slate-500">{labels.description}</p>
 
@@ -79,7 +79,7 @@ export function SystemRolesPanel({
         <>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             {SYSTEM_ROLES.map((role) => (
-              <label key={role.system_code} className="block">
+              <label key={role.system_code} className="block max-md:min-w-0">
                 <span className="mb-1 block text-sm font-medium text-slate-700">
                   {roleLabel ? roleLabel(role.system_code) : role.label}
                 </span>
@@ -91,7 +91,7 @@ export function SystemRolesPanel({
                       mapping: { ...mapping, [role.setting_key]: event.target.value || undefined },
                     })
                   }
-                  className="h-11 w-full rounded-lg border border-slate-200 px-3"
+                  className="h-11 w-full max-w-full rounded-lg border border-slate-200 px-3"
                 >
                   <option value="">{labels.selectAccount}</option>
                   {accounts.map((account) => (
@@ -108,7 +108,7 @@ export function SystemRolesPanel({
             type="button"
             onClick={() => void onSave(mapping)}
             disabled={saving}
-            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+            className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 max-sm:w-full text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             <span>{saving ? labels.saving : labels.save}</span>

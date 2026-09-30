@@ -90,4 +90,33 @@
 :global(.compact) .grow{min-height:120px}
 :global(.compact) .detailHeader{padding:8px 12px;gap:5px}
 }
+.mobileBar{display:none}
+@media(max-width:1023px){
+.workspace{height:auto;min-height:0;min-width:0;padding:4px 0 12px;overflow:visible}
+.desktopOnly{display:none!important}
+.topbar{height:auto;flex-wrap:wrap;row-gap:6px}.metrics{order:3;margin-left:0;width:100%;overflow-x:auto;scrollbar-width:none}.metrics::-webkit-scrollbar{display:none}.metric:first-child{padding-left:0}.metric:last-child{display:flex}.actions{margin-left:auto;flex-wrap:wrap}
+.filterbar{height:auto;flex-wrap:wrap;gap:8px}.tabs{flex-wrap:wrap;max-width:100%}.tab .pill{display:inline}.search{flex:1 1 100%}.search input{height:36px}.search svg{top:11px}.picker{height:34px}
+.popover,.menu{max-width:calc(100vw - 2rem)}.tabs .menu{left:0;right:auto}.menuLeft{left:auto;right:0}.uploadMenu{left:auto;right:0}.menuItem,.menuLabel{min-height:36px}
+.body{display:block}.gutter{display:none}.bodyWide .listColumn{display:flex}
+.listHeader{height:auto;min-height:36px;padding:6px 10px;flex-wrap:wrap;row-gap:6px}.listHeader .button.small{height:32px}
+.warning{height:auto;padding:8px 10px;flex-wrap:wrap;white-space:normal;row-gap:6px}
+.tableScroll{overflow:visible}.tableHead{display:none}.rows{overflow:visible}
+.row{min-width:0;padding:9px 10px;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"ck sup sup total" "ck nr due st";row-gap:4px;column-gap:8px}
+.row [data-col]{padding:0}.row [data-col="sinv"],.row [data-col="acc"],.row [data-col="ccp"],.row [data-col="open"],.row [data-col="issued"],.row [data-col="paydate"],.row [data-col="appr"]{display:none}
+.row [data-col="ck"]{grid-area:ck;align-self:stretch;padding:0 4px 0 0!important}.row [data-col="ck"] input{width:18px;height:18px}
+.row [data-col="sup"]{grid-area:sup}.row [data-col="total"]{grid-area:total}.row [data-col="nr"]{grid-area:nr}.row [data-col="due"]{grid-area:due}.row [data-col="st"]{grid-area:st;text-align:right}
+.footer{height:auto;min-height:30px;padding:6px 10px;flex-wrap:wrap;row-gap:4px}.footerRight{margin-left:0;flex-wrap:wrap;row-gap:4px}
+.detailCard{display:none}
+.detailCardOpen{display:flex;position:fixed;inset:0;z-index:50;border:0;border-radius:0;overflow:hidden;padding-bottom:env(safe-area-inset-bottom)}
+.mobileBar{display:flex;align-items:center;height:48px;flex:none;padding:0 6px;border-bottom:1px solid var(--a-border);background:var(--a-surface)}.mobileBar .button{height:36px;font-size:14px;font-weight:600;color:var(--a-text)}
+.detailHeaderRow{flex-wrap:wrap}.detailHeaderRow h2{flex-basis:100%;white-space:normal}.detailNav .button{height:32px;min-width:36px}
+.detailBody .grow{flex:none;min-height:0}.lines{flex:none}.lineRows{overflow:visible}
+.detailSplit{grid-template-columns:1fr}.detailSplit .section+ .section{border-left:0}
+.detailFooter{flex-wrap:wrap;white-space:normal;row-gap:6px}.detailFooter .button{height:36px}.detailFooterRight{flex-wrap:wrap}
+.pdfbar{flex-wrap:wrap;row-gap:4px}.iconb{width:34px;height:34px}.zoom button{height:28px;min-width:30px}
+.full{flex:none}.fullHeader{flex-wrap:wrap}.fullHeaderActions{margin-left:0;flex-wrap:wrap}.fullHeaderActions .button{height:32px;min-width:36px}.fullTitle h2{overflow-wrap:anywhere}.detailMeta{white-space:normal}
+.fullSplit{display:block}.fullLeft{overflow-x:auto}.fullLeft .pdf{min-height:70vh}.workspace .fullLineHead,.workspace .fullLineRow{min-width:560px}.fullTabRow{flex-wrap:wrap}.totals{flex-wrap:wrap;gap:10px 16px}.journalRow{grid-template-columns:48px minmax(0,1fr) 76px 76px;gap:6px}.rail{border-left:0;border-top:1px solid var(--a-border)}
+.mfields{grid-template-columns:1fr}.pbh{display:none}.pbr{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"p a" "i d";row-gap:2px}.pbr>:nth-child(1){grid-area:p}.pbr>:nth-child(2){grid-area:i}.pbr>:nth-child(3){display:none}.pbr>:nth-child(4){grid-area:d;text-align:right}.pbr>:nth-child(5){grid-area:a}.modalFooterActions{flex-wrap:wrap;margin-left:0}.pbsum{flex-wrap:wrap;gap:8px 16px}
+.modalBackdrop{padding:8px}.modal{max-height:calc(100dvh - 16px)}.journalHead,.journalLine,.journalSum{grid-template-columns:44px minmax(0,1fr) 80px 80px;gap:6px;padding:6px 10px}.modalFooter{flex-wrap:wrap;row-gap:6px}
+}
 .importReview{border:1px solid #e8dcbc;border-radius:9px;flex:none}

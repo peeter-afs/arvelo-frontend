@@ -107,6 +107,57 @@
 .sft .btn{flex:1;justify-content:center}
 .del{flex:0 0 32px!important;padding:0!important;color:#c0392b!important;background:#fbeaea!important;border-color:transparent!important}
 .loading{padding:60px;display:grid;place-items:center;color:var(--a-text-3)}
+/* mobile */
+.sideHead{display:none}
+@media (max-width:1023px){
+  .top{position:static}
+  .sum{margin-left:0;width:100%;position:relative}
+  .sendHour{position:static}
+  .menu{left:0;right:auto;top:100%;margin-top:4px;max-width:calc(100vw - 2rem)}
+  .ra{opacity:1}
+  .kbd{display:none}
+  .side{display:none}
+  .side.sideOpen{display:flex;position:fixed!important;inset:0;z-index:45;max-height:none;border:none;border-radius:0}
+  .sideOpen .sc{flex:1;min-height:0}
+  .sideHead{display:flex;align-items:center;gap:8px;padding:0 8px 0 14px;height:52px;flex:none;border-bottom:1px solid var(--a-border);background:var(--a-surface)}
+  .sideHead b{flex:1;min-width:0;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sideX{width:40px;height:40px;display:grid;place-items:center;border:none;background:none;border-radius:8px;color:var(--a-text-2);font-size:16px;cursor:pointer}
+  .sft{padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .sft .btn{height:38px}
+  .del{flex:0 0 44px!important}
+}
+@media (hover:none){.ra{opacity:1}}
+@media (max-width:767px){
+  .crumb,.top h1{display:none}
+  .acts{margin-left:0;width:100%}
+  .acts .btn{flex:1;justify-content:center;height:36px}
+  .search{width:100%;height:36px}
+  .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .seg::-webkit-scrollbar{display:none}
+  .seg button{height:30px}
+  .main{padding-top:10px}
+  .table thead{display:none}
+  .table,.table tbody{display:block}
+  .table tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:4px;padding:10px 12px;border-bottom:1px solid #efece4}
+  .table tbody tr:last-child{border-bottom:none}
+  .table td{display:block;height:auto;padding:0;border:none;white-space:normal;min-width:0;background:transparent!important}
+  .table td[colspan]{grid-column:1/-1;padding:28px 12px}
+  .table tbody tr.sel{background:#fff5f1;box-shadow:inset 3px 0 0 var(--a-accent)}
+  .table tbody tr.sel td:first-child{box-shadow:none}
+  .cHide{display:none!important}
+  .cName{grid-column:1;grid-row:1}
+  .cName b,.cName span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cSum{grid-column:2;grid-row:1}
+  .cNext{grid-column:1;grid-row:2;font-size:12px;color:var(--a-text-2)}
+  .cNext .subline{display:inline;margin-left:6px}
+  .cSt{grid-column:2;grid-row:2;text-align:right}
+  .cAct{grid-column:1/-1;grid-row:3}
+  .cAct .ra{justify-content:flex-start;flex-wrap:wrap;gap:6px}
+  .cAct .ra:empty{display:none}
+  .cAct .ib{height:34px;padding:0 12px;border-color:var(--a-border);background:var(--a-surface)}
+  .ft{flex-wrap:wrap;height:auto;padding:8px 12px;gap:4px 12px}
+  .ftR{margin-left:0}
+}
 /* ── density (tihe režiim, lib/density.ts) ──
    The sticky side panel's height ignored the command bar and status bar, so on a
    laptop its action buttons (Peata / Muuda) ended up below the fold. */

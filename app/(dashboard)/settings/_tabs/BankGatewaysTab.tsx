@@ -247,7 +247,7 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
         )}
 
         {status === 'active' && (
-          <div className="mt-3 space-y-1 text-xs text-slate-600">
+          <div className="mt-3 space-y-1 text-xs text-slate-600 [overflow-wrap:anywhere]">
             {startDate && <div>{t('bankGatewayContractStartDate')}: {startDate}</div>}
             {services && services.length > 0 && (
               <div>
@@ -309,7 +309,7 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
     const title = isLhv ? t('bankGatewayLhvTitle') : t('bankGatewaySwedbankTitle');
 
     return (
-      <div key={provider} className="rounded-xl border border-slate-200 p-5">
+      <div key={provider} className="rounded-xl border border-slate-200 p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-base font-semibold text-slate-900">{title}</h3>
@@ -420,7 +420,7 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
 
         {isLhv && renderLhvContractSection(current)}
 
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600">
+        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 [overflow-wrap:anywhere]">
           <div className="space-y-1">
             <div>{t('lastSyncAt')}: {current?.last_sync_at ? new Date(current.last_sync_at).toLocaleString() : t('notRun')}</div>
             <div>{t('lastSyncStatus')}: {current?.last_sync_status || t('notRun')}</div>
@@ -476,10 +476,10 @@ export function BankGatewaysTab({ canManage }: { canManage: boolean }) {
           {renderProviderCard('swedbank_gateway')}
 
           {runs.length > 0 && (
-            <div className="rounded-xl border border-slate-200 p-5">
+            <div className="rounded-xl border border-slate-200 p-4 sm:p-5">
               <h3 className="text-base font-semibold text-slate-900">{t('bankGatewayRunsTitle')}</h3>
-              <div className="mt-3 overflow-hidden rounded-lg border border-slate-200">
-                <table className="w-full text-sm">
+              <div className="mt-3 overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full text-sm max-md:min-w-[560px]">
                   <thead className="bg-slate-100 text-xs text-slate-500">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">{t('bankGatewayRunStarted')}</th>

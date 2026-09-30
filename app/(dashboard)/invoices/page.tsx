@@ -38,22 +38,22 @@ export default function InvoicesHubPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">{t('overview')}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">{t('overview')}</h1>
         <p className="mt-1 max-w-3xl text-sm text-slate-500">
           {t('hubDescription')}
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
         {sections.map((section) => {
           const Icon = section.icon;
           return (
             <Link
               key={section.href}
               href={section.href}
-              className={`card group overflow-hidden border-slate-200 bg-gradient-to-br ${section.accent} p-6 transition-transform hover:-translate-y-0.5`}
+              className={`card group overflow-hidden border-slate-200 bg-gradient-to-br ${section.accent} p-4 sm:p-6 transition-transform hover:-translate-y-0.5`}
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
@@ -61,7 +61,7 @@ export default function InvoicesHubPage() {
                 </div>
                 <ArrowRight className="h-5 w-5 text-slate-400 transition-transform group-hover:translate-x-1" />
               </div>
-              <h2 className="mt-6 text-lg font-semibold text-slate-900">{section.title}</h2>
+              <h2 className="mt-3 sm:mt-6 text-lg font-semibold text-slate-900">{section.title}</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">{section.description}</p>
             </Link>
           );

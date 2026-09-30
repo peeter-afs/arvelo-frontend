@@ -175,13 +175,13 @@ export default function MonthEndPage() {
                 setMonth(m);
               }
             }}
-            className="px-3 py-2 rounded-lg text-sm"
+            className="px-3 py-2 rounded-lg text-sm max-sm:min-w-0 max-sm:flex-1"
             style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
           />
           <button
             onClick={handleRun}
             disabled={!period || period.is_closed || actionLoading === 'run'}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium hover:opacity-90 disabled:opacity-50 max-sm:shrink-0"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Play className="h-4 w-4" />
@@ -202,7 +202,7 @@ export default function MonthEndPage() {
         <EmptyState icon={CalendarCheck} title={t('monthEndNoPeriod')} message={t('monthEndNoPeriodMessage')} />
       ) : (
         <>
-          <div className="card mb-6 p-4 flex items-center justify-between">
+          <div className="card mb-6 p-4 flex items-center justify-between max-sm:flex-wrap max-sm:gap-2">
             <div className="flex items-center gap-3">
               <CalendarCheck className="h-5 w-5" style={{ color: 'var(--text-secondary)' }} />
               <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
@@ -241,35 +241,38 @@ export default function MonthEndPage() {
           {liveEntries.length === 0 && reversedEntries.length === 0 ? (
             <EmptyState icon={CalendarCheck} title={t('monthEndNoEntries')} message={t('monthEndNoEntriesMessage')} />
           ) : (
-            <div className="card overflow-hidden">
+            <div className="card overflow-hidden max-sm:overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    <th className="text-left py-2.5 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('monthEndRule')}</th>
-                    <th className="text-left py-2.5 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('status')}</th>
-                    <th className="text-left py-2.5 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('monthEndCreatedAt')}</th>
-                    <th className="text-right py-2.5 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('actions')}</th>
+                    <th className="text-left py-2.5 px-4 font-medium max-sm:px-3" style={{ color: 'var(--text-secondary)' }}>{t('monthEndRule')}</th>
+                    <th className="text-left py-2.5 px-4 font-medium max-sm:px-2" style={{ color: 'var(--text-secondary)' }}>{t('status')}</th>
+                    <th className="text-left py-2.5 px-4 font-medium max-md:hidden" style={{ color: 'var(--text-secondary)' }}>{t('monthEndCreatedAt')}</th>
+                    <th className="text-right py-2.5 px-4 font-medium max-sm:px-3" style={{ color: 'var(--text-secondary)' }}>{t('actions')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[...liveEntries, ...reversedEntries].map((entry) => (
                     <tr key={entry.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td className="py-2.5 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      <td className="py-2.5 px-4 font-medium max-sm:px-3" style={{ color: 'var(--text-primary)' }}>
                         {t(`monthEndRule_${entry.rule_type}`)}
+                        <div className="mt-0.5 text-xs font-normal md:hidden" style={{ color: 'var(--text-secondary)' }}>
+                          {new Date(entry.created_at).toLocaleString('et-EE')}
+                        </div>
                       </td>
-                      <td className="py-2.5 px-4">
+                      <td className="py-2.5 px-4 max-sm:px-2">
                         <StatusBadge status={entry.status} t={t} />
                       </td>
-                      <td className="py-2.5 px-4" style={{ color: 'var(--text-secondary)' }}>
+                      <td className="py-2.5 px-4 max-md:hidden" style={{ color: 'var(--text-secondary)' }}>
                         {new Date(entry.created_at).toLocaleString('et-EE')}
                       </td>
-                      <td className="py-2.5 px-4 text-right">
-                        <div className="inline-flex gap-2">
+                      <td className="py-2.5 px-4 text-right max-sm:px-3">
+                        <div className="inline-flex gap-2 max-sm:flex-col max-sm:items-end">
                           {entry.status === 'draft' && (
                             <button
                               onClick={() => handleAction(() => monthEndApi.approve(entry.id), `approve-${entry.id}`)}
                               disabled={actionLoading === `approve-${entry.id}`}
-                              className="inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-medium disabled:opacity-50"
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
                               style={{ border: '1px solid var(--border)', color: 'var(--success, #16a34a)' }}
                             >
                               <Check className="h-3 w-3" />
@@ -280,7 +283,7 @@ export default function MonthEndPage() {
                             <button
                               onClick={() => handleReverse(entry)}
                               disabled={actionLoading === `reverse-${entry.id}` || period.is_closed}
-                              className="inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-medium disabled:opacity-50"
+                              className="inline-flex items-center gap-1 px-3 py-1 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
                               style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                             >
                               <Undo2 className="h-3 w-3" />

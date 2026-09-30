@@ -67,9 +67,9 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-2 sm:items-center sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={result ? onClose : undefined} />
-      <div className="relative z-10 w-full max-w-2xl rounded-xl bg-[var(--surface,white)] p-6 shadow-xl">
+      <div className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-y-auto rounded-xl bg-[var(--surface,white)] p-4 shadow-xl sm:max-h-none sm:overflow-visible sm:p-6">
         <h2 className="text-lg font-semibold text-slate-900">{t('roleMappingTitle')}</h2>
         <p className="mt-1 text-sm text-slate-500">{t('roleMappingDescription')}</p>
 
@@ -96,11 +96,11 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
           </div>
         ) : (
           <>
-            <div className="mt-4 max-h-[50vh] space-y-3 overflow-y-auto pr-1">
+            <div className="mt-4 space-y-3 pr-1 sm:max-h-[50vh] sm:overflow-y-auto">
               {SYSTEM_ROLES.map((role) => {
                 const isSkipped = !!skipped[role.setting_key];
                 return (
-                  <div key={role.system_code} className="grid grid-cols-[140px_1fr_auto] items-center gap-3">
+                  <div key={role.system_code} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 sm:grid-cols-[140px_1fr_auto] sm:gap-3">
                     <span className="text-sm font-medium text-slate-700">{t(`role_${role.system_code}`)}</span>
                     <select
                       value={selection[role.setting_key] || ''}
@@ -108,7 +108,7 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
                       onChange={(event) =>
                         setSelection((current) => ({ ...current, [role.setting_key]: event.target.value }))
                       }
-                      className="h-10 w-full rounded-lg border border-slate-200 px-3 disabled:bg-slate-100 disabled:text-slate-400"
+                      className="col-span-2 row-start-2 h-10 w-full rounded-lg border border-slate-200 px-3 max-sm:min-w-0 disabled:bg-slate-100 disabled:text-slate-400 sm:col-span-1 sm:row-start-auto"
                     >
                       <option value="">{t('selectAccount')}</option>
                       {targets.map((account) => (
@@ -134,7 +134,7 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
 
             {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
-            <div className="mt-5 flex justify-end gap-3">
+            <div className="mt-5 flex flex-wrap justify-end gap-3">
               <button
                 type="button"
                 onClick={onClose}

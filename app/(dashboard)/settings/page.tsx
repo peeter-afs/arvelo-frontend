@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useTransition, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { localeCookieName, locales, type Locale } from '@/i18n/config';
@@ -19,6 +19,7 @@ import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { FutursoftTab } from './_tabs/FutursoftTab';
+import { RikEinvoiceTab } from './_tabs/RikEinvoiceTab';
 import { MeritPalkTab } from './_tabs/MeritPalkTab';
 import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
@@ -27,6 +28,7 @@ import { tenantsApi, type TenantMember, type PendingInvite } from '@/lib/api/ten
 import type { UserRole } from '@/lib/types/auth.types';
 import { BusinessRegistryTab } from './_tabs/BusinessRegistryTab';
 import { ManagedByNotice } from '@/components/tenants/ManagedByNotice';
+import { PaymentMethodsCard } from '@/components/settings/PaymentMethodsCard';
 
 // All tab IDs that can appear in ?tab= (superset; permission-gated tabs render
 // their own access notice). Kept in sync with the `tabs` array inside the page.
@@ -139,6 +141,15 @@ export default function SettingsPage() {
     ...(canManageBilling ? [{ id: 'ai', label: t('ai'), icon: Sparkles, category: 'organization' as const }] : []),
     ...(canManageData ? [{ id: 'team', label: t('team'), icon: Users, category: 'organization' as const }] : []),
   ];
+
+  // Mobile tab strip: keep the active tab scrolled into view.
+  const mobileTabStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = mobileTabStripRef.current;
+    const active = strip?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (!strip || !active) return;
+    strip.scrollTo({ left: active.offsetLeft - (strip.clientWidth - active.offsetWidth) / 2, behavior: 'smooth' });
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== 'company') {
@@ -442,7 +453,7 @@ export default function SettingsPage() {
         <p className="text-sm text-slate-500 mt-1">{t('description')}</p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-6 md:gap-8">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-8">
         {/* Sidebar Navigation - Desktop */}
         <div className="hidden md:block w-56">
           <nav className="space-y-1">
@@ -474,24 +485,35 @@ export default function SettingsPage() {
         </div>
 
         {/* Mobile Tab Selector */}
-        <div className="md:hidden">
-          <select
-            value={activeTab}
-            onChange={(e) => changeTab(e.target.value)}
-            className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10"
-            style={{ fontSize: '16px' }}
-          >
-            {tabs.map((tab) => (
-              <option key={tab.id} value={tab.id}>
+        <div
+          ref={mobileTabStripRef}
+          className="relative md:hidden -mx-4 flex gap-1.5 overflow-x-auto whitespace-nowrap px-4 no-scrollbar"
+        >
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => changeTab(tab.id)}
+                aria-current={isActive ? 'page' : undefined}
+                className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-[13px] transition-colors ${
+                  isActive
+                    ? 'border-[var(--primary)] bg-[var(--primary)]/5 font-medium text-[var(--primary)]'
+                    : 'border-slate-200 text-slate-600'
+                }`}
+              >
+                <Icon className={`h-4 w-4 ${isActive ? 'text-[var(--primary)]' : 'text-slate-400'}`} />
                 {tab.label}
-              </option>
-            ))}
-          </select>
+              </button>
+            );
+          })}
         </div>
 
         {/* Content Area */}
-        <div className="flex-1">
-          <div className="card rounded-xl p-6 md:p-8">
+        <div className="max-md:min-w-0 flex-1">
+          <div className="card rounded-xl p-4 sm:p-6 md:p-8">
             {settingsError && (
               <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 {settingsError}
@@ -576,7 +598,7 @@ export default function SettingsPage() {
                   </button>
                 </form>
 
-                <div className="mt-8 rounded-xl border border-slate-200 p-5">
+                <div className="mt-8 rounded-xl border border-slate-200 p-4 sm:p-5">
                   <h3 className="text-sm font-semibold text-slate-900">{t('bankAccounts')}</h3>
                   <p className="mt-1 text-sm text-slate-500">
                     {t('bankAccountsDescription')}
@@ -594,16 +616,16 @@ export default function SettingsPage() {
                         bankAccounts.map((account) => (
                           <div key={account.id} className="rounded-lg border border-slate-200 p-4">
                             <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
-                              <div>
-                                <div className="text-sm font-medium text-slate-900">{account.name}</div>
-                                <div className="mt-1 text-xs text-slate-500">
+                              <div className="min-w-0">
+                                <div className="text-sm font-medium text-slate-900 break-words">{account.name}</div>
+                                <div className="mt-1 text-xs text-slate-500 [overflow-wrap:anywhere]">
                                   {account.iban || t('noIban')} · {account.bank_name || t('noBankName')} · {account.currency}
                                 </div>
                                 <div className="mt-1 text-xs text-slate-500">
                                   {t('ledger')}: {account.ledger_account_code || '-'} {account.ledger_account_name || t('noLinkedAccount')}
                                 </div>
                               </div>
-                              <span className={`rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
+                              <span className={`self-start rounded-full px-3 py-1 text-xs font-medium ${account.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-700'}`}>
                                 {account.is_active ? t('active') : t('inactive')}
                               </span>
                             </div>
@@ -694,6 +716,8 @@ export default function SettingsPage() {
                     </button>
                   )}
                 </div>
+
+                <PaymentMethodsCard canManage={role === 'owner' || role === 'admin' || role === 'accountant'} />
               </div>
             )}
 
@@ -857,7 +881,10 @@ export default function SettingsPage() {
 
             {activeTab === 'integrations' && (
               <div className="space-y-10">
-                <FutursoftTab canManage={canManageIntegrations} />
+                <RikEinvoiceTab canManage={canManageIntegrations} />
+                <div className="border-t border-slate-200 pt-8">
+                  <FutursoftTab canManage={canManageIntegrations} />
+                </div>
                 <div className="border-t border-slate-200 pt-8">
                   <MeritPalkTab canManage={canManageIntegrations} />
                 </div>
@@ -870,7 +897,7 @@ export default function SettingsPage() {
               <div className="space-y-6">
                 <h2 className="text-lg font-semibold text-slate-900">{t('dataManagement')}</h2>
 
-                <div className="rounded-xl border border-slate-200 p-6">
+                <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
                   <h3 className="text-base font-semibold text-slate-900">{t('openingBalances')}</h3>
                   {dataManagementLoading ? (
                     <p className="mt-2 text-sm text-slate-500">{t('loading')}</p>
@@ -886,7 +913,7 @@ export default function SettingsPage() {
                         <div className="mt-3 rounded-lg border border-slate-100 bg-slate-50 p-3">
                           <div className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">{t('committedBatches')}</div>
                           {importStatus.committed_batches.map((batch) => (
-                            <div key={batch.id} className="flex items-center gap-3 text-sm text-slate-700 py-1">
+                            <div key={batch.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-700 py-1">
                               <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 capitalize">{batch.batch_type}</span>
                               <span>{batch.opening_date}</span>
                               <span className="text-slate-400">|</span>
@@ -984,13 +1011,13 @@ export default function SettingsPage() {
                 )}
 
                 {resetBackups.length > 0 && (
-                  <div className="rounded-xl border border-slate-200 p-6">
+                  <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
                     <h3 className="text-base font-semibold text-slate-900">{t('resetHistory')}</h3>
                     <p className="mt-1 text-sm text-slate-500">{t('resetHistoryDescription')}</p>
                     <div className="mt-4 space-y-3">
                       {resetBackups.map((backup) => (
-                        <div key={backup.id} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 p-4">
-                          <div>
+                        <div key={backup.id} className="flex flex-wrap items-center justify-between gap-3 sm:flex-nowrap sm:gap-0 rounded-lg border border-slate-100 bg-slate-50 p-3 sm:p-4">
+                          <div className="max-sm:min-w-0">
                             <div className="text-sm font-medium text-slate-800">
                               {t('resetOn', { date: new Date(backup.reset_at).toLocaleDateString(), time: new Date(backup.reset_at).toLocaleTimeString() })}
                             </div>
@@ -1271,19 +1298,21 @@ function TeamTab({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-slate-900">{t('team')}</h2>
         {canManage && !addMode && (
           <div className="flex items-center gap-2">
             <button
               onClick={() => setAddMode('create')}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors"
+              title={t('createWithPassword')}
+              aria-label={t('createWithPassword')}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-1.5 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)] transition-colors max-sm:h-9"
             >
-              <KeyRound className="h-3.5 w-3.5" /> {t('createWithPassword')}
+              <KeyRound className="h-3.5 w-3.5" /> <span className="hidden sm:inline">{t('createWithPassword')}</span>
             </button>
             <button
               onClick={() => setAddMode('invite')}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[13px] font-medium text-white hover:bg-[var(--primary-hover)] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--primary)] px-3 py-1.5 text-[13px] font-medium text-white hover:bg-[var(--primary-hover)] transition-colors max-sm:h-9"
             >
               <UserPlus className="h-3.5 w-3.5" /> {t('inviteUser')}
             </button>
@@ -1303,18 +1332,18 @@ function TeamTab({
               : 'border border-[var(--a-warn)]/40 bg-[var(--a-warn-soft,rgba(245,158,11,0.10))] text-[var(--a-warn)]'
           }`}
         >
-          <span>{notice.text}</span>
-          <button onClick={() => setNotice(null)} className="hover:opacity-70">✕</button>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{notice.text}</span>
+          <button onClick={() => setNotice(null)} aria-label={t('teamCancel')} className="hover:opacity-70 max-lg:-my-2 max-lg:-mr-2 max-lg:p-2">✕</button>
         </div>
       )}
 
       {addMode && (
-        <div className="rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5">
+        <div className="rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between">
             <h3 className="text-[14px] font-semibold text-[var(--a-text)]">
               {addMode === 'invite' ? t('inviteUser') : t('createUser')}
             </h3>
-            <button onClick={resetForm} className="text-[var(--a-text-3)] hover:text-[var(--a-text)]">✕</button>
+            <button onClick={resetForm} aria-label={t('teamCancel')} className="text-[var(--a-text-3)] hover:text-[var(--a-text)] max-lg:-m-2 max-lg:p-2">✕</button>
           </div>
 
           {addMode === 'invite' ? (
@@ -1379,7 +1408,7 @@ function TeamTab({
               <div className="rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-3 py-2 text-[12.5px] text-[var(--a-neg)]">{formError}</div>
             )}
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 type="submit"
                 disabled={saving}
@@ -1399,29 +1428,33 @@ function TeamTab({
       {loading ? (
         <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" /></div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[var(--a-border)]">
+        <div className="overflow-x-auto rounded-xl border border-[var(--a-border)]">
           <table className="w-full text-[13px]">
             <thead>
               <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
-                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('member')}</th>
-                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
-                <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberStatus')}</th>
-                <th className="w-10 px-4 py-2.5" />
+                <th className="px-3 sm:px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('member')}</th>
+                <th className="px-3 sm:px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
+                <th className="hidden sm:table-cell px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberStatus')}</th>
+                <th className="w-10 px-2 sm:px-4 py-2.5" />
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--a-border)] bg-[var(--a-surface)]">
               {members.map((m) => (
                 <tr key={m.user.id}>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-[var(--a-text)]">{m.user.name || m.user.email}</div>
-                    {m.user.name && <div className="text-[11.5px] text-[var(--a-text-3)]">{m.user.email}</div>}
+                  <td className="px-3 sm:px-4 py-3">
+                    <div className="font-medium text-[var(--a-text)] max-sm:break-all">{m.user.name || m.user.email}</div>
+                    {m.user.name && <div className="text-[11.5px] text-[var(--a-text-3)] max-sm:break-all">{m.user.email}</div>}
+                    <span className={`sm:hidden mt-1 inline-flex items-center gap-1.5 text-[11.5px] font-medium ${m.user.email_verified ? 'text-[var(--a-pos)]' : 'text-[var(--a-warn)]'}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${m.user.email_verified ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-warn)]'}`} />
+                      {m.user.email_verified ? t('verified') : t('unverified')}
+                    </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 sm:px-4 py-3">
                     {canManage && m.user.id !== currentUserId ? (
                       <select
                         value={m.role}
                         onChange={(e) => void handleRoleChange(m, e.target.value as UserRole)}
-                        className="h-[28px] rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
+                        className="h-[28px] max-lg:h-9 max-sm:max-w-[120px] rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
                       >
                         {roles.filter((r) => currentRole === 'owner' || r !== 'owner').map((r) => (
                           <option key={r} value={r}>{roleLabel(r)}</option>
@@ -1431,26 +1464,28 @@ function TeamTab({
                       <span className="text-[var(--a-text-2)]">{roleLabel(m.role)}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="hidden sm:table-cell px-4 py-3">
                     <span className={`inline-flex items-center gap-1.5 text-[11.5px] font-medium ${m.user.email_verified ? 'text-[var(--a-pos)]' : 'text-[var(--a-warn)]'}`}>
                       <span className={`h-1.5 w-1.5 rounded-full ${m.user.email_verified ? 'bg-[var(--a-pos)]' : 'bg-[var(--a-warn)]'}`} />
                       {m.user.email_verified ? t('verified') : t('unverified')}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-2 sm:px-4 py-3">
                     {canManage && m.user.id !== currentUserId && (
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => openEdit(m)}
                           title={t('editMember')}
-                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] transition-colors"
+                          aria-label={t('editMember')}
+                          className="rounded-[6px] p-1.5 max-lg:p-[11px] text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] transition-colors"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => setRemoveTarget(m)}
                           title={t('removeMember')}
-                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
+                          aria-label={t('removeMember')}
+                          className="rounded-[6px] p-1.5 max-lg:p-[11px] text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1467,22 +1502,31 @@ function TeamTab({
       {canManage && invites.length > 0 && (
         <div>
           <h3 className="mb-2 text-[14px] font-semibold text-[var(--a-text)]">{t('pendingInvites')}</h3>
-          <div className="overflow-hidden rounded-xl border border-[var(--a-border)]">
+          <div className="overflow-x-auto rounded-xl border border-[var(--a-border)]">
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)]">
-                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('email')}</th>
-                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
-                  <th className="px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('inviteExpires')}</th>
-                  <th className="w-10 px-4 py-2.5" />
+                  <th className="px-3 sm:px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('email')}</th>
+                  <th className="px-3 sm:px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('memberRole')}</th>
+                  <th className="hidden sm:table-cell px-4 py-2.5 text-left text-[10.5px] font-semibold uppercase tracking-[0.06em] text-[var(--a-text-3)]">{t('inviteExpires')}</th>
+                  <th className="w-10 px-2 sm:px-4 py-2.5" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--a-border)] bg-[var(--a-surface)]">
                 {invites.map((invite) => (
                   <tr key={invite.id}>
-                    <td className="px-4 py-3 font-medium text-[var(--a-text)]">{invite.email}</td>
-                    <td className="px-4 py-3 text-[var(--a-text-2)]">{roleLabel(invite.role)}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-3 sm:px-4 py-3 font-medium text-[var(--a-text)]">
+                      <span className="max-sm:break-all">{invite.email}</span>
+                      <div className="sm:hidden mt-1 text-[11.5px] font-normal">
+                        {invite.is_expired ? (
+                          <span className="text-[var(--a-neg)]">{t('inviteExpired')}</span>
+                        ) : (
+                          <span className="text-[var(--a-text-3)]">{t('inviteExpires')}: {new Date(invite.expires_at).toLocaleDateString()}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 sm:px-4 py-3 text-[var(--a-text-2)]">{roleLabel(invite.role)}</td>
+                    <td className="hidden sm:table-cell px-4 py-3">
                       {invite.is_expired ? (
                         <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-[var(--a-neg)]">
                           <span className="h-1.5 w-1.5 rounded-full bg-[var(--a-neg)]" />
@@ -1492,20 +1536,22 @@ function TeamTab({
                         <span className="text-[var(--a-text-2)]">{new Date(invite.expires_at).toLocaleDateString()}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           onClick={() => void handleResendInvite(invite)}
                           disabled={resendingId === invite.id}
                           title={t('resendInvite')}
-                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] disabled:opacity-50 transition-colors"
+                          aria-label={t('resendInvite')}
+                          className="rounded-[6px] p-1.5 max-lg:p-[11px] text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] disabled:opacity-50 transition-colors"
                         >
                           {resendingId === invite.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
                         </button>
                         <button
                           onClick={() => setCancelTarget(invite)}
                           title={t('cancelInvite')}
-                          className="rounded-[6px] p-1.5 text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
+                          aria-label={t('cancelInvite')}
+                          className="rounded-[6px] p-1.5 max-lg:p-[11px] text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] transition-colors"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1521,7 +1567,7 @@ function TeamTab({
 
       {cancelTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setCancelTarget(null)}>
-          <div className="w-[380px] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[380px] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5 sm:p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-[15px] font-semibold text-[var(--a-text)]">{t('cancelInvite')}</h3>
             <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
               {t('cancelInviteConfirm', { email: cancelTarget.email })}
@@ -1540,10 +1586,10 @@ function TeamTab({
 
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setEditTarget(null)}>
-          <div className="w-[420px] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[420px] max-w-[calc(100vw-2rem)] max-h-[90dvh] overflow-y-auto rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5 sm:p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-[15px] font-semibold text-[var(--a-text)]">{t('editMember')}</h3>
-              <button onClick={() => setEditTarget(null)} className="text-[var(--a-text-3)] hover:text-[var(--a-text)]">✕</button>
+              <button onClick={() => setEditTarget(null)} aria-label={t('teamCancel')} className="text-[var(--a-text-3)] hover:text-[var(--a-text)] max-lg:-m-2 max-lg:p-2">✕</button>
             </div>
             <form onSubmit={handleEdit} className="space-y-3">
               <div>
@@ -1593,7 +1639,7 @@ function TeamTab({
 
       {removeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setRemoveTarget(null)}>
-          <div className="w-[380px] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-[380px] max-w-[calc(100vw-2rem)] rounded-xl border border-[var(--a-border)] bg-[var(--a-surface)] p-5 sm:p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-[15px] font-semibold text-[var(--a-text)]">{t('removeMember')}</h3>
             <p className="mt-2 text-[13px] text-[var(--a-text-2)]">
               {t('removeMemberConfirm', { name: removeTarget.user.name || removeTarget.user.email })}

@@ -159,7 +159,7 @@ export function BusinessRegistryTab({ canManage }: { canManage: boolean }) {
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
             <div className="font-medium text-slate-900">{t('status')}</div>
-            <div className="mt-2 space-y-1 text-xs text-slate-600">
+            <div className="mt-2 space-y-1 text-xs text-slate-600 [overflow-wrap:anywhere]">
               <div>{t('lastTestStatus')}: {settings?.last_test_status || t('notRun')}</div>
               <div>{t('lastTestAt')}: {settings?.last_test_at ? new Date(settings.last_test_at).toLocaleString() : t('na')}</div>
               <div>{t('lastError')}: {settings?.last_error_message || t('none')}</div>

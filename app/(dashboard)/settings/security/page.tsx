@@ -168,14 +168,14 @@ export default function SecuritySettingsPage() {
       {canManagePolicy && <TenantTwoFactorPolicyCard />}
 
       {/* Status Card */}
-      <div className="card p-6 mb-6">
-        <div className="flex items-center gap-4">
+      <div className="card p-4 sm:p-6 mb-6">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4">
           {enabled ? (
-            <ShieldCheck className="h-10 w-10" style={{ color: '#16a34a' }} />
+            <ShieldCheck className="h-10 w-10 shrink-0" style={{ color: '#16a34a' }} />
           ) : (
-            <ShieldOff className="h-10 w-10" style={{ color: '#9ca3af' }} />
+            <ShieldOff className="h-10 w-10 shrink-0" style={{ color: '#9ca3af' }} />
           )}
-          <div>
+          <div className="min-w-0 max-sm:flex-1 max-sm:basis-[calc(100%-3.25rem)]">
             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>
               {enabled ? t('enabled') : t('disabled')}
             </h2>
@@ -213,25 +213,25 @@ export default function SecuritySettingsPage() {
 
       {/* Setup Flow */}
       {setupData && !enabled && (
-        <div className="card p-6 mb-6">
+        <div className="card p-4 sm:p-6 mb-6">
           <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('setupTitle')}</h3>
 
           <div className="space-y-4">
             {/* Step 1: QR Code */}
             <div>
               <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>{t('step1')}</p>
-              <div className="flex items-center gap-4">
+              <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'white', border: '1px solid var(--border)' }}>
                   {/* Rendered locally so the TOTP secret never leaves the browser */}
                   <QRCodeSVG value={setupData.otpauthUri} size={200} />
                 </div>
-                <div className="flex-1">
+                <div className="min-w-0 max-sm:w-full flex-1">
                   <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('manualEntry')}</p>
                   <div className="flex items-center gap-2">
                     <code className="px-3 py-2 rounded text-sm font-mono break-all" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--text-primary)' }}>
                       {setupData.secret}
                     </code>
-                    <button onClick={copySecret} className="p-2 rounded" style={{ color: 'var(--text-muted)' }}>
+                    <button onClick={copySecret} className="p-2 max-lg:p-2.5 shrink-0 rounded" style={{ color: 'var(--text-muted)' }}>
                       {copied ? <Check className="h-4 w-4" style={{ color: '#16a34a' }} /> : <Copy className="h-4 w-4" />}
                     </button>
                   </div>
@@ -242,7 +242,7 @@ export default function SecuritySettingsPage() {
             {/* Step 2: Verify */}
             <div>
               <p className="text-sm mb-2" style={{ color: 'var(--text-secondary)' }}>{t('step2')}</p>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -275,10 +275,10 @@ export default function SecuritySettingsPage() {
       )}
 
       {/* Passkeys */}
-      <div className="card p-6 mb-6">
-        <div className="flex items-center gap-4 mb-1">
-          <KeyRound className="h-8 w-8" style={{ color: passkeys.length > 0 ? '#16a34a' : '#9ca3af' }} />
-          <div>
+      <div className="card p-4 sm:p-6 mb-6">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 sm:gap-4 mb-1">
+          <KeyRound className="h-8 w-8 shrink-0" style={{ color: passkeys.length > 0 ? '#16a34a' : '#9ca3af' }} />
+          <div className="min-w-0 max-sm:flex-1 max-sm:basis-[calc(100%-2.75rem)]">
             <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('passkeys.title')}</h2>
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('passkeys.description')}</p>
           </div>
@@ -298,7 +298,7 @@ export default function SecuritySettingsPage() {
           <div className="mt-4 divide-y" style={{ borderColor: 'var(--border)' }}>
             {passkeys.map(pk => (
               <div key={pk.id} className="flex items-center gap-3 py-3">
-                <div className="flex-1">
+                <div className="min-w-0 flex-1 [overflow-wrap:anywhere]">
                   <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
                     {pk.device_name || t('passkeys.unnamed')}
                   </p>
@@ -310,9 +310,10 @@ export default function SecuritySettingsPage() {
                 <button
                   onClick={() => handleRemovePasskey(pk.id)}
                   disabled={passkeyBusy}
-                  className="p-2 rounded disabled:opacity-50"
+                  className="p-2 max-lg:p-2.5 shrink-0 rounded disabled:opacity-50"
                   style={{ color: '#ef4444' }}
                   title={t('passkeys.remove')}
+                  aria-label={t('passkeys.remove')}
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -324,10 +325,10 @@ export default function SecuritySettingsPage() {
 
       {/* Email backup info */}
       {enabled && (
-        <div className="card p-6 mb-6">
-          <div className="flex items-center gap-4">
-            <Mail className="h-8 w-8" style={{ color: '#2563eb' }} />
-            <div>
+        <div className="card p-4 sm:p-6 mb-6">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <Mail className="h-8 w-8 shrink-0" style={{ color: '#2563eb' }} />
+            <div className="min-w-0">
               <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('emailBackup.title')}</h2>
               <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{t('emailBackup.description')}</p>
             </div>
@@ -337,8 +338,8 @@ export default function SecuritySettingsPage() {
 
       {/* Disable Modal */}
       {showDisable && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-          <div className="card p-6 w-full max-w-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+          <div className="card p-5 sm:p-6 w-full max-w-sm">
             <h3 className="text-lg font-bold mb-2" style={{ color: 'var(--text-primary)' }}>{t('disableTitle')}</h3>
             <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>{t('disableDescription')}</p>
             <input

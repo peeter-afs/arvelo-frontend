@@ -14,7 +14,7 @@ export default function GuidesIndexPage() {
   const { guides, isFallback } = listGuides(locale);
 
   return (
-    <div className="mx-auto w-full max-w-4xl py-6">
+    <div className="mx-auto w-full max-w-4xl py-3 lg:py-6">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-[10px] bg-[var(--a-accent-soft)]">
           <BookOpen className="h-4.5 w-4.5 text-[var(--a-accent)]" />

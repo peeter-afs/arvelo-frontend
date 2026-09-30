@@ -297,9 +297,9 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
 
   return (
     <div className="flex min-h-full flex-col bg-[var(--a-surface)]">
-      <CommandBar crumbs={[t('overview'), title]} actions={saveAction} />
+      <CommandBar crumbs={[t('overview'), title]} actions={saveAction} actionsOnMobile={false} />
 
-      <div className="flex-1 space-y-5 px-4 pb-10 pt-4 sm:px-6 lg:px-7">
+      <div className="flex-1 space-y-5 px-0 pb-10 pt-2 sm:px-6 sm:pt-4 lg:px-7">
         <div>
           <h1 className="text-[22px] font-semibold leading-tight text-[var(--a-text)]">{title}</h1>
           <p className="mt-1 text-[13px] text-[var(--a-text-2)]">
@@ -327,7 +327,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
         ) : (
           <>
             {/* Header detail card */}
-            <div className="rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-5">
+            <div className="rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 sm:p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <Field label={t('invoiceType')}>
                   <select value={type} onChange={(e) => setType(e.target.value as InvoiceType)} disabled={mode === 'edit'} className={`${selectClass} disabled:bg-[var(--a-surface-2)] disabled:text-[var(--a-text-3)]`}>
@@ -462,7 +462,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
               />
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex justify-end max-lg:sticky max-lg:bottom-0 max-lg:z-10 max-lg:-mx-1 max-lg:bg-[var(--a-surface)] max-lg:px-1 max-lg:py-2 max-sm:[&>button]:w-full">
               <Button variant="primary" onClick={() => void handleSave()} disabled={isSaving}>
                 {isSaving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 {mode === 'create' ? t('createDraft') : t('saveDraft')}

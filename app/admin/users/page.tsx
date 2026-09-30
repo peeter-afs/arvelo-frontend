@@ -67,8 +67,8 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Users</h1>
+      <div className="mb-4 sm:mb-6 flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-semibold text-slate-900">Users</h1>
         <span className="text-sm text-slate-500">{total} total</span>
       </div>
 
@@ -176,15 +176,15 @@ export default function AdminUsersPage() {
           <div className="space-y-3 md:hidden">
             {users.map((u) => (
               <div key={u.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-2 flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-slate-900">{u.email}</p>
+                <div className="mb-2 flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="break-all font-medium text-slate-900">{u.email}</p>
                     <p className="text-sm text-slate-500">
                       {u.name ?? '—'} · {u.tenant_count} tenants
                     </p>
                   </div>
                   <span
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
+                    className={`inline-flex shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                       u.status === 'suspended'
                         ? 'bg-red-100 text-red-700'
                         : 'bg-green-100 text-green-700'

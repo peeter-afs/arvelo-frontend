@@ -32,7 +32,7 @@ export function Stat({
       </div>
       <div
         className={clsx(
-          'mt-2 truncate font-mono text-2xl font-semibold leading-7 tabular-nums',
+          'mt-2 truncate font-mono text-xl font-semibold leading-6 tabular-nums sm:text-2xl sm:leading-7',
           tone === 'warning' && 'text-[var(--a-warn)]',
           tone === 'positive' && 'text-[var(--a-pos)]',
           tone === 'danger' && 'text-[var(--a-neg)]',

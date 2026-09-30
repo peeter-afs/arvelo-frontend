@@ -59,3 +59,17 @@
 .inp:focus{outline:none;border-color:var(--a-accent);box-shadow:0 0 0 2px var(--a-accent-soft)}
 .mf{padding:10px 14px;border-top:1px solid var(--a-border);display:flex;justify-content:flex-end;gap:7px}
 @media (max-width:980px){.crumb,.lbl2,.fitlbl{display:none}}
+@media (max-width:639px){.shell{margin:0 -1rem -1.5rem}}
+@media (max-width:1023px){
+.bar{height:auto;min-height:48px;flex-wrap:wrap;row-gap:6px;padding:6px 10px}
+.ttl{flex:1 1 0}
+.ttl h1{font-size:13.5px}
+.ctl{order:3;margin:0;width:100%;justify-content:center}
+.ctl button{height:32px;min-width:34px}
+.btn{height:36px}.ic{width:36px}.back{width:36px;height:36px}
+.hint{display:none}
+.pages{gap:10px}
+.modalBackdrop{padding:12px}
+.mf .btn{flex:1;justify-content:center}
+}
+@media (max-width:767px){.who{display:none}}

@@ -157,19 +157,19 @@ export default function RecurringExpensesPage() {
           label={t('receivedThisMonth')}
           value={`${received} / ${rows.length}`}
           tone="positive"
-          className="flex-1"
+          className="flex-1 max-md:px-3 max-md:[&>div:nth-child(2)]:text-[19px]"
         />
         <Stat
           label={t('missing')}
           value={missingCount}
           tone={missingCount > 0 ? 'danger' : 'default'}
-          className="flex-1"
+          className="flex-1 max-md:px-3 max-md:[&>div:nth-child(2)]:text-[19px]"
         />
         <Stat
           label={t('overBudget')}
           value={overBudgetCount}
           tone={overBudgetCount > 0 ? 'warning' : 'default'}
-          className="flex-1"
+          className="flex-1 max-md:px-3 max-md:[&>div:nth-child(2)]:text-[19px]"
         />
         <Stat
           label={t('committedMonthly')}
@@ -284,16 +284,16 @@ function MonitorView({
       <div className="divide-y divide-[var(--a-border)] md:hidden">
         {rows.map(row => (
           <div key={row.entry.id} className="min-h-[44px] px-4 py-3">
-            <div className="flex items-center justify-between">
-              <span className="font-medium text-[var(--a-text)]">{row.entry.label}</span>
+            <div className="flex items-center justify-between gap-3">
+              <span className="min-w-0 truncate font-medium text-[var(--a-text)]">{row.entry.label}</span>
               <StatusPill tone={STATUS_TONE[row.status]}>
                 {t(STATUS_TRANSLATION_KEY[row.status])}
               </StatusPill>
             </div>
-            <div className="mt-1 text-[13px] text-[var(--a-text-2)]">
+            <div className="mt-1 truncate text-[13px] text-[var(--a-text-2)]">
               {row.entry.partner_id ? (partnerMap.get(row.entry.partner_id) ?? '—') : '—'}
             </div>
-            <div className="mt-1 flex gap-3 font-mono text-[13px] tabular-nums text-[var(--a-text-3)]">
+            <div className="mt-1 flex flex-wrap gap-x-3 font-mono text-[13px] tabular-nums text-[var(--a-text-3)]">
               <span>{fmt(row.entry.expected_amount, row.entry.currency_code)}</span>
               <span>→</span>
               <span>{row.match?.matched_amount != null ? fmt(row.match.matched_amount, row.entry.currency_code) : '—'}</span>
@@ -327,17 +327,18 @@ function BudgetView({
 
   return (
     <div className="card overflow-hidden">
-      <div className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-5 py-3 text-[13px] font-medium text-[var(--a-text)]">
+      <div className="border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3 py-3 md:px-5 text-[13px] font-medium text-[var(--a-text)]">
         {t('budget.title')}
       </div>
-      <table className="w-full text-sm">
+      <div className="max-w-full overflow-x-auto">
+      <table className="w-full min-w-[520px] text-sm md:min-w-0">
         <thead>
           <tr className="border-b border-[var(--a-border)] text-left text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--a-text-3)]">
-            <th className="px-5 py-3">{t('budget.account')}</th>
-            <th className="px-5 py-3 text-right">{t('budget.expected')}</th>
-            <th className="px-5 py-3 text-right">{t('budget.actual')}</th>
-            <th className="px-5 py-3 text-right">{t('budget.variance')}</th>
-            <th className="hidden px-5 py-3 text-right lg:table-cell">{t('budget.monthlyEquiv')}</th>
+            <th className="bg-[var(--a-surface)] px-3 py-3 max-md:sticky max-md:left-0 md:bg-transparent md:px-5">{t('budget.account')}</th>
+            <th className="px-3 py-3 md:px-5 text-right">{t('budget.expected')}</th>
+            <th className="px-3 py-3 md:px-5 text-right">{t('budget.actual')}</th>
+            <th className="px-3 py-3 md:px-5 text-right">{t('budget.variance')}</th>
+            <th className="hidden px-3 py-3 md:px-5 text-right lg:table-cell">{t('budget.monthlyEquiv')}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--a-border)]">
@@ -345,22 +346,22 @@ function BudgetView({
             const isOver = row.variance > 0;
             return (
               <tr key={i} className="hover:bg-[var(--a-hover)]">
-                <td className="px-5 py-3.5 font-medium text-[var(--a-text)]">
+                <td className="max-w-[180px] truncate bg-[var(--a-surface)] px-3 py-3.5 font-medium text-[var(--a-text)] max-md:sticky max-md:left-0 md:max-w-none md:whitespace-normal md:bg-transparent md:px-5">
                   {row.account_id ? (accountMap.get(row.account_id) ?? row.account_id) : '—'}
                 </td>
-                <td className="px-5 py-3.5 text-right font-mono tabular-nums text-[var(--a-text-2)]">
+                <td className="px-3 py-3.5 md:px-5 text-right font-mono tabular-nums text-[var(--a-text-2)]">
                   {fmt(row.total_expected)}
                 </td>
-                <td className="px-5 py-3.5 text-right font-mono tabular-nums text-[var(--a-text-2)]">
+                <td className="px-3 py-3.5 md:px-5 text-right font-mono tabular-nums text-[var(--a-text-2)]">
                   {fmt(row.total_actual)}
                 </td>
                 <td
-                  className="px-5 py-3.5 text-right font-mono tabular-nums"
+                  className="px-3 py-3.5 md:px-5 text-right font-mono tabular-nums"
                   style={{ color: isOver ? 'var(--a-neg)' : 'var(--a-pos)' }}
                 >
                   {isOver ? '+' : ''}{fmt(row.variance)}
                 </td>
-                <td className="hidden px-5 py-3.5 text-right font-mono tabular-nums text-[var(--a-text-3)] lg:table-cell">
+                <td className="hidden px-3 py-3.5 md:px-5 text-right font-mono tabular-nums text-[var(--a-text-3)] lg:table-cell">
                   {fmt(row.monthly_equivalent)}
                 </td>
               </tr>
@@ -369,19 +370,20 @@ function BudgetView({
         </tbody>
         <tfoot>
           <tr className="border-t-2 border-[var(--a-border)] bg-[var(--a-surface-2)] font-semibold text-[var(--a-text)]">
-            <td className="px-5 py-3">{t('budget.total')}</td>
-            <td className="px-5 py-3 text-right font-mono tabular-nums">{fmt(budget.total_expected)}</td>
-            <td className="px-5 py-3 text-right font-mono tabular-nums">{fmt(budget.total_actual)}</td>
+            <td className="bg-[var(--a-surface-2)] px-3 py-3 max-md:sticky max-md:left-0 md:px-5">{t('budget.total')}</td>
+            <td className="px-3 py-3 md:px-5 text-right font-mono tabular-nums">{fmt(budget.total_expected)}</td>
+            <td className="px-3 py-3 md:px-5 text-right font-mono tabular-nums">{fmt(budget.total_actual)}</td>
             <td
-              className="px-5 py-3 text-right font-mono tabular-nums"
+              className="px-3 py-3 md:px-5 text-right font-mono tabular-nums"
               style={{ color: budget.variance > 0 ? 'var(--a-neg)' : 'var(--a-pos)' }}
             >
               {budget.variance > 0 ? '+' : ''}{fmt(budget.variance)}
             </td>
-            <td className="hidden px-5 py-3 lg:table-cell" />
+            <td className="hidden px-3 py-3 md:px-5 lg:table-cell" />
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

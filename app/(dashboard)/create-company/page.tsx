@@ -94,7 +94,7 @@ export default function CreateCompanyPage() {
   if (tenant) {
     return (
       <div className="mx-auto max-w-3xl">
-        <div className="card border-emerald-200 bg-emerald-50 p-6">
+        <div className="card border-emerald-200 bg-emerald-50 p-4 sm:p-6">
           <div className="flex items-start gap-3">
             <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
             <div>
@@ -119,14 +119,14 @@ export default function CreateCompanyPage() {
   return (
     <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
       <section className="card overflow-hidden border-slate-200">
-        <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] px-6 py-6">
+        <div className="border-b border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#eef2ff_100%)] px-4 py-5 sm:px-6 sm:py-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white">
               <Building2 className="h-6 w-6" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Tenant bootstrap</p>
-              <h1 className="mt-1 text-2xl font-semibold text-slate-900">Create your company workspace</h1>
+              <h1 className="mt-1 text-xl sm:text-2xl font-semibold text-slate-900">Create your company workspace</h1>
             </div>
           </div>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
@@ -140,12 +140,12 @@ export default function CreateCompanyPage() {
           )}
           {user && (
             <p className="mt-3 text-xs text-slate-500">
-              Signed in as <strong>{user.email}</strong>
+              Signed in as <strong className="break-all">{user.email}</strong>
             </p>
           )}
         </div>
 
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-4 sm:p-6">
           {errorMessage && (
             <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
               <div className="flex items-start gap-3">
@@ -188,7 +188,7 @@ export default function CreateCompanyPage() {
                     .catch((error) => setErrorMessage(getErrorMessage(error)))
                     .finally(() => setIsLoadingTenants(false));
                 }}
-                className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-9 sm:h-8 shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-700 hover:bg-slate-50"
               >
                 {isLoadingTenants ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                 <span>Refresh</span>
@@ -206,8 +206,8 @@ export default function CreateCompanyPage() {
               availableTenants.map((membership) => (
                 <div key={membership.tenant.id} className="rounded-xl border border-slate-100 bg-white px-4 py-4">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium text-slate-900">{membership.tenant.name}</div>
+                    <div className="min-w-0">
+                      <div className="break-words text-sm font-medium text-slate-900">{membership.tenant.name}</div>
                       <div className="mt-1 text-xs text-slate-500">
                         Role {membership.role} · Base currency {membership.tenant.base_currency}
                       </div>

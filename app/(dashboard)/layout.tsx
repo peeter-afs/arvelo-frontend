@@ -54,7 +54,7 @@ export default function DashboardLayout({
 
             <main className="flex min-w-0 flex-1 flex-col pt-14 lg:pt-0 print:block print:pt-0">
               <div className={hideCommandBar ? 'hidden' : 'app-commandbar print:hidden'}><CommandBar assistantToggle /></div>
-              <div className="min-h-0 flex-1 overflow-y-auto compact:lg:px-4 compact:lg:pb-2 px-4 pb-6 sm:px-6 lg:px-7 print:overflow-visible print:p-0">
+              <div className="min-h-0 flex-1 overflow-y-auto compact:lg:px-4 compact:lg:pb-2 px-4 pt-4 sm:px-6 lg:px-7 lg:pb-6 lg:pt-0 max-lg:after:block max-lg:after:h-6 max-lg:after:content-[''] print:overflow-visible print:p-0">
                 <TwoFactorNotice />
                 {children}
               </div>

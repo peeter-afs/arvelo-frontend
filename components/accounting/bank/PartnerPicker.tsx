@@ -228,14 +228,14 @@ export const PartnerPicker = forwardRef<PartnerPickerHandle, Props>(function Par
         disabled={disabled}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex h-9 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left lg:h-7 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <span className={`min-w-0 truncate text-sm ${value ? 'font-semibold text-slate-900' : 'italic text-slate-500'}`}>{displayedName}</span>
         {displayedRole && <span className="flex-shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{displayedRole}</span>}
         {displayedRegCode && <span className="flex-shrink-0 font-mono text-[10px] text-slate-500">{displayedRegCode}</span>}
         <ChevronDown className={`h-3.5 w-3.5 flex-shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {!value && <span className="flex-shrink-0 text-[11px] text-slate-400">{t('counterpartyPickHint')}</span>}
+      {!value && <span className="flex-shrink-0 text-[11px] text-slate-400 max-sm:hidden">{t('counterpartyPickHint')}</span>}
 
       {open && createPortal(
         <div
@@ -271,7 +271,7 @@ export const PartnerPicker = forwardRef<PartnerPickerHandle, Props>(function Par
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {ROLE_FILTERS.map((entry) => (
-                <button key={entry.key} type="button" onClick={() => { setRoleFilter(entry.key); setHotIndex(0); }} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${roleFilter === entry.key ? 'bg-[var(--primary)] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{t(entry.labelKey)}</button>
+                <button key={entry.key} type="button" onClick={() => { setRoleFilter(entry.key); setHotIndex(0); }} className={`rounded-full px-2 py-1.5 text-[11px] font-medium lg:py-0.5 ${roleFilter === entry.key ? 'bg-[var(--primary)] text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>{t(entry.labelKey)}</button>
               ))}
             </div>
           </div>
@@ -280,7 +280,7 @@ export const PartnerPicker = forwardRef<PartnerPickerHandle, Props>(function Par
             {flat.length === 0 ? <div className="p-3 text-sm text-slate-500">{t('noPartnerMatch', { query })}</div> : flat.map((partner, index) => {
               const partnerRole = roleLabel(partner);
               return (
-                <button key={partner.id} type="button" role="option" aria-selected={partner.id === value} data-row-index={index} onClick={() => pick(partner)} className={`grid w-full grid-cols-[minmax(0,1fr)_auto_74px] items-center gap-2 px-3 py-1.5 text-left text-sm ${hotIndex === index ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
+                <button key={partner.id} type="button" role="option" aria-selected={partner.id === value} data-row-index={index} onClick={() => pick(partner)} className={`grid w-full grid-cols-[minmax(0,1fr)_auto_74px] items-center gap-2 px-3 py-2.5 text-left text-sm lg:py-1.5 ${hotIndex === index ? 'bg-blue-50' : 'hover:bg-slate-50'}`}>
                   <span className="truncate text-slate-700">{highlight(partner.name, query)}</span>
                   {partnerRole ? <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">{partnerRole}</span> : <span />}
                   <span className="truncate font-mono text-xs text-slate-500">{partner.reg_code ? highlight(partner.reg_code, query) : ''}</span>
@@ -289,10 +289,10 @@ export const PartnerPicker = forwardRef<PartnerPickerHandle, Props>(function Par
             })}
           </div>
 
-          <div className="flex items-center gap-2 border-t border-slate-100 p-2">
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 p-2 lg:flex-nowrap">
             <button type="button" onClick={() => { setOpen(false); onRequestCreate(query.trim()); }} className="inline-flex h-8 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-700 hover:bg-slate-50"><Plus className="h-4 w-4" />{t('addNewPartner')}</button>
             <span className="text-[11px] text-slate-400">{t('addPartnerHint')}</span>
-            <span className="ml-auto text-[11px] text-slate-400">↑ ↓ · ↵ · Esc</span>
+            <span className="ml-auto hidden text-[11px] text-slate-400 lg:inline">↑ ↓ · ↵ · Esc</span>
           </div>
         </div>,
         document.body,

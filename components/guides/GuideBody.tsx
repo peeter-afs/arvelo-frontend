@@ -50,7 +50,7 @@ function Block({ block }: { block: GuideBlock }) {
       return (
         <h2
           id={headingSlug(block.text)}
-          className="mt-10 scroll-mt-6 border-t border-[var(--a-border)] pt-6 text-[17px] font-semibold text-[var(--a-text)] first:mt-0 first:border-0 first:pt-0"
+          className="mt-10 scroll-mt-20 lg:scroll-mt-6 border-t border-[var(--a-border)] pt-6 text-[17px] font-semibold text-[var(--a-text)] first:mt-0 first:border-0 first:pt-0"
         >
           {block.text}
         </h2>
@@ -103,7 +103,7 @@ function Block({ block }: { block: GuideBlock }) {
     case 'table':
       return (
         <div className="mt-4 overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
-          <table className="w-full border-collapse text-left text-[13px]">
+          <table className={`w-full border-collapse text-left text-[13px] ${block.headers.length > 2 ? 'min-w-[520px]' : ''}`}>
             <thead>
               <tr className="bg-[var(--a-surface-2)]">
                 {block.headers.map((header, index) => (

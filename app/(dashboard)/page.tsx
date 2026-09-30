@@ -185,7 +185,7 @@ export default function DashboardPage() {
   const PERIODS: Period[] = ['month', 'quarter', 'year'];
 
   return (
-    <div>
+    <div className="pb-20 lg:pb-0">
       <MonthEndBanner />
 
       {/* Header */}
@@ -224,7 +224,7 @@ export default function DashboardPage() {
 
       {/* Opening balances CTA — shown only for new companies that haven't imported yet */}
       {showOpeningBalancesCTA && (
-        <div className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-[var(--a-accent-soft)] bg-[var(--a-accent-soft-2)] px-4 py-3">
+        <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 rounded-lg border border-[var(--a-accent-soft)] bg-[var(--a-accent-soft-2)] px-4 py-3">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-[var(--primary)] shrink-0">📂</span>
             <div className="min-w-0">
@@ -234,7 +234,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/accounting/opening-balances"
-            className="shrink-0 h-8 px-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-[12.5px] font-medium transition-colors flex items-center gap-1.5"
+            className="shrink-0 h-10 sm:h-8 px-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white rounded-lg text-[12.5px] font-medium transition-colors flex items-center justify-center gap-1.5"
           >
             {t('openingBalancesAction')}
           </Link>
@@ -242,7 +242,7 @@ export default function DashboardPage() {
       )}
 
       {/* Period selector */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-3 mb-3">
         <span className="micro text-[var(--text-muted)]">{t('overview')}</span>
         <div className="flex flex-col items-end gap-1">
           <div className="flex items-center bg-[var(--a-surface-2)] border border-[var(--border)] rounded-lg p-0.5">
@@ -250,7 +250,7 @@ export default function DashboardPage() {
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`rounded-md px-3 py-1 text-[13px] font-medium transition-colors ${
+                className={`rounded-md px-3 py-2 sm:py-1 text-[13px] font-medium transition-colors ${
                   period === p
                     ? 'bg-[var(--a-text)] text-white'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -268,14 +268,14 @@ export default function DashboardPage() {
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4">
         <div className="card p-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalRevenue')}</p>
-              <p className="text-xl font-semibold text-[var(--text-primary)]">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] sm:text-sm text-[var(--text-secondary)] mb-1 truncate">{t('totalRevenue')}</p>
+              <p className="text-[17px] sm:text-xl font-semibold text-[var(--text-primary)] break-words">
                 {formatCurrency(stats?.totalRevenue ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+            <div className="hidden sm:flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
               <Euro className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
@@ -283,14 +283,14 @@ export default function DashboardPage() {
 
         <div className="card p-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('totalExpenses')}</p>
-              <p className="text-xl font-semibold text-[var(--text-primary)]">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] sm:text-sm text-[var(--text-secondary)] mb-1 truncate">{t('totalExpenses')}</p>
+              <p className="text-[17px] sm:text-xl font-semibold text-[var(--text-primary)] break-words">
                 {formatCurrency(stats?.totalExpenses ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+            <div className="hidden sm:flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
               <TrendingUp className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
@@ -298,14 +298,14 @@ export default function DashboardPage() {
 
         <div className="card p-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('netIncome')}</p>
-              <p className="text-xl font-semibold text-[var(--text-primary)]">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] sm:text-sm text-[var(--text-secondary)] mb-1 truncate">{t('netIncome')}</p>
+              <p className="text-[17px] sm:text-xl font-semibold text-[var(--text-primary)] break-words">
                 {formatCurrency(stats?.netIncome ?? 0)}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{periodCaption}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+            <div className="hidden sm:flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
               <Activity className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
@@ -313,14 +313,14 @@ export default function DashboardPage() {
 
         <Link href="/invoices" className="card card-hover p-3 block">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-[var(--text-secondary)] mb-1">{t('pendingInvoices')}</p>
-              <p className="text-xl font-semibold text-[var(--text-primary)]">
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] sm:text-sm text-[var(--text-secondary)] mb-1 truncate">{t('pendingInvoices')}</p>
+              <p className="text-[17px] sm:text-xl font-semibold text-[var(--text-primary)] break-words">
                 {stats?.pendingCount ?? 0}
               </p>
               <p className="text-[11px] text-[var(--text-muted)] mt-1">{t('currentState')}</p>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
+            <div className="hidden sm:flex w-9 h-9 rounded-lg items-center justify-center flex-shrink-0 bg-[var(--a-surface-2)]">
               <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
             </div>
           </div>
@@ -329,8 +329,8 @@ export default function DashboardPage() {
 
       {/* Expected cash flow (period-aware) */}
       <div className="mt-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-baseline gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
             <span className="micro text-[var(--text-muted)]">{t('cashflowTitle')}</span>
             <span className="text-[11px] text-[var(--text-muted)]">{t('expectedNet')}</span>
             <span
@@ -363,7 +363,7 @@ export default function DashboardPage() {
               {formatCurrency(receiptsSum)}
             </p>
 
-            <div className="flex items-center gap-2 mt-1 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mt-1 mb-2">
               <span className="text-sm text-[var(--text-secondary)]">
                 {receiptsDue.length} {t('invoicesWord')}
               </span>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
               {formatCurrency(paymentsSum)}
             </p>
 
-            <div className="flex items-center gap-2 mt-1 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mt-1 mb-2">
               <span className="text-sm text-[var(--text-secondary)]">
                 {paymentsDue.length} {t('invoicesWord')}
               </span>
@@ -457,7 +457,7 @@ export default function DashboardPage() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <Link href="/reports/profit-loss" className="card card-hover p-5 flex items-center gap-4">
+        <Link href="/reports/profit-loss" className="card card-hover p-4 sm:p-5 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
             <BarChart3 className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>
@@ -467,7 +467,7 @@ export default function DashboardPage() {
           </div>
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
-        <Link href="/reports/balance-sheet" className="card card-hover p-5 flex items-center gap-4">
+        <Link href="/reports/balance-sheet" className="card card-hover p-4 sm:p-5 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
             <Activity className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>
@@ -477,7 +477,7 @@ export default function DashboardPage() {
           </div>
           <ArrowUpRight className="h-4 w-4 text-[var(--text-muted)] ml-auto" />
         </Link>
-        <Link href="/invoices/sales" className="card card-hover p-5 flex items-center gap-4">
+        <Link href="/invoices/sales" className="card card-hover p-4 sm:p-5 flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-[var(--a-surface-2)] flex items-center justify-center flex-shrink-0">
             <FileText className="h-5 w-5 text-[var(--text-secondary)]" />
           </div>

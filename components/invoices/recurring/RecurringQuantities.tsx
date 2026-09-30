@@ -345,7 +345,7 @@ export default function RecurringQuantities() {
                       const locked = st === 'skip' || st === 'done';
                       return (
                         <tr key={r.id} className={st === 'skip' ? s.skip : ''}>
-                          <td>
+                          <td className={s.qName}>
                             <div className={s.cn}>
                               <span className={s.av}>{initials(name)}</span>
                               <div><b>{name}</b><span className={`${s.rg} ${s.mono}`}>{r.client?.partner?.reg_code || ''}{r.run_date !== first.run_date ? ` · arve ${isoToEt(r.run_date)}` : ''}</span></div>
@@ -355,7 +355,7 @@ export default function RecurringQuantities() {
                             const v = lo?.q[l.id] ?? '';
                             const prev = r.previous_quantities?.[l.id];
                             return (
-                              <td key={l.id}>
+                              <td key={l.id} className={s.qQty} data-l={`${stripPlaceholders(l.description) || l.code || '—'} · ${num(l.unit_price)} € / ${l.unit || 'tk'}`}>
                                 <div className={s.qc}>
                                   <input
                                     className={`${s.qi} ${v.trim() ? '' : s.qiEmpty}`}
@@ -374,15 +374,15 @@ export default function RecurringQuantities() {
                               </td>
                             );
                           })}
-                          <td className={`${s.r} ${s.mono}`} style={{ color: 'var(--a-text-2)' }}>{num(fixedNet)}</td>
-                          <td className={`${s.r} ${s.mono}`} style={{ fontWeight: 600 }}>{st === 'skip' ? '—' : num(grossOf(t, r))}</td>
-                          <td>
+                          <td className={`${s.r} ${s.mono} ${s.qFixed}`} style={{ color: 'var(--a-text-2)' }}>{num(fixedNet)}</td>
+                          <td className={`${s.r} ${s.mono} ${s.qGross}`} data-l="Arve kokku km-ga" style={{ fontWeight: 600 }}>{st === 'skip' ? '—' : num(grossOf(t, r))}</td>
+                          <td className={s.qSt}>
                             {st === 'done' ? <span className={`${s.st} ${s.stDone}`}>Kinnitatud</span>
                               : st === 'skip' ? <span className={`${s.st} ${s.stS}`}>Vahele</span>
                                 : st === 'ready' ? <span className={`${s.st} ${s.stOk}`}>Valmis</span>
                                   : <span className={`${s.st} ${s.stW}`}>Ootab</span>}
                           </td>
-                          <td className={s.r}>
+                          <td className={`${s.r} ${s.qAct}`}>
                             {st !== 'done' && <button className={s.lk} onClick={() => toggleSkip(r.id)}>{st === 'skip' ? 'Taasta' : 'Jäta vahele'}</button>}
                           </td>
                         </tr>

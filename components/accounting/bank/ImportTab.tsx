@@ -75,7 +75,7 @@ function ImportSteps({ stage }: { stage: ImportStage }) {
         return (
           <div
             key={step.title}
-            className={`flex min-w-0 gap-3 border-slate-200 px-4 py-3 md:border-r md:last:border-r-0 ${isActive ? 'bg-orange-50' : ''}`}
+            className={`min-w-0 gap-3 border-slate-200 px-4 py-3 md:flex md:border-r md:last:border-r-0 ${isActive ? 'flex bg-orange-50' : 'hidden'}`}
           >
             <span
               className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${
@@ -526,15 +526,15 @@ export function ImportTab({
 
           <div className="border-t border-slate-200 bg-slate-50 px-4 py-3">
             <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-              <label className="flex items-center gap-3">
+              <label className="flex min-w-0 items-center gap-3 lg:shrink-0">
                 <span className="whitespace-nowrap text-xs font-semibold text-slate-700">{t('bankAccount')}</span>
-                <select value={bankAccountId} onChange={(event) => handleBankAccountIdChange(event.target.value)} className="h-9 min-w-[250px] rounded-lg border border-slate-200 bg-white px-3 text-sm">
+                <select value={bankAccountId} onChange={(event) => handleBankAccountIdChange(event.target.value)} className="h-9 min-w-0 flex-1 rounded-lg lg:min-w-[250px] lg:flex-none border border-slate-200 bg-white px-3 text-sm">
                   <option value="">{detectedFormat === 'csv' ? t('selectBankAccount') : t('optionalFallbackCamt53')}</option>
                   {bankAccounts.map((account) => <option key={account.id} value={account.id}>{account.name} {account.iban ? `· ${account.iban}` : ''}</option>)}
                 </select>
               </label>
               <p className="text-xs text-slate-500">{t('bankAccountImportHelp')}</p>
-              {detectedFormat === 'camt53' && <span className="font-mono text-xs font-medium text-slate-700">IBAN: {detectedStatementIban || t('notDetectedYet')}</span>}
+              {detectedFormat === 'camt53' && <span className="break-all font-mono text-xs font-medium text-slate-700">IBAN: {detectedStatementIban || t('notDetectedYet')}</span>}
             </div>
             {(errorMessage || pendingMessage) && (
               <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
@@ -624,7 +624,7 @@ export function ImportTab({
             </section>
           </aside>
 
-          <section className="card flex min-h-0 flex-col overflow-hidden">
+          <section className="card flex min-h-0 min-w-0 flex-col overflow-hidden">
             <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-3 py-2">
               <h2 className="mr-2 text-sm font-semibold text-slate-900">{t('previewRows')}</h2>
               {([
@@ -646,7 +646,7 @@ export function ImportTab({
             <InlineError message={errorMessage} />
 
             <div className="min-h-0 flex-1 overflow-auto">
-              <table className="min-w-full table-fixed">
+              <table className="min-w-[720px] table-fixed lg:min-w-full">
                 <thead className="sticky top-0 z-10 bg-slate-50 shadow-[0_1px_0_0_#e2e8f0]">
                   <tr>
                     <th className="w-12 px-2 py-2 text-left text-[11px] font-semibold text-slate-500">{t('row')}</th>

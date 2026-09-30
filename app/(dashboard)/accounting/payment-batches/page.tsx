@@ -296,11 +296,11 @@ export default function PaymentBatchesPage() {
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="space-y-4">
           <div className="card overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+            <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-4 lg:px-5">
               <h2 className="text-base font-semibold text-slate-900">{t('createBatch')}</h2>
               <p className="mt-1 text-sm text-slate-500">{t('createBatchDescription')}</p>
             </div>
-            <div className="space-y-5 p-5">
+            <div className="space-y-5 p-4 lg:p-5">
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <label className="space-y-2">
                   <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('bankAccount')}</span>
@@ -323,21 +323,21 @@ export default function PaymentBatchesPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
-                  <div>
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+                  <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-slate-900">{t('payableInvoices')}</h3>
                     <p className="text-xs text-slate-500">{t('chooseInvoicesToPrefill')}</p>
                   </div>
                   <button
                     onClick={handlePrefill}
                     disabled={selectedInvoiceIds.length === 0 || !!actionLoading}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {actionLoading === 'prefill' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
                     <span>{t('prefillLines')}</span>
                   </button>
                 </div>
-                <div className="max-h-72 overflow-y-auto divide-y divide-slate-100">
+                <div className="divide-y divide-slate-100 lg:max-h-72 lg:overflow-y-auto">
                   {isBootLoading ? (
                     <div className="p-4 text-sm text-slate-500">{t('loadingInvoices')}</div>
                   ) : invoices.length === 0 ? (
@@ -370,46 +370,46 @@ export default function PaymentBatchesPage() {
               </div>
 
               <div className="rounded-xl border border-slate-200">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
                   <h3 className="text-sm font-semibold text-slate-900">{t('draftLines')}</h3>
                   <button
                     onClick={handleAddManualLine}
                     disabled={!!actionLoading}
-                    className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Wallet className="h-4 w-4" />
                     <span>{t('addManualLine')}</span>
                   </button>
                 </div>
-                <div className="space-y-3 p-4">
+                <div className="space-y-3 p-3 lg:p-4">
                   {draftLines.length === 0 ? (
                     <div className="text-sm text-slate-500">{t('prefillLinesFirst')}</div>
                   ) : (
                     draftLines.map((line, index) => (
-                      <div key={`${line.invoice_id || 'manual'}-${index}`} className="grid gap-3 rounded-xl border border-slate-200 p-4 lg:grid-cols-12">
+                      <div key={`${line.invoice_id || 'manual'}-${index}`} className="grid grid-cols-2 gap-3 rounded-xl border border-slate-200 p-3 lg:grid-cols-12 lg:p-4">
                         <div className="lg:col-span-2">
                           <SmallField label={t('invoice')} value={line.invoice_id ? line.invoice_id.slice(0, 8) : t('manualLine')} readOnly />
                         </div>
                         <div className="lg:col-span-2">
                           <SmallField label={t('amount')} value={line.amount} onChange={(value) => updateDraftLine(setDraftLines, index, 'amount', value)} />
                         </div>
-                        <div className="lg:col-span-3">
+                        <div className="col-span-2 lg:col-span-3">
                           <SmallField label={t('payee')} value={line.payee_name} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_name', value)} />
                         </div>
-                        <div className="lg:col-span-3">
+                        <div className="col-span-2 lg:col-span-3">
                           <SmallField label={t('iban')} value={line.payee_iban} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_iban', value)} />
                         </div>
                         <div className="lg:col-span-2">
                           <SmallField label={t('bic')} value={line.payee_bic} onChange={(value) => updateDraftLine(setDraftLines, index, 'payee_bic', value)} />
                         </div>
-                        <div className="lg:col-span-4">
+                        <div className="col-span-2 lg:col-span-4">
                           <SmallField label={t('reference')} value={line.reference} onChange={(value) => updateDraftLine(setDraftLines, index, 'reference', value)} />
                         </div>
-                        <div className="lg:col-span-8">
+                        <div className="col-span-2 lg:col-span-8">
                           <SmallField label={t('description')} value={line.description} onChange={(value) => updateDraftLine(setDraftLines, index, 'description', value)} />
                         </div>
                         {!line.invoice_id && (
-                          <div className="lg:col-span-8">
+                          <div className="col-span-2 lg:col-span-8">
                             <label className="space-y-1">
                               <span className="text-xs font-medium text-slate-500">{t('counterpartAccount')}</span>
                               <select
@@ -425,7 +425,7 @@ export default function PaymentBatchesPage() {
                             </label>
                           </div>
                         )}
-                        <div className={`flex items-end ${line.invoice_id ? 'lg:col-span-12' : 'lg:col-span-4'} justify-end`}>
+                        <div className={`flex items-end ${line.invoice_id ? 'lg:col-span-12' : 'col-span-2 lg:col-span-4'} justify-end`}>
                           <button
                             onClick={() => handleRemoveLine(index)}
                             className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs text-slate-500 hover:bg-slate-50"
@@ -435,7 +435,7 @@ export default function PaymentBatchesPage() {
                           </button>
                         </div>
                         {line.warning_flags && line.warning_flags.length > 0 && (
-                          <div className="lg:col-span-12 text-xs text-amber-700">
+                          <div className="col-span-2 lg:col-span-12 text-xs text-amber-700">
                             {t('warningsValue', { warnings: line.warning_flags.join(', ') })}
                           </div>
                         )}
@@ -448,7 +448,7 @@ export default function PaymentBatchesPage() {
               <button
                 onClick={handleCreateBatch}
                 disabled={!bankAccountId || draftLines.length === 0 || !!actionLoading}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
               >
                 {actionLoading === 'create' ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 <span>{t('createBatch')}</span>
@@ -459,14 +459,16 @@ export default function PaymentBatchesPage() {
 
         <aside className="space-y-4">
           <div className="card overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50/80 px-5 py-4">
-              <div>
+            <div className="flex items-center justify-between gap-3 border-b border-slate-200 bg-slate-50/80 px-4 py-4 lg:px-5">
+              <div className="min-w-0">
                 <h2 className="text-base font-semibold text-slate-900">{t('existingBatches')}</h2>
                 <p className="mt-1 text-sm text-slate-500">{t('existingBatchesDescription')}</p>
               </div>
               <button
                 onClick={() => void refreshBatches(selectedBatchId)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+                aria-label={t('refreshPartners')}
+                title={t('refreshPartners')}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
               >
                 <RefreshCw className="h-4 w-4" />
               </button>
@@ -488,7 +490,7 @@ export default function PaymentBatchesPage() {
                           {t('linesCount', { count: batch.line_count || 0 })} · {Number(batch.total_amount || 0).toFixed(2)} {batch.currency}
                         </div>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
+                      <span className="shrink-0 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700">
                         {batch.status}
                       </span>
                     </div>
@@ -500,13 +502,13 @@ export default function PaymentBatchesPage() {
 
           {selectedBatch && (
             <div className="card overflow-hidden">
-              <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
+              <div className="border-b border-slate-200 bg-slate-50/80 px-4 py-4 lg:px-5">
                 <h2 className="text-base font-semibold text-slate-900">{t('batchDetail')}</h2>
-                <p className="mt-1 text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500 max-lg:break-all">
                   {selectedBatch.batch.batch_name || selectedBatch.batch.id.slice(0, 8)} · {selectedBatch.batch.status}
                 </p>
               </div>
-              <div className="space-y-4 p-5">
+              <div className="space-y-4 p-4 lg:p-5">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoBox label={t('bankAccount')} value={selectedBatch.batch.bank_account_iban || selectedBatch.batch.bank_account_id} />
                   <InfoBox label={t('executionDate')} value={selectedBatch.batch.execution_date || '-'} />
@@ -602,19 +604,19 @@ export default function PaymentBatchesPage() {
 
                 <div className="rounded-xl border border-slate-200">
                   <div className="border-b border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900">{t('batchLines')}</div>
-                  <div className="max-h-72 overflow-auto divide-y divide-slate-100">
+                  <div className="divide-y divide-slate-100 lg:max-h-72 lg:overflow-auto">
                     {selectedBatch.lines.map((line) => (
                       <div key={line.id} className="px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <div className="text-sm font-medium text-slate-900">
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-slate-900 max-lg:break-words">
                               {line.invoice_number || (line.invoice_id ? line.invoice_id.slice(0, 8) : t('manualLine'))} · {line.payee_name}
                             </div>
-                            <div className="mt-1 text-xs text-slate-500">
+                            <div className="mt-1 text-xs text-slate-500 max-lg:break-all">
                               {line.payee_iban} · {line.reference || t('noReference')}
                             </div>
                           </div>
-                          <div className="text-right text-xs text-slate-600">
+                          <div className="shrink-0 text-right text-xs text-slate-600">
                             <div>{Number(line.amount).toFixed(2)} {line.currency}</div>
                             <div className="mt-1">{line.status}</div>
                           </div>
@@ -687,7 +689,7 @@ function InfoBox({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 p-4">
       <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{label}</div>
-      <div className="mt-2 text-sm text-slate-800">{value}</div>
+      <div className="mt-2 text-sm text-slate-800 max-lg:break-all">{value}</div>
     </div>
   );
 }

@@ -171,6 +171,23 @@ textarea {
   transition-duration: 140ms;
 }
 
+/* iOS zooms the page when a focused field is under 16px; the dense 12–13px inputs trigger it on phones. */
+@media (max-width: 767px) and (pointer: coarse) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Horizontally scrollable strips (tab bars, filter chips) on narrow screens */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Utility Classes */
 .card {
   background: var(--a-surface);

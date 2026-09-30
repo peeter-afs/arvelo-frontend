@@ -97,15 +97,15 @@ function KmdLine({ row, label, value, untrackedHint }: { row: FormRow; label: st
   const muted = row.untracked && value === 0;
   return (
     <div
-      className={`flex justify-between gap-4 pb-2 ${row.sub ? 'ml-10 text-sm' : 'ml-4'} ${row.bold ? 'font-semibold' : ''}`}
+      className={`flex justify-between gap-3 sm:gap-4 pb-2 ${row.sub ? 'ml-4 sm:ml-10 text-sm' : 'sm:ml-4'} ${row.bold ? 'font-semibold' : ''}`}
       style={{ borderBottom: borderStyle }}
       title={row.untracked ? untrackedHint : undefined}
     >
-      <span style={{ color: row.bold ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-        <span className="inline-block w-12 tabular-nums">{row.num}</span>
+      <span className="min-w-0" style={{ color: row.bold ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+        <span className="inline-block w-10 sm:w-12 tabular-nums">{row.num}</span>
         {label}
       </span>
-      <span className="shrink-0 font-medium tabular-nums" style={{ color: muted ? 'var(--text-muted)' : 'var(--text-primary)' }}>
+      <span className="shrink-0 whitespace-nowrap font-medium tabular-nums" style={{ color: muted ? 'var(--text-muted)' : 'var(--text-primary)' }}>
         &euro;{formatCurrency(value)}
       </span>
     </div>
@@ -116,11 +116,11 @@ function InvoiceTable({ invoices, t }: { invoices: VATInvoiceSummary[]; t: (key:
   if (invoices.length === 0) return null;
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="min-w-0 max-w-full overflow-x-auto print:overflow-visible">
+      <table className="w-full min-w-[600px] text-sm print:min-w-0">
         <thead>
           <tr style={{ borderBottom: '2px solid var(--border)' }}>
-            <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('invoiceNumber')}</th>
+            <th className="sticky left-0 z-[1] bg-[var(--a-surface)] text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('invoiceNumber')}</th>
             <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('partner')}</th>
             <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('date')}</th>
             <th className="text-right py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('taxableAmount')}</th>
@@ -131,7 +131,7 @@ function InvoiceTable({ invoices, t }: { invoices: VATInvoiceSummary[]; t: (key:
         <tbody>
           {invoices.map((inv) => (
             <tr key={inv.id} style={{ borderBottom: '1px solid var(--border)' }}>
-              <td className="py-2 pr-4" style={{ color: 'var(--text-primary)' }}>
+              <td className="sticky left-0 z-[1] bg-[var(--a-surface)] py-2 pr-4" style={{ color: 'var(--text-primary)' }}>
                 {inv.invoice_number}
                 {inv.type.endsWith('credit_note') && (
                   <span className="ml-2 text-xs" style={{ color: 'var(--text-muted)' }}>({t('creditNote')})</span>
@@ -395,13 +395,13 @@ export default function VATReportPage() {
 
           {/* Result: line 12 or 13 */}
           <div
-            className="flex justify-between pt-3 font-bold text-lg p-3 rounded mt-4"
+            className="flex justify-between gap-3 pt-3 font-bold text-base sm:text-lg p-3 rounded mt-4"
             style={{ backgroundColor: 'var(--surface-elevated)', borderTop: '4px solid var(--text-primary)' }}
           >
-            <span style={{ color: 'var(--text-primary)' }}>
+            <span className="min-w-0" style={{ color: 'var(--text-primary)' }}>
               {data.lines['13'] > 0 ? `13 ${t('kmdForm.l13')}` : `12 ${t('kmdForm.l12')}`}
             </span>
-            <span style={{ color: data.lines['13'] > 0 ? 'var(--success, #16a34a)' : 'var(--danger, #dc2626)' }}>
+            <span className="shrink-0 whitespace-nowrap" style={{ color: data.lines['13'] > 0 ? 'var(--success, #16a34a)' : 'var(--danger, #dc2626)' }}>
               &euro;{formatCurrency(data.lines['13'] > 0 ? data.lines['13'] : data.lines['12'])}
             </span>
           </div>
@@ -411,20 +411,20 @@ export default function VATReportPage() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-6 mb-6">
         <div className="card p-4">
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t('outputVat')}</p>
-          <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-lg sm:text-2xl font-bold mt-2 max-sm:truncate" style={{ color: 'var(--text-primary)' }}>
             &euro;{formatCurrency(data.lines['4'])}
           </p>
         </div>
         <div className="card p-4">
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{t('inputVat')}</p>
-          <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+          <p className="text-lg sm:text-2xl font-bold mt-2 max-sm:truncate" style={{ color: 'var(--text-primary)' }}>
             &euro;{formatCurrency(data.lines['5'])}
           </p>
         </div>
-        <div className="card p-4">
+        <div className="card col-span-2 sm:col-span-1 p-4">
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>KMD INF</p>
           <p className="mt-2 text-sm" style={{ color: 'var(--text-primary)' }}>
             {t('kmdInfCounts', { sales: data.sales_annex_count, purchases: data.purchases_annex_count })}

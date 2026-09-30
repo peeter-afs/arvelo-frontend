@@ -757,8 +757,8 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
                         return (
                           <div key={l.key} className={`${s.lr} ${l.variable ? s.vq : ''}`}>
                             <div className={s.ix}>{i + 1}</div>
-                            <div><input className={s.in} value={l.code} placeholder="Kood" onChange={(e) => updateLine(i, { code: e.target.value })} /></div>
-                            <div className={s.pwrap}>
+                            <div className={s.lcCode} data-l="Kood"><input className={s.in} value={l.code} placeholder="Kood" onChange={(e) => updateLine(i, { code: e.target.value })} /></div>
+                            <div className={`${s.pwrap} ${s.lcDesc}`}>
                               <input
                                 ref={(el) => { if (el) descRefs.current.set(l.key, el); else descRefs.current.delete(l.key); }}
                                 className={`${s.in} ${l.description.trim() ? '' : s.miss}`}
@@ -781,27 +781,27 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
                                 </div>
                               )}
                             </div>
-                            <div>
+                            <div className={s.lcAcc} data-l="Konto">
                               <select className={`${s.in} ${s.inSel} ${l.account_id ? '' : s.miss}`} value={l.account_id} onChange={(e) => updateLine(i, { account_id: e.target.value })}>
                                 <option value="">—</option>
                                 {revenueAccounts.map((a) => <option key={a.id} value={a.id} title={a.name}>{a.code}</option>)}
                               </select>
                             </div>
-                            <div className={s.qc}>
+                            <div className={`${s.qc} ${s.lcQty}`} data-l="Kogus">
                               {l.variable
                                 ? <span className={s.vqtag} title="Kogus sisestatakse igal perioodil enne arve väljastamist">iga kord</span>
                                 : <input className={`${s.in} ${s.inR}`} value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} />}
                               <button className={`${s.vqb} ${l.variable ? s.vqbOn : ''}`} title={l.variable ? 'Muuda püsivaks koguseks' : 'Kogus sisestatakse iga kord (tunnid, tükid)'} onClick={() => toggleVariable(i)}>±</button>
                             </div>
-                            <div>
+                            <div className={s.lcUnit} data-l="Ühik">
                               <select className={`${s.in} ${s.inSel}`} value={l.unit} onChange={(e) => updateLine(i, { unit: e.target.value })}>
                                 {[...new Set([...UNITS, l.unit].filter(Boolean))].map((u) => <option key={u}>{u}</option>)}
                               </select>
                             </div>
-                            <div><input className={`${s.in} ${s.inR} ${s.mono}`} value={l.unit_price} onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={() => updateLine(i, { unit_price: fmtNum(pn(l.unit_price)) })} /></div>
-                            <div><input className={`${s.in} ${s.inR}`} value={l.discount} onChange={(e) => updateLine(i, { discount: e.target.value })} /></div>
-                            <div className={s.rate}>{vat.rate}%</div>
-                            <div className={s.lsum}>{l.variable ? <span className={s.lsumVar}>muutuv</span> : num(netOf(l))}</div>
+                            <div className={s.lcPrice} data-l="Ühikuhind"><input className={`${s.in} ${s.inR} ${s.mono}`} value={l.unit_price} onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={() => updateLine(i, { unit_price: fmtNum(pn(l.unit_price)) })} /></div>
+                            <div className={s.lcDisc} data-l="Ale %"><input className={`${s.in} ${s.inR}`} value={l.discount} onChange={(e) => updateLine(i, { discount: e.target.value })} /></div>
+                            <div className={`${s.rate} ${s.lcRate}`} data-l="KM">{vat.rate}%</div>
+                            <div className={`${s.lsum} ${s.lcSum}`} data-l="Rea summa">{l.variable ? <span className={s.lsumVar}>muutuv</span> : num(netOf(l))}</div>
                             <div className={s.ra}>
                               <button className={s.iconbtn} title="Kopeeri rida" onClick={() => { setLines((ls) => [...ls.slice(0, i + 1), { ...l, key: nextKey(), id: undefined }, ...ls.slice(i + 1)]); setDirty(true); }}>⧉</button>
                               <button className={`${s.iconbtn} ${s.del}`} title="Kustuta rida" onClick={() => { setLines((ls) => ls.filter((_, j) => j !== i)); setDirty(true); }}>✕</button>
@@ -835,8 +835,8 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
                       {clients.map((c, i) => (
                         <div key={c.key} className={`${s.cr} ${c.active ? '' : s.crPaused}`}>
                           <div className={s.ix}>{i + 1}</div>
-                          <div className={s.cnm}><span className={s.av}>{initials(c.name)}</span><div><b>{c.name}</b><span className={`${s.rg} ${s.mono}`}>{c.reg}</span></div></div>
-                          <div>
+                          <div className={`${s.cnm} ${s.ccNm}`}><span className={s.av}>{initials(c.name)}</span><div><b>{c.name}</b><span className={`${s.rg} ${s.mono}`}>{c.reg}</span></div></div>
+                          <div className={s.ccTo}>
                             <input
                               className={`${s.in} ${c.channel === 'email' && !c.email.includes('@') ? s.miss : ''}`}
                               value={c.channel === 'einvoice' ? c.einvoiceIban || '' : c.email}
@@ -846,7 +846,7 @@ export default function RecurringTemplateEditor({ templateId }: Props) {
                               onChange={(e) => updateClient(i, { email: e.target.value })}
                             />
                           </div>
-                          <div>
+                          <div className={s.ccCh}>
                             <select className={`${s.in} ${s.inSel}`} value={c.channel} onChange={(e) => updateClient(i, { channel: e.target.value as ClientChannel })}>
                               {CHANNELS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                             </select>

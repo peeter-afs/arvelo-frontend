@@ -127,6 +127,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tInvoices('purchaseList'), href: '/invoices/purchase' },
         { label: tInvoices('purchaseApprovals'), href: '/invoices/purchase-approvals' },
         { label: tInvoices('purchaseImports'), href: '/invoices/purchase-imports' },
+        { label: tNavigation('expenseReports'), href: '/accounting/expense-reports' },
         { label: tInvoices('recurring'), href: '/invoices/recurring' },
         { label: tInvoices('reminders'), href: '/invoices/reminders' },
         { label: tInvoices('productsTitle'), href: '/invoices/products' },
@@ -139,6 +140,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
       children: [
         { label: tAccounting('bankWorkspace'), href: '/accounting/bank' },
         { label: tAccounting('payments'), href: '/accounting/payments' },
+        { label: tNavigation('cashDesk'), href: '/accounting/cash' },
         { label: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
       ],
     },
@@ -171,6 +173,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tReports('generalLedger'), href: '/reports/general-ledger' },
         { label: tReports('vatReport'), href: '/reports/vat' },
         { label: tReports('agingReport'), href: '/reports/aging' },
+        { label: tReports('partnerStatement'), href: '/reports/partner-statement' },
         { label: tReports('annualReport'), href: '/reports/annual-report' },
       ],
     },
@@ -323,7 +326,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md p-1.5 text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white"
+              className="-mr-1.5 rounded-md p-2.5 text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white"
               aria-label={tCommon('closeMenu')}
             >
               <X className="h-4 w-4" />
@@ -376,7 +379,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                   <button
                     type="button"
                     onClick={() => toggleSection(item.id!)}
-                    className={`relative flex w-full items-center gap-2.5 rounded-[7px] px-2.5 py-2 text-[13.5px] transition-colors ${
+                    className={`relative flex w-full items-center gap-2.5 rounded-[7px] px-2.5 ${isMobile ? 'py-2.5' : 'py-2'} text-[13.5px] transition-colors ${
                       active
                         ? 'bg-[var(--a-side-active)] font-medium text-white'
                         : 'text-[var(--a-side-text)] hover:bg-[var(--a-side-active)] hover:text-white'
@@ -404,7 +407,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                             key={child.href}
                             href={child.href}
                             onClick={handleNavClick}
-                            className={`relative flex min-h-8 items-center rounded-[7px] px-2 py-1.5 text-[12.5px] transition-colors ${
+                            className={`relative flex ${isMobile ? 'min-h-10' : 'min-h-8'} items-center rounded-[7px] px-2 py-1.5 text-[12.5px] transition-colors ${
                               childActive
                                 ? 'bg-[var(--a-side-active)] font-medium text-white'
                                 : 'text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white'
@@ -427,7 +430,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
                 key={item.href}
                 href={item.href!}
                 onClick={handleNavClick}
-                className={`relative flex items-center rounded-[7px] px-2.5 py-2 text-[13.5px] transition-colors ${
+                className={`relative flex items-center rounded-[7px] px-2.5 ${isMobile ? 'py-2.5' : 'py-2'} text-[13.5px] transition-colors ${
                   effectiveCollapsed ? 'justify-center' : 'gap-2.5'
                 } ${
                   active
@@ -462,7 +465,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
           <button
             type="button"
             onClick={handleLogout}
-            className="rounded-md p-1.5 text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white"
+            className={`rounded-md ${isMobile ? 'p-2.5' : 'p-1.5'} text-[var(--a-side-muted)] hover:bg-[var(--a-side-active)] hover:text-white`}
             aria-label={tCommon('signOut')}
           >
             <LogOut className="h-4 w-4" />

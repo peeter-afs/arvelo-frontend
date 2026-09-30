@@ -176,7 +176,7 @@ export default function GeneralLedgerPage() {
         <div className="space-y-4 sm:space-y-6">
           {/* Account info & summary cards */}
           <div className="card p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4">
+            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4 break-words">
               {ledgerData.account.code} - {ledgerData.account.name}
               <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">
                 ({ledgerData.account.type})
@@ -188,7 +188,7 @@ export default function GeneralLedgerPage() {
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
                   {tCommon('openingBalance')}
                 </p>
-                <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
+                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
                   {formatCurrency(ledgerData.openingBalance)}
                 </p>
               </div>
@@ -196,7 +196,7 @@ export default function GeneralLedgerPage() {
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
                   {tAccounting('debit')}
                 </p>
-                <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
+                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
                   {formatCurrency(ledgerData.totalDebit)}
                 </p>
               </div>
@@ -204,7 +204,7 @@ export default function GeneralLedgerPage() {
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
                   {tAccounting('credit')}
                 </p>
-                <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
+                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
                   {formatCurrency(ledgerData.totalCredit)}
                 </p>
               </div>
@@ -212,7 +212,7 @@ export default function GeneralLedgerPage() {
                 <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
                   {tCommon('closingBalance')}
                 </p>
-                <p className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mt-1">
+                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
                   {formatCurrency(ledgerData.closingBalance)}
                 </p>
               </div>
@@ -221,11 +221,11 @@ export default function GeneralLedgerPage() {
 
           {/* Transactions table */}
           <div className="card overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto print:overflow-visible">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-[var(--border)] bg-[var(--surface-elevated)]">
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+                    <th className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
                       {tCommon('date')}
                     </th>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden sm:table-cell">
@@ -251,7 +251,7 @@ export default function GeneralLedgerPage() {
                 <tbody className="divide-y divide-[var(--border)]">
                   {/* Opening balance row */}
                     <tr className="bg-[var(--surface-elevated)]">
-                      <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
+                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
                       {tCommon('openingBalance')}
                       </td>
                     <td className="px-4 sm:px-6 py-3 hidden sm:table-cell" />
@@ -264,13 +264,13 @@ export default function GeneralLedgerPage() {
                   {/* Transaction rows */}
                   {ledgerData.transactions.map((tx) => (
                     <tr key={tx.id} className="hover:bg-[var(--surface-elevated)] transition-colors">
-                      <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-[var(--text-primary)]">
+                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--a-surface)] px-4 sm:px-6 py-3 whitespace-nowrap text-[var(--text-primary)]">
                         {tx.date}
                       </td>
                       <td className="px-4 sm:px-6 py-3 whitespace-nowrap font-mono text-[var(--text-secondary)] hidden sm:table-cell">
                         {tx.reference || '-'}
                       </td>
-                      <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)]">
+                      <td className="max-sm:min-w-[160px] px-4 sm:px-6 py-3 text-[var(--text-secondary)]">
                         {tx.description || '-'}
                       </td>
                       <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] hidden md:table-cell">
@@ -290,9 +290,11 @@ export default function GeneralLedgerPage() {
 
                   {/* Closing balance row */}
                   <tr className="bg-[var(--surface-elevated)] border-t-2 border-[var(--border)]">
-                    <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
+                    <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={2}>
                       {tCommon('closingBalance')}
                     </td>
+                    <td className="px-4 sm:px-6 py-3 hidden sm:table-cell" />
+                    <td className="px-4 sm:px-6 py-3 hidden md:table-cell" />
                     <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
                       {formatCurrency(ledgerData.totalDebit)}
                     </td>

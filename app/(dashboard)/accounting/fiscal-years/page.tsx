@@ -158,7 +158,7 @@ export default function FiscalYearsPage() {
                 type="date"
                 value={newYearStart}
                 onChange={(e) => setNewYearStart(e.target.value)}
-                className="px-3 py-2 rounded-lg"
+                className="w-full px-3 py-2 rounded-lg sm:w-auto"
                 style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
               />
             </div>
@@ -170,7 +170,7 @@ export default function FiscalYearsPage() {
                 type="date"
                 value={newYearEnd}
                 onChange={(e) => setNewYearEnd(e.target.value)}
-                className="px-3 py-2 rounded-lg"
+                className="w-full px-3 py-2 rounded-lg sm:w-auto"
                 style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
               />
             </div>
@@ -212,28 +212,28 @@ export default function FiscalYearsPage() {
             return (
               <div key={year.id} className="card overflow-hidden">
                 <div
-                  className="flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:opacity-80"
+                  className="flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:opacity-80 max-md:flex-wrap max-md:gap-3"
                   style={{ borderBottom: isExpanded ? '1px solid var(--border)' : 'none' }}
                   onClick={() => toggleYear(year.id)}
                 >
-                  <div className="flex items-center gap-3">
-                    {isExpanded ? <ChevronDown className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-                    <div>
-                      <span className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>
+                  <div className="flex min-w-0 items-center gap-3">
+                    {isExpanded ? <ChevronDown className="h-5 w-5 shrink-0" /> : <ChevronRight className="h-5 w-5 shrink-0" />}
+                    <div className="min-w-0">
+                      <span className="font-semibold text-lg max-md:block max-md:text-base" style={{ color: 'var(--text-primary)' }}>
                         {yearLabel}
                       </span>
-                      <span className="ml-3 text-sm" style={{ color: 'var(--text-muted)' }}>
+                      <span className="ml-3 text-sm max-md:ml-0 max-md:block" style={{ color: 'var(--text-muted)' }}>
                         {openPeriods}/{totalPeriods} {t('periodsOpen')}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 max-md:ml-8">
                     <StatusBadge closed={year.is_closed} />
                     {!year.is_closed ? (
                       <button
                         onClick={(e) => { e.stopPropagation(); handleAction(() => accountingApi.closeFiscalYear(year.id), `close-fy-${year.id}`); }}
                         disabled={actionLoading === `close-fy-${year.id}`}
-                        className="px-3 py-1.5 rounded text-xs font-medium disabled:opacity-50"
+                        className="px-3 py-1.5 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
                         style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                       >
                         <Lock className="inline h-3 w-3 mr-1" />
@@ -243,7 +243,7 @@ export default function FiscalYearsPage() {
                       <button
                         onClick={(e) => { e.stopPropagation(); handleAction(() => accountingApi.reopenFiscalYear(year.id), `reopen-fy-${year.id}`); }}
                         disabled={actionLoading === `reopen-fy-${year.id}`}
-                        className="px-3 py-1.5 rounded text-xs font-medium disabled:opacity-50"
+                        className="px-3 py-1.5 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
                         style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                       >
                         <Unlock className="inline h-3 w-3 mr-1" />
@@ -254,12 +254,12 @@ export default function FiscalYearsPage() {
                 </div>
 
                 {isExpanded && (
-                  <div className="p-4 sm:p-5">
+                  <div className="p-4 sm:p-5 max-md:overflow-x-auto max-sm:px-3">
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: '2px solid var(--border)' }}>
                           <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('period')}</th>
-                          <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('dateRange')}</th>
+                          <th className="text-left py-2 pr-4 font-medium max-md:hidden" style={{ color: 'var(--text-secondary)' }}>{t('dateRange')}</th>
                           <th className="text-left py-2 pr-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('status')}</th>
                           <th className="text-right py-2 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('actions')}</th>
                         </tr>
@@ -306,17 +306,22 @@ function PeriodRow({
 
   return (
     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-      <td className="py-2.5 pr-4 font-medium" style={{ color: 'var(--text-primary)' }}>{periodLabel}</td>
-      <td className="py-2.5 pr-4" style={{ color: 'var(--text-secondary)' }}>
+      <td className="py-2.5 pr-4 font-medium max-md:pr-2" style={{ color: 'var(--text-primary)' }}>
+        {periodLabel}
+        <div className="mt-0.5 text-xs font-normal md:hidden" style={{ color: 'var(--text-secondary)' }}>
+          {formatDate(period.date_start)} — {formatDate(period.date_end)}
+        </div>
+      </td>
+      <td className="py-2.5 pr-4 max-md:hidden" style={{ color: 'var(--text-secondary)' }}>
         {formatDate(period.date_start)} — {formatDate(period.date_end)}
       </td>
-      <td className="py-2.5 pr-4"><StatusBadge closed={period.is_closed} /></td>
+      <td className="py-2.5 pr-4 max-md:pr-2"><StatusBadge closed={period.is_closed} /></td>
       <td className="py-2.5 text-right">
         {!period.is_closed ? (
           <button
             onClick={onClose}
             disabled={actionLoading === `close-p-${period.id}`}
-            className="px-3 py-1 rounded text-xs font-medium disabled:opacity-50"
+            className="px-3 py-1 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
             style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           >
             {actionLoading === `close-p-${period.id}` ? '...' : t('closePeriod')}
@@ -325,7 +330,7 @@ function PeriodRow({
           <button
             onClick={onReopen}
             disabled={actionLoading === `reopen-p-${period.id}`}
-            className="px-3 py-1 rounded text-xs font-medium disabled:opacity-50"
+            className="px-3 py-1 rounded text-xs font-medium disabled:opacity-50 max-md:min-h-9 max-md:whitespace-nowrap"
             style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           >
             {actionLoading === `reopen-p-${period.id}` ? '...' : t('reopenPeriod')}

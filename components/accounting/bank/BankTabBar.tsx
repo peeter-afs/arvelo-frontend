@@ -2,7 +2,7 @@
 
 import type { ComponentType, CSSProperties } from 'react';
 
-export type BankTab = 'import' | 'review' | 'reconcile';
+export type BankTab = 'import' | 'review' | 'reconcile' | 'reconstruct';
 
 type TabDef = {
   id: BankTab;
@@ -22,7 +22,7 @@ export function BankTabBar({
   tabs: TabDef[];
 }) {
   return (
-    <div className="flex h-7 gap-1 rounded-lg border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5">
+    <div className="no-scrollbar flex h-9 max-w-full gap-1 overflow-x-auto rounded-lg lg:h-7 lg:overflow-visible border border-[var(--a-border)] bg-[var(--a-surface-2)] p-0.5">
       {tabs.map((tab) => {
         const on = tab.id === active;
         const Icon = tab.icon;
@@ -33,7 +33,7 @@ export function BankTabBar({
             onClick={() => onChange(tab.id)}
             aria-current={on ? 'page' : undefined}
             title={tab.title}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 text-[12.5px] font-semibold transition-colors"
+            className="flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2.5 text-[12.5px] font-semibold transition-colors"
             style={{
               background: on ? 'var(--a-surface)' : 'transparent',
               border: on ? '1px solid var(--a-border)' : '1px solid transparent',

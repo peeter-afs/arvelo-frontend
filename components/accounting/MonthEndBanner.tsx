@@ -35,12 +35,12 @@ export function MonthEndBanner() {
   return (
     <Link
       href="/accounting/month-end"
-      className="card mb-5 p-4 flex items-center justify-between gap-3 hover:opacity-90 transition-opacity"
+      className="card mb-4 sm:mb-5 p-3 sm:p-4 flex items-center justify-between gap-3 hover:opacity-90 transition-opacity"
       style={{ borderColor: 'var(--warning, #ca8a04)', backgroundColor: 'rgba(202, 138, 4, 0.05)' }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <CalendarCheck className="h-5 w-5 shrink-0" style={{ color: 'var(--warning, #ca8a04)' }} />
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
             {t('monthEndBannerTitle', { month: prevLabel })}
           </p>

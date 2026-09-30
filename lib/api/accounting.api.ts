@@ -57,6 +57,12 @@ export type AccountingSettings = {
   fiscal_year_start_day?: number;
   rounding_account_id?: string | null;
   rounding_tolerance?: number | string | null;
+  opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | 'startup' | null;
+  founded_on?: string | null;
+  share_capital?: number | string | null;
+  share_capital_paid?: boolean | null;
+  bookkeeping_start_date?: string | null;
+  ai_bank_categorization_enabled?: boolean;
 };
 
 export type RoundingSettings = Partial<{
@@ -681,7 +687,7 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async setOpeningBalancesStrategy(strategy: 'with_general' | 'subledger_only' | 'mid_year') {
+  async setOpeningBalancesStrategy(strategy: 'with_general' | 'subledger_only' | 'mid_year' | 'startup') {
     const response = await apiClient.post<ApiResponse<{ settings: AccountingSettings }>>(
       '/api/accounting/opening-balances/strategy',
       { strategy }

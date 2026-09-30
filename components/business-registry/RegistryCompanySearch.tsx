@@ -123,9 +123,9 @@ export function RegistryCompanySearch({
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-medium text-[var(--a-text)]">{item.name || t('unnamedCompany')}</span>
+                  <span className="min-w-0 break-words text-[13px] font-medium text-[var(--a-text)]">{item.name || t('unnamedCompany')}</span>
                   {item.country && (
-                    <span className="inline-flex items-center rounded-full bg-[var(--a-surface-2)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--a-text-3)]">
+                    <span className="inline-flex shrink-0 items-center rounded-full bg-[var(--a-surface-2)] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[var(--a-text-3)]">
                       {countryFlag(item.country)} {item.country}
                     </span>
                   )}

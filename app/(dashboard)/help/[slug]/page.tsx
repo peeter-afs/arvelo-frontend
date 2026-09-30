@@ -23,7 +23,7 @@ export default function GuidePage({ params }: { params: Promise<{ slug: string }
   const backLink = (
     <Link
       href="/help"
-      className="inline-flex items-center gap-1.5 text-[13px] text-[var(--a-text-2)] transition-colors hover:text-[var(--a-text)]"
+      className="inline-flex items-center gap-1.5 py-2 lg:py-0 text-[13px] text-[var(--a-text-2)] transition-colors hover:text-[var(--a-text)]"
     >
       <ArrowLeft className="h-3.5 w-3.5" />
       {t('backToGuides')}
@@ -32,7 +32,7 @@ export default function GuidePage({ params }: { params: Promise<{ slug: string }
 
   if (!guide) {
     return (
-      <div className="mx-auto w-full max-w-3xl py-6">
+      <div className="mx-auto w-full max-w-3xl py-3 lg:py-6">
         {backLink}
         <div className="mt-4 rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] p-6">
           <h1 className="text-[17px] font-semibold text-[var(--a-text)]">{t('notFoundTitle')}</h1>
@@ -43,10 +43,10 @@ export default function GuidePage({ params }: { params: Promise<{ slug: string }
   }
 
   return (
-    <div className="mx-auto w-full max-w-5xl py-6">
+    <div className="mx-auto w-full max-w-5xl py-3 lg:py-6">
       {backLink}
 
-      <h1 className="mt-3 text-[22px] font-semibold text-[var(--a-text)]">{guide.title}</h1>
+      <h1 className="mt-1 lg:mt-3 text-[20px] lg:text-[22px] font-semibold break-words text-[var(--a-text)]">{guide.title}</h1>
       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[12px] text-[var(--a-text-3)]">
         <span className="inline-flex items-center gap-1">
           <Clock className="h-3.5 w-3.5" />

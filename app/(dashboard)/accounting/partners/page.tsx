@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { duplicateMatchLabel } from '@/components/partners/duplicateMatchLabel';
@@ -165,6 +167,8 @@ export default function BusinessPartnersPage() {
   }>>([]);
   const [form, setForm] = useState<PartnerFormState>(emptyPartnerForm());
   const [addModalOpen, setAddModalOpen] = useState(false);
+  // Mobile: detail opens as a full-screen sheet only after an explicit row tap.
+  const [detailOpen, setDetailOpen] = useState(false);
   const [newBankAccount, setNewBankAccount] = useState<BankAccountDraft>(emptyBankAccountDraft());
   const [registrySyncLog, setRegistrySyncLog] = useState<PartnerRegistrySyncLogItem[]>([]);
   const [includeTaxArrearsOnRefresh, setIncludeTaxArrearsOnRefresh] = useState(false);
@@ -380,9 +384,9 @@ export default function BusinessPartnersPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => void refreshPartners(selectedPartnerId)}>
+          <Button onClick={() => void refreshPartners(selectedPartnerId)} aria-label={t('refreshPartners')} title={t('refreshPartners')}>
             <RefreshCw className="h-3.5 w-3.5" />
-            {t('refreshPartners')}
+            <span className="hidden sm:inline">{t('refreshPartners')}</span>
           </Button>
           <Button
             variant="primary"
@@ -402,10 +406,10 @@ export default function BusinessPartnersPage() {
       {errorMessage && <Notice tone="danger" icon={<AlertCircle className="h-4 w-4" />}>{errorMessage}</Notice>}
       {successMessage && <Notice tone="success" icon={<CheckCircle2 className="h-4 w-4" />}>{successMessage}</Notice>}
 
-      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-3">
-        <Stat label="Receivable" value={formatEUR(receivable)} subtle={`${customers.filter((partner) => partner.balance > 0).length} customers with balance`} tone="positive" />
-        <Stat label="Payable" value={formatEUR(payable)} subtle={`${suppliers.filter((partner) => partner.balance < 0).length} suppliers with balance`} tone="warning" />
-        <Stat label="Contacts" value={partners.length} subtle={`${partners.filter((partner) => partner.is_active).length} active`} />
+      <div className="grid grid-cols-2 gap-y-3 border-b border-[var(--a-border)] pb-4 md:grid-cols-3 md:gap-y-0">
+        <Stat className="max-md:[&>div:nth-child(2)]:text-[19px]" label="Receivable" value={formatEUR(receivable)} subtle={`${customers.filter((partner) => partner.balance > 0).length} customers with balance`} tone="positive" />
+        <Stat className="max-md:pr-0 max-md:[&>div:nth-child(2)]:text-[19px]" label="Payable" value={formatEUR(payable)} subtle={`${suppliers.filter((partner) => partner.balance < 0).length} suppliers with balance`} tone="warning" />
+        <Stat className="max-md:pl-0 max-md:[&>div:nth-child(2)]:text-[19px]" label="Contacts" value={partners.length} subtle={`${partners.filter((partner) => partner.is_active).length} active`} />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -418,7 +422,7 @@ export default function BusinessPartnersPage() {
             className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
           />
         </label>
-        <div className="flex flex-wrap gap-1">
+        <div className="no-scrollbar -mx-4 flex gap-1 overflow-x-auto whitespace-nowrap px-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:whitespace-normal lg:px-0">
           {[
             ['all', t('allPartnerTypes'), partners.length],
             ['customer', t('customerPlural'), customers.length],
@@ -428,7 +432,7 @@ export default function BusinessPartnersPage() {
             <button
               key={id as string}
               onClick={() => setTypeFilter(id as typeof typeFilter)}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
                 typeFilter === id
                   ? 'bg-[var(--a-text)] text-white'
                   : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
@@ -441,7 +445,7 @@ export default function BusinessPartnersPage() {
           <button
             onClick={() => setUnlinkedOnly((v) => !v)}
             title={t('partnersUnlinkedHint')}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
               unlinkedOnly
                 ? 'bg-[var(--a-accent)] text-white'
                 : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
@@ -454,7 +458,7 @@ export default function BusinessPartnersPage() {
           <button
             onClick={() => setAutoCreatedOnly((v) => !v)}
             title={t('autoCreatedFromBankImport')}
-            className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+            className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
               autoCreatedOnly
                 ? 'bg-[var(--a-accent)] text-white'
                 : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
@@ -467,15 +471,15 @@ export default function BusinessPartnersPage() {
       </div>
 
       <SplitPane className="flex-1">
-        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)]">
-          <div className="grid grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+        <section className="min-w-0 overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] lg:min-h-[520px]">
+          <div className="hidden grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] md:grid gap-3 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-4 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
             <div>Partner</div>
             <div>Type</div>
             <div className="text-right">Balance</div>
             <div>Updated</div>
           </div>
-          <div className="max-h-[calc(100vh-390px)] min-h-[430px] overflow-y-auto">
+          <div className="lg:max-h-[calc(100vh-390px)] lg:min-h-[430px] lg:overflow-y-auto">
             {isBootLoading ? (
               <div className="flex h-48 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
@@ -490,41 +494,48 @@ export default function BusinessPartnersPage() {
                 return (
                   <button
                     key={partner.id}
-                    onClick={() => setSelectedPartnerId(partner.id)}
-                    className={`grid w-full grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] items-center gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
+                    onClick={() => {
+                      setSelectedPartnerId(partner.id);
+                      setDetailOpen(true);
+                    }}
+                    className={`flex w-full items-center md:grid md:grid-cols-[34px_minmax(220px,1fr)_104px_120px_86px] gap-3 border-b border-[var(--a-border)] px-4 py-3 text-left text-[13px] transition-colors ${
                       selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
                     }`}
                   >
-                    <span className="grid h-6 w-6 place-items-center rounded-md bg-[var(--a-surface-2)] text-[10px] font-semibold text-[var(--a-text-2)]">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-md bg-[var(--a-surface-2)] text-[10px] font-semibold text-[var(--a-text-2)]">
                       {initials(partner.name)}
                     </span>
-                    <span className="min-w-0">
+                    <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium text-[var(--a-text)]">{partner.name}</span>
                       <span className="mt-0.5 block truncate text-[11.5px] text-[var(--a-text-3)]">
                         {partner.vat_number || partner.reg_code || t('noIdentifier')} · {partner.country_code || 'EE'}
                         {isAutoCreatedPartner(partner) && ` · ${t('autoCreatedFromBankImport')}`}
                       </span>
                     </span>
-                    <PartnerTypeBadge type={partner.type} />
-                    <span className={`text-right font-mono text-[13px] font-medium ${balanceTone}`}>
+                    <PartnerTypeBadge type={partner.type} className="max-md:hidden" />
+                    <span className={`shrink-0 text-right font-mono text-[13px] font-medium ${balanceTone}`}>
                       {formatEUR(Math.abs(partner.balance))}
                     </span>
-                    <span className="font-mono text-[11.5px] text-[var(--a-text-2)]">{shortDate(partner.updated_at)}</span>
+                    <span className="font-mono text-[11.5px] text-[var(--a-text-2)] max-md:hidden">{shortDate(partner.updated_at)}</span>
                   </button>
                 );
               })
             )}
           </div>
-          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)] max-md:flex-wrap max-md:gap-y-1">
             <span>Showing <span className="text-[var(--a-text)]">{filteredPartners.length}</span></span>
             <span>Receivable <span className="text-[var(--a-pos)]">{formatEUR(receivable)}</span></span>
             <span>Payable <span className="text-[var(--a-warn)]">{formatEUR(payable)}</span></span>
-            <span className="flex-1" />
-            <span>Registry sync enabled</span>
+            <span className="flex-1 max-md:hidden" />
+            <span className="max-md:hidden">Registry sync enabled</span>
           </div>
         </section>
 
-        <SplitPaneDetail>
+        <SplitPaneDetail
+          mobileOpen={detailOpen}
+          onMobileClose={() => setDetailOpen(false)}
+          mobileTitle={selectedPartner?.name}
+        >
           <PartnerDetailPanel
             partner={selectedPartner}
             partnerWithBalance={selectedPartnerWithBalance}
@@ -558,6 +569,7 @@ export default function BusinessPartnersPage() {
         onCreated={(partner) => {
           setAddModalOpen(false);
           setSelectedPartnerId(partner.id);
+          setDetailOpen(true);
           void refreshPartners(partner.id);
           setSuccessMessage(t('partnerCreated'));
         }}
@@ -614,6 +626,7 @@ function PartnerDetailPanel({
   onUpdateBankAccount: (account: SupplierBankAccount, updates: Partial<BankAccountDraft>) => void;
 }) {
   const t = useTranslations('accounting');
+  const tStatement = useTranslations('partnerStatement');
   const [recentEntries, setRecentEntries] = useState<JournalEntryRecord[]>([]);
   const [pdfTemplates, setPdfTemplates] = useState<InvoiceTemplate[]>([]);
   useEffect(() => {
@@ -633,7 +646,7 @@ function PartnerDetailPanel({
 
   if (isLoading) {
     return (
-      <div className="flex min-h-[520px] items-center justify-center">
+      <div className="flex min-h-48 items-center justify-center xl:min-h-[520px]">
         <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
       </div>
     );
@@ -643,8 +656,8 @@ function PartnerDetailPanel({
   const balanceTone = balance > 0 ? 'text-[var(--a-pos)]' : balance < 0 ? 'text-[var(--a-warn)]' : 'text-[var(--a-text)]';
 
   return (
-    <div className="flex max-h-[calc(100vh-190px)] min-h-[520px] flex-col">
-      <div className="border-b border-[var(--a-border)] bg-[linear-gradient(180deg,var(--a-accent-soft-2),var(--a-surface))] px-5 py-4">
+    <div className="flex flex-col xl:max-h-[calc(100vh-190px)] xl:min-h-[520px]">
+      <div className="border-b border-[var(--a-border)] bg-[linear-gradient(180deg,var(--a-accent-soft-2),var(--a-surface))] px-4 py-4 sm:px-5">
         <div className="flex items-center gap-3">
           <span className="grid h-14 w-14 place-items-center rounded-lg bg-[var(--a-surface-2)] text-base font-semibold text-[var(--a-text-2)]">
             {initials(partner.name)}
@@ -657,6 +670,9 @@ function PartnerDetailPanel({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <PartnerTypeBadge type={partner.type} />
               <StatusPill tone={partner.is_active ? 'success' : 'neutral'}>{partner.is_active ? t('active') : t('inactive')}</StatusPill>
+              <Link href={`/reports/partner-statement?partner_id=${partner.id}`} className="text-[12px] font-medium text-[var(--a-accent)] hover:underline">
+                {tStatement('title')} →
+              </Link>
             </div>
           </div>
         </div>
@@ -669,7 +685,7 @@ function PartnerDetailPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+      <div className="min-h-0 flex-1 space-y-5 p-4 sm:p-5 xl:overflow-y-auto">
         <Section label={t('identity')} cols={2}>
           <Field label={t('type')} value={form.type} onChange={(value) => setForm((current) => ({ ...current, type: value as PartnerFormState['type'] }))} as="select" options={[
             { label: t('customer'), value: 'customer' },
@@ -850,7 +866,7 @@ function PartnerDetailPanel({
       </div>
 
       {/* Sticky footer — primary actions stay pinned regardless of scroll */}
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--a-border)] px-5 py-3.5">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-[var(--a-border)] px-5 py-3.5 max-xl:sticky max-xl:bottom-0 max-xl:z-10 max-xl:flex-wrap max-xl:bg-[var(--a-surface)] max-sm:px-4">
         <Button onClick={onCheckDuplicates} disabled={!!actionLoading}>
           {actionLoading === 'check-duplicates' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldAlert className="h-3.5 w-3.5" />}
           {t('checkDuplicates')}
@@ -872,7 +888,7 @@ function Notice({ tone, icon, children }: { tone: 'danger' | 'success'; icon: Re
   );
 }
 
-function PartnerTypeBadge({ type }: { type: PartnerRecord['type'] }) {
+function PartnerTypeBadge({ type, className = '' }: { type: PartnerRecord['type']; className?: string }) {
   const style =
     type === 'customer'
       ? 'bg-[var(--a-accent-soft)] text-[var(--a-accent)]'
@@ -880,14 +896,14 @@ function PartnerTypeBadge({ type }: { type: PartnerRecord['type'] }) {
         ? 'bg-[var(--a-warn-soft)] text-[var(--a-warn)]'
         : 'bg-[#ece4f0] text-[#5a3974]';
 
-  return <span className={`inline-flex rounded px-2 py-1 text-[11px] font-semibold capitalize leading-none ${style}`}>{type}</span>;
+  return <span className={`inline-flex rounded px-2 py-1 text-[11px] font-semibold capitalize leading-none ${style} ${className}`}>{type}</span>;
 }
 
 function Section({ label, children, icon, cols = 1 }: { label: string; children: React.ReactNode; icon?: React.ReactNode; cols?: 1 | 2 }) {
   return (
     <section>
       <div className="micro mb-3 flex items-center gap-1.5 text-[var(--a-text-3)]">{icon}{label}</div>
-      <div className={cols === 2 ? 'grid grid-cols-2 gap-3' : 'space-y-3'}>{children}</div>
+      <div className={cols === 2 ? 'grid grid-cols-1 gap-3 sm:grid-cols-2' : 'space-y-3'}>{children}</div>
     </section>
   );
 }
@@ -939,7 +955,7 @@ function BankAccountCard({
   const t = useTranslations('accounting');
   return (
     <div className="rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] p-3">
-      <div className="font-mono text-[12px] font-semibold text-[var(--a-text)]">{account.iban}</div>
+      <div className="break-all font-mono text-[12px] font-semibold text-[var(--a-text)]">{account.iban}</div>
       <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">
         {account.account_holder_name || '-'} · {account.bank_name || t('noBankName')} · {account.currency_code || 'EUR'}
       </div>

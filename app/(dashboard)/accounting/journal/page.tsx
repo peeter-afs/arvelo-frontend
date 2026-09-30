@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
@@ -57,6 +57,7 @@ export default function JournalEntriesPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<JournalEntryWithRows | null>(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const accountMap = useMemo(() => new Map(accounts.map((account) => [account.id, account])), [accounts]);
 
@@ -180,17 +181,17 @@ export default function JournalEntriesPage() {
       <div className="flex flex-col gap-3 border-b border-[var(--a-border)] pb-4 xl:flex-row xl:items-end xl:justify-between compact:lg:flex-row compact:lg:items-center compact:lg:justify-between compact:lg:pb-2">
         <div>
           <div className="micro text-[var(--a-text-3)] compact:lg:hidden">{t('journalWorkspace')}</div>
-          <h1 className="mt-1 text-[28px] font-semibold leading-none text-[var(--a-text)] compact:lg:mt-0 compact:lg:text-[17px]">{t('journalEntries')}</h1>
+          <h1 className="mt-1 text-[24px] font-semibold lg:text-[28px] leading-none text-[var(--a-text)] compact:lg:mt-0 compact:lg:text-[17px]">{t('journalEntries')}</h1>
           <p className="mt-2 text-[13px] text-[var(--a-text-2)] compact:lg:hidden">{t('entriesInView', { count: filtered.length })}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button>
+          <Button aria-label={t('import')} title={t('import')}>
             <Upload className="h-3.5 w-3.5" />
-            {t('import')}
+            <span className="hidden sm:inline">{t('import')}</span>
           </Button>
-          <Button>
+          <Button aria-label={t('export')} title={t('export')}>
             <Download className="h-3.5 w-3.5" />
-            {t('export')}
+            <span className="hidden sm:inline">{t('export')}</span>
           </Button>
           <Button variant="primary" onClick={() => router.push('/accounting/journal/new')}>
             <Plus className="h-3.5 w-3.5" />
@@ -200,15 +201,15 @@ export default function JournalEntriesPage() {
         </div>
       </div>
 
-      <div className="grid border-b border-[var(--a-border)] pb-4 md:grid-cols-4 compact:lg:hidden">
-        <Stat label={t('postedEntries')} value={postedCount} subtle={t('currentLedger')} delta="+8.4%" />
-        <Stat label={t('draftsToReview')} value={draftCount} subtle={t('oldestDraftFirst')} tone="warning" />
-        <Stat label={t('visibleMovement')} value={formatEUR(visibleAmount)} subtle={t('rowsCount', { count: filtered.length })} />
-        <Stat label={t('bookBalance')} value={Math.abs(totalDebit - totalCredit) < 0.01 ? t('balanced') : t('openState')} subtle={t('selectedEntryLabel')} tone="positive" check />
+      <div className="grid grid-cols-2 gap-y-3 border-b border-[var(--a-border)] pb-4 md:grid-cols-4 compact:lg:hidden md:gap-y-0">
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('postedEntries')} value={postedCount} subtle={t('currentLedger')} delta="+8.4%" />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('draftsToReview')} value={draftCount} subtle={t('oldestDraftFirst')} tone="warning" />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('visibleMovement')} value={formatEUR(visibleAmount)} subtle={t('rowsCount', { count: filtered.length })} />
+        <Stat className="max-md:pl-0 max-md:pr-2" label={t('bookBalance')} value={Math.abs(totalDebit - totalCredit) < 0.01 ? t('balanced') : t('openState')} subtle={t('selectedEntryLabel')} tone="positive" check />
       </div>
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex flex-wrap items-center gap-1">
+        <div className="no-scrollbar -mx-4 flex items-center gap-1 overflow-x-auto whitespace-nowrap px-4 lg:mx-0 lg:flex-wrap lg:overflow-visible lg:px-0">
           {[
             ['all', t('all'), entries.length, true],
             ['posted', t('posted'), postedCount, false],
@@ -217,7 +218,7 @@ export default function JournalEntriesPage() {
           ].map(([id, label, count, active]) => (
             <button
               key={id as string}
-              className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12.5px] font-medium ${
                 active
                   ? 'bg-[var(--a-text)] text-white'
                   : 'text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]'
@@ -230,8 +231,8 @@ export default function JournalEntriesPage() {
             </button>
           ))}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="relative block w-full sm:w-80 compact:lg:w-64">
+        <div className="flex items-center gap-2 sm:flex-wrap">
+          <label className="relative block min-w-0 flex-1 sm:w-80 compact:lg:w-64 sm:flex-none">
             <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--a-text-3)]" />
             <input
               ref={searchRef}
@@ -241,9 +242,9 @@ export default function JournalEntriesPage() {
               className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] pl-9 pr-3 text-[13px] text-[var(--a-text)] outline-none"
             />
           </label>
-          <Button>
+          <Button aria-label={t('filter')} title={t('filter')}>
             <Filter className="h-3.5 w-3.5" />
-            {t('filter')}
+            <span className="hidden sm:inline">{t('filter')}</span>
           </Button>
           <div className="hidden items-center gap-1 text-[11.5px] text-[var(--a-text-3)] lg:flex compact:lg:hidden">
             <Kbd>J</Kbd>
@@ -262,8 +263,8 @@ export default function JournalEntriesPage() {
       {error && <div className="rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] p-4 text-sm text-[var(--a-neg)]">{error}</div>}
 
       <SplitPane className="flex-1">
-        <section className="min-h-[520px] overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] compact:lg:min-h-0">
-          <div className="grid grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+        <section className="min-w-0 overflow-hidden rounded-[10px] border border-[var(--a-border)] bg-[var(--a-surface)] compact:lg:min-h-0 md:min-h-[520px]">
+          <div className="hidden grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 md:grid text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
             <div />
             <div>{t('jeCode')}</div>
             <div>{t('date')}</div>
@@ -274,7 +275,7 @@ export default function JournalEntriesPage() {
             <div className="text-right">{t('status')}</div>
           </div>
 
-          <div className="max-h-[calc(100vh-390px)] compact:lg:max-h-[calc(100vh-242px)] compact:lg:min-h-[200px] min-h-[430px] overflow-y-auto">
+          <div className="md:max-h-[calc(100vh-390px)] compact:lg:max-h-[calc(100vh-242px)] compact:lg:min-h-[200px] md:min-h-[430px] md:overflow-y-auto">
             {isLoading ? (
               <div className="flex h-48 items-center justify-center">
                 <Loader2 className="h-5 w-5 animate-spin text-[var(--a-text-3)]" />
@@ -288,11 +289,39 @@ export default function JournalEntriesPage() {
                 const credit = firstCredit(entry);
                 const amount = entryAmount(entry);
 
+                const open = () => {
+                  setDetailOpen(true);
+                  void handleSelect(entry);
+                };
+
                 return (
+                  <Fragment key={entry.id}>
                   <button
-                    key={entry.id}
-                    onClick={() => void handleSelect(entry)}
-                    className={`grid w-full grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] transition-colors compact:lg:py-1.5 ${
+                    type="button"
+                    onClick={open}
+                    className={`flex w-full items-center gap-3 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] md:hidden ${
+                      selected ? 'bg-[var(--a-accent-soft-2)]' : 'active:bg-[var(--a-surface-2)]'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium text-[var(--a-text)]">{entry.description || humanize(entry.entry_type)}</span>
+                      <span className="mt-0.5 block truncate font-mono text-[11.5px] text-[var(--a-text-3)]">
+                        <span className="text-[var(--a-accent)]">{entry.entry_number || entry.reference_number || entry.id.slice(0, 8)}</span>
+                        {' · '}
+                        {formatDate(entry.entry_date)}
+                      </span>
+                    </span>
+                    <span className="flex shrink-0 flex-col items-end gap-1">
+                      <span className={`font-mono text-[13px] font-medium tabular-nums ${entry.is_posted ? 'text-[var(--a-text)]' : 'text-[var(--a-warn)]'}`}>
+                        {amount === null ? '-' : formatEUR(amount)}
+                      </span>
+                      <StatusPill tone={entry.is_posted ? 'posted' : 'draft'}>{entry.is_posted ? t('posted') : t('draft')}</StatusPill>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={open}
+                    className={`hidden w-full grid-cols-[24px_96px_92px_minmax(180px,1fr)_120px_120px_120px_90px] compact:lg:grid-cols-[20px_84px_84px_minmax(120px,1fr)_84px_84px_96px_104px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-3 text-left text-[13px] transition-colors compact:lg:py-1.5 md:grid ${
                       selected ? 'bg-[var(--a-accent-soft-2)] shadow-[inset_2px_0_0_var(--a-accent)]' : 'hover:bg-[var(--a-surface-2)]'
                     }`}
                   >
@@ -318,12 +347,13 @@ export default function JournalEntriesPage() {
                       <StatusPill tone={entry.is_posted ? 'posted' : 'draft'}>{entry.is_posted ? t('posted') : t('draft')}</StatusPill>
                     </span>
                   </button>
+                  </Fragment>
                 );
               })
             )}
           </div>
 
-          <div className="flex items-center gap-3 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)]">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2 font-mono text-[11px] text-[var(--a-text-3)] lg:flex-nowrap lg:gap-y-0">
             <span><span className="text-[var(--a-text)]">{filtered.length}</span> {t('shown')}</span>
             <span>Σ {t('debitAbbr')} <span className="text-[var(--a-text)]">{formatEUR(totalDebit)}</span></span>
             <span>Σ {t('creditAbbr')} <span className="text-[var(--a-text)]">{formatEUR(totalCredit)}</span></span>
@@ -331,12 +361,16 @@ export default function JournalEntriesPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {t('balanced')}
             </span>
-            <span className="flex-1" />
-            <span>{t('syncedNow')}</span>
+            <span className="hidden flex-1 sm:block" />
+            <span className="hidden sm:inline">{t('syncedNow')}</span>
           </div>
         </section>
 
-        <SplitPaneDetail>
+        <SplitPaneDetail
+          mobileOpen={detailOpen}
+          onMobileClose={() => setDetailOpen(false)}
+          mobileTitle={selectedEntry ? selectedEntry.entry_number || selectedEntry.description || t('journalEntry') : t('journalEntry')}
+        >
           <EntryDetailPanel
             entry={selectedEntry}
             rows={selectedRows}
@@ -379,7 +413,7 @@ function EntryDetailPanel({
   }
 
   return (
-    <div className="flex max-h-[calc(100vh-190px)] compact:lg:max-h-[calc(100vh-180px)] compact:lg:min-h-0 min-h-[520px] flex-col">
+    <div className="flex flex-col xl:max-h-[calc(100vh-190px)] compact:lg:max-h-[calc(100vh-180px)] compact:lg:min-h-0 xl:min-h-[520px]">
       <div className="border-b border-[var(--a-border)] px-5 py-4 compact:lg:py-2.5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -407,7 +441,7 @@ function EntryDetailPanel({
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+      <div className="min-h-0 flex-1 px-5 py-4 xl:overflow-y-auto">
         <div className="micro mb-3 text-[var(--a-text-3)]">{t('journalLines')}</div>
         {isLoading ? (
           <div className="flex py-8">
@@ -465,7 +499,7 @@ function EntryDetailPanel({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+      <div className="flex items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 max-xl:sticky max-xl:bottom-0">
         <Button
           className="h-8 flex-1 text-xs"
           disabled={entry?.is_posted}
@@ -481,7 +515,7 @@ function EntryDetailPanel({
           <Copy className="h-3.5 w-3.5" />
           {t('copy')} <Kbd>D</Kbd>
         </Button>
-        <Button className="h-8 w-8 px-0">
+        <Button className="h-8 w-8 px-0 max-xl:w-9">
           <MoreHorizontal className="h-3.5 w-3.5" />
         </Button>
       </div>

@@ -101,8 +101,8 @@ export function ManualSplitEditor({
   return (
     <div className="space-y-2">
       {lines.map((line, index) => (
-        <div key={line.key} className={isSplit ? 'flex items-start gap-2' : undefined}>
-          <div className="min-w-0 flex-1">
+        <div key={line.key} className={isSplit ? 'flex items-start gap-2 max-sm:flex-wrap' : undefined}>
+          <div className="min-w-0 flex-1 max-sm:basis-full">
             <AccountPicker
               accounts={accounts}
               value={line.account_id}
@@ -139,7 +139,7 @@ export function ManualSplitEditor({
                 disabled={disabled}
                 title={t('removeSplitRow')}
                 aria-label={t('removeSplitRow')}
-                className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-slate-400 max-sm:ml-auto max-sm:mt-0 max-sm:h-8 max-sm:w-8 hover:bg-slate-100 hover:text-slate-700"
               >
                 <X className="h-3.5 w-3.5" />
               </button>

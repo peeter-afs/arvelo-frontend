@@ -259,7 +259,7 @@ function LoginForm() {
                 type="button"
                 onClick={handleSendEmailCode}
                 disabled={emailCodeSending || isLoading}
-                className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] disabled:opacity-50 transition-colors"
+                className="py-2 lg:py-0 text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] disabled:opacity-50 transition-colors"
               >
                 {emailCodeSending
                   ? t('twoFactor.emailCodeSending')
@@ -281,7 +281,7 @@ function LoginForm() {
               setEmailCodeSent(false);
               setError('');
             }}
-            className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            className="w-full py-2 lg:py-0 text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
             {t('backToLogin')}
           </button>
@@ -319,7 +319,7 @@ function LoginForm() {
               </label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
+                className="-my-2 py-2 text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
               >
                 {t('forgotPassword')}
               </Link>

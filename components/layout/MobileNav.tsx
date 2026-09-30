@@ -1,15 +1,22 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { useAssistantStore } from '@/lib/stores/assistant.store';
 import Sidebar from './Sidebar';
+import { usePathCrumbs } from './CommandBar';
 
 export default function MobileNav() {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore();
   const tCommon = useTranslations('common');
+  const tAssistant = useTranslations('assistant');
+  const toggleAssistant = useAssistantStore((state) => state.toggle);
+  const crumbs = usePathCrumbs();
+  // The dashboard crumbs are [Dashboard, today]; elsewhere the first two crumbs name the page.
+  const title = crumbs.length > 1 && crumbs[1] !== crumbs[0] && !/\d/.test(crumbs[1]) ? `${crumbs[0]} · ${crumbs[1]}` : crumbs[0];
   const sidebarRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -87,12 +94,21 @@ export default function MobileNav() {
           <Menu className="h-5 w-5 text-[var(--a-text)]" />
         </button>
 
-        <h1 className="text-lg font-semibold text-[var(--a-text)]">
-          Arvelo
+        <h1 className="min-w-0 flex-1 truncate px-2 text-[15px] font-semibold text-[var(--a-text)]">
+          {title || 'Arvelo'}
         </h1>
 
+        <button
+          type="button"
+          onClick={toggleAssistant}
+          className="mr-2 inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-[var(--a-surface-2)]"
+          aria-label={tAssistant('open')}
+        >
+          <Sparkles className="h-4 w-4 text-[var(--a-accent)]" />
+        </button>
+
         <div
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--a-accent)] text-sm font-semibold text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--a-accent)] text-sm font-semibold text-white"
           aria-label={`${tCommon('user')}: ${user?.name || user?.email || tCommon('unknown')}`}
           role="img"
         >
@@ -116,10 +132,7 @@ export default function MobileNav() {
             ref={sidebarRef}
             id="mobile-sidebar"
             className="fixed left-0 top-0 bottom-0 w-72 z-50 lg:hidden"
-            style={{
-              animation: 'slideIn 250ms ease-out',
-              paddingBottom: 'env(safe-area-inset-bottom, 0)'
-            }}
+            style={{ animation: 'slideIn 250ms ease-out' }}
           >
             <Sidebar onClose={handleClose} isMobile={true} />
           </div>

@@ -90,7 +90,7 @@ export default function InvoiceRemindersPage() {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         <button
           onClick={() => setShowSettings(true)}
           className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
@@ -132,22 +132,22 @@ export default function InvoiceRemindersPage() {
       {error && <div className="card p-4 mb-6" style={{ borderLeft: '3px solid #ef4444' }}><p className="text-sm" style={{ color: '#ef4444' }}>{error}</p></div>}
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="card p-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="card p-3 sm:p-4">
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('totalOverdue')}</p>
           <p className="text-xl font-bold mt-1" style={{ color: '#ef4444' }}>{overdue.length}</p>
         </div>
-        <div className="card p-4">
+        <div className="card p-3 sm:p-4">
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('totalAmount')}</p>
           <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>&euro;{fmt(overdue.reduce((s, i) => s + i.total, 0))}</p>
         </div>
-        <div className="card p-4">
+        <div className="card p-3 sm:p-4">
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('needsReminder')}</p>
           <p className="text-xl font-bold mt-1" style={{ color: '#f59e0b' }}>
             {overdue.filter(i => i.partner_email && i.reminders_sent < (settings?.max_reminders || 3)).length}
           </p>
         </div>
-        <div className="card p-4">
+        <div className="card p-3 sm:p-4">
           <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{t('noEmail')}</p>
           <p className="text-xl font-bold mt-1" style={{ color: 'var(--text-muted)' }}>{overdue.filter(i => !i.partner_email).length}</p>
         </div>
@@ -157,7 +157,38 @@ export default function InvoiceRemindersPage() {
       {overdue.length === 0 ? (
         <EmptyState icon={Bell} title={t('title')} message={t('noOverdue')} />
       ) : (
-        <div className="card overflow-hidden">
+        <>
+        <div className="card overflow-hidden md:hidden">
+          {overdue.map(inv => (
+            <div key={inv.id} className="flex items-center gap-3 px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="min-w-0 truncate text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{inv.invoice_number} · {inv.partner_name}</span>
+                  <span className="shrink-0 text-sm font-medium" style={{ color: 'var(--text-primary)' }}>&euro;{fmt(inv.total)}</span>
+                </div>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <span>{inv.due_date}</span>
+                  <span className="font-medium" style={{
+                    color: inv.days_overdue > 90 ? '#991b1b' : inv.days_overdue > 60 ? '#ef4444' : inv.days_overdue > 30 ? '#f97316' : '#eab308'
+                  }}>{inv.days_overdue}d</span>
+                  <span>{t('remindersSent')}: {inv.reminders_sent}/{settings?.max_reminders || 3}</span>
+                  {inv.partner_email && <span className="min-w-0 truncate">{inv.partner_email}</span>}
+                </div>
+              </div>
+              {inv.partner_email && inv.reminders_sent < (settings?.max_reminders || 3) && (
+                <button
+                  onClick={() => handleSendOne(inv.id)}
+                  disabled={sending === inv.id}
+                  className="inline-flex h-9 shrink-0 items-center gap-1 rounded px-3 text-xs font-medium"
+                  style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                >
+                  <Send className="h-3 w-3" /> {t('send')}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <div className="card hidden overflow-hidden md:block">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
@@ -205,6 +236,7 @@ export default function InvoiceRemindersPage() {
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       {/* Settings Modal */}
@@ -262,15 +294,15 @@ function SettingsModal({ initial, onClose, onSaved, t, tc }: {
   const inputStyle = { border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="card p-4 sm:p-6 w-full max-w-lg max-h-[90dvh] sm:max-h-[90vh] overflow-y-auto relative max-sm:rounded-b-none">
         <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('reminderSettings')}</h2>
         <div className="space-y-3">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" checked={form.is_enabled} onChange={e => setForm(prev => ({ ...prev, is_enabled: e.target.checked }))} />
             <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{t('enableReminders')}</span>
           </label>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('startAfterDays')}</label>
               <input type="number" value={form.start_after_days} onChange={e => setForm(prev => ({ ...prev, start_after_days: e.target.value }))} className="w-full px-3 py-2 rounded-lg text-sm" style={inputStyle} />
@@ -294,7 +326,7 @@ function SettingsModal({ initial, onClose, onSaved, t, tc }: {
             <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{t('templateVars')}</p>
           </div>
           {err && <p className="text-sm" style={{ color: '#ef4444' }}>{err}</p>}
-          <div className="flex gap-2 justify-end pt-2">
+          <div className="flex gap-2 justify-end pt-2 max-sm:sticky max-sm:bottom-0 max-sm:-mx-4 max-sm:-mb-4 max-sm:px-4 max-sm:pb-4 max-sm:bg-[var(--a-surface)]">
             <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm" style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>{tc('cancel')}</button>
             <button onClick={submit} disabled={saving} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: 'var(--primary)' }}>
               {saving ? tc('saving') : tc('save')}

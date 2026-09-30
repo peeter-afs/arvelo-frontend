@@ -90,13 +90,13 @@ export default function AuditLogPage() {
 
       {/* Filters */}
       <div className="card p-4 mb-6">
-        <div className="flex flex-wrap gap-3 items-end">
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:items-end">
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('action')}</label>
             <select
               value={filters.action}
               onChange={e => { setFilters(f => ({ ...f, action: e.target.value })); setPage(0); }}
-              className="px-3 py-1.5 rounded text-sm"
+              className="w-full sm:w-auto px-3 py-1.5 rounded text-sm"
               style={inputStyle}
             >
               <option value="">{t('all')}</option>
@@ -110,7 +110,7 @@ export default function AuditLogPage() {
             <select
               value={filters.resource_type}
               onChange={e => { setFilters(f => ({ ...f, resource_type: e.target.value })); setPage(0); }}
-              className="px-3 py-1.5 rounded text-sm"
+              className="w-full sm:w-auto px-3 py-1.5 rounded text-sm"
               style={inputStyle}
             >
               <option value="">{t('all')}</option>
@@ -119,24 +119,24 @@ export default function AuditLogPage() {
               ))}
             </select>
           </div>
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{t('user')}</label>
             <input
               type="text"
               placeholder="email..."
               value={filters.user_email}
               onChange={e => { setFilters(f => ({ ...f, user_email: e.target.value })); setPage(0); }}
-              className="px-3 py-1.5 rounded text-sm w-40"
+              className="px-3 py-1.5 rounded text-sm w-full sm:w-40"
               style={inputStyle}
             />
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{tc('startDate')}</label>
-            <input type="date" value={filters.from_date} onChange={e => { setFilters(f => ({ ...f, from_date: e.target.value })); setPage(0); }} className="px-3 py-1.5 rounded text-sm" style={inputStyle} />
+            <input type="date" value={filters.from_date} onChange={e => { setFilters(f => ({ ...f, from_date: e.target.value })); setPage(0); }} className="w-full min-w-0 sm:w-auto px-3 py-1.5 rounded text-sm" style={inputStyle} />
           </div>
           <div>
             <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{tc('endDate')}</label>
-            <input type="date" value={filters.to_date} onChange={e => { setFilters(f => ({ ...f, to_date: e.target.value })); setPage(0); }} className="px-3 py-1.5 rounded text-sm" style={inputStyle} />
+            <input type="date" value={filters.to_date} onChange={e => { setFilters(f => ({ ...f, to_date: e.target.value })); setPage(0); }} className="w-full min-w-0 sm:w-auto px-3 py-1.5 rounded text-sm" style={inputStyle} />
           </div>
           {events.length > 0 && (
             <button
@@ -151,7 +151,7 @@ export default function AuditLogPage() {
                 }));
                 downloadCsv(rows, 'audit-log.csv');
               }}
-              className="px-3 py-1.5 rounded text-sm inline-flex items-center gap-1"
+              className="col-span-2 sm:col-span-1 justify-center max-sm:h-9 px-3 py-1.5 rounded text-sm inline-flex items-center gap-1"
               style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
             >
               <Download className="h-3.5 w-3.5" /> CSV
@@ -165,7 +165,29 @@ export default function AuditLogPage() {
         <EmptyState icon={Shield} title={t('title')} message={t('noEvents')} />
       ) : (
         <>
-          <div className="card overflow-hidden">
+          {/* Mobile: compact 2-line cards */}
+          <div className="card overflow-hidden md:hidden">
+            {events.map(event => (
+              <div key={event.id} className="flex items-start justify-between gap-3 px-3 py-2.5" style={{ borderBottom: '1px solid var(--border)' }}>
+                <div className="min-w-0">
+                  <div className="truncate text-sm" style={{ color: 'var(--text-primary)' }}>{event.user_email || '—'}</div>
+                  <div className="mt-0.5 truncate text-xs" style={{ color: 'var(--text-muted)' }}>
+                    <span className="font-mono">{new Date(event.created_at).toLocaleString()}</span>
+                    {' · '}{event.resource_type}
+                    {event.resource_id ? <span className="font-mono">{' · '}{event.resource_id.slice(0, 8)}</span> : null}
+                  </div>
+                </div>
+                <span className="shrink-0 px-2 py-0.5 rounded text-xs font-medium" style={{
+                  backgroundColor: `${ACTION_COLORS[event.action] || '#6b7280'}15`,
+                  color: ACTION_COLORS[event.action] || '#6b7280',
+                }}>
+                  {event.action}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="card overflow-hidden max-md:hidden max-lg:overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
@@ -208,7 +230,7 @@ export default function AuditLogPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center justify-between gap-3 mt-4">
             <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               {t('showing', { from: page * PAGE_SIZE + 1, to: Math.min((page + 1) * PAGE_SIZE, total), total })}
             </p>
@@ -216,7 +238,7 @@ export default function AuditLogPage() {
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                className="px-3 py-1.5 max-lg:px-3.5 max-lg:py-2.5 rounded text-sm disabled:opacity-50"
                 style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -224,7 +246,7 @@ export default function AuditLogPage() {
               <button
                 onClick={() => setPage(p => p + 1)}
                 disabled={page >= totalPages - 1}
-                className="px-3 py-1.5 rounded text-sm disabled:opacity-50"
+                className="px-3 py-1.5 max-lg:px-3.5 max-lg:py-2.5 rounded text-sm disabled:opacity-50"
                 style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
               >
                 <ChevronRight className="h-4 w-4" />

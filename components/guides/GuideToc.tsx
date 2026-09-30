@@ -22,7 +22,7 @@ export function GuideToc({ blocks }: { blocks: GuideBlock[] }) {
           <li key={heading.text}>
             <a
               href={`#${headingSlug(heading.text)}`}
-              className="block rounded-[6px] px-2 py-1 text-[12.5px] text-[var(--a-text-2)] transition-colors hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
+              className="block rounded-[6px] px-2 py-2 lg:py-1 text-[12.5px] text-[var(--a-text-2)] transition-colors hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
             >
               {heading.text}
             </a>

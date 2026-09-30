@@ -71,12 +71,12 @@ export function ProductModal({ product, initial, accounts, onClose, onSaved }: P
         className="flex max-h-[100dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-[var(--a-border)] bg-[var(--a-surface)] shadow-xl sm:max-h-[88vh] sm:max-w-[560px] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-[var(--a-border)] px-6 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-[var(--a-border)] px-4 py-4 sm:px-6">
           <h2 className="text-[15px] font-semibold text-[var(--a-text)]">{product ? t('editProduct') : t('addProduct')}</h2>
-          <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"><X className="h-4 w-4" /></button>
+          <button onClick={onClose} className="flex h-9 w-9 items-center justify-center rounded-lg text-[var(--a-text-3)] sm:h-8 sm:w-8 hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"><X className="h-4 w-4" /></button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6">
           {error && <div className="mb-4 rounded-lg border border-[var(--a-neg-soft)] bg-[var(--a-neg-soft)] px-3 py-2.5 text-[12.5px] text-[var(--a-neg)]">{error}</div>}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t('productName')} full><input value={draft.name} onChange={(e) => set({ name: e.target.value })} className={fieldInput} autoFocus /></Field>
@@ -101,7 +101,7 @@ export function ProductModal({ product, initial, accounts, onClose, onSaved }: P
           </label>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--a-border)] px-6 py-3.5">
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-[var(--a-border)] px-4 py-3.5 pb-[max(0.875rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-3.5">
           <Button onClick={onClose}>{t('cancel')}</Button>
           <Button variant="primary" onClick={save} disabled={saving || !draft.name?.trim()}>
             {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}

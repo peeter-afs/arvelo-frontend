@@ -59,10 +59,10 @@ export function TenantTwoFactorPolicyCard() {
   const formatDate = (iso: string) => new Date(iso).toLocaleDateString();
 
   return (
-    <div className="card p-6 mb-6">
-      <div className="flex items-start gap-4">
+    <div className="card p-4 sm:p-6 mb-6">
+      <div className="flex items-start gap-3 sm:gap-4">
         <ShieldCheck className="h-6 w-6 flex-shrink-0" style={{ color: 'var(--primary)' }} />
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>{t('companyPolicyTitle')}</h3>
           <p className="mt-1 text-sm" style={{ color: 'var(--text-secondary)' }}>{t('companyPolicyDescription')}</p>
 
@@ -90,7 +90,7 @@ export function TenantTwoFactorPolicyCard() {
                 </p>
               )}
 
-              <div className="mt-4 flex items-end gap-3">
+              <div className="mt-4 flex flex-wrap items-end gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-muted)' }}>
                     {t('companyPolicyGraceLabel')}

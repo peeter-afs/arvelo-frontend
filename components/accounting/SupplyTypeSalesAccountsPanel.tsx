@@ -42,13 +42,13 @@ export function SupplyTypeSalesAccountsPanel({ accounts, settings, saving = fals
   const options = revenue.length > 0 ? revenue : accounts.filter((a) => a.is_active);
 
   return (
-    <div className="rounded-xl border border-slate-200 p-6">
+    <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">{tA('salesAccountDefaultsTitle')}</h3>
       <p className="mt-1 text-sm text-slate-500">{tA('salesAccountDefaultsDescription')}</p>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {SUPPLY_KEYS.map((s) => (
-          <label key={s.key} className="block">
+          <label key={s.key} className="block max-md:min-w-0">
             <span className="mb-1 block text-sm font-medium text-slate-700">{tI(s.labelKey)}</span>
             <select
               value={(mapping as Record<string, string>)[s.key] || ''}
@@ -58,7 +58,7 @@ export function SupplyTypeSalesAccountsPanel({ accounts, settings, saving = fals
                   mapping: { ...mapping, [s.key]: event.target.value || null },
                 })
               }
-              className="h-11 w-full rounded-lg border border-slate-200 px-3"
+              className="h-11 w-full max-w-full rounded-lg border border-slate-200 px-3"
             >
               <option value="">{tA('selectAccountOptional')}</option>
               {options.map((account) => (
@@ -75,7 +75,7 @@ export function SupplyTypeSalesAccountsPanel({ accounts, settings, saving = fals
         type="button"
         onClick={() => void onSave(mapping)}
         disabled={saving}
-        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
+        className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-6 max-sm:w-full text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:opacity-50"
       >
         {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
         <span>{tA('salesAccountDefaultsSave')}</span>

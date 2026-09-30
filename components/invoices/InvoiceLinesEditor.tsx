@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { Eye, EyeOff, PackagePlus, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AccountOption } from '@/lib/api/accounting.api';
@@ -59,8 +59,19 @@ export function computeTotals(lines: EditorLine[]): { subtotal: number; tax: num
 }
 
 const inputClass =
-  'h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]';
+  'h-8 max-md:h-10 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]';
 const numberClass = `${inputClass} text-right font-mono tabular-nums`;
+const cellLabelClass = 'mb-1 block text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)] md:hidden';
+
+/** Below md each cell becomes a labelled block of a stacked line card; from md up it dissolves into the grid row. */
+function MCell({ label, className = '', children }: { label?: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={`min-w-0 md:contents ${className}`}>
+      {label && <span className={cellLabelClass}>{label}</span>}
+      {children}
+    </div>
+  );
+}
 
 type Props = {
   lines: EditorLine[];
@@ -201,13 +212,13 @@ export default function InvoiceLinesEditor({
 
   return (
     <div>
-      <div className="mb-2 flex justify-end gap-2">
+      <div className="mb-2 flex flex-wrap justify-end gap-2">
         {dimsAvailable && (
           <button
             type="button"
             onClick={() => setShowDims((v) => !v)}
             title={showDims ? t('hideDimensionColumns') : t('showDimensionColumns')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 max-md:py-2 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
           >
             {showDims ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             {t('dimensions')}
@@ -218,7 +229,7 @@ export default function InvoiceLinesEditor({
             type="button"
             onClick={() => setShowSupply((v) => !v)}
             title={showSupply ? t('hideSupplyColumn') : t('showSupplyColumn')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+            className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 max-md:py-2 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
           >
             {showSupply ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
             {t('supplyType')}
@@ -228,18 +239,18 @@ export default function InvoiceLinesEditor({
           type="button"
           onClick={() => setShowAccount((v) => !v)}
           title={showAccount ? t('hideAccountColumn') : t('showAccountColumn')}
-          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+          className="inline-flex items-center gap-1.5 rounded-md border border-[var(--a-border)] px-2 py-1 max-md:py-2 text-[11.5px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
         >
           {showAccount ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           {t('account')}
         </button>
       </div>
 
-      <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
-        <div style={{ minWidth }}>
+      <div className="rounded-[10px] border border-[var(--a-border)] md:overflow-x-auto">
+        <div className="md:min-w-[var(--lines-minw)]" style={{ '--lines-minw': `${minWidth}px`, '--lines-cols': gridCols } as CSSProperties}>
           {/* Header */}
           <div
-            className="grid items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]"
+            className="hidden items-center gap-2 border-b md:grid border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]"
             style={{ gridTemplateColumns: gridCols }}
           >
             <div>{t('productCode')}</div>
@@ -261,15 +272,17 @@ export default function InvoiceLinesEditor({
             {lines.map((line, index) => (
               <div
                 key={index}
-                className="grid items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2"
-                style={{ gridTemplateColumns: gridCols }}
+                className="grid gap-2 border-b border-[var(--a-border)] px-3.5 py-2 max-md:grid-cols-4 max-md:items-end max-md:py-3 md:items-center md:[grid-template-columns:var(--lines-cols)]"
               >
+                <MCell label={t('productCode')} className="max-md:order-3 max-md:col-span-2">
                 <input
                   value={line.code || ''}
                   onChange={(event) => update(index, { code: event.target.value })}
                   placeholder={t('productCode')}
                   className={inputClass}
                 />
+                </MCell>
+                <MCell label={t('lineDescription')} className="max-md:order-1 max-md:col-span-3">
                 {products && products.length > 0 ? (
                   <div className="relative">
                     <input
@@ -281,7 +294,7 @@ export default function InvoiceLinesEditor({
                       className={inputClass}
                     />
                     {productMenuRow === index && productMatches(line.description).length > 0 && (
-                      <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-[300px] overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] py-1 shadow-lg">
+                      <div className="absolute left-0 top-full z-20 mt-1 max-h-56 w-[300px] max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] py-1 shadow-lg">
                         {productMatches(line.description).map((p) => (
                           <button
                             key={p.id}
@@ -308,26 +321,40 @@ export default function InvoiceLinesEditor({
                     className={inputClass}
                   />
                 )}
+                </MCell>
                 {dimsVisible && (
+                  <MCell label={t('costCenter')} className="max-md:order-4 max-md:col-span-2">
                   <select value={line.cost_center_id || ''} onChange={(event) => update(index, { cost_center_id: event.target.value })} className={`${inputClass} text-[12px]`}>
                     <option value="">—</option>
                     {(costCenters || []).map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
                   </select>
+                  </MCell>
                 )}
                 {dimsVisible && (
+                  <MCell label={t('project')} className="max-md:order-4 max-md:col-span-2">
                   <select value={line.project_id || ''} onChange={(event) => update(index, projectPatch(event.target.value))} className={`${inputClass} text-[12px]`}>
                     <option value="">—</option>
                     {projectGroups.own.length > 0 && <optgroup label={t('partnerProjects')}>{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
                     {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? t('otherProjects') : t('project')}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
                   </select>
+                  </MCell>
                 )}
+                <MCell label={t('qty')} className="max-md:order-5">
                 <input inputMode="decimal" value={line.quantity} onChange={(e) => update(index, { quantity: e.target.value })} placeholder={t('qty')} className={numberClass} />
+                </MCell>
+                <MCell label={t('unitPrice')} className="max-md:order-5 max-md:col-span-2">
                 <input inputMode="decimal" value={line.unit_price} onChange={(e) => update(index, { unit_price: e.target.value })} placeholder={t('unitPrice')} className={numberClass} />
+                </MCell>
+                <MCell label={t('discount')} className="max-md:order-5">
                 <input inputMode="decimal" value={line.discount_percent} onChange={(e) => update(index, { discount_percent: e.target.value })} placeholder="0" className={numberClass} />
+                </MCell>
                 {vatVisible && (
+                  <MCell label={t('vatRate')} className="max-md:order-6">
                   <input inputMode="decimal" value={line.tax_rate} onChange={(e) => update(index, { tax_rate: e.target.value })} placeholder="0" className={numberClass} />
+                  </MCell>
                 )}
                 {supplyVisible && (
+                  <MCell label={t('supplyType')} className="max-md:order-6 max-md:col-span-3">
                   <select
                     value={line.supply_type || 'domestic'}
                     onChange={(event) => changeSupplyType(index, line, event.target.value as SupplyType)}
@@ -338,10 +365,13 @@ export default function InvoiceLinesEditor({
                     <option value="reverse_charge">{t('supplyReverseCharge')}</option>
                     <option value="third_country">{t('supplyThirdCountry')}</option>
                   </select>
+                  </MCell>
                 )}
-                <div className="text-right font-mono text-[12.5px] font-medium tabular-nums text-[var(--a-text)]">
+                <div className="text-right font-mono text-[12.5px] font-medium tabular-nums text-[var(--a-text)] max-md:order-7 max-md:col-span-4 max-md:flex max-md:items-baseline max-md:justify-between max-md:text-[14px]">
+                  <span className="font-sans text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)] md:hidden">{t('lineTotal')}</span>
                   {lineNet(line).toFixed(2)}
                 </div>
+                <MCell label={t('account')} className="max-md:order-3 max-md:col-span-2">
                 {showAccount ? (
                   <select
                     value={line.account_id}
@@ -363,14 +393,15 @@ export default function InvoiceLinesEditor({
                     {line.account_id ? (accountLabels.codes.get(line.account_id) || '·') : '—'}
                   </div>
                 )}
-                <div className="flex items-center justify-end gap-0.5">
+                </MCell>
+                <div className="flex items-center justify-end gap-0.5 max-md:order-2 max-md:self-end max-md:pb-0.5">
                   {onQuickAdd && (
                     <button
                       type="button"
                       onClick={() => onQuickAdd(line)}
                       disabled={!line.description.trim()}
                       title={t('quickAddToCatalog')}
-                      className="flex h-7 w-7 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-accent-soft)] hover:text-[var(--a-accent)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
+                      className="flex h-7 w-7 max-md:h-9 max-md:w-9 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-accent-soft)] hover:text-[var(--a-accent)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
                     >
                       <PackagePlus className="h-3.5 w-3.5" />
                     </button>
@@ -379,7 +410,7 @@ export default function InvoiceLinesEditor({
                     type="button"
                     onClick={() => remove(index)}
                     disabled={lines.length === 1}
-                    className="flex h-7 w-7 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
+                    className="flex h-7 w-7 max-md:h-9 max-md:w-9 items-center justify-center rounded text-[var(--a-text-3)] hover:bg-[var(--a-neg-soft)] hover:text-[var(--a-neg)] disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--a-text-3)]"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -390,7 +421,7 @@ export default function InvoiceLinesEditor({
 
           {/* Add line */}
           <div className="px-3.5 py-2">
-            <button type="button" onClick={add} className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]">
+            <button type="button" onClick={add} className="inline-flex items-center gap-1.5 max-md:min-h-9 text-[12.5px] text-[var(--a-text-3)] hover:text-[var(--a-text)]">
               <Plus className="h-3.5 w-3.5" />
               {t('addLine')}
             </button>

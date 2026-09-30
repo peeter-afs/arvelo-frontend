@@ -84,7 +84,7 @@ export default function ExchangeRatesPage() {
           <button
             onClick={handleFetchEcb}
             disabled={fetching}
-            className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2"
+            className="px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-2 max-sm:flex-1 max-sm:justify-center"
             style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
           >
             <RefreshCw className={`h-4 w-4 ${fetching ? 'animate-spin' : ''}`} />
@@ -92,7 +92,7 @@ export default function ExchangeRatesPage() {
           </button>
           <button
             onClick={() => setShowAdd(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2"
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white inline-flex items-center gap-2 max-sm:flex-1 max-sm:justify-center"
             style={{ backgroundColor: 'var(--primary)' }}
           >
             <Plus className="h-4 w-4" /> {t('addRate')}
@@ -103,25 +103,28 @@ export default function ExchangeRatesPage() {
       {rates.length === 0 ? (
         <EmptyState icon={Globe} title={t('title')} message={t('noRates')} />
       ) : (
-        <div className="card overflow-hidden">
+        <div className="card overflow-hidden max-sm:overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
-                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('date')}</th>
-                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('from')}</th>
-                <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('to')}</th>
-                <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('rate')}</th>
-                <th className="text-center py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('source')}</th>
+                <th className="text-left py-3 px-4 font-medium max-sm:px-3" style={{ color: 'var(--text-secondary)' }}>{t('date')}</th>
+                <th className="text-left py-3 px-4 font-medium max-sm:hidden" style={{ color: 'var(--text-secondary)' }}>{t('from')}</th>
+                <th className="text-left py-3 px-4 font-medium max-sm:px-2" style={{ color: 'var(--text-secondary)' }}>{t('to')}</th>
+                <th className="text-right py-3 px-4 font-medium max-sm:px-2" style={{ color: 'var(--text-secondary)' }}>{t('rate')}</th>
+                <th className="text-center py-3 px-4 font-medium max-sm:px-3" style={{ color: 'var(--text-secondary)' }}>{t('source')}</th>
               </tr>
             </thead>
             <tbody>
               {rates.map(rate => (
                 <tr key={rate.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                  <td className="py-2.5 px-4" style={{ color: 'var(--text-primary)' }}>{rate.rate_date}</td>
-                  <td className="py-2.5 px-4 font-mono" style={{ color: 'var(--text-secondary)' }}>{rate.source_currency}</td>
-                  <td className="py-2.5 px-4 font-mono font-medium" style={{ color: 'var(--text-primary)' }}>{rate.target_currency}</td>
-                  <td className="py-2.5 px-4 text-right font-mono" style={{ color: 'var(--text-primary)' }}>{rate.rate.toFixed(6)}</td>
-                  <td className="py-2.5 px-4 text-center">
+                  <td className="py-2.5 px-4 max-sm:whitespace-nowrap max-sm:px-3" style={{ color: 'var(--text-primary)' }}>{rate.rate_date}</td>
+                  <td className="py-2.5 px-4 font-mono max-sm:hidden" style={{ color: 'var(--text-secondary)' }}>{rate.source_currency}</td>
+                  <td className="py-2.5 px-4 font-mono font-medium max-sm:whitespace-nowrap max-sm:px-2" style={{ color: 'var(--text-primary)' }}>
+                    <span className="font-normal sm:hidden" style={{ color: 'var(--text-secondary)' }}>{rate.source_currency} → </span>
+                    {rate.target_currency}
+                  </td>
+                  <td className="py-2.5 px-4 text-right font-mono max-sm:px-2" style={{ color: 'var(--text-primary)' }}>{rate.rate.toFixed(6)}</td>
+                  <td className="py-2.5 px-4 text-center max-sm:px-3">
                     <span className="px-2 py-0.5 rounded text-xs font-medium" style={{
                       backgroundColor: rate.source === 'ecb' ? 'rgba(59,130,246,0.1)' : 'rgba(156,163,175,0.2)',
                       color: rate.source === 'ecb' ? '#3b82f6' : 'var(--text-muted)',
@@ -182,9 +185,9 @@ function AddRateModal({ onClose, onAdded, t, tc }: {
   const inputStyle = { border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
-      <div className="card p-6 w-full max-w-md relative">
-        <button onClick={onClose} className="absolute top-4 right-4" style={{ color: 'var(--text-muted)' }}><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center max-sm:items-end max-sm:p-2" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}>
+      <div className="card p-6 w-full max-w-md relative max-sm:max-h-[90dvh] max-sm:overflow-y-auto max-sm:p-5">
+        <button onClick={onClose} aria-label={tc('cancel')} className="absolute top-4 right-4 max-sm:top-2 max-sm:right-2 max-sm:inline-flex max-sm:h-10 max-sm:w-10 max-sm:items-center max-sm:justify-center" style={{ color: 'var(--text-muted)' }}><X className="h-5 w-5" /></button>
         <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{t('addRate')}</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">

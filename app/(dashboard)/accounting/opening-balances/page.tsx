@@ -33,6 +33,7 @@ import { OpeningSystemRolesStep } from '@/components/accounting/OpeningSystemRol
 import { SYSTEM_ROLES } from '@/lib/constants/systemRoles';
 import { Button } from '@/components/ui/Button';
 import { HelpLink } from '@/components/guides/HelpLink';
+import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
 import { getIsoToday } from '@/lib/utils/date';
 
 const OPENING_BALANCES_GUIDE = 'algsaldode-import';
@@ -198,7 +199,11 @@ export default function OpeningBalancesPage() {
   // file of each layer so the user can re-download what was imported.
   const [committedBatchList, setCommittedBatchList] = useState<ImportStatusBatch[]>([]);
   const [glOpeningDate, setGlOpeningDate] = useState<string | null>(null);
-  const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | 'mid_year' | null>(null);
+  const [strategy, setStrategy] = useState<'with_general' | 'subledger_only' | 'mid_year' | 'startup' | null>(null);
+  // Startup bookkeeping reuses the mid-year year-end layer (previous year-end
+  // balance sheet) for a company founded before this year; nothing else here.
+  const layeredStrategy = strategy === 'mid_year' || strategy === 'startup';
+  const startupStrategy = strategy === 'startup';
   const [savingStrategy, setSavingStrategy] = useState(false);
   // Mid-year: which general-side document the grid is currently for.
   const [generalLayer, setGeneralLayer] = useState<'year_end' | 'turnover' | 'control'>('year_end');
@@ -292,8 +297,8 @@ export default function OpeningBalancesPage() {
   // The käibeandmik turnover and the control balance need not be debit==credit
   // balanced (turnover auto-offsets; control is figures to compare), so those
   // layers may advance to preview with just a non-zero row.
-  const skipBalanceForLayer = strategy === 'mid_year' && mode === 'general' && (generalLayer === 'turnover' || generalLayer === 'control');
-  const isTurnoverGate = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+  const skipBalanceForLayer = layeredStrategy && mode === 'general' && (generalLayer === 'turnover' || generalLayer === 'control');
+  const isTurnoverGate = layeredStrategy && mode === 'general' && generalLayer === 'turnover';
   // The käibeandmik covers a period start..end. Start comes from the year-end
   // balance (fiscal-year start); the end (transition date) must be entered — the
   // file has no period, so import isn't possible without it.
@@ -317,7 +322,7 @@ export default function OpeningBalancesPage() {
       receivablesOffsetAccountId,
       payablesOffsetAccountId
     });
-    if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+    if (layeredStrategy && (mode === 'receivables' || mode === 'payables')) {
       payload.gl_neutral = true;
     }
     return JSON.stringify(payload);
@@ -332,7 +337,7 @@ export default function OpeningBalancesPage() {
   // must look at the specific committed batch_type instead of the coarse mode.
   const midYearLayerCommitted = (layer: 'year_end' | 'turnover') =>
     batches.some((batch) => batch.status === 'committed' && batch.batch_type === (layer === 'year_end' ? 'year_end_balance' : 'period_turnover'));
-  const isImported = strategy === 'mid_year' && mode === 'general'
+  const isImported = layeredStrategy && mode === 'general'
     ? (generalLayer === 'control' ? false : midYearLayerCommitted(generalLayer as 'year_end' | 'turnover'))
     : committedModes.has(mode);
   const isDateLocked = mode !== 'general' && !!glOpeningDate;
@@ -366,7 +371,7 @@ export default function OpeningBalancesPage() {
           accountingApi.getAccounts(),
           accountingApi.getPartners(),
           accountingApi.listOpeningBalances(),
-          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | 'mid_year' | null, committed_batches: [] as ImportStatusBatch[], reconciliation: undefined })),
+          accountingApi.getOpeningBalanceImportStatus().catch(() => ({ is_imported: false, opening_balances_strategy: null as 'with_general' | 'subledger_only' | 'mid_year' | 'startup' | null, committed_batches: [] as ImportStatusBatch[], reconciliation: undefined })),
           accountingApi.getAccountingSettings().catch(() => null)
         ]);
 
@@ -382,10 +387,13 @@ export default function OpeningBalancesPage() {
           }
         }
         setCommittedModes(committed);
-        setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | null }).opening_balances_strategy) ?? null);
+        setStrategy(((importStatus as { opening_balances_strategy?: 'with_general' | 'subledger_only' | 'mid_year' | 'startup' | null }).opening_balances_strategy) ?? null);
         setReconResult(importStatus.reconciliation ?? null);
         // Mid-year: resume on the first not-yet-imported general-side layer.
-        if (importStatus.opening_balances_strategy === 'mid_year') {
+        if (importStatus.opening_balances_strategy === 'startup') {
+          setMode('general');
+          setGeneralLayer('year_end');
+        } else if (importStatus.opening_balances_strategy === 'mid_year') {
           const hasYearEnd = committedBatches.some((b) => b.batch_type === 'year_end_balance');
           const hasTurnover = committedBatches.some((b) => b.batch_type === 'period_turnover');
           setGeneralLayer(!hasYearEnd ? 'year_end' : !hasTurnover ? 'turnover' : 'control');
@@ -557,8 +565,8 @@ export default function OpeningBalancesPage() {
   // Parsing now begins as soon as a file is chosen (no separate "Parse" button).
   const handleFileSelected = async (file: File | null) => {
     if (!file) return;
-    const isTurnover = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
-    const isControl = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
+    const isTurnover = layeredStrategy && mode === 'general' && generalLayer === 'turnover';
+    const isControl = layeredStrategy && mode === 'general' && generalLayer === 'control';
     // The käibeandmik has no period in the file — require the end (transition) date.
     if (isTurnover && !sharedFields.opening_date) {
       setErrorMessage(t('obTurnoverEndDateRequired'));
@@ -649,7 +657,7 @@ export default function OpeningBalancesPage() {
         receivablesOffsetAccountId,
         payablesOffsetAccountId
       });
-      if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+      if (layeredStrategy && (mode === 'receivables' || mode === 'payables')) {
         payload.gl_neutral = true;
       }
 
@@ -687,19 +695,19 @@ export default function OpeningBalancesPage() {
 
       // Mid-year "control" layer: the grid holds the old software's transition
       // balance — store it as expected balances and reconcile, no ledger posting.
-      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'control') {
+      if (layeredStrategy && mode === 'general' && generalLayer === 'control') {
         await runControlReconcile();
         return;
       }
 
-      if (strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables')) {
+      if (layeredStrategy && (mode === 'receivables' || mode === 'payables')) {
         payload.gl_neutral = true;
       }
 
       let result: CommitResult;
-      if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'year_end') {
+      if (layeredStrategy && mode === 'general' && generalLayer === 'year_end') {
         result = await accountingApi.commitYearEndBalance({ ...payload, fiscal_year_start: payload.opening_date });
-      } else if (strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover') {
+      } else if (layeredStrategy && mode === 'general' && generalLayer === 'turnover') {
         result = await accountingApi.commitPeriodTurnover({ ...payload, transition_date: payload.opening_date, control_opening: turnoverOpening });
         setTurnoverControl(result.control || null);
       } else if (mode === 'general') {
@@ -718,13 +726,13 @@ export default function OpeningBalancesPage() {
       }
       // Mid-year general layers share mode 'general'; their lock is tracked by
       // batch_type (isImported), so don't coarsely mark the whole 'general' mode.
-      if (!(strategy === 'mid_year' && mode === 'general')) {
+      if (!(layeredStrategy && mode === 'general')) {
         setCommittedModes((current) => new Set(current).add(mode));
       }
       // Mid-year: after a general-side layer commits, advance to the next document
       // and reset to the upload step so the next import is immediately available
       // (otherwise the screen stays on "confirm" and looks locked).
-      if (strategy === 'mid_year' && mode === 'general' && (generalLayer === 'year_end' || generalLayer === 'turnover')) {
+      if (layeredStrategy && mode === 'general' && (generalLayer === 'year_end' || generalLayer === 'turnover')) {
         const next = generalLayer === 'year_end' ? 'turnover' : 'control';
         setGeneralLayer(next);
         setGeneralRows([createGeneralRow(), createGeneralRow()]);
@@ -934,13 +942,13 @@ export default function OpeningBalancesPage() {
   const liveDiff = liveDebit - liveCredit;
   const liveBalanced = Math.abs(liveDiff) < 0.005;
 
-  const isControlLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'control';
+  const isControlLayer = layeredStrategy && mode === 'general' && generalLayer === 'control';
   // The käibeandmik movement (turnover) need not balance — the backend auto-offsets
   // any imbalance (= period result) — so the UI does not force debit==credit here.
-  const isTurnoverLayer = strategy === 'mid_year' && mode === 'general' && generalLayer === 'turnover';
+  const isTurnoverLayer = layeredStrategy && mode === 'general' && generalLayer === 'turnover';
   const skipBalanceCheck = isControlLayer || isTurnoverLayer;
   // Mid-year progress (from committed batch types + reconciliation status).
-  const midYear = strategy === 'mid_year';
+  const midYear = layeredStrategy;
   const hasYearEnd = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'year_end_balance');
   const hasTurnover = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'period_turnover');
   const hasReceivables = batches.some((batch) => batch.status === 'committed' && batch.batch_type === 'receivables');
@@ -965,9 +973,12 @@ export default function OpeningBalancesPage() {
     return (
       <div className="flex h-full min-h-0 flex-col items-center justify-center p-6">
         <div className="w-full max-w-xl rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-6">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-[18px] font-semibold text-[var(--a-text)]">{t('obStrategyTitle')}</h2>
-            <HelpLink slug={OPENING_BALANCES_GUIDE} />
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h2 className="min-w-0 text-[18px] font-semibold text-[var(--a-text)]">{t('obStrategyTitle')}</h2>
+            <div className="flex shrink-0 items-center gap-2">
+              <AskAssistantButton />
+              <HelpLink slug={OPENING_BALANCES_GUIDE} />
+            </div>
           </div>
           <p className="mt-1.5 text-[13px] text-[var(--a-text-2)]">{t('obStrategyDescription')}</p>
           {errorMessage && (
@@ -1001,6 +1012,13 @@ export default function OpeningBalancesPage() {
               <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategyMidYear')}</div>
               <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategyMidYearHint')}</div>
             </button>
+            <Link
+              href="/accounting/opening-balances/startup"
+              className="rounded-[10px] border border-[var(--a-border)] p-4 text-left transition hover:border-[var(--a-accent)] sm:col-span-2"
+            >
+              <div className="text-[14px] font-semibold text-[var(--a-text)]">{t('obStrategyStartup')}</div>
+              <div className="mt-1 text-[12px] text-[var(--a-text-3)]">{t('obStrategyStartupHint')}</div>
+            </Link>
           </div>
         </div>
       </div>
@@ -1028,7 +1046,12 @@ export default function OpeningBalancesPage() {
               { done: hasReceivables && hasPayables, partial: hasReceivables || hasPayables, title: t('obMidYearStep3'), active: mode === 'receivables' || mode === 'payables', go: () => { setMode('receivables'); setStep('upload'); setMidYearNotice(null); } },
               { done: reconLocked, title: t('obMidYearStep4'), active: mode === 'general' && generalLayer === 'control', go: () => { setMode('general'); setGeneralLayer('control'); setStep('upload'); setMidYearNotice(null); invalidatePreview(); } },
             ];
-            const hint = (mode === 'receivables' || mode === 'payables')
+            // Startup bookkeeping only needs the previous year-end here; the year
+            // itself is reconstructed from the bank statement.
+            if (startupStrategy) steps.splice(1);
+            const hint = startupStrategy
+              ? t('obStartupYearEndHint')
+              : (mode === 'receivables' || mode === 'payables')
               ? t('obMidYearStep3Hint')
               : generalLayer === 'year_end' ? t('obLayerYearEndHint') : generalLayer === 'turnover' ? t('obLayerTurnoverHint') : t('obLayerControlHint');
             return (
@@ -1043,6 +1066,11 @@ export default function OpeningBalancesPage() {
                       </button>
                     </div>
                   ))}
+                  {startupStrategy && (
+                    <Link href="/accounting/opening-balances/startup" className="ml-2 text-[12px] font-semibold text-[var(--primary)] hover:underline">
+                      {t('obStartupOpenWizard')}
+                    </Link>
+                  )}
                   <span className="flex-1" />
                   <DocStepper step={step} t={t} />
                 </div>
@@ -1156,7 +1184,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year: GL-neutral open-item notice on the subledger tabs */}
-      {!effectiveFocus && strategy === 'mid_year' && (mode === 'receivables' || mode === 'payables') && (
+      {!effectiveFocus && layeredStrategy && (mode === 'receivables' || mode === 'payables') && (
         <div className="mt-2 rounded-[10px] border border-[var(--a-accent)]/30 bg-[var(--a-accent)]/5 px-3.5 py-2 text-[12.5px] text-[var(--a-text-2)]">
           {t('obGlNeutralHint')}
           <span className="ml-1 text-[var(--a-text-3)]">{t('obSubledgerIndependentHint')}</span>
@@ -1164,7 +1192,7 @@ export default function OpeningBalancesPage() {
       )}
 
       {/* Mid-year reconciliation + lock panel (control layer) */}
-      {strategy === 'mid_year' && mode === 'general' && generalLayer === 'control' && (reconResult || commitResult?.reconciliation) && (
+      {layeredStrategy && mode === 'general' && generalLayer === 'control' && (reconResult || commitResult?.reconciliation) && (
         (() => {
           const recon = reconResult || commitResult?.reconciliation;
           const passed = !!recon?.passed || recon?.status === 'passed' || recon?.status === 'locked';

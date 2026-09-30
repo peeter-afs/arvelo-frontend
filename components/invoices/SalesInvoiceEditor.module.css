@@ -205,6 +205,69 @@ textarea.inp{height:auto;min-height:29px;padding:6px 9px;resize:vertical;line-he
 .notice{margin:0 13px 8px;padding:7px 10px;border:1px solid #f0c9c4;border-radius:8px;background:#fbeaea;color:#a33125;font-size:12px}
 @media (max-width:1440px){.shell{padding:8px 0}.topbar{gap:7px}.raillbl{display:none}}
 @media (max-width:1420px){.fhint span:nth-child(n+3){display:none}}
+/* phone / tablet: one scrolling column, sticky actions, line cards */
+@media (max-width:1023px){
+  .shell{height:auto;min-height:0;min-width:0;overflow:visible;padding:0 0 8px}
+  .kbd,.kh,.railbtn,.gutter,.hint,.fhint{display:none}
+  .topbar{position:sticky;top:0;z-index:20;height:auto;flex-wrap:wrap;row-gap:6px;padding:6px 0 8px;background:var(--a-bg)}
+  .title{min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .acts{margin-left:0;width:100%;flex-shrink:1;min-width:0;flex-wrap:wrap;row-gap:6px}
+  .acts .btn{height:36px}
+  .acts .primary{margin-left:auto}
+  .dirtyTxt{display:none}
+  .body,.norail{display:block;overflow:visible}
+  .left,.norail .left{border-radius:11px 11px 0 0}
+  .lscroll{overflow:visible}
+  .form{max-height:none;overflow:visible}
+  .fgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .wide{grid-column:span 2}
+  .mid{grid-column:span 1}
+  .inp,.partner,.ser{height:36px}
+  .cgrid{grid-template-columns:minmax(0,1fr)}
+  .chip{height:30px;padding:0 10px}
+  .chips{height:36px}
+  .collbtn{width:28px;height:28px}
+  .fbar{top:2px}
+  .fgrid>.fld:first-child>.lbl{padding-right:62px}
+  .plist{max-height:50vh}
+  .mrow,.mlabel{padding:9px 8px}
+  /* lines → cards */
+  .lines{overflow:visible;background:transparent;border:none;border-radius:0;gap:8px}
+  .lh{display:none}
+  .rows{overflow:visible;display:flex;flex-direction:column;gap:8px}
+  .lr,.lr:nth-child(even),.lr:hover{grid-template-columns:repeat(4,minmax(0,1fr));min-width:0;gap:6px 6px;padding:8px;border:1px solid var(--a-border);border-radius:9px;background:#fdfcf9;align-items:end}
+  .lr:first-child{border-top:1px solid var(--a-border)}
+  .lr>div{padding:0}
+  .lr>[data-l]::before{content:attr(data-l);display:block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--a-text-3);margin-bottom:3px}
+  .lr>[data-col=ix]{display:none}
+  .lr>[data-col=desc]{order:0;grid-column:span 3}
+  .lr>[data-col=act]{order:1;grid-column:span 1}
+  .lr>[data-col=code],.lr>[data-col=acc],.lr>[data-col=cc],.lr>[data-col=prj]{order:2;grid-column:span 2}
+  .lr>[data-col=qty],.lr>[data-col=unit]{order:3}
+  .lr>[data-col=price]{order:3;grid-column:span 2}
+  .lr>[data-col=disc],.lr>[data-col=vat]{order:4}
+  .lr>[data-col=sum]{order:4;grid-column:span 2}
+  .in{height:36px;border-color:var(--a-border);background:#fff}
+  .rate{padding:0 0 9px!important}
+  .sum{padding:0 0 9px!important;font-size:14px}
+  .ra{opacity:1;padding:0!important;align-self:start}
+  .iconbtn{width:34px;height:34px}
+  .plist2{left:0;right:0;top:100%;width:auto;max-height:50vh}
+  .pitem{padding:9px 8px}
+  .addrow{height:auto;flex-wrap:wrap;padding:6px 0;border-top:none;background:transparent}
+  .addrow .btn{height:36px;border-color:var(--a-border);background:var(--a-surface)}
+  .ltot{display:block;border:1px solid var(--a-border);border-radius:9px}
+  .lcount{padding:7px 12px 0}
+  .cells{flex-wrap:wrap}
+  .cell{flex:1 1 40%;border-left:none;padding:6px 12px}
+  .linesec{padding-bottom:12px}
+  .footbar{height:auto;min-height:44px;flex-wrap:wrap;border-radius:0}
+  .footbar .btn{height:34px}
+  .right,.norail .right{display:flex;overflow:visible;border-left:none;border-top:1px solid var(--a-border);border-radius:0 0 11px 11px}
+}
+@media (max-width:767px){
+  .lbl .r{max-width:65%}
+}
 /* Locked (confirmed / paid) invoice: the form is a disabled fieldset — reset its browser chrome. */
 .lockset{border:0;margin:0;padding:0;min-width:0}
 .lockNote{margin:0 0 7px;padding:6px 11px;border:1px solid var(--a-border);border-radius:8px;background:var(--a-surface-2);color:var(--a-text-2);font-size:12px;flex:none}

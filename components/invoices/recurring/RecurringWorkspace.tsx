@@ -99,6 +99,7 @@ export default function RecurringWorkspace() {
   const [confirmDelete, setConfirmDelete] = useState<RecurringTemplate | null>(null);
   const [sendHour, setSendHour] = useState<number | null>(null);
   const [hourMenu, setHourMenu] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const today = todayIso();
 
@@ -315,11 +316,11 @@ export default function RecurringWorkspace() {
                     <tr
                       key={r.t.id}
                       className={`${paused ? s.paused : ''} ${r.t.id === selId ? s.sel : ''}`}
-                      onClick={() => setChosenId(r.t.id)}
+                      onClick={() => { setChosenId(r.t.id); setDetailOpen(true); }}
                       onDoubleClick={() => open(r.t.id)}
                     >
-                      <td className={s.nm}><b>{r.t.name}</b><span>{r.t.description || ''}</span></td>
-                      <td>
+                      <td className={`${s.nm} ${s.cName}`}><b>{r.t.name}</b><span>{r.t.description || ''}</span></td>
+                      <td className={s.cHide}>
                         <div className={s.avs}>
                           {clients.slice(0, 3).map((c) => (
                             <span key={c.id} className={s.av} title={c.partner?.name}>{initials(c.partner?.name || '?')}</span>
@@ -328,21 +329,21 @@ export default function RecurringWorkspace() {
                           <span className={s.avC}>{r.active}{r.active < r.total ? ` / ${r.total}` : ''}</span>
                         </div>
                       </td>
-                      <td>{frequencyLabel(r.t)}</td>
-                      <td className={s.mono}>
+                      <td className={s.cHide}>{frequencyLabel(r.t)}</td>
+                      <td className={`${s.mono} ${s.cNext}`}>
                         {paused ? '—' : isoToEt(r.t.next_invoice_date)}
                         {!paused && <span className={s.subline}>periood {shortRange(period.from, period.to)}</span>}
                       </td>
-                      <td className={`${s.r} ${s.mono}`}>
+                      <td className={`${s.r} ${s.mono} ${s.cHide}`}>
                         {num(r.net)}{r.variable && <span className={s.muted}> +muutuv</span>}
                       </td>
-                      <td className={`${s.r} ${s.mono}`} style={{ fontWeight: 600 }}>{paused ? '—' : num(r.runSum)}</td>
-                      <td className={s.dl}>{deliveryLabel(r.t)}</td>
-                      <td>
+                      <td className={`${s.r} ${s.mono} ${s.cSum}`} style={{ fontWeight: 600 }}>{paused ? '—' : num(r.runSum)}</td>
+                      <td className={`${s.dl} ${s.cHide}`}>{deliveryLabel(r.t)}</td>
+                      <td className={s.cSt}>
                         <span className={`${s.st} ${s[cls]}`}><i />{label}</span>
                         {r.errors > 0 && <> <span className={`${s.st} ${s.bad}`} title="Eelmine jooks ebaõnnestus">{r.errors} viga</span></>}
                       </td>
-                      <td>
+                      <td className={s.cAct}>
                         <div className={s.ra}>
                           {r.variable && !paused && (
                             <button className={s.ib} onClick={(e) => { e.stopPropagation(); router.push(`/invoices/recurring/quantities?mall=${r.t.id}`); }}>Kogused</button>
@@ -366,7 +367,11 @@ export default function RecurringWorkspace() {
           </div>
         </div>
 
-        <aside className={s.side}>
+        <aside className={`${s.side} ${detailOpen ? s.sideOpen : ''}`}>
+          <div className={s.sideHead}>
+            <b>{selected?.t.name || 'Mall'}</b>
+            <button className={s.sideX} onClick={() => setDetailOpen(false)} aria-label="Sulge" title="Sulge">✕</button>
+          </div>
           {selected ? (
             <SidePanel
               row={selected}

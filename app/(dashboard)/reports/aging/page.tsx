@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { Fragment, useState, useEffect, useCallback } from 'react';
 import { FileText, Calendar, Download } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type AgingReportData } from '@/lib/api/reports.api';
@@ -106,7 +106,7 @@ export default function AgingReportPage() {
             }));
             downloadCsv(rows, `aging-${direction}-${asOfDate}.csv`);
           }}
-          className="mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
+          className="mb-4 sm:mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium"
           style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
         >
           <Download className="h-4 w-4" />
@@ -117,7 +117,7 @@ export default function AgingReportPage() {
       {/* Controls */}
       <div className="card mb-6 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row gap-4 sm:items-end">
-          <div>
+          <div className="flex flex-col">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>{t('direction')}</label>
             <select
               value={direction}
@@ -129,7 +129,7 @@ export default function AgingReportPage() {
               <option value="payable">{t('accountsPayable')}</option>
             </select>
           </div>
-          <div>
+          <div className="flex flex-col">
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               <Calendar className="inline h-4 w-4 mr-1" />
               {t('asOfDate')}
@@ -150,7 +150,7 @@ export default function AgingReportPage() {
       ) : (
         <>
           {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-6">
             <SummaryCard label={t('current')} amount={data.summary.current} color="var(--success, #16a34a)" />
             <SummaryCard label={t('bucket1To30')} amount={data.summary.days_1_30} color="#eab308" />
             <SummaryCard label={t('bucket31To60')} amount={data.summary.days_31_60} color="#f97316" />
@@ -172,11 +172,11 @@ export default function AgingReportPage() {
           </div>
 
           {/* Partner table */}
-          <div className="card overflow-hidden">
-            <table className="w-full text-sm">
+          <div className="card min-w-0 max-w-full overflow-x-auto print:overflow-visible">
+            <table className="w-full min-w-[760px] text-sm print:min-w-0">
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
-                  <th className="text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('partner')}</th>
+                  <th className="sticky left-0 z-[1] bg-[var(--surface-elevated)] text-left py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('partner')}</th>
                   <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('current')}</th>
                   <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket1To30')}</th>
                   <th className="text-right py-3 px-4 font-medium" style={{ color: 'var(--text-secondary)' }}>{t('bucket31To60')}</th>
@@ -187,14 +187,13 @@ export default function AgingReportPage() {
               </thead>
               <tbody>
                 {data.partners.map((partner) => (
-                  <>
+                  <Fragment key={partner.partner_id}>
                     <tr
-                      key={partner.partner_id}
                       className="cursor-pointer hover:opacity-80"
                       style={{ borderBottom: '1px solid var(--border)' }}
                       onClick={() => togglePartner(partner.partner_id)}
                     >
-                      <td className="py-2.5 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>
+                      <td className="sticky left-0 z-[1] bg-[var(--a-surface)] max-lg:max-w-[180px] py-2.5 px-4 font-medium" style={{ color: 'var(--text-primary)' }}>
                         {partner.partner_name}
                         <span className="ml-2 text-xs" style={{ color: 'var(--text-muted)' }}>({partner.invoices.length})</span>
                       </td>
@@ -207,7 +206,7 @@ export default function AgingReportPage() {
                     </tr>
                     {expandedPartners.has(partner.partner_id) && partner.invoices.map((inv) => (
                       <tr key={inv.id} style={{ borderBottom: '1px solid var(--border)', backgroundColor: 'var(--surface-elevated)' }}>
-                        <td className="py-2 px-4 pl-8 text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <td className="sticky left-0 z-[1] bg-[var(--surface-elevated)] py-2 px-4 pl-8 text-xs" style={{ color: 'var(--text-secondary)' }}>
                           {inv.invoice_number || inv.id.slice(0, 8)} &mdash; {inv.invoice_date}
                           {inv.days_overdue > 0 && (
                             <span className="ml-2" style={{ color: inv.days_overdue > 90 ? '#991b1b' : inv.days_overdue > 60 ? '#ef4444' : inv.days_overdue > 30 ? '#f97316' : '#eab308' }}>
@@ -219,11 +218,11 @@ export default function AgingReportPage() {
                         <td className="py-2 px-4 text-right text-xs" style={{ color: 'var(--text-primary)' }}>{formatCurrency(inv.open_amount)}</td>
                       </tr>
                     ))}
-                  </>
+                  </Fragment>
                 ))}
                 {/* Totals row */}
                 <tr style={{ borderTop: '3px solid var(--text-primary)' }}>
-                  <td className="py-3 px-4 font-bold" style={{ color: 'var(--text-primary)' }}>{tc('total')}</td>
+                  <td className="sticky left-0 z-[1] bg-[var(--a-surface)] py-3 px-4 font-bold" style={{ color: 'var(--text-primary)' }}>{tc('total')}</td>
                   <td className="py-3 px-4 text-right font-bold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(data.summary.current)}</td>
                   <td className="py-3 px-4 text-right font-bold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(data.summary.days_1_30)}</td>
                   <td className="py-3 px-4 text-right font-bold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(data.summary.days_31_60)}</td>
@@ -242,9 +241,9 @@ export default function AgingReportPage() {
 
 function SummaryCard({ label, amount, color }: { label: string; amount: number; color: string }) {
   return (
-    <div className="card p-4">
-      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <p className="text-xl font-bold mt-1" style={{ color }}>&euro;{formatCurrency(amount)}</p>
+    <div className="card min-w-0 p-3 sm:p-4">
+      <p className="text-xs font-medium max-lg:truncate" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p className="text-base sm:text-xl font-bold mt-1 max-lg:truncate" style={{ color }}>&euro;{formatCurrency(amount)}</p>
     </div>
   );
 }

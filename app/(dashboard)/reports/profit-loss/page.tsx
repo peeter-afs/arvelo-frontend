@@ -80,7 +80,7 @@ function AmountCells({
 }) {
   return (
     <>
-      <span className="w-28 shrink-0 text-right font-medium" style={{ color: 'var(--text-primary)' }}>
+      <span className="min-w-28 whitespace-nowrap sm:w-28 sm:whitespace-normal shrink-0 text-right font-medium" style={{ color: 'var(--text-primary)' }}>
         &euro;{formatCurrency(amount)}
       </span>
       {comparing && (
@@ -322,12 +322,15 @@ export default function ProfitLossPage() {
   const compareNetIncome = data.compareNetIncome ?? 0;
   const profitMargin = totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0;
 
+  // Mobile + comparison: amounts scroll sideways under a sticky label column.
+  const stickyLabel = comparing ? ' max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--a-surface)]' : '';
+
   const columnHeader = comparing ? (
     <div
       className="flex justify-between gap-4 mb-2 pb-2 text-xs font-medium"
       style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}
     >
-      <span className="min-w-0 flex-1" />
+      <span className={`min-w-0 flex-1 self-stretch${stickyLabel}`} />
       <span className="w-28 shrink-0 text-right">{periodLabel}</span>
       <span className="w-28 shrink-0 text-right">{compareLabel}</span>
       <span className="w-28 shrink-0 text-right">{t('change')}</span>
@@ -340,7 +343,7 @@ export default function ProfitLossPage() {
       className="flex justify-between gap-4 pb-2"
       style={{ borderBottom: '1px solid var(--border)' }}
     >
-      <span className="min-w-0 flex-1" style={{ color: 'var(--text-secondary)' }}>
+      <span className={`min-w-0 flex-1${stickyLabel}`} style={{ color: 'var(--text-secondary)' }}>
         {item.account_name}
       </span>
       <AmountCells amount={item.amount} compareAmount={item.compare_amount ?? 0} comparing={comparing} />
@@ -352,7 +355,7 @@ export default function ProfitLossPage() {
       className="ml-4 flex justify-between gap-4 pt-2 mt-2 font-semibold"
       style={{ borderTop: '2px solid var(--border)' }}
     >
-      <span className="min-w-0 flex-1" style={{ color: 'var(--text-primary)' }}>{label}</span>
+      <span className={`min-w-0 flex-1${stickyLabel}`} style={{ color: 'var(--text-primary)' }}>{label}</span>
       <AmountCells amount={amount} compareAmount={compareAmount} comparing={comparing} />
     </div>
   );
@@ -372,8 +375,8 @@ export default function ProfitLossPage() {
       {dateSelector}
 
       {/* P&L Report */}
-      <div className="card p-4 sm:p-8 overflow-x-auto">
-        <div className={comparing ? 'min-w-[560px]' : undefined}>
+      <div className="card p-4 sm:p-8 overflow-x-auto print:overflow-visible">
+        <div className={comparing ? 'sm:min-w-[560px]' : undefined}>
           <div className="text-center mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
               {t('profitLoss')}
@@ -388,6 +391,8 @@ export default function ProfitLossPage() {
             )}
           </div>
 
+          <div className={comparing ? 'max-sm:overflow-x-auto' : undefined}>
+          <div className={comparing ? 'max-sm:min-w-[520px]' : undefined}>
           {columnHeader}
 
           {/* Revenue Section */}
@@ -410,17 +415,17 @@ export default function ProfitLossPage() {
 
           {/* Net Income */}
           <div
-            className="mb-6 sm:mb-8 flex justify-between gap-4 pt-3 font-bold text-lg p-3 rounded"
+            className="mb-6 sm:mb-8 flex justify-between gap-4 pt-3 font-bold text-base sm:text-lg p-3 rounded"
             style={{
               borderTop: '4px solid var(--text-primary)',
               backgroundColor: 'var(--surface-elevated)',
             }}
           >
-            <span className="min-w-0 flex-1" style={{ color: 'var(--text-primary)' }}>
+            <span className={`min-w-0 flex-1${comparing ? ' max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)]' : ''}`} style={{ color: 'var(--text-primary)' }}>
               {t('netIncome').toUpperCase()}
             </span>
             <span
-              className="w-28 shrink-0 text-right"
+              className="min-w-28 whitespace-nowrap sm:w-28 sm:whitespace-normal shrink-0 text-right"
               style={{ color: netIncome >= 0 ? 'var(--primary)' : 'var(--danger, #dc2626)' }}
             >
               &euro;{formatCurrency(netIncome)}
@@ -434,6 +439,8 @@ export default function ProfitLossPage() {
               </>
             )}
           </div>
+          </div>
+          </div>
 
           {/* Key Metrics */}
           <div className="mt-6 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
@@ -441,7 +448,7 @@ export default function ProfitLossPage() {
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {t('profitMargin')}
               </p>
-              <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
                 {profitMargin.toFixed(2)}%
               </p>
             </div>
@@ -449,7 +456,7 @@ export default function ProfitLossPage() {
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {t('revenue')}
               </p>
-              <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
                 &euro;{formatCurrency(totalRevenue)}
               </p>
             </div>
@@ -457,7 +464,7 @@ export default function ProfitLossPage() {
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
                 {t('totalCategory', { category: t('expenses') })}
               </p>
-              <p className="text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
+              <p className="text-xl sm:text-2xl font-bold mt-2" style={{ color: 'var(--text-primary)' }}>
                 &euro;{formatCurrency(totalExpenses)}
               </p>
             </div>

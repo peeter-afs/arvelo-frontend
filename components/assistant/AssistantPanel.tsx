@@ -34,7 +34,8 @@ export function AssistantPanel() {
 
   useEffect(() => {
     if (!isOpen) return;
-    inputRef.current?.focus();
+    // Skip autofocus on touch devices: it would pop the on-screen keyboard over the panel.
+    if (window.matchMedia('(hover: hover)').matches) inputRef.current?.focus();
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') close();
     };
@@ -52,10 +53,10 @@ export function AssistantPanel() {
 
   return (
     <aside
-      className="fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-[var(--a-border)] bg-[var(--a-bg)] shadow-2xl sm:w-[420px]"
+      className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[100vw] flex-col border-l border-[var(--a-border)] bg-[var(--a-bg)] shadow-2xl sm:w-[420px]"
       aria-label={t('title')}
     >
-      <header className="flex items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-3">
+      <header className="flex items-center gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface)] px-4 py-2 pt-[max(0.5rem,env(safe-area-inset-top))] lg:py-3">
         <span className="grid h-7 w-7 place-items-center rounded-lg bg-[var(--a-accent-soft)]">
           <Sparkles className="h-3.5 w-3.5 text-[var(--a-accent)]" />
         </span>
@@ -69,7 +70,8 @@ export function AssistantPanel() {
             onClick={reset}
             disabled={isThinking}
             title={t('newConversation')}
-            className="grid h-8 w-8 place-items-center rounded-md text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] disabled:opacity-50"
+            aria-label={t('newConversation')}
+            className="grid h-10 w-10 lg:h-8 lg:w-8 place-items-center rounded-md text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)] disabled:opacity-50"
           >
             <RotateCcw className="h-4 w-4" />
           </button>
@@ -78,7 +80,8 @@ export function AssistantPanel() {
           type="button"
           onClick={close}
           title={t('close')}
-          className="grid h-8 w-8 place-items-center rounded-md text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
+          aria-label={t('close')}
+          className="grid h-10 w-10 lg:h-8 lg:w-8 place-items-center rounded-md text-[var(--a-text-3)] hover:bg-[var(--a-surface-2)] hover:text-[var(--a-text)]"
         >
           <X className="h-4 w-4" />
         </button>
@@ -141,7 +144,7 @@ export function AssistantPanel() {
       </div>
 
       <form
-        className="border-t border-[var(--a-border)] bg-[var(--a-surface)] px-3 py-3"
+        className="border-t border-[var(--a-border)] bg-[var(--a-surface)] px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
         onSubmit={(event) => {
           event.preventDefault();
           submit(draft);
@@ -167,6 +170,7 @@ export function AssistantPanel() {
             type="submit"
             disabled={!draft.trim() || isThinking}
             title={t('send')}
+            aria-label={t('send')}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[var(--a-accent)] text-[var(--a-accent-on)] disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
