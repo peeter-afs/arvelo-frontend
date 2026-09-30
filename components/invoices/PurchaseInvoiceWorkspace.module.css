@@ -90,3 +90,4 @@
 :global(.compact) .grow{min-height:120px}
 :global(.compact) .detailHeader{padding:8px 12px;gap:5px}
 }
+.importReview{border:1px solid #e8dcbc;border-radius:9px;flex:none}

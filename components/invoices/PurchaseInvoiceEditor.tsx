@@ -710,27 +710,21 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         router.push(`/invoices/${result.linked_invoice_id}/edit`);
         return;
       }
-      if (record.draft_invoice_id) {
-        showToast.info('See fail on juba imporditud — avan olemasoleva arve');
-        router.push(`/invoices/${record.draft_invoice_id}/edit`);
-        return;
-      }
-      const review = `/invoices/purchase-imports?import=${record.id}`;
-      if (record.status !== 'supplier_resolved') {
-        showToast.info('Tarnijat ei tuvastatud — vali see impordi ülevaatuses');
-        router.push(review);
-        return;
-      }
-      try {
-        const created = await importApi.createDraftInvoice(record.id, {});
-        const draftId = created.draft_invoice?.invoice?.id;
-        if (!draftId) throw new Error('Mustandit ei loodud');
-        showToast.success('Arve tuvastatud — kontrolli andmed üle');
+      // A clean import already became a draft on the server (or this file was imported before).
+      const draftId = result.draft_invoice_id || record.draft_invoice_id;
+      if (draftId) {
+        if (result.status === 'skipped_duplicate') showToast.info('See fail on juba imporditud — avan olemasoleva arve');
+        else showToast.success('Arve tuvastatud — kontrolli andmed üle');
         router.push(`/invoices/${draftId}/edit`);
-      } catch (e) {
-        showToast.info(`Vaata import üle: ${getErrorMessage(e)}`);
-        router.push(review);
+        return;
       }
+      showToast.info(
+        result.status === 'skipped_duplicate' ? 'See fail on juba imporditud — vaata import üle'
+          : result.draft_error ? `Vaata import üle: ${result.draft_error}`
+          : record.status !== 'supplier_resolved' ? 'Tarnijat ei tuvastatud — vali see impordi ülevaatuses'
+          : 'Vaata import üle',
+      );
+      router.push(`/invoices/purchase-imports?import=${record.id}`);
     } catch (e) {
       showToast.error(getErrorMessage(e));
     } finally {
@@ -742,11 +736,12 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     e.preventDefault();
     setDragOver(false);
     if (busy) return;
-    const files = Array.from(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer.files).filter((f) => /\.(pdf|csv)$/i.test(f.name) || f.type === 'application/pdf');
+    if (!files.length) { showToast.error('Toetatud on PDF- ja CSV-failid'); return; }
     // A new invoice nobody has typed into yet becomes the imported one; once there
     // is data (or on an existing invoice) a dropped PDF is this invoice's original.
     if (mode === 'create' && !dirty) void importDropped(files);
-    else if (editable) void uploadOriginal(files[0]);
+    else if (editable) { const original = files.find((f) => /\.pdf$/i.test(f.name) || f.type === 'application/pdf'); if (original) void uploadOriginal(original); else showToast.error('Originaaliks sobib PDF-fail'); }
   };
 
 
@@ -814,7 +809,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
       onDragLeave={(e) => { if (e.currentTarget === e.target || !e.currentTarget.contains(e.relatedTarget as Node)) setDragOver(false); }}
       onDrop={onDropFiles}>
       {(dragOver || busy === 'import') && <div className={styles.dropHint}>{busy === 'import' ? <><Loader2 size={16} className="animate-spin" /> Tuvastame arve andmed…</> : mode === 'create' && !dirty ? 'Lase lahti — impordime arve failist' : 'Lase lahti — seome originaalina'}</div>}
-      <input ref={fileRef} type="file" accept=".pdf,image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadOriginal(f); e.target.value = ''; }} />
+      <input ref={fileRef} type="file" accept=".pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadOriginal(f); e.target.value = ''; }} />
       <div className={styles.topbar}>
         <div className={styles.crumb}><Link href="/invoices/purchase">← Ostuarved</Link><span className={styles.sep}>/</span></div>
         <h1 className={`${styles.title} ${styles.mono}`}>{hdr.sinv.trim() || invoice?.invoice_number || 'Uus ostuarve'}</h1>
@@ -832,6 +827,12 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
             <>
               {!voided && <Link className={styles.btn} href={`/invoices/new?type=purchase_credit_note&credit_note_for=${id}`}>Kreeditarve</Link>}
               {!voided && <Link className={styles.btn} title="Selle arve tasumised" href={`/accounting/payments?invoice_id=${id}`}>Maksed</Link>}
+              {payableNow && <Link className={`${styles.btn} ${styles.primary}`} href="/accounting/payment-batches">Lisa maksekorraldusse</Link>}
+            </>
+          ) : locked ? (
+            <>
+              {!voided && <Link className={styles.btn} href={`/invoices/new?type=purchase_credit_note&credit_note_for=${id}`}>Kreeditarve</Link>}
+              {payableNow && <Link className={styles.btn} href={`/accounting/payments?invoice=${id}`}>Registreeri tasumine</Link>}
               {payableNow && <Link className={`${styles.btn} ${styles.primary}`} href="/accounting/payment-batches">Lisa maksekorraldusse</Link>}
             </>
           ) : (

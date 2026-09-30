@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ComponentType, type Dispatch, type SetStateAction } from 'react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -681,12 +682,21 @@ export default function PurchaseInvoiceImportsPage() {
 
                     <button
                       onClick={handleCreateDraft}
-                      disabled={isCreatingDraft || !selectedPartnerName}
+                      disabled={isCreatingDraft || !selectedPartnerName || !!detail.import.draft_invoice_id}
                       className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[var(--primary)] px-4 text-sm font-medium text-white hover:bg-[var(--primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       {isCreatingDraft ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
                       <span>{isCreditNote ? t('createDraftPurchaseCreditNote') : t('createDraftPurchaseInvoice')}</span>
                     </button>
+
+                    {(draftResult?.draft_invoice?.invoice?.id || detail.import.draft_invoice_id) && (
+                      <Link
+                        href={`/invoices/${draftResult?.draft_invoice?.invoice?.id || detail.import.draft_invoice_id}/edit`}
+                        className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-[var(--a-border)] bg-white px-4 text-sm font-medium text-[var(--a-text)] hover:bg-[var(--a-surface-2)]"
+                      >
+                        Ava ostuarve →
+                      </Link>
+                    )}
 
                     {draftResult?.draft_invoice?.invoice && (
                       <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">

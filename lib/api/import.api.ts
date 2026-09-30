@@ -51,6 +51,8 @@ export type BoltCsvImportItem = {
   error_code?: string;
   error_message?: string;
   import_id?: string;
+  /** The import became a draft purchase invoice right away. */
+  draft_invoice_id?: string;
 };
 
 export type BoltCsvImportSummary = {
@@ -171,7 +173,7 @@ export const importApi = {
       formData.append(key, value);
     });
 
-    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail & { status?: 'processed' | 'attached' | 'skipped_duplicate'; linked_invoice_id?: string }>>('/api/import/purchase-invoices/upload', formData, {
+    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail & { status?: 'processed' | 'attached' | 'skipped_duplicate'; linked_invoice_id?: string; draft_invoice_id?: string; draft_error?: string }>>('/api/import/purchase-invoices/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },

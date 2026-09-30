@@ -43,9 +43,9 @@ export const ostuarved: Guide = {
       type: 'table',
       headers: ['Viis', 'Mis juhtub'],
       rows: [
-        ['PDF nimekirja lohistamine või **Laadi üles**', 'Arvelo tuvastab PDF-ist tarnija, summad ja read ning loob **impordi**. Arve mustandi lood lehel **Ostuarvete import**.'],
-        ['PDF uue ostuarve lehele lohistamine', 'Kui tarnija tuvastati, luuakse mustand kohe ja see avaneb. Muul juhul avaneb impordi ülevaatus, kus saad tarnija valida.'],
-        ['CSV (Bolt eksport)', 'Iga faili rea arvelink laaditakse alla ja töödeldakse nagu PDF. Fail peab sisaldama veergu `user_invoice_link`.'],
+        ['PDF nimekirja lohistamine või **Laadi üles**', 'Arvelo tuvastab PDF-ist tarnija, summad ja read ning loob **arve mustandi**, mis ilmub kohe nimekirja. Kui tarnijat ei tuvastatud või arve võib olla duplikaat, jääb fail ülevaatusele (vt allpool).'],
+        ['PDF uue ostuarve lehele lohistamine', 'Sama tuvastus; loodud mustand avaneb kohe. Kui fail vajab ülevaatust, avaneb see impordi ülevaatuses.'],
+        ['CSV (Bolt eksport)', 'Iga faili rea arvelink laaditakse alla ja töödeldakse nagu PDF — tuvastatud arved tekivad mustanditena. Fail peab sisaldama veergu `user_invoice_link`.'],
         ['Käsitsi', '**Uus ostuarve** (klahv **U**) — sisesta andmed ise.'],
         ['Pangatehingust', 'Kui pangatehingul pole arvet, saad selle ülevaatuses märkida „originaal puudub". Tekib pangamustand, mis ootab originaali.'],
       ],
@@ -54,7 +54,7 @@ export const ostuarved: Guide = {
       type: 'callout',
       tone: 'info',
       title: 'Toetatud failid',
-      text: 'Arvelo töötleb **PDF-faile** ja **Bolt CSV-d**. Pilte ja e-arve XML-i praegu ei toetata.',
+      text: 'Arvelo töötleb **PDF-faile** ja **Bolt CSV-d**. Teised failid (nt pildid) jäetakse vahele ja sellest antakse teada.',
     },
     {
       type: 'list',
@@ -65,14 +65,14 @@ export const ostuarved: Guide = {
       ],
     },
 
-    { type: 'heading', text: 'Ostuarvete import' },
+    { type: 'heading', text: 'Ülevaatust vajavad failid' },
     {
       type: 'steps',
       items: [
-        { title: 'Vali import', text: 'Lehel **Arvete keskus → Ostuarvete import** on vasakul impordijärjekord.' },
+        { title: 'Ava ülevaatus', text: 'Kui fail vajab ülevaatust, näed ostuarvete nimekirjas kollast riba — **Vaata üle** avab lehe **Arvete keskus → Ostuarvete import** õigel failil.' },
         { title: 'Kontrolli tuvastatud andmeid', text: 'Paranda vajadusel tarnija, arve number, kuupäevad, summad ja read. **Dokumendi tüüp** eristab ostuarvet ja kreeditarvet.' },
         { title: 'Seo tarnija', text: 'Kinnita pakutud tarnija või vali see käsitsi. Ilma tarnijata mustandit ei looda.' },
-        { title: 'Loo mustand', text: '**Loo ostuarve mustand** loob arve. Kui Arvelo kahtlustab duplikaati, pead selle enne kinnitama. Seejärel leiad mustandi lehelt Ostuarved.' },
+        { title: 'Loo mustand', text: '**Loo ostuarve mustand** loob arve. Kui Arvelo kahtlustab duplikaati, pead selle enne kinnitama. **Ava ostuarve →** viib loodud mustandile.' },
       ],
     },
 

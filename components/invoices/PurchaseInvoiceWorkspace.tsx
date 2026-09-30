@@ -174,6 +174,7 @@ export default function PurchaseInvoiceWorkspace() {
   const checkedRows = useMemo(() => invoices.filter((r) => checked.has(r.id)), [invoices, checked]);
   const checkedPayable = checkedRows.filter((r) => payable(r) && !batches.has(r.id)); const checkedPending = checkedRows.filter((r) => stKey(r) === 'pend');
   /* ── fit the columns to the list width instead of scrolling sideways ── */
+  const [importReview, setImportReview] = useState<string[] | null>(null);
   const router = useRouter(); const compact = useCompact(); const listRef = useRef<HTMLElement>(null); const [listWidth, setListWidth] = useState(0); const [rootWidth, setRootWidth] = useState(0);
   useEffect(() => { if (typeof ResizeObserver === 'undefined') return; const list = listRef.current, root = rootRef.current; const ro = new ResizeObserver(() => { setListWidth(list?.clientWidth || 0); setRootWidth(root?.clientWidth || 0); }); if (list) ro.observe(list); if (root) ro.observe(root); return () => ro.disconnect(); }, [mode]);
   const autoHidden = useMemo(() => {
@@ -233,17 +234,34 @@ export default function PurchaseInvoiceWorkspace() {
   const reject = (inv: InvoiceListItem) => { const why = window.prompt('Tagasilükkamise põhjus', 'Summa ei klapi tellimusega'); if (why === null) return; void run(`reject:${inv.id}`, async () => { const r = await invoicesApi.reject(inv.id, why || undefined); patchInvoice(inv.id, r.invoice); showToast.success(`Arve ${inv.invoice_number || ''} tagasi lükatud`); }); };
   const remindNow = (inv: InvoiceListItem) => run(`remind:${inv.id}`, async () => { const r = await invoicesApi.sendReceiptReminder(inv.id); setReminders((m) => { const n = { ...m }; delete n[inv.id]; return n; }); await loadInvoices(inv.id); showToast.success(`Meeldetuletus ${r.reminder_number} saadetud · ${r.sent_to}`); });
   const noDoc = (inv: InvoiceListItem) => run(`nodoc:${inv.id}`, async () => { if (!inv.bank_transaction_id) throw new Error('Pangatehing pole seotud'); await bankingApi.dismissMissingReceipt(inv.bank_transaction_id, { reason: 'Originaali ei tule' }); await loadInvoices(inv.id); showToast.success('Meeldetuletused peatatud · kanne tehakse ilma originaalita'); });
-  const uploadFiles = (files: FileList | File[]) => { const list = Array.from(files); const target = uploadTarget.current; uploadTarget.current = null; if (!list.length) return; void run('upload', async () => {
-    let attached = 0, linked = 0;
+  const uploadFiles = (files: FileList | File[]) => { const all = Array.from(files); const target = uploadTarget.current; uploadTarget.current = null;
+    // The backend reads PDFs (and Bolt CSV exports); say so instead of failing per file.
+    const list = all.filter((f) => /\.(pdf|csv)$/i.test(f.name) || f.type === 'application/pdf');
+    if (list.length < all.length) showToast.error(`Toetatud on PDF- ja CSV-failid — ${all.length - list.length} faili jäeti vahele`);
+    if (!list.length) return; void run('upload', async () => {
+    let attached = 0, linked = 0, created = 0, duplicates = 0; const review: string[] = [];
     for (const f of list) {
-      if (/csv$/i.test(f.name)) { await importApi.importBoltCsv(f); continue; }
+      if (/csv$/i.test(f.name)) {
+        const summary = await importApi.importBoltCsv(f);
+        created += summary.items.filter((i) => i.draft_invoice_id).length; duplicates += summary.duplicate_count;
+        summary.items.forEach((i) => { if (i.status === 'processed' && !i.draft_invoice_id && i.import_id) review.push(i.import_id); });
+        continue;
+      }
       const result = await importApi.uploadPurchaseInvoicePdf(f, target ? { target_invoice_id: target.id } : undefined);
-      const status = (result as { status?: string }).status;
-      if (status === 'attached') { if (target) attached += 1; else linked += 1; }
+      if (result.status === 'attached') { if (target) attached += 1; else linked += 1; }
+      else if (target) continue;
+      else if (result.status === 'skipped_duplicate') duplicates += 1;
+      else if (result.draft_invoice_id) created += 1;
+      else review.push(result.import.id);
     }
     if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
-    else showToast.success(linked ? `${linked} originaal${linked > 1 ? 'i' : ''} seoti olemasoleva pangamustandiga` : list.length === 1 ? `${list[0].name} laaditud üles — tuvastame andmed` : `${list.length} faili laaditud üles`);
+    else {
+      const parts = [created && `${created} arve${created > 1 ? 't' : ''} loodud`, linked && `${linked} originaal${linked > 1 ? 'i' : ''} seoti pangamustandiga`, duplicates && `${duplicates} juba imporditud`, review.length && `${review.length} vajab ülevaatust`].filter(Boolean);
+      showToast.success(parts.join(' · ') || 'Fail laaditud üles');
+      setImportReview(review.length ? review : null);
+    }
     await loadInvoices(target?.id || selectedId); importApi.listPurchaseInvoiceImports({ limit: 500 }).then((res) => setImports(importsByDraft(res.items))).catch(() => {}); }); };
+
   const openJournal = async (inv: InvoiceListItem) => { if (!inv.journal_entry_id) return; setJournalLoading(true); setModal({ kind: 'journal' }); try { setJournal(await accountingApi.getJournalEntry(inv.journal_entry_id)); } catch (e) { showToast.error(getErrorMessage(e)); setModal(null); } finally { setJournalLoading(false); } };
   const exportRows = async (format: 'xlsx' | 'csv' | 'pdf') => { setMenu(null); const data = visible.map((r) => ({ Nr: r.invoice_number || r.id, Tarnija: partnerName(r, partnerMap), Summa: Number(r.total), Tasumata: payable(r) ? openAmount(r) : 0, 'Arve kp': dateText(r.invoice_date), Tähtaeg: dateText(r.due_date), Staatus: ST[stKey(r)].label, Allikas: SRC[srcKey(r)].l })); if (format === 'xlsx') { const XLSX = await import('xlsx'); const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, XLSX.utils.json_to_sheet(data), 'Ostuarved'); XLSX.writeFile(book, 'ostuarved.xlsx'); } else if (format === 'csv') { const XLSX = await import('xlsx'); const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(data), { FS: ';' }); downloadBlob(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }), 'ostuarved.csv'); } else { const { jsPDF } = await import('jspdf'); const doc = new jsPDF(); doc.setFontSize(14); doc.text('Ostuarved', 14, 16); doc.setFontSize(9); data.slice(0, 55).forEach((r, i) => doc.text(`${r.Nr}  ${r.Tarnija}  ${money(r.Summa)}`, 14, 25 + i * 4.5)); doc.save('ostuarved.pdf'); } };
   const resizeColumn = (id: ColumnId, e: ReactPointerEvent) => { e.stopPropagation(); e.preventDefault(); const start = e.clientX, current = widths[id] || COLUMNS.find((c) => c.id === id)!.width; const move = (ev: PointerEvent) => setWidths((old) => ({ ...old, [id]: Math.max(40, current + ev.clientX - start) })); const up = () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); setWidths((v) => { localStorage.setItem(KEYS.cols, JSON.stringify(v)); return v; }); }; window.addEventListener('pointermove', move); window.addEventListener('pointerup', up); };
@@ -260,13 +278,13 @@ export default function PurchaseInvoiceWorkspace() {
   return <div ref={rootRef} className={`${styles.workspace} ${styles.relativeCard}`} style={workspaceStyle}
     onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragOver(true); } }} onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }} onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files); } }}>
     {dragOver && <div className={styles.dropHint}>Lase lahti — laadime faili üles</div>}
-    <input ref={fileRef} type="file" accept=".pdf,image/*,.xml,.csv" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
+    <input ref={fileRef} type="file" accept=".pdf,.csv" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
     <div className={styles.hdr}><div className={styles.topbar}><h1>Ostuarved</h1><span className={styles.sub}>{rangeLabel} · {periodInvoices.length} arvet</span>
       <div className={styles.metrics}><Metric label="Maksmisele" value={money(metrics.topay)} /><Metric label="Üle tähtaja" value={money(metrics.over)} negative /><Metric label="7 päeva jooksul" value={money(metrics.week)} /></div>
       <div className={styles.actions}>
         <span className={styles.relative}><button className={`${styles.button} ${styles.primary}`} disabled={action === 'upload'} onClick={() => setMenu(menu === 'upload' ? null : 'upload')}>{action === 'upload' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}Laadi üles</button>
           {menu === 'upload' && <div className={`${styles.menu} ${styles.uploadMenu}`}>
-            {[['pdf', 'PDF või pilt', 'Tuvastame tarnija, summad ja read', '.pdf,image/*'], ['xml', 'E-arve XML', 'Kui arve ei tulnud operaatori kaudu', '.xml'], ['csv', 'CSV / Bolt eksport', 'Mitu arvet korraga', '.csv']].map(([k, l, d, accept]) => <button key={k} className={styles.menuItem} onClick={() => { setMenu(null); uploadTarget.current = null; if (fileRef.current) { fileRef.current.accept = accept; fileRef.current.click(); } }}><span>{l}<span className={styles.menuDesc}>{d}</span></span></button>)}
+            {[['pdf', 'PDF', 'Tuvastame tarnija, summad ja read ning loome mustandi', '.pdf'], ['csv', 'CSV / Bolt eksport', 'Mitu arvet korraga', '.csv']].map(([k, l, d, accept]) => <button key={k} className={styles.menuItem} onClick={() => { setMenu(null); uploadTarget.current = null; if (fileRef.current) { fileRef.current.accept = accept; fileRef.current.click(); } }}><span>{l}<span className={styles.menuDesc}>{d}</span></span></button>)}
             <div className={styles.menuFoot}>Faili võib lohistada ka otse nimekirjale</div>
           </div>}</span>
         <Link className={styles.button} href="/invoices/new?type=purchase_invoice"><Plus size={14} />Uus ostuarve <span className={styles.key} style={{ color: 'var(--a-text-3)', borderColor: 'var(--a-border-strong)', background: 'var(--a-surface-2)' }}>U</span></Link>
@@ -281,6 +299,7 @@ export default function PurchaseInvoiceWorkspace() {
       <div className={styles.relative}><button className={`${styles.picker} ${vat !== 'all' ? styles.pickerActive : ''}`} onClick={() => setMenu(menu === 'vat' ? null : 'vat')}>KM: {VAT_CODES.find((x) => x.key === vat)?.short}<ChevronDown size={12} /></button>{menu === 'vat' && <div className={`${styles.menu} ${styles.menuLeft}`}>{VAT_CODES.map((code) => <button key={code.key} className={`${styles.menuItem} ${vat === code.key ? styles.menuOn : ''}`} onClick={() => { setVat(code.key); setMenu(null); }}>{code.label}<span className={styles.pill}>{baseFiltered.filter((r) => hasVatCode(r, code.key)).length}</span></button>)}</div>}</div>
     </div>}</div>
     {error && <div className={styles.notice}>{error}</div>}
+    {importReview && <div className={`${styles.warning} ${styles.importReview}`}><Upload size={14} /><span className={styles.warningText}><b>{importReview.length}</b> üleslaaditud faili vajab ülevaatust — tarnija on tuvastamata, arve võib olla duplikaat või read puuduvad</span><Link className={`${styles.button} ${styles.small} ${styles.primary}`} href={`/invoices/purchase-imports?import=${importReview[0]}`}>Vaata üle</Link><button className={`${styles.button} ${styles.small} ${styles.ghost}`} title="Sulge" onClick={() => setImportReview(null)}>✕</button></div>}
     {mode === 'list' ? <div className={`${styles.body} ${wide ? styles.bodyWide : ''}`}>
       <section ref={listRef} className={`${styles.card} ${styles.listColumn}`}>
         {checked.size ? <div className={`${styles.listHeader} ${styles.listHeaderSel}`}><span><b>{checkedRows.length}</b> valitud</span><span style={{ color: 'var(--a-text-3)' }}>·</span><span className={styles.mono}>maksmisele <b>{money(checkedPayable.reduce((n, r) => n + openAmount(r), 0))}</b>{checkedPayable.length < checkedRows.length && <span style={{ color: 'var(--a-text-3)' }}> ({checkedPayable.length} arvet)</span>}</span>
