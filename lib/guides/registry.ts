@@ -3,13 +3,19 @@ import type { Guide } from './types';
 import { algsaldodeImport } from './content/et/algsaldode-import';
 import { pangatehingud } from './content/et/pangatehingud';
 import { burooKlientettevotted } from './content/et/buroo-klientettevotted';
+import { muugiarved } from './content/et/muugiarved';
+import { ostuarved } from './content/et/ostuarved';
+import { korduvadArved } from './content/et/korduvad-arved';
+import { arveMallid } from './content/et/arve-mallid';
+import { maksedJaMaksepaketid } from './content/et/maksed-ja-maksepaketid';
+import { kuuloppJaAruanded } from './content/et/kuulopp-ja-aruanded';
 
 /**
  * Guides are written per locale. Only Estonian exists today; a new language is a
  * new `content/<locale>/` folder plus one entry here — nothing else changes.
  */
 const GUIDES_BY_LOCALE: Partial<Record<Locale, Guide[]>> = {
-  et: [algsaldodeImport, pangatehingud, burooKlientettevotted],
+  et: [algsaldodeImport, pangatehingud, burooKlientettevotted, muugiarved, ostuarved, korduvadArved, arveMallid, maksedJaMaksepaketid, kuuloppJaAruanded],
 };
 
 export function listGuides(locale: Locale): { guides: Guide[]; isFallback: boolean } {

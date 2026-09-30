@@ -43,7 +43,17 @@ const BLUR_CSS = `
   html.guide-blur [role="row"] span,
   html.guide-blur section.card p.truncate,
   html.guide-blur div.rounded-xl.bg-slate-50 > div + div,
-  html.guide-blur [data-guide-blur] {
+  html.guide-blur [data-guide-blur],
+  /* Dense views (CSS modules): amounts, client/supplier names, avatars, line texts. */
+  html.guide-blur [class*="__mono"],
+  html.guide-blur [class*="__customerName"],
+  html.guide-blur [class*="__customerMeta"],
+  html.guide-blur [class*="__avatar"],
+  html.guide-blur [class*="__lineDesc"],
+  html.guide-blur [class*="__metricValue"],
+  html.guide-blur [class*="__timeline"],
+  html.guide-blur [class*="__warningText"],
+  html.guide-blur [class*="__detailHeader"] h2 {
     filter: blur(4px);
   }
 `;
@@ -164,6 +174,21 @@ function makeContext(page, slug) {
  * itself rather than guessing.
  */
 async function login(page) {
+  // Token login through the API is faster and does not depend on the login form's
+  // hydration timing; fall back to the form if the API is not reachable.
+  const api = process.env.ARVELO_API_URL ?? 'https://arvelo-backend.onrender.com';
+  try {
+    const res = await fetch(`${api}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: EMAIL, password: PASSWORD }) });
+    const body = await res.json();
+    const d = body?.data;
+    if (res.ok && d?.access_token) {
+      await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
+      await page.evaluate((data) => localStorage.setItem('auth-storage', JSON.stringify({ state: { user: data.user, tenant: data.tenant, role: data.role, accessToken: data.access_token, refreshToken: data.refresh_token, isAuthenticated: true }, version: 0 })), d);
+      return;
+    }
+  } catch {
+    /* fall through to the form */
+  }
   await page.goto(`${BASE_URL}/login`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('button[type=submit]:not([disabled])', { timeout: 30_000 });
   await page.waitForTimeout(1500);
@@ -294,6 +319,37 @@ const TARGETS = [
       await ctx.blurData(false);
     },
   },
+  ...[
+    // Main content area (right of the sidebar) of one page, data blurred.
+    ['muugiarved', '/invoices/sales', '01-nimekiri', true],
+    ['muugiarved', '/invoices/new?type=sales_invoice', '02-uus-arve', false],
+    ['ostuarved', '/invoices/purchase', '01-nimekiri', true],
+    ['ostuarved', '/invoices/new?type=purchase_invoice', '02-uus-arve', false],
+    ['korduvad-arved', '/invoices/recurring', '01-nimekiri', true],
+    // The template preview is an iframe (blur can't reach it) and its payment block shows
+    // the company's real IBANs — crop above it.
+    ['arve-mallid', '/settings/documents', '01-seaded', false, 690],
+    ['maksed-ja-maksepaketid', '/accounting/payment-batches', '01-maksepaketid', true],
+    ['kuulopp-ja-aruanded', '/accounting/month-end', '01-kuulopp', true],
+    ['kuulopp-ja-aruanded', '/reports/vat', '02-kmd', true],
+  ].reduce((acc, [slug, path, name, blur, maxHeight]) => {
+    let target = acc.find((t) => t.slug === slug);
+    if (!target) {
+      target = { slug, pages: [], async run(ctx) {
+        for (const [p, n, b, h] of this.pages) {
+          await ctx.goto(p, 5000);
+          await ctx.assertNoApiError();
+          await ctx.blurData(b);
+          await ctx.page.evaluate((maxH) => { window.__guideMaxH = maxH || 0; }, h);
+          await ctx.shotRegion(() => { const r = window.__guideRect([document.querySelector('main')]); if (r && window.__guideMaxH) r.height = Math.min(r.height, window.__guideMaxH); return r; }, n);
+          await ctx.blurData(false);
+        }
+      } };
+      acc.push(target);
+    }
+    target.pages.push([path, name, blur, maxHeight]);
+    return acc;
+  }, []),
 ];
 
 const main = async () => {
