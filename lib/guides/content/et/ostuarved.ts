@@ -84,6 +84,7 @@ export const ostuarved: Guide = {
         '**Tarnija** — otsi nime järgi (**⌘K**). Tarnija maksetingimus ja IBAN võetakse partnerikaardilt.',
         '**Tarnija arve nr** — Arvelo hoiatab, kui sama tarnija sama numbriga arve on juba sisestatud.',
         '**Saaja IBAN** kontrollitakse; hoiatus, kui see erineb partnerikaardist.',
+        '**Jaga kontodele** jagab ühe rea summa mitme kulukonto vahel — osakaalu (%) või summa järgi. Valitud rida asendatakse osadega, neto summa jääb samaks.',
         '**Kulukonto** igal real. Paneelil **Konteering → Muuda kontosid** saad muuta sisendkäibemaksu ja võlgade kontot ning käibemaksu mahaarvamise protsenti (100 / 50 / 0%).',
         '**Kinnitaja** saab arve kinnitamiseks saatmisel e-kirja lingiga.',
         'Paneel **Originaal** näitab PDF-i kõrvuti arvega; **Kontroll** hoiatab, kui summa erineb originaalist.',

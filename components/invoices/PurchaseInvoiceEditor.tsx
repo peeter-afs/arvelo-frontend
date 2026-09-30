@@ -24,6 +24,7 @@ import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { SplitAccountsDialog, type SplitPart } from './SplitAccountsDialog';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import styles from './PurchaseInvoiceEditor.module.css';
@@ -224,6 +225,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [newTerm, setNewTerm] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [splitOpen, setSplitOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
 
@@ -572,6 +574,16 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     const line = newLine({ account_id: last?.account_id || expenseDefault, cost_center: last?.cost_center || hdr.costCenter, project: last?.project || hdr.project, unit: last?.unit || 'tk' });
     pendingFocus.current = line.key;
     setLines((ls) => [...ls, line]); touch();
+  };
+  /** Replaces the split line (or appends, when there were no lines) with one line per part. */
+  const applySplit = (sourceKey: number | null, parts: SplitPart[], description: string) => {
+    setLines((ls) => {
+      const at = ls.findIndex((l) => l.key === sourceKey);
+      const src = at >= 0 ? ls[at] : newLine({ description, cost_center: hdr.costCenter, project: hdr.project });
+      const made = parts.map((p) => ({ ...src, key: nextKey(), account_id: p.account_id, quantity: '1', unit_price: fmtNum(p.amount) }));
+      return at >= 0 ? [...ls.slice(0, at), ...made, ...ls.slice(at + 1)] : [...ls.filter((l) => l.description.trim() || num(l.unit_price)), ...made];
+    });
+    touch(); showToast.success(`Jagatud ${parts.length} kontole`);
   };
   const moveLine = (from: number, to: number) => { if (from === to) return; setLines((ls) => { const next = [...ls]; const [m] = next.splice(from, 1); next.splice(to, 0, m); return next; }); touch(); };
   const rowKeys = (e: ReactKeyboardEvent<HTMLDivElement>, i: number) => {
@@ -990,7 +1002,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                   </div>
                   <div className={styles.addrow}>
                     <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost}`} disabled={!editable} onClick={addLine}><svg className={styles.icon} viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg> Lisa rida</button>
-                    <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost}`} disabled={!editable} title="Jaga üks summa mitme kulukonto vahel" onClick={() => showToast.info('Jaga summa: vali kontod ja osakaalud — read luuakse automaatselt')}>Jaga kontodele</button>
+                    <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost}`} disabled={!editable} title="Jaga üks summa mitme kulukonto vahel" onClick={() => setSplitOpen(true)}>Jaga kontodele</button>
                     <span className={styles.hint}><kbd className={styles.kbd}>⏎</kbd> viimasel real lisab uue · <kbd className={styles.kbd}>⌥⌫</kbd> kustutab rea</span>
                   </div>
                   <div className={styles.ltot}>
@@ -1113,6 +1125,10 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         </div>
       </div>
 
+      <SplitAccountsDialog open={splitOpen} onOpenChange={setSplitOpen} currency={hdr.currency} defaultAccountId={expenseDefault}
+        lines={lines.map((l) => ({ key: l.key, description: l.description, account_id: l.account_id, net: lineNet(l) }))}
+        accounts={[...expenseAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name })), ...assetAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name, group: 'Vara' }))]}
+        onApply={applySplit} />
       <ConfirmDialog open={confirmCancel} onOpenChange={setConfirmCancel} title="Jäta muudatused salvestamata?" description="Arvel on salvestamata muudatusi. Loobumisel lähevad need kaduma." confirmLabel="Loobu muudatustest" variant="warning"
         onConfirm={() => { setDirty(false); router.push('/invoices/purchase'); }} />
       <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title="Kustuta mustand?" description={`Mustand ${hdr.sinv || ''} kustutatakse jäädavalt. Kinnitatud arveid ei saa kustutada.`} confirmLabel="Kustuta mustand"
