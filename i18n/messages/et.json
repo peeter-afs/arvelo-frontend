@@ -1778,7 +1778,7 @@
     "remindersSent": "Meeldetuletused",
     "send": "Saada",
     "reminderSettings": "Meeldetuletuse seaded",
-    "enableReminders": "Luba automaatsed meeldetuletused",
+    "enableReminders": "Luba automaatsed meeldetuletused (saadetakse iga päev hommikul)",
     "startAfterDays": "Alusta pärast (päevi)",
     "frequencyDays": "Sagedus (päevades)",
     "maxReminders": "Max meeldetuletusi",

@@ -141,9 +141,9 @@ export const muugiarved: Guide = {
     },
     {
       type: 'callout',
-      tone: 'warning',
-      title: 'Meeldetuletused ei lähe ise',
-      text: 'Meeldetuletused saadetakse ainult siis, kui vajutad nuppu. Seade „Luba automaatsed meeldetuletused" lubab küll hulgisaatmise nupu, kuid Arvelo ei saada praegu meeldetuletusi ajakava järgi ise.',
+      tone: 'info',
+      title: 'Automaatsed meeldetuletused',
+      text: 'Kui seadetes on **Luba automaatsed meeldetuletused** sisse lülitatud, saadab Arvelo tähtaegsed meeldetuletused ise iga päev hommikul (umbes kell 9–10) samade reeglite järgi: algusviivitus, sagedus ja maksimumarv. Arvetele, mille kliendil pole e-posti aadressi, meeldetuletust ei saadeta — need näed lehel eraldi.',
     },
   ],
 };

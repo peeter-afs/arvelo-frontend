@@ -1778,7 +1778,7 @@
     "remindersSent": "Reminders",
     "send": "Send",
     "reminderSettings": "Reminder Settings",
-    "enableReminders": "Enable automatic reminders",
+    "enableReminders": "Enable automatic reminders (sent every morning)",
     "startAfterDays": "Start after (days)",
     "frequencyDays": "Frequency (days)",
     "maxReminders": "Max reminders",
