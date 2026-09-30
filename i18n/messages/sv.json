@@ -1775,5 +1775,35 @@
       "private_expense": "private?",
       "unclear": "unclear"
     }
+  },
+  "invoiceInbox": {
+    "loading": "Laddar…",
+    "title": "Fakturor via e-post",
+    "description": "Företagets egen e-postadress för leverantörsfakturor. PDF- och e-faktura (XML) -bilagor som skickas dit blir fakturautkast, precis som vid uppladdning.",
+    "serverNotConfigured": "Mottagning av e-post är inte konfigurerad på servern än.",
+    "yourAddress": "Er fakturaadress",
+    "copied": "Kopierad",
+    "copy": "Kopiera",
+    "howTo": "Ge adressen till leverantörer eller vidarebefordra fakturor hit från din brevlåda. Bilagor (PDF, e-faktura XML) känns igen och blir fakturautkast.",
+    "rotate": "Byt adress",
+    "disable": "Stäng av",
+    "disabledWithAddress": "Mottagningen är avstängd. E-post till {address} tas inte emot.",
+    "notEnabled": "Slå på så får företaget en egen adress för fakturor.",
+    "enable": "Slå på",
+    "logTitle": "Mottagna e-postmeddelanden",
+    "refresh": "Uppdatera",
+    "logEmpty": "Inga e-postmeddelanden har kommit till adressen än.",
+    "unknownSender": "okänd avsändare",
+    "noSubject": "(inget ämne)",
+    "noAttachment": "bilaga saknas",
+    "attDraft": "utkast",
+    "attImported": "importerad",
+    "attDuplicate": "finns redan",
+    "attUnsupported": "fil stöds inte",
+    "attFailed": "fel",
+    "attReceived": "mottagen",
+    "rotateTitle": "Byt adress?",
+    "rotateDescription": "Företaget får en ny adress och e-post till den gamla tas inte längre emot.",
+    "workspaceHint": "eller skicka fakturor via e-post"
   }
 }

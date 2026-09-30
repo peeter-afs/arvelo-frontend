@@ -20,6 +20,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { FutursoftTab } from './_tabs/FutursoftTab';
 import { RikEinvoiceTab } from './_tabs/RikEinvoiceTab';
+import { InvoiceInboxTab } from './_tabs/InvoiceInboxTab';
 import { MeritPalkTab } from './_tabs/MeritPalkTab';
 import { BankGatewaysTab } from './_tabs/BankGatewaysTab';
 import { BillingTab } from './_tabs/BillingTab';
@@ -881,7 +882,10 @@ export default function SettingsPage() {
 
             {activeTab === 'integrations' && (
               <div className="space-y-10">
-                <RikEinvoiceTab canManage={canManageIntegrations} />
+                <InvoiceInboxTab canManage={canManageIntegrations} />
+                <div className="border-t border-slate-200 pt-8">
+                  <RikEinvoiceTab canManage={canManageIntegrations} />
+                </div>
                 <div className="border-t border-slate-200 pt-8">
                   <FutursoftTab canManage={canManageIntegrations} />
                 </div>

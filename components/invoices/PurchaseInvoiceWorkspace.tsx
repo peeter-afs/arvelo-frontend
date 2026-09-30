@@ -17,6 +17,7 @@ import { importApi, type PurchaseInvoiceImportListItem } from '@/lib/api/import.
 import { invoicesApi, type InvoiceDetail, type InvoiceLine, type InvoiceListItem, type ReceiptReminder } from '@/lib/api/invoices.api';
 import { paymentsApi, type PaymentListItem } from '@/lib/api/payments.api';
 import { RegisterPaymentDialog } from './RegisterPaymentDialog';
+import { invoiceInboxApi } from '@/lib/api/invoiceInbox.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 import { showToast } from '@/components/ui/Toast';
@@ -111,6 +112,9 @@ export default function PurchaseInvoiceWorkspace() {
   const [bankAccounts, setBankAccounts] = useState<BankAccountRecord[]>([]); const [receiptSettings, setReceiptSettings] = useState<MissingReceiptSettings | null>(null); const [supplierIban, setSupplierIban] = useState<Record<string, SupplierBankAccount | null>>({});
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]); const [projects, setProjects] = useState<Project[]>([]); const [reminders, setReminders] = useState<Record<string, ReceiptReminder[]>>({});
   const [selectedId, setSelectedId] = useState<string | null>(null); const [checked, setChecked] = useState<Set<string>>(new Set()); const [tab, setTab] = useState<TabKey>('all'); const [query, setQuery] = useState(''); const [period, setPeriod] = useState<PeriodKey>('90'); const [dateFrom, setDateFrom] = useState(''); const [dateTo, setDateTo] = useState(''); const [vat, setVat] = useState('all'); const [src, setSrc] = useState<SrcKey | 'all'>('all');
+  /** The company's e-mail address for invoices (Settings → Integrations), shown in the upload menu. */
+  const [inboxAddress, setInboxAddress] = useState<string | null>(null);
+  useEffect(() => { invoiceInboxApi.status().then((s) => setInboxAddress(s.enabled ? s.address : null)).catch(() => {}); }, []);
   const [sort, setSort] = useState<ColumnId>('nr'); const [direction, setDirection] = useState<1 | -1>(-1); const [menu, setMenu] = useState<MenuKey>(null); const [wide, setWide] = useState(false); const [mode, setMode] = useState<'list' | 'open'>('list'); const [ptab, setPtab] = useState<PTab>('lines'); const [zoom, setZoom] = useState<Zoom>('fit'); const [fitZoom, setFitZoom] = useState(1); const [pdfPages, setPdfPages] = useState(0);
   const [loading, setLoading] = useState(true); const [detailLoading, setDetailLoading] = useState(false); const [action, setAction] = useState<string | null>(null); const [error, setError] = useState<string | null>(null); const [dragOver, setDragOver] = useState(false);
   const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH); const [panelDragging, setPanelDragging] = useState(false); const [widths, setWidths] = useState<Partial<Record<ColumnId, number>>>({}); const [hidden, setHidden] = useState<ColumnId[]>(DEFAULT_HIDDEN);
@@ -292,6 +296,7 @@ export default function PurchaseInvoiceWorkspace() {
         <span className={styles.relative}><button className={`${styles.button} ${styles.primary}`} disabled={action === 'upload'} onClick={() => setMenu(menu === 'upload' ? null : 'upload')}>{action === 'upload' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}Laadi üles</button>
           {menu === 'upload' && <div className={`${styles.menu} ${styles.uploadMenu}`}>
             {[['pdf', 'PDF', 'Tuvastame tarnija, summad ja read ning loome mustandi', '.pdf'], ['xml', 'E-arve XML', 'Eesti e-arve või UBL / PEPPOL — andmed loetakse failist täpselt', '.xml'], ['csv', 'CSV / Bolt eksport', 'Mitu arvet korraga', '.csv']].map(([k, l, d, accept]) => <button key={k} className={styles.menuItem} onClick={() => { setMenu(null); uploadTarget.current = null; if (fileRef.current) { fileRef.current.accept = accept; fileRef.current.click(); } }}><span>{l}<span className={styles.menuDesc}>{d}</span></span></button>)}
+            {inboxAddress && <button className={styles.menuItem} title="Kopeeri aadress" onClick={() => { void navigator.clipboard?.writeText(inboxAddress); setMenu(null); showToast.success('Aadress kopeeritud'); }}><span>E-postiga<span className={styles.menuDesc}>Saada või suuna arved aadressile <b style={{ color: 'var(--a-text-2)', wordBreak: 'break-all' }}>{inboxAddress}</b></span></span></button>}
             <div className={styles.menuFoot}>Faili võib lohistada ka otse nimekirjale</div>
           </div>}</span>
         <Link className={styles.button} href="/invoices/new?type=purchase_invoice"><Plus size={14} />Uus ostuarve <span className={`${styles.key} ${styles.desktopOnly}`} style={{ color: 'var(--a-text-3)', borderColor: 'var(--a-border-strong)', background: 'var(--a-surface-2)' }}>U</span></Link>

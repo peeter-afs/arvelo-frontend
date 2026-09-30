@@ -1789,5 +1789,35 @@
       "private_expense": "private?",
       "unclear": "unclear"
     }
+  },
+  "invoiceInbox": {
+    "loading": "Ladataan…",
+    "title": "Laskut sähköpostilla",
+    "description": "Yrityksen oma sähköpostiosoite ostolaskuille. Sinne lähetettyjen viestien PDF- ja verkkolasku (XML) -liitteistä tulee ostolaskuluonnoksia kuten latauksessa.",
+    "serverNotConfigured": "Sähköpostin vastaanottoa ei ole vielä määritetty palvelimella.",
+    "yourAddress": "Laskuosoitteenne",
+    "copied": "Kopioitu",
+    "copy": "Kopioi",
+    "howTo": "Anna osoite toimittajille tai välitä laskut tänne postilaatikostasi. Liitteet (PDF, verkkolasku XML) tunnistetaan ja niistä tehdään ostolaskuluonnoksia.",
+    "rotate": "Vaihda osoite",
+    "disable": "Poista käytöstä",
+    "disabledWithAddress": "Vastaanotto on pois päältä. Osoitteeseen {address} lähetettyjä viestejä ei oteta vastaan.",
+    "notEnabled": "Ota käyttöön, niin yritys saa oman laskuosoitteen.",
+    "enable": "Ota käyttöön",
+    "logTitle": "Saapuneet viestit",
+    "refresh": "Päivitä",
+    "logEmpty": "Tähän osoitteeseen ei ole vielä tullut viestejä.",
+    "unknownSender": "tuntematon lähettäjä",
+    "noSubject": "(ei aihetta)",
+    "noAttachment": "ei liitettä",
+    "attDraft": "luonnos",
+    "attImported": "tuotu",
+    "attDuplicate": "on jo olemassa",
+    "attUnsupported": "ei tuettu tiedosto",
+    "attFailed": "virhe",
+    "attReceived": "vastaanotettu",
+    "rotateTitle": "Vaihda osoite?",
+    "rotateDescription": "Yritys saa uuden osoitteen, eikä vanhaan osoitteeseen lähetettyjä viestejä enää oteta vastaan.",
+    "workspaceHint": "tai lähetä laskut sähköpostilla"
   }
 }

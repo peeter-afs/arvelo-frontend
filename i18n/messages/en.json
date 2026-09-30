@@ -3223,5 +3223,35 @@
       "private_expense": "private?",
       "unclear": "unclear"
     }
+  },
+  "invoiceInbox": {
+    "loading": "Loading…",
+    "title": "Invoices by e-mail",
+    "description": "Your company’s own e-mail address for purchase invoices. PDF and e-invoice (XML) attachments sent there become purchase invoice drafts, just like an upload.",
+    "serverNotConfigured": "Receiving e-mail is not set up on the server yet (no receiving domain).",
+    "yourAddress": "Your invoice address",
+    "copied": "Copied",
+    "copy": "Copy",
+    "howTo": "Give this address to suppliers or forward invoices here from your mailbox. Attachments (PDF, e-invoice XML) are recognised and become purchase invoice drafts; the supplier is matched by the sender and the invoice data.",
+    "rotate": "Change address",
+    "disable": "Turn off",
+    "disabledWithAddress": "Receiving is turned off. Mail sent to {address} is not accepted.",
+    "notEnabled": "Turn it on to get your company’s address for invoices.",
+    "enable": "Turn on",
+    "logTitle": "Received e-mails",
+    "refresh": "Refresh",
+    "logEmpty": "No e-mail has arrived at this address yet.",
+    "unknownSender": "unknown sender",
+    "noSubject": "(no subject)",
+    "noAttachment": "no attachment",
+    "attDraft": "draft",
+    "attImported": "imported",
+    "attDuplicate": "already exists",
+    "attUnsupported": "unsupported file",
+    "attFailed": "error",
+    "attReceived": "received",
+    "rotateTitle": "Change address?",
+    "rotateDescription": "Your company gets a new address and mail sent to the old one is no longer accepted. Tell your suppliers the new address.",
+    "workspaceHint": "or send invoices by e-mail"
   }
 }

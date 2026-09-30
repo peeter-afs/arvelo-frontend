@@ -3223,5 +3223,35 @@
       "private_expense": "isiklik kulu?",
       "unclear": "ebaselge"
     }
+  },
+  "invoiceInbox": {
+    "loading": "Laadin…",
+    "title": "Arvete vastuvõtt e-postiga",
+    "description": "Ettevõtte oma e-posti aadress ostuarvete jaoks. Sinna saadetud kirjade PDF- ja e-arve (XML) manused muutuvad ostuarvete mustanditeks samamoodi nagu üleslaadimisel.",
+    "serverNotConfigured": "E-posti vastuvõtt pole serveris veel seadistatud (vastuvõtu domeen puudub).",
+    "yourAddress": "Teie arvete aadress",
+    "copied": "Kopeeritud",
+    "copy": "Kopeeri",
+    "howTo": "Anna see aadress tarnijatele arvete saatmiseks või suuna oma postkastist arved siia edasi. Kirja manused (PDF, e-arve XML) tuvastatakse ja neist tehakse ostuarve mustandid; tarnija leitakse saatja e-posti ja arve andmete järgi.",
+    "rotate": "Uuenda aadressi",
+    "disable": "Lülita välja",
+    "disabledWithAddress": "Vastuvõtt on välja lülitatud. Aadressile {address} saadetud kirju ei võeta vastu.",
+    "notEnabled": "Lülita sisse ja ettevõte saab oma aadressi, kuhu arveid saata.",
+    "enable": "Lülita sisse",
+    "logTitle": "Sissetulnud kirjad",
+    "refresh": "Värskenda",
+    "logEmpty": "Selle aadressi kaudu pole veel ühtegi kirja tulnud.",
+    "unknownSender": "tundmatu saatja",
+    "noSubject": "(teemata)",
+    "noAttachment": "manus puudub",
+    "attDraft": "mustand",
+    "attImported": "imporditud",
+    "attDuplicate": "juba olemas",
+    "attUnsupported": "toetamata fail",
+    "attFailed": "viga",
+    "attReceived": "vastu võetud",
+    "rotateTitle": "Uuenda aadressi?",
+    "rotateDescription": "Ettevõte saab uue aadressi ja vanale aadressile saadetud kirju enam vastu ei võeta. Teata uus aadress tarnijatele.",
+    "workspaceHint": "või saada arved e-postiga"
   }
 }

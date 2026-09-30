@@ -46,6 +46,7 @@ export const ostuarved: Guide = {
         ['PDF nimekirja lohistamine või **Laadi üles**', 'Arvelo tuvastab PDF-ist tarnija, summad ja read ning loob **arve mustandi**, mis ilmub kohe nimekirja. Kui tarnijat ei tuvastatud või arve võib olla duplikaat, jääb fail ülevaatusele (vt allpool).'],
         ['PDF uue ostuarve lehele lohistamine', 'Sama tuvastus; loodud mustand avaneb kohe. Kui fail vajab ülevaatust, avaneb see impordi ülevaatuses.'],
         ['E-arve XML', 'Eesti e-arve standardi või UBL / PEPPOL (EL-i tarnijad) fail. Andmed loetakse failist täpselt; failis olev PDF saab originaaliks. Ühes Eesti e-arve failis võib olla mitu arvet — igast tekib oma mustand.'],
+        ['E-postiga', 'Ettevõtte oma aadressile (nt `firma-k7q2@arved.arvelo.ee`) saadetud kirja PDF- ja e-arve XML-manused töödeldakse nagu üleslaadimisel ja neist tekivad mustandid. Aadressi näed **Seaded → Integratsioonid → Arvete vastuvõtt e-postiga** ja ostuarvete **Laadi üles** menüüs.'],
         ['CSV (Bolt eksport)', 'Iga faili rea arvelink laaditakse alla ja töödeldakse nagu PDF — tuvastatud arved tekivad mustanditena. Fail peab sisaldama veergu `user_invoice_link`.'],
         ['Käsitsi', '**Uus ostuarve** (klahv **U**) — sisesta andmed ise.'],
         ['Pangatehingust', 'Kui pangatehingul pole arvet, saad selle ülevaatuses märkida „originaal puudub". Tekib pangamustand, mis ootab originaali.'],
@@ -63,6 +64,25 @@ export const ostuarved: Guide = {
         '**Sama faili ei impordita kaks korda** — Arvelo tunneb faili ära ka siis, kui see on üles laaditud teise kanali kaudu.',
         '**Pangamustandiga sidumine:** kui üleslaaditud PDF-i summa klapib ootel pangamustandiga, seotakse PDF sellega automaatselt originaaliks ja meeldetuletused peatuvad.',
         'Kui uue arve vormis on juba andmeid, seotakse lohistatud PDF selle arve **originaaliks**, mitte ei impordita uueks arveks.',
+      ],
+    },
+
+    { type: 'heading', text: 'Arvete saatmine e-postiga' },
+    {
+      type: 'steps',
+      items: [
+        { title: 'Lülita vastuvõtt sisse', text: '**Seaded → Integratsioonid → Arvete vastuvõtt e-postiga → Lülita sisse.** Ettevõte saab aadressi kujul `ettevõtte-nimi-xxxx@arved.arvelo.ee`. Juhuslik lõpp teeb aadressi raskesti äraarvatavaks.' },
+        { title: 'Anna aadress tarnijatele', text: 'Palu tarnijatel arved sellele aadressile saata või suuna oma postkastist arvete kirjad automaatselt edasi.' },
+        { title: 'Arved tulevad mustanditena', text: 'Kirja **PDF**- ja **e-arve XML**-manused töödeldakse samamoodi nagu üleslaadimisel. Tarnija leitakse saatja e-posti ja arve andmete järgi; kahtlased failid jäävad ülevaatusele.' },
+      ],
+    },
+    {
+      type: 'list',
+      items: [
+        'Seadete kaardil on **sissetulnud kirjade logi**: iga kirja saatja, teema ja manuste olek (mustand, juba olemas, toetamata fail, viga). Kui kirjas manust polnud, on see märgitud „manus puudub".',
+        'Saatja, keda ühegi partneri e-postina ei tunta, saab märke **tundmatu saatja** — kontrolli sellised arved üle.',
+        'Kui aadress on levinud valesse kohta, vajuta **Uuenda aadressi**: tekib uus aadress ja vanale saadetud kirju enam vastu ei võeta.',
+        'Pildid (logod, allkirjad) jäetakse vahele; muud failid (nt Word) märgitakse logis toetamata failiks.',
       ],
     },
 
