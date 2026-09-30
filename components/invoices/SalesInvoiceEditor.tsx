@@ -636,7 +636,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
             <>
               <button type="button" className={`${styles.btn} ${styles.ghost}`} onClick={cancel}>Sulge <kbd className={styles.kbd}>Esc</kbd></button>
               {!voided && <Link className={styles.btn} href={`/invoices/new?type=sales_credit_note&credit_note_for=${id}`}>Kreediteeri</Link>}
-              {!voided && invoice?.status !== 'paid' && <Link className={styles.btn} href={`/accounting/payments?invoice=${id}`}>Registreeri laekumine</Link>}
+              {!voided && <Link className={styles.btn} title="Selle arve laekumised" href={`/accounting/payments?invoice_id=${id}`}>Maksed</Link>}
               <Link className={styles.btn} href={`/invoices/${id}/preview`}>Prindi</Link>
               {!voided && <button type="button" className={`${styles.btn} ${styles.primary}`} disabled={!!busy || loading} onClick={() => void resend()}>{busy === 'send' && <Loader2 size={13} className="animate-spin" />}Saada uuesti</button>}
             </>

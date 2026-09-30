@@ -831,7 +831,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
           ) : locked ? (
             <>
               {!voided && <Link className={styles.btn} href={`/invoices/new?type=purchase_credit_note&credit_note_for=${id}`}>Kreeditarve</Link>}
-              {payableNow && <Link className={styles.btn} href={`/accounting/payments?invoice=${id}`}>Registreeri tasumine</Link>}
+              {!voided && <Link className={styles.btn} title="Selle arve tasumised" href={`/accounting/payments?invoice_id=${id}`}>Maksed</Link>}
               {payableNow && <Link className={`${styles.btn} ${styles.primary}`} href="/accounting/payment-batches">Lisa maksekorraldusse</Link>}
             </>
           ) : (
