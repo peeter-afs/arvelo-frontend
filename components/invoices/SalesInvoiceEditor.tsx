@@ -23,6 +23,8 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
+import { SalesWipPanel } from './SalesWipPanel';
+import type { InvoiceWipPlan } from '@/lib/api/projectWip.api';
 import styles from './SalesInvoiceEditor.module.css';
 
 type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
@@ -202,6 +204,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const [members, setMembers] = useState<TenantMember[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  /** invoices.meta.wip_release: how much of the project's lõpetamata tööd is released to cost on confirm. */
+  const [wipPlan, setWipPlan] = useState<InvoiceWipPlan | null>(() => (initial?.invoice.meta?.wip_release as InvoiceWipPlan | undefined) || null);
 
   const [extra, setExtra] = useState<Extra>(DEFAULT_EXTRA);
   const [coll, setColl] = useState(false);
@@ -266,6 +270,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       if (!live) return;
       const { header, movedImportNote } = headerFrom(detail, vatEnabled);
       setInvoice(detail.invoice); setHdr(header); setLines(detail.lines.map(lineFrom));
+      setWipPlan((detail.invoice.meta?.wip_release as InvoiceWipPlan | undefined) || null);
       if (movedImportNote && ['draft', 'rejected'].includes(detail.invoice.status)) setDirty(true);
     }).catch((e) => live && setLoadError(getErrorMessage(e))).finally(() => live && setLoading(false));
     return () => { live = false; };
@@ -512,6 +517,15 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     if (e.key === 'Backspace' && e.altKey) { e.preventDefault(); removeLine(i); }
   };
 
+  /* ── project WIP: the header project, else the one project all lines share ── */
+  const wipProjectId = useMemo(() => {
+    if (hdr.project) return hdr.project;
+    const ids = [...new Set(lines.map((l) => l.project).filter(Boolean))];
+    return ids.length === 1 ? ids[0] : '';
+  }, [hdr.project, lines]);
+  const wipProject = projects.find((p) => p.id === wipProjectId);
+  const onWipPlan = useCallback((plan: InvoiceWipPlan | null) => { setWipPlan(plan); setDirty(true); }, []);
+
   /* ── persistence ── */
   const validationMessage = () => {
     if (!hdr.partnerId) return 'Vali klient enne salvestamist';
@@ -534,6 +548,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       ...(invoice?.meta || {}),
       billing_address: hdr.billing.trim(), delivery_address: hdr.shipping.trim(), contact_name: hdr.contactName.trim(), contact_email: hdr.contactEmail.trim(), contact_phone: hdr.contactPhone.trim(),
       internal_note: hdr.inote.trim(), cost_center_id: hdr.costCenter || undefined, project_id: hdr.project || undefined, cost_center: undefined, project: undefined, author_user_id: hdr.authorId || undefined, vat_code: vat.key,
+      wip_release: wipPlan && wipPlan.project_id === wipProjectId ? wipPlan : undefined,
     },
     lines: lines.map((l) => {
       const meta: Record<string, string> = {};
@@ -860,6 +875,13 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
             <div className={`${styles.kv} ${styles.tot}`}><span>Kokku tasumisele</span><b>{money(totals.tot, hdr.currency)}</b></div>
             <div className={styles.kv} style={{ marginTop: 7, borderTop: '1px solid var(--a-border)', paddingTop: 6 }}><span>Makseviide</span><b className={styles.mono}>{invoice?.payment_reference || '—'}</b></div>
           </div>
+          {(wipProjectId || locked) && (
+            <SalesWipPanel
+              styles={styles} projectId={wipProjectId} projectLabel={wipProject ? dimensionLabel(wipProject) : 'Projekt'}
+              invoiceId={invoice?.id || id || null} locked={locked} net={totals.net} currency={hdr.currency}
+              plan={wipPlan} onPlanChange={onWipPlan}
+            />
+          )}
           <div className={styles.sec}>
             <div className={styles.sech}>Kontroll</div>
             {checks.map((c, i) => <div key={i} className={`${styles.chk} ${c.s === 'ok' ? '' : c.s === 'warn' ? styles.warn : styles.err}`}><span className={styles.m}>{c.s === 'ok' ? '✓' : '!'}</span><span>{c.t}</span></div>)}

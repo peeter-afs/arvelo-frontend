@@ -152,6 +152,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tExpenses('title'), href: '/accounting/recurring-expenses' },
         { label: tAccounting('openingBalances'), href: '/accounting/opening-balances' },
         { label: tAccounting('monthEnd'), href: '/accounting/month-end' },
+        { label: tAccounting('projectWip'), href: '/accounting/projects/wip' },
         { label: tAccounting('partners'), href: '/accounting/partners' },
         { label: tAccounting('fiscalYears'), href: '/accounting/fiscal-years' },
         { label: tAccounting('exchangeRates'), href: '/accounting/exchange-rates' },

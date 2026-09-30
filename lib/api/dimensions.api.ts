@@ -17,6 +17,8 @@ export type Project = CostCenter & {
   cost_center_id: string | null;
   /** Optional owner (customer on sales, supplier on purchase invoices): offered first on that partner's invoices. */
   partner_id: string | null;
+  /** Purchase lines of this project go to the WIP (lõpetamata tööd) account until sold. Migration 103. */
+  wip_enabled?: boolean;
 };
 
 export type DimensionInput = {
@@ -25,6 +27,7 @@ export type DimensionInput = {
   cost_center_id?: string | null;
   partner_id?: string | null;
   is_active?: boolean;
+  wip_enabled?: boolean;
 };
 
 function api<T extends CostCenter>(path: string) {

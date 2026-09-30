@@ -207,15 +207,20 @@ export type DimensionReportRow = {
   revenue: number;
   costs: number;
   result: number;
+  margin_pct?: number | null;
+  /** Lõpetamata tööd: WIP account balance at the end of the period. */
+  wip_balance?: number;
+  draft_revenue?: number;
+  draft_costs?: number;
   sales_invoices: number;
   purchase_invoices: number;
 };
 
 export type DimensionReportLine = {
-  invoice_id: string;
+  invoice_id: string | null;
   invoice_number: string | null;
-  type: string;
-  status: string;
+  type: string | null;
+  status: string | null;
   invoice_date: string;
   partner_id: string | null;
   partner_name: string | null;
@@ -224,15 +229,27 @@ export type DimensionReportLine = {
   kind: 'revenue' | 'cost';
   cost_center_id: string | null;
   project_id: string | null;
+  /** ledger = journal line · invoice_legacy = invoice posted before journal lines carried dimensions · draft = unposted invoice */
+  source?: 'ledger' | 'invoice_legacy' | 'draft';
+  journal_entry_id?: string | null;
+  entry_number?: string | null;
+  account_id?: string | null;
+  account_code?: string | null;
+  account_name?: string | null;
+  source_document_schema?: string | null;
 };
+
+export type DimensionAccountRow = { account_id: string | null; code: string | null; name: string; kind: 'revenue' | 'cost'; amount: number };
 
 export type DimensionReportData = {
   period: { start_date: string; end_date: string };
   include_drafts: boolean;
+  basis?: 'ledger' | 'invoices';
   cost_centers: DimensionReportRow[];
   projects: DimensionReportRow[];
-  totals: { revenue: number; costs: number; result: number };
+  totals: { revenue: number; costs: number; result: number; wip_balance?: number; draft_revenue?: number; draft_costs?: number };
   lines: DimensionReportLine[];
+  by_account?: { cost_centers: Record<string, DimensionAccountRow[]>; projects: Record<string, DimensionAccountRow[]> };
 };
 
 /**
@@ -261,10 +278,14 @@ async function downloadXml(url: string, startDate: string, endDate: string): Pro
 }
 
 export const reportsApi = {
-  /** Revenue and costs by cost centre / project, from invoice lines. */
-  async getDimensionReport(startDate: string, endDate: string, includeDrafts = false) {
+  /** Revenue and costs by cost centre / project, from the general ledger (journal line dimensions). */
+  async getDimensionReport(startDate: string, endDate: string, includeDrafts = false, filters: { project_id?: string; cost_center_id?: string } = {}) {
     const response = await apiClient.get<ApiResponse<DimensionReportData>>('/api/reports/dimensions', {
-      params: { start_date: startDate, end_date: endDate, include_drafts: includeDrafts ? 'true' : 'false' },
+      params: {
+        start_date: startDate, end_date: endDate, include_drafts: includeDrafts ? 'true' : 'false',
+        ...(filters.project_id ? { project_id: filters.project_id } : {}),
+        ...(filters.cost_center_id ? { cost_center_id: filters.cost_center_id } : {}),
+      },
     });
     return response.data.data;
   },

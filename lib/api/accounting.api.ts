@@ -246,6 +246,8 @@ export type JournalLineRecord = {
   debit: number;
   credit: number;
   description?: string | null;
+  cost_center_id?: string | null;
+  project_id?: string | null;
 };
 
 export type OpeningBalancePayloadLine = {

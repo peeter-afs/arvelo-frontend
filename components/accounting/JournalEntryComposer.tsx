@@ -11,6 +11,7 @@ import {
   type PartnerOption,
 } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { projectsApi, dimensionLabel, type Project } from '@/lib/api/dimensions.api';
 import { getIsoToday } from '@/lib/utils/date';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,9 @@ type DraftLine = {
   debit: string;
   credit: string;
   description: string;
+  /** Project (its cost centre comes along); needed for lõpetamata tööd adjustments. */
+  project_id?: string;
+  cost_center_id?: string;
 };
 
 type JournalEntryComposerProps = {
@@ -235,6 +239,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
   // ── Data ────────────────────────────────────────────────────────────────────
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
@@ -272,6 +277,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
       }
     };
     void load();
+    projectsApi.list().then(setProjects).catch(() => {});
   }, []);
 
   // ── Load existing entry (edit mode) ─────────────────────────────────────────
@@ -297,6 +303,8 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               debit: row.debit ? String(row.debit) : '',
               credit: row.credit ? String(row.credit) : '',
               description: row.description ?? '',
+              project_id: row.project_id ?? '',
+              cost_center_id: row.cost_center_id ?? '',
             }))
           );
         }
@@ -315,6 +323,8 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
       setTimeout(() => setDisplayDate(isoToDisplay(entryDate)), 0);
     }
   }, [entryDate, displayDate]);
+
+  const dims = projects.length > 0 || lines.some((l) => l.project_id);
 
   // ── Totals ──────────────────────────────────────────────────────────────────
   const totalDebit = lines.reduce((sum, l) => sum + parseAmount(l.debit), 0);
@@ -337,6 +347,8 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           debit: parseAmount(l.debit),
           credit: parseAmount(l.credit),
           description: l.description || undefined,
+          project_id: l.project_id || undefined,
+          cost_center_id: l.cost_center_id || undefined,
         })),
     };
   }, [entryDate, entryType, description, reference, lines]);
@@ -628,9 +640,10 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
           {/* Lines table */}
           <div className="overflow-x-auto rounded-[10px] border border-[var(--a-border)]">
             {/* Header */}
-            <div className="grid grid-cols-[1fr_180px_96px_96px_32px] gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]">
+            <div className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} gap-2 border-b border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--a-text-3)]`}>
               <div>{t('account')}</div>
               <div>{t('description')}</div>
+              {dims && <div>{t('journalProject')}</div>}
               <div className="text-right">{t('debit')}</div>
               <div className="text-right">{t('credit')}</div>
               <div />
@@ -641,7 +654,7 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
               {lines.map((line, index) => (
                 <div
                   key={line._key}
-                  className="grid grid-cols-[1fr_180px_96px_96px_32px] items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2"
+                  className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} items-center gap-2 border-b border-[var(--a-border)] px-3.5 py-2`}
                   onFocus={() => { lastFocusedLineRef.current = index; }}
                 >
                   {/* Account picker */}
@@ -661,6 +674,23 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
                     placeholder={t('description')}
                     className="h-8 w-full rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)] placeholder:text-[var(--a-text-3)] outline-none focus:border-[var(--a-accent)]"
                   />
+
+                  {/* Project (brings its cost centre along) */}
+                  {dims && (
+                    <select
+                      value={line.project_id || ''}
+                      onChange={(e) => {
+                        const project = projects.find((p) => p.id === e.target.value);
+                        updateLine(index, { project_id: e.target.value, cost_center_id: e.target.value ? project?.cost_center_id || line.cost_center_id || '' : '' });
+                      }}
+                      aria-label={t('journalProject')}
+                      className="h-8 w-full min-w-0 rounded border border-[var(--a-border)] bg-[var(--a-surface)] px-1.5 text-[12.5px] text-[var(--a-text)] outline-none focus:border-[var(--a-accent)]"
+                    >
+                      <option value="">{t('journalNoProject')}</option>
+                      {line.project_id && !projects.some((p) => p.id === line.project_id) && <option value={line.project_id}>…</option>}
+                      {projects.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}
+                    </select>
+                  )}
 
                   {/* Debit */}
                   <input
@@ -711,9 +741,10 @@ export default function JournalEntryComposer({ mode, entryId }: JournalEntryComp
             </div>
 
             {/* Totals row */}
-            <div className="grid grid-cols-[1fr_180px_96px_96px_32px] items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5">
+            <div className={`grid ${dims ? 'grid-cols-[1fr_180px_150px_96px_96px_32px]' : 'grid-cols-[1fr_180px_96px_96px_32px]'} items-center gap-2 border-t border-[var(--a-border)] bg-[var(--a-surface-2)] px-3.5 py-2.5`}>
               <div className="text-[11.5px] font-medium text-[var(--a-text-2)]">{t('totals')}</div>
               <div />
+              {dims && <div />}
               <div className="text-right font-mono text-[12.5px] font-semibold tabular-nums text-[var(--a-text)]">
                 {totalDebit.toFixed(2)}
               </div>

@@ -13,6 +13,7 @@ import { SystemRolesPanel } from '@/components/accounting/SystemRolesPanel';
 import { SupplyTypeSalesAccountsPanel } from '@/components/accounting/SupplyTypeSalesAccountsPanel';
 import { RoundingSettlementPanel } from '@/components/accounting/RoundingSettlementPanel';
 import { DimensionsPanel } from '@/components/accounting/DimensionsPanel';
+import { ProjectWipSettingsPanel } from '@/components/accounting/ProjectWipSettingsPanel';
 import type { SupplyTypeSalesDefaults } from '@/lib/api/accounting.api';
 import { ConfirmResetDialog } from '@/components/ui/ConfirmResetDialog';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -970,6 +971,8 @@ export default function SettingsPage() {
                 )}
 
                 {canManageData && <DimensionsPanel />}
+
+                {canManageData && <ProjectWipSettingsPanel accounts={roleAccounts} />}
 
                 {canManageData && (
                   <RoundingSettlementPanel

@@ -9,13 +9,14 @@ import { korduvadArved } from './content/et/korduvad-arved';
 import { arveMallid } from './content/et/arve-mallid';
 import { maksedJaMaksepaketid } from './content/et/maksed-ja-maksepaketid';
 import { kuuloppJaAruanded } from './content/et/kuulopp-ja-aruanded';
+import { projektiKuluarvestus } from './content/et/projekti-kuluarvestus';
 
 /**
  * Guides are written per locale. Only Estonian exists today; a new language is a
  * new `content/<locale>/` folder plus one entry here — nothing else changes.
  */
 const GUIDES_BY_LOCALE: Partial<Record<Locale, Guide[]>> = {
-  et: [algsaldodeImport, pangatehingud, burooKlientettevotted, muugiarved, ostuarved, korduvadArved, arveMallid, maksedJaMaksepaketid, kuuloppJaAruanded],
+  et: [algsaldodeImport, pangatehingud, burooKlientettevotted, muugiarved, ostuarved, korduvadArved, arveMallid, maksedJaMaksepaketid, kuuloppJaAruanded, projektiKuluarvestus],
 };
 
 export function listGuides(locale: Locale): { guides: Guide[]; isFallback: boolean } {

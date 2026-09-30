@@ -55,6 +55,8 @@ export function CommandBar({
     accounts: tAccounting('chartOfAccounts'),
     bank: tAccounting('bankWorkspace'),
     'month-end': tAccounting('monthEnd'),
+    projects: tAccounting('projects'),
+    wip: tAccounting('projectWip'),
     'payment-batches': tAccounting('paymentBatches'),
     payments: tAccounting('payments'),
     journal: tAccounting('journalEntries'),

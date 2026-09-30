@@ -22,6 +22,7 @@ import { importApi, type PurchaseInvoiceImportListItem, type PurchaseUploadResul
 import { invoicesApi, type InvoiceDetail, type InvoiceDraftPayload, type InvoiceLine, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
+import { projectWipApi } from '@/lib/api/projectWip.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SplitAccountsDialog, type SplitPart } from './SplitAccountsDialog';
@@ -204,6 +205,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [members, setMembers] = useState<TenantMember[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
+  /** Lõpetamata tööde konto: lines of a WIP project are booked here instead of cost (migration 103). */
+  const [wipAccountId, setWipAccountId] = useState('');
   const [purchases, setPurchases] = useState<InvoiceListItem[]>([]);
   const [supplierIbans, setSupplierIbans] = useState<Record<string, SupplierBankAccount[]>>({});
   const [imports, setImports] = useState<PurchaseInvoiceImportListItem[]>([]);
@@ -264,6 +267,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     accountingApi.listPartnersWithBalances('supplier').then((rows) => setBalances(new Map(rows.map((r) => [r.id, Number(r.balance || 0)])))).catch(() => {});
     if (tenant?.id) tenantsApi.getMembers(tenant.id).then(setMembers).catch(() => {});
     costCentersApi.list().then(setCostCenters).catch(() => {});
+    projectWipApi.settings().then((w) => setWipAccountId(w.wip_account_id)).catch(() => {});
     projectsApi.list().then(setProjects).catch(() => {});
     invoicesApi.listInvoices({ type: 'purchase_invoice', limit: 1000 }).then(setPurchases).catch(() => {});
   }, [tenant?.id]);
@@ -440,9 +444,15 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     else if (b < a) out.push({ s: 'err', t: 'Maksetähtaeg on enne arve kuupäeva' });
     if (extra.lcc) { const n = lines.filter((l) => !l.cost_center.trim()).length; if (n) out.push({ s: 'warn', t: <><b>{n}</b> rida ilma kulukohata</> }); }
     if (extra.lprj) { const n = lines.filter((l) => !l.project.trim()).length; if (n) out.push({ s: 'warn', t: <><b>{n}</b> rida ilma projektita</> }); }
+    if (wipAccountId) {
+      const wipLines = lines.filter((l) => l.account_id === wipAccountId);
+      const orphan = wipLines.filter((l) => !l.project.trim() && !hdr.project.trim()).length;
+      if (orphan) out.push({ s: 'err', t: <><b>{orphan}</b> lõpetamata tööde rida ilma projektita</> });
+      else if (wipLines.length) out.push({ s: 'ok', t: <><b>{wipLines.length}</b> rida läheb projekti lõpetamata töödesse — kuluks müügiarvega</> });
+    }
     if (vat.supply === 'reverse_charge' && vatEnabled) out.push({ s: 'warn', t: 'Pöördmaks — KM arvestatakse deklaratsioonis (KMD lisa)' });
     return out;
-  }, [partner, hdr.sinv, hdr.issued, hdr.due, hdr.currency, duplicateOf, ocr, ocrDiff, ocrMatch, lines, ibanState, extra.lcc, extra.lprj, vat.supply, vatEnabled]);
+  }, [partner, hdr.sinv, hdr.issued, hdr.due, hdr.currency, hdr.project, duplicateOf, ocr, ocrDiff, ocrMatch, lines, ibanState, extra.lcc, extra.lprj, vat.supply, vatEnabled, wipAccountId]);
   const hasErrors = checks.some((c) => c.s === 'err');
   const worst: CheckState = hasErrors ? 'err' : checks.some((c) => c.s === 'warn') ? 'warn' : 'ok';
 
@@ -538,11 +548,28 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     const p = projects.find((x) => x.id === projectId);
     return p?.cost_center_id ? { project: projectId, costCenter: p.cost_center_id } : { project: projectId };
   };
+  const isWipProject = (projectId: string) => !!wipAccountId && !!projects.find((x) => x.id === projectId)?.wip_enabled;
+  /** A WIP project moves the line to the WIP account; leaving one puts the default cost account back. */
+  const wipAccountPatch = (line: Line, projectId: string): Partial<Line> => {
+    if (isWipProject(projectId)) return line.account_id === wipAccountId ? {} : { account_id: wipAccountId };
+    return line.account_id === wipAccountId && wipAccountId ? { account_id: expenseDefault } : {};
+  };
+  const setLineProject = (i: number, projectId: string) => {
+    const patch = projectPatch(projectId);
+    updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}), ...wipAccountPatch(lines[i], projectId) });
+  };
+  const setHeaderProject = (projectId: string) => {
+    setH(projectPatch(projectId));
+    // lines without their own project follow the header
+    setLines((ls) => ls.map((l) => (l.project.trim() ? l : { ...l, ...wipAccountPatch(l, projectId) })));
+  };
+  const wipAccount = wipAccountId ? accountMap.get(wipAccountId) : undefined;
   const AccountOptions = ({ current }: { current: string }) => (
     <>
       <option value="">—</option>
       {current && !accountMap.has(current) && <option value={current}>(tundmatu konto)</option>}
       {expenseAccounts.map((a) => <option key={a.id} value={a.id} title={`${a.code} ${a.name}`}>{a.code} {a.name}</option>)}
+      {wipAccount && <optgroup label="Lõpetamata tööd"><option value={wipAccount.id} title={`${wipAccount.code} ${wipAccount.name} — kuluks müügiarvega`}>{wipAccount.code} {wipAccount.name}</option></optgroup>}
       {assetAccounts.length > 0 && <optgroup label="Vara">{assetAccounts.map((a) => <option key={a.id} value={a.id} title={`${a.code} ${a.name}`}>{a.code} {a.name}</option>)}</optgroup>}
     </>
   );
@@ -963,7 +990,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                   </div>
                   {showInote && <div className={`${styles.fld} ${styles.wide}`}><div className={styles.lbl}>Sisemärkus <span className={styles.r}>ainult raamatupidajale</span></div><input className={styles.inp} value={hdr.inote} disabled={!editable} onChange={(e) => setH({ inote: e.target.value })} /></div>}
                   {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} disabled={!editable} onChange={(e) => setH({ costCenter: e.target.value })}><CostCenterOptions current={hdr.costCenter} /></select></div>}
-                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} disabled={!editable} onChange={(e) => setH(projectPatch(e.target.value))}><ProjectOptions current={hdr.project} /></select></div>}
+                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} disabled={!editable} onChange={(e) => setHeaderProject(e.target.value)}><ProjectOptions current={hdr.project} /></select></div>}
                 </div>
               </div>
 
@@ -981,12 +1008,12 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                           <div className={`${styles.ix} ${styles.mono}`} title="Lohista järjestamiseks" draggable={editable} onDragStart={() => setDragIndex(i)} onDragEnd={() => { setDragIndex(null); setOverIndex(null); }}>{i + 1}</div>
                           <div><input ref={(el) => { descRefs.current.set(l.key, el); }} className={`${styles.in} ${l.description.trim() ? '' : styles.miss}`} value={l.description} placeholder="Kirjeldus" disabled={!editable} onChange={(e) => updateLine(i, { description: e.target.value })} /></div>
                           <div>
-                            <select ref={(el) => { accRefs.current.set(l.key, el); }} className={`${styles.in} ${styles.sel} ${l.account_id ? '' : styles.miss}`} value={l.account_id} title={acc ? `${acc.code} ${acc.name}` : 'Kulukonto määramata'} disabled={!editable} onChange={(e) => updateLine(i, { account_id: e.target.value })}>
+                            <select ref={(el) => { accRefs.current.set(l.key, el); }} className={`${styles.in} ${styles.sel} ${l.account_id ? '' : styles.miss}`} value={l.account_id} title={acc ? `${acc.code} ${acc.name}${l.account_id === wipAccountId ? ' — lõpetamata tööd, kuluks müügiarvega' : ''}` : 'Kulukonto määramata'} disabled={!editable} onChange={(e) => updateLine(i, { account_id: e.target.value })}>
                               <AccountOptions current={l.account_id} />
                             </select>
                           </div>
                           {extra.lcc && <div><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} disabled={!editable} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
-                          {extra.lprj && <div><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} disabled={!editable} onChange={(e) => { const patch = projectPatch(e.target.value); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }}><ProjectOptions current={l.project} /></select></div>}
+                          {extra.lprj && <div><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} disabled={!editable} onChange={(e) => setLineProject(i, e.target.value)}><ProjectOptions current={l.project} /></select></div>}
                           <div><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} disabled={!editable} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
                           <div><select className={`${styles.in} ${styles.sel}`} value={l.unit} disabled={!editable} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
                           <div><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" disabled={!editable} onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>

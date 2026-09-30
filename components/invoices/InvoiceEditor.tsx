@@ -9,6 +9,7 @@ import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api
 import { getErrorMessage } from '@/lib/api/client';
 import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
 import { invoicesApi, type InvoiceDraftPayload } from '@/lib/api/invoices.api';
+import { projectWipApi, type WipRelease } from '@/lib/api/projectWip.api';
 import { recurringExpensesApi, type ExpenseFrequency } from '@/lib/api/recurringExpenses.api';
 import { getIsoToday } from '@/lib/utils/date';
 import { Button } from '@/components/ui/Button';
@@ -64,6 +65,10 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   const [costCenterId, setCostCenterId] = useState('');
   const [projectId, setProjectId] = useState('');
   const [loadedMeta, setLoadedMeta] = useState<Record<string, unknown>>({});
+  /** Sales credit note: reverse the credited invoice's lõpetamata tööd release on confirm (meta.wip_restore). */
+  const [linkedInvoiceId, setLinkedInvoiceId] = useState(creditNoteForInvoiceId || '');
+  const [wipRelease, setWipRelease] = useState<WipRelease | null>(null);
+  const [wipRestore, setWipRestore] = useState(false);
   const [quickAddLine, setQuickAddLine] = useState<EditorLine | null>(null);
   const [type, setType] = useState<InvoiceType>(defaultType);
   const isCreditNote = type === 'sales_credit_note' || type === 'purchase_credit_note';
@@ -130,6 +135,13 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
   }, []);
 
   useEffect(() => {
+    if (type !== 'sales_credit_note' || !linkedInvoiceId) { setWipRelease(null); return; }
+    projectWipApi.invoiceReleases(linkedInvoiceId)
+      .then((rows) => setWipRelease(rows.find((r) => r.status === 'posted') || null))
+      .catch(() => setWipRelease(null));
+  }, [type, linkedInvoiceId]);
+
+  useEffect(() => {
     if (mode !== 'edit' || !invoiceId) return;
 
     const loadInvoice = async () => {
@@ -146,6 +158,8 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
         setPaymentReference(result.invoice.payment_reference || '');
         setNotes(result.invoice.notes || '');
         setLoadedMeta(result.invoice.meta || {});
+        if (result.invoice.credit_note_for_invoice_id) setLinkedInvoiceId(result.invoice.credit_note_for_invoice_id);
+        setWipRestore(result.invoice.meta?.wip_restore === true);
         setCostCenterId(String(result.invoice.meta?.cost_center_id || ''));
         setProjectId(String(result.invoice.meta?.project_id || ''));
         setLines(
@@ -202,7 +216,10 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
     payment_reference: paymentReference || undefined,
     notes: notes || undefined,
     credit_note_for_invoice_id: creditNoteForInvoiceId || undefined,
-    meta: { ...loadedMeta, cost_center_id: costCenterId || undefined, project_id: projectId || undefined },
+    meta: {
+      ...loadedMeta, cost_center_id: costCenterId || undefined, project_id: projectId || undefined,
+      wip_restore: type === 'sales_credit_note' && wipRelease && wipRestore ? true : undefined,
+    },
     lines: lines.map((line) => ({
       description: line.description,
       account_id: line.account_id || undefined,
@@ -346,6 +363,12 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 <Field label={t('notes')}>
                   <input value={notes} onChange={(e) => setNotes(e.target.value)} className={inputClass} />
                 </Field>
+                {type === 'sales_credit_note' && wipRelease && (
+                  <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 md:col-span-2">
+                    <input type="checkbox" className="mt-0.5" checked={wipRestore} onChange={(e) => setWipRestore(e.target.checked)} />
+                    <span>{t('wipRestoreLabel', { amount: Number(wipRelease.amount).toLocaleString('et-EE', { minimumFractionDigits: 2 }) })}</span>
+                  </label>
+                )}
                 {(costCenters.length > 0 || projects.length > 0) && (
                   <>
                     <Field label={t('costCenter')}>

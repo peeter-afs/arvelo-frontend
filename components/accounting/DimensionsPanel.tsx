@@ -51,7 +51,7 @@ export function DimensionsPanel() {
   const save = (kind: Kind, id: string, patch: Record<string, unknown>) => run(`${kind}:${id}`, () => apiFor(kind).update(id, patch));
 
   return (
-    <div className="rounded-xl border border-slate-200 p-6">
+    <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">{t('dimensionsTitle')}</h3>
       <p className="mt-1 text-sm text-slate-500">{t('dimensionsDescription')}</p>
       {error && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
@@ -68,7 +68,7 @@ export function DimensionsPanel() {
           />
           <DimensionList
             kind="project" title={t('projects')} rows={projects} busy={busy}
-            labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired'), costCenter: t('parentCostCenter'), partner: t('dimensionPartner') }}
+            labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired'), costCenter: t('parentCostCenter'), partner: t('dimensionPartner'), wip: t('wipShort'), wipHint: t('wipEnabledHint') }}
             costCenters={costCenters.filter((c) => c.is_active)} partners={partners}
             onCreate={(input) => run('project:new', () => projectsApi.create(input))}
             onSave={(id, patch) => save('project', id, patch)}
@@ -85,16 +85,19 @@ export function DimensionsPanel() {
   );
 }
 
-type Labels = { code: string; name: string; empty: string; add: string; del: string; activate: string; deactivate: string; nameRequired: string; costCenter?: string; partner?: string };
+type Labels = { code: string; name: string; empty: string; add: string; del: string; activate: string; deactivate: string; nameRequired: string; costCenter?: string; partner?: string; wip?: string; wipHint?: string };
+
+const wipToggle = (on: boolean) =>
+  `${smallButton} px-2 ${on ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'text-slate-400'}`;
 
 function DimensionList({ kind, title, rows, busy, labels, costCenters, partners, onCreate, onSave, onDelete }: {
   kind: Kind; title: string; rows: Row[]; busy: string | null; labels: Labels; costCenters?: CostCenter[]; partners?: PartnerRecord[];
-  onCreate: (input: { code?: string; name: string; cost_center_id?: string | null; partner_id?: string | null }) => Promise<unknown>;
+  onCreate: (input: { code?: string; name: string; cost_center_id?: string | null; partner_id?: string | null; wip_enabled?: boolean }) => Promise<unknown>;
   onSave: (id: string, patch: Record<string, unknown>) => Promise<unknown>;
   onDelete: (row: Row) => void;
 }) {
   const isProject = kind === 'project';
-  const [draft, setDraft] = useState({ code: '', name: '', cost_center_id: '', partner_id: '' });
+  const [draft, setDraft] = useState({ code: '', name: '', cost_center_id: '', partner_id: '', wip_enabled: false });
   const [edits, setEdits] = useState<Record<string, { code: string; name: string }>>({});
   const edit = (row: Row) => edits[row.id] || { code: row.code || '', name: row.name };
   const commit = (row: Row) => {
@@ -105,23 +108,27 @@ function DimensionList({ kind, title, rows, busy, labels, costCenters, partners,
   };
   const create = () => {
     if (!draft.name.trim()) { showToast.error(labels.nameRequired); return; }
-    void onCreate({ code: draft.code.trim() || undefined, name: draft.name.trim(), ...(isProject ? { cost_center_id: draft.cost_center_id || null, partner_id: draft.partner_id || null } : {}) })
-      .then(() => setDraft({ code: '', name: '', cost_center_id: '', partner_id: '' }));
+    void onCreate({ code: draft.code.trim() || undefined, name: draft.name.trim(), ...(isProject ? { cost_center_id: draft.cost_center_id || null, partner_id: draft.partner_id || null, ...(draft.wip_enabled ? { wip_enabled: true } : {}) } : {}) })
+      .then(() => setDraft({ code: '', name: '', cost_center_id: '', partner_id: '', wip_enabled: false }));
   };
-  const grid = isProject ? 'grid-cols-[84px_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]' : 'grid-cols-[84px_minmax(0,1fr)_auto]';
+  // Phones: code+name on one line, the project's links below and the actions under them.
+  const grid = isProject
+    ? 'grid-cols-2 md:grid-cols-[84px_minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_auto]'
+    : 'grid-cols-[72px_minmax(0,1fr)] md:grid-cols-[84px_minmax(0,1fr)_auto]';
+  const mobileCard = 'max-md:rounded-lg max-md:border max-md:border-slate-100 max-md:p-2';
 
   return (
     <div>
       <div className="mb-2 text-sm font-semibold text-slate-800">{title}</div>
       <div className={`grid ${grid} items-center gap-2 px-1 text-[11px] font-medium uppercase tracking-wide text-slate-400`}>
-        <span>{labels.code}</span><span>{labels.name}</span>{isProject && <><span>{labels.costCenter}</span><span>{labels.partner}</span></>}<span />
+        <span>{labels.code}</span><span className="truncate">{labels.name}</span>{isProject && <><span className="truncate">{labels.costCenter}</span><span className="truncate">{labels.partner}</span></>}<span className="max-md:hidden" />
       </div>
       <div className="mt-1 space-y-1.5">
         {rows.length === 0 && <div className="rounded-lg border border-dashed border-slate-200 px-3 py-3 text-sm text-slate-400">{labels.empty}</div>}
         {rows.map((row) => {
           const e = edit(row); const p = row as Project; const rowBusy = busy === `${kind}:${row.id}`;
           return (
-            <div key={row.id} className={`grid ${grid} items-center gap-2 ${row.is_active ? '' : 'opacity-60'}`}>
+            <div key={row.id} className={`grid ${grid} items-center gap-2 ${mobileCard} ${row.is_active ? '' : 'opacity-60'}`}>
               <input className={inputClass} value={e.code} onChange={(ev) => setEdits((m) => ({ ...m, [row.id]: { ...e, code: ev.target.value } }))} onBlur={() => commit(row)} disabled={rowBusy} />
               <input className={inputClass} value={e.name} onChange={(ev) => setEdits((m) => ({ ...m, [row.id]: { ...e, name: ev.target.value } }))} onBlur={() => commit(row)} onKeyDown={(ev) => { if (ev.key === 'Enter') (ev.target as HTMLInputElement).blur(); }} disabled={rowBusy} />
               {isProject && (
@@ -138,14 +145,17 @@ function DimensionList({ kind, title, rows, busy, labels, costCenters, partners,
                   </select>
                 </>
               )}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 max-md:col-span-2 max-md:justify-end">
+                {isProject && (
+                  <button type="button" className={wipToggle(!!p.wip_enabled)} title={labels.wipHint} aria-pressed={!!p.wip_enabled} disabled={rowBusy} onClick={() => void onSave(row.id, { wip_enabled: !p.wip_enabled })}>{labels.wip}</button>
+                )}
                 <button type="button" className={smallButton} disabled={rowBusy} onClick={() => void onSave(row.id, { is_active: !row.is_active })}>{rowBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : row.is_active ? labels.deactivate : labels.activate}</button>
                 <button type="button" className={`${smallButton} px-2 text-red-600 hover:bg-red-50`} title={labels.del} disabled={rowBusy} onClick={() => onDelete(row)}><Trash2 className="h-3.5 w-3.5" /></button>
               </div>
             </div>
           );
         })}
-        <div className={`grid ${grid} items-center gap-2 border-t border-slate-100 pt-2`}>
+        <div className={`grid ${grid} items-center gap-2 border-t border-slate-100 pt-2 max-md:border-t-0 ${mobileCard}`}>
           <input className={inputClass} placeholder={labels.code} value={draft.code} onChange={(ev) => setDraft((d) => ({ ...d, code: ev.target.value }))} />
           <input className={inputClass} placeholder={labels.name} value={draft.name} onChange={(ev) => setDraft((d) => ({ ...d, name: ev.target.value }))} onKeyDown={(ev) => { if (ev.key === 'Enter') create(); }} />
           {isProject && (
@@ -158,9 +168,14 @@ function DimensionList({ kind, title, rows, busy, labels, costCenters, partners,
               </select>
             </>
           )}
-          <button type="button" className={`${smallButton} bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] border-transparent`} disabled={busy === `${kind}:new`} onClick={create}>
+          <div className="flex items-center gap-1 max-md:col-span-2 max-md:justify-end">
+          {isProject && (
+            <button type="button" className={wipToggle(draft.wip_enabled)} title={labels.wipHint} aria-pressed={draft.wip_enabled} onClick={() => setDraft((d) => ({ ...d, wip_enabled: !d.wip_enabled }))}>{labels.wip}</button>
+          )}
+          <button type="button" className={`${smallButton} bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] border-transparent max-md:flex-1 max-md:justify-center`} disabled={busy === `${kind}:new`} onClick={create}>
             {busy === `${kind}:new` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}{labels.add}
           </button>
+          </div>
         </div>
       </div>
     </div>
