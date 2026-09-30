@@ -65,6 +65,22 @@ export const paymentsApi = {
     return response.data.data;
   },
 
+  /** Manual receipt/payment on an invoice (cash, card, web shop…): created and posted in one step. */
+  async registerPayment(payload: {
+    invoice_id: string;
+    amount: number;
+    payment_date?: string;
+    payment_method_id?: string | null;
+    reference?: string | null;
+  }) {
+    const response = await apiClient.post<ApiResponse<{
+      payment: PaymentListItem;
+      invoice_status: string;
+      open_amount: number;
+    }>>('/api/payments/register', payload);
+    return response.data.data;
+  },
+
   async reversePayment(id: string, payload?: { reason?: string }) {
     const response = await apiClient.post<ApiResponse<{
       payment: PaymentListItem;

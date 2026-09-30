@@ -338,6 +338,12 @@ export const reportsApi = {
     return response.data.data;
   },
 
+  /** Partner account card / balance confirmation, built from invoices and their payments. */
+  async getPartnerStatement(params: { partner_id: string; date_from?: string; date_to?: string }) {
+    const response = await apiClient.get<ApiResponse<PartnerStatement>>('/api/reports/partner-statement', { params });
+    return response.data.data;
+  },
+
   async getAgingReport(direction: 'receivable' | 'payable', asOfDate?: string) {
     const response = await apiClient.get<ApiResponse<AgingReportData>>('/api/reports/aging', {
       params: { direction, as_of_date: asOfDate },
@@ -352,4 +358,44 @@ export const reportsApi = {
   async downloadKmdInfXml(startDate: string, endDate: string) {
     return downloadXml('/api/reports/kmd-inf', startDate, endDate);
   },
+};
+
+export type PartnerStatementSide = {
+  side: 'receivable' | 'payable';
+  opening_balance: number;
+  entries: Array<{
+    date: string;
+    kind: 'invoice' | 'credit_note' | 'payment' | 'refund';
+    document_number: string | null;
+    description: string;
+    invoice_id: string;
+    payment_id?: string;
+    due_date?: string | null;
+    debit: number;
+    credit: number;
+    balance: number;
+  }>;
+  total_debit: number;
+  total_credit: number;
+  closing_balance: number;
+  open_documents: Array<{
+    invoice_id: string;
+    document_number: string | null;
+    kind: 'invoice' | 'credit_note';
+    date: string;
+    due_date: string | null;
+    amount: number;
+    open_amount: number;
+    days_overdue: number;
+  }>;
+  unexplained_difference: number | null;
+};
+
+export type PartnerStatement = {
+  partner: { id: string; name: string; reg_code: string | null; vat_number: string | null; address: string | null; email: string | null };
+  company: { name: string; registry_code: string | null; vat_number: string | null; address: string | null; email: string | null; phone: string | null } | null;
+  date_from: string | null;
+  date_to: string;
+  currency: string;
+  sides: PartnerStatementSide[];
 };

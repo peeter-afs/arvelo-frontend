@@ -157,6 +157,8 @@ export type BankReviewQueueItem = {
   auto_match_summary?: BankAutoMatchSummary;
   // >1 when the payment settles several invoices at once.
   auto_match_invoice_count?: number;
+  /** Set when this incoming transaction looks like a card / web shop payout. */
+  card_settlement_plan?: BankCardSettlementPlan | null;
   // Counter accounts used before for this counterparty, most recent first.
   suggested_accounts?: Array<{ account_id: string; code: string; name: string; reason?: string }>;
   /**
@@ -170,6 +172,27 @@ export type BankReviewQueueItem = {
   placeholder_invoice_id: string | null;
   /** "active" while the receipt is still awaited, "promoted" once the draft was confirmed. */
   placeholder_state?: string | null;
+};
+
+/**
+ * A card / web shop payout: which receipts on the clearing account it covers and
+ * the provider's fee (gross − net). `confident` = the fee is what the payment
+ * method expects, so it may be posted in bulk without a closer look.
+ */
+export type BankCardSettlementPlan = {
+  payment_method_id: string;
+  payment_method_name: string;
+  payment_ids: string[];
+  payment_count: number;
+  date_from: string;
+  date_to: string;
+  gross: number;
+  net: number;
+  fee: number;
+  expected_fee: number | null;
+  confident: boolean;
+  clearing_account: { id: string; code: string; name: string };
+  fee_account: { id: string; code: string; name: string };
 };
 
 export type PaymentBatchListItem = {
@@ -483,6 +506,15 @@ export const bankingApi = {
     return response.data.data;
   },
 
+  /** Post a card / web shop payout: bank + provider fee = clearing account. */
+  async cardSettlement(id: string, payload?: { payment_method_id?: string; payment_ids?: string[] }) {
+    const response = await apiClient.post<ApiResponse<{ journal_entry_id: string; plan: BankCardSettlementPlan }>>(
+      `/api/banking/transactions/${id}/card-settlement`,
+      payload || {}
+    );
+    return response.data.data;
+  },
+
   async reviewTransaction(id: string, payload: { review_state?: 'pending' | 'reviewed'; note?: string }) {
     const response = await apiClient.post<ApiResponse<unknown>>(`/api/banking/transactions/${id}/review`, payload);
     return response.data.data;
@@ -660,7 +692,7 @@ export const bankingApi = {
 
   async bulkAutoMatch(transactionIds: string[]) {
     const response = await apiClient.post<ApiResponse<{
-      auto_matched: Array<{ transaction_id: string; invoice_id: string }>;
+      auto_matched: Array<{ transaction_id: string; invoice_id: string | null }>;
       skipped: number;
       errors: Array<{ transaction_id: string; error: string }>;
     }>>('/api/banking/transactions/bulk-auto-match', { transaction_ids: transactionIds });
