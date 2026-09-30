@@ -143,7 +143,7 @@ export const muugiarved: Guide = {
       type: 'callout',
       tone: 'info',
       title: 'Automaatsed meeldetuletused',
-      text: 'Kui seadetes on **Luba automaatsed meeldetuletused** sisse lülitatud, saadab Arvelo tähtaegsed meeldetuletused ise iga päev hommikul (umbes kell 9–10) samade reeglite järgi: algusviivitus, sagedus ja maksimumarv. Arvetele, mille kliendil pole e-posti aadressi, meeldetuletust ei saadeta — need näed lehel eraldi.',
+      text: 'Kui seadetes on **Luba automaatsed meeldetuletused** sisse lülitatud, saadab Arvelo tähtaegsed meeldetuletused ise iga päev hommikul (umbes kell 9–10) samade reeglite järgi: algusviivitus, sagedus ja maksimumarv. Arvetele, mille kliendil pole e-posti aadressi, meeldetuletust ei saadeta — need näed lehel eraldi. **Kui viimane pangaväljavõte on üle 7 päeva vana (või seda pole imporditud), automaatseid meeldetuletusi ei saadeta**, sest siis ei pruugi laekumised olla veel kirjendatud.',
     },
   ],
 };
