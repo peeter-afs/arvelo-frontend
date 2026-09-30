@@ -58,7 +58,7 @@ const ST: Record<StKey, { label: string; cls: string; snr: string }> = {
   ok: { label: 'Kinnitatud', cls: styles.ok, snr: styles.snrOk }, part: { label: 'Osaliselt makstud', cls: styles.part, snr: styles.snrPart }, over: { label: 'Üle tähtaja', cls: styles.overdue, snr: styles.snrOver },
   paid: { label: 'Makstud', cls: styles.paid, snr: styles.snrPaid }, void: { label: 'Tühistatud', cls: styles.void, snr: styles.snrVoid },
 };
-const SRC: Record<SrcKey, { l: string; d: string }> = { eai: { l: 'E-arve', d: 'Operaatori kaudu' }, pdf: { l: 'PDF', d: 'Üles laaditud / skaneeritud' }, man: { l: 'Käsitsi', d: 'Sisestatud käsitsi' }, bank: { l: 'Pank', d: 'Pangatehingust loodud mustand' }, csv: { l: 'CSV', d: 'Bolt / CSV import' } };
+const SRC: Record<SrcKey, { l: string; d: string }> = { eai: { l: 'E-arve', d: 'XML-failina või operaatori kaudu' }, pdf: { l: 'PDF', d: 'Üles laaditud / skaneeritud' }, man: { l: 'Käsitsi', d: 'Sisestatud käsitsi' }, bank: { l: 'Pank', d: 'Pangatehingust loodud mustand' }, csv: { l: 'CSV', d: 'Bolt / CSV import' } };
 const VAT_CODES = [{ key: 'all', label: 'Kõik käibemaksukoodid', short: 'kõik' }, { key: 'd24', label: 'Siseriiklik 24%', short: '24%' }, { key: 'd22', label: 'Siseriiklik 22%', short: '22%' }, { key: 'd9', label: 'Siseriiklik 9%', short: '9%' }, { key: 'eus', label: 'EU teenus (pöördmaks)', short: 'EU teenus' }, { key: 'ex', label: 'Maksuvaba', short: 'Maksuvaba' }];
 
 function money(value: number | string | null | undefined, currency = 'EUR') { return new Intl.NumberFormat('et-EE', { style: 'currency', currency, minimumFractionDigits: 2 }).format(Number(value || 0)); }

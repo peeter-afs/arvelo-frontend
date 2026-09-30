@@ -375,7 +375,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const srcInfo = useMemo(() => {
     const s = String(invoice?.source || '').toLowerCase();
     if (!invoice) return null;
-    if (s.includes('einvoice') || s.includes('peppol') || s.includes('gateway')) return { l: 'E-arve', t: 'Saabus e-arvena operaatori kaudu' };
+    if (s.includes('einvoice') || s.includes('peppol') || s.includes('gateway')) return { l: 'E-arve', t: s === 'einvoice_xml' ? 'Imporditud e-arve XML-failist' : 'Saabus e-arvena operaatori kaudu' };
     if (s.includes('bank')) return { l: 'Pank', t: `Mustand loodi pangatehingust ${dateText(invoice.invoice_date)}` };
     if (s.includes('csv') || s.includes('bolt')) return { l: 'CSV import', t: `CSV import ${dateText(invoice.created_at)}` };
     if (s.includes('pdf') || s.includes('ocr') || s.includes('openai') || s.includes('import') || firstImport) return { l: 'PDF import', t: `PDF üles laaditud ${dateText(firstImport?.created_at || invoice.created_at)} · andmed tuvastatud automaatselt` };
