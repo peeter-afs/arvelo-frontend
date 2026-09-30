@@ -40,6 +40,16 @@ export type PurchaseInvoiceImportDetail = {
   }>;
 };
 
+/** What one uploaded invoice turned into (PDF upload, or each invoice of an e-invoice XML). */
+export type PurchaseUploadResult = PurchaseInvoiceImportDetail & {
+  status?: 'processed' | 'attached' | 'skipped_duplicate';
+  linked_invoice_id?: string;
+  /** The import became a draft purchase invoice right away. */
+  draft_invoice_id?: string;
+  /** Why the draft was not created automatically (the import waits for review). */
+  draft_error?: string;
+};
+
 export type BoltCsvImportItemStatus = 'processed' | 'duplicate' | 'error' | 'no_link';
 
 export type BoltCsvImportItem = {
@@ -173,10 +183,21 @@ export const importApi = {
       formData.append(key, value);
     });
 
-    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail & { status?: 'processed' | 'attached' | 'skipped_duplicate'; linked_invoice_id?: string; draft_invoice_id?: string; draft_error?: string }>>('/api/import/purchase-invoices/upload', formData, {
+    const response = await apiClient.post<ApiResponse<PurchaseUploadResult>>('/api/import/purchase-invoices/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
+      timeout: 120000
+    });
+    return response.data.data;
+  },
+
+  /** E-invoice XML — Estonian e-invoice standard or UBL / PEPPOL; one file may hold several invoices. */
+  async uploadPurchaseInvoiceEinvoice(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<{ format: 'estonian' | 'ubl'; results: PurchaseUploadResult[] }>>('/api/import/purchase-invoices/einvoice', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120000
     });
     return response.data.data;

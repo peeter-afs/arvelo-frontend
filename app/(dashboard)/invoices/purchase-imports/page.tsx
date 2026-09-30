@@ -168,7 +168,10 @@ export default function PurchaseInvoiceImportsPage() {
         );
       } else {
         setBoltCsvResult(null);
-        const result = await importApi.uploadPurchaseInvoicePdf(selectedFile);
+        // E-invoice XML: the first invoice of the file opens here; the rest are in the queue.
+        const result = /\.xml$/i.test(selectedFile.name)
+          ? (await importApi.uploadPurchaseInvoiceEinvoice(selectedFile)).results[0]
+          : await importApi.uploadPurchaseInvoicePdf(selectedFile);
         await refreshList(result.import.id);
         await refreshDetail(result.import.id);
         setSelectedFile(null);
@@ -312,7 +315,7 @@ export default function PurchaseInvoiceImportsPage() {
               <span className="mb-2 block font-medium text-slate-700">{t('chooseFile')}</span>
               <input
                 type="file"
-                accept="application/pdf,.csv,text/csv,application/vnd.ms-excel"
+                accept="application/pdf,.csv,text/csv,application/vnd.ms-excel,.xml,application/xml,text/xml"
                 onChange={(event) => setSelectedFile(event.target.files?.[0] || null)}
                 className="block w-full text-sm text-slate-500"
               />

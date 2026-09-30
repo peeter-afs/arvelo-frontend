@@ -18,7 +18,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type AccountingSettings, type PartnerRecord, type SupplierBankAccount } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { importApi, type PurchaseInvoiceImportListItem } from '@/lib/api/import.api';
+import { importApi, type PurchaseInvoiceImportListItem, type PurchaseUploadResult } from '@/lib/api/import.api';
 import { invoicesApi, type InvoiceDetail, type InvoiceDraftPayload, type InvoiceLine, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
@@ -698,12 +698,23 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     setBusy('import');
     try {
       if (files.length > 1 || /\.csv$/i.test(files[0].name)) {
-        for (const f of files) { if (/\.csv$/i.test(f.name)) await importApi.importBoltCsv(f); else await importApi.uploadPurchaseInvoicePdf(f); }
+        for (const f of files) { if (/\.csv$/i.test(f.name)) await importApi.importBoltCsv(f); else if (/\.xml$/i.test(f.name)) await importApi.uploadPurchaseInvoiceEinvoice(f); else await importApi.uploadPurchaseInvoicePdf(f); }
         showToast.success(files.length === 1 ? `${files[0].name} imporditud` : `${files.length} faili laaditud üles — tuvastame andmed`);
         router.push('/invoices/purchase');
         return;
       }
-      const result = await importApi.uploadPurchaseInvoicePdf(files[0]);
+      let result: PurchaseUploadResult;
+      if (/\.xml$/i.test(files[0].name)) {
+        const einvoice = await importApi.uploadPurchaseInvoiceEinvoice(files[0]);
+        if (einvoice.results.length !== 1) {
+          showToast.success(`E-arve failis oli ${einvoice.results.length} arvet — ${einvoice.results.filter((r) => r.draft_invoice_id).length} mustandit loodud`);
+          router.push('/invoices/purchase');
+          return;
+        }
+        result = einvoice.results[0];
+      } else {
+        result = await importApi.uploadPurchaseInvoicePdf(files[0]);
+      }
       const record = result.import;
       if (result.status === 'attached' && result.linked_invoice_id) {
         showToast.success('Originaal seoti olemasoleva pangamustandiga');
@@ -736,8 +747,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     e.preventDefault();
     setDragOver(false);
     if (busy) return;
-    const files = Array.from(e.dataTransfer.files).filter((f) => /\.(pdf|csv)$/i.test(f.name) || f.type === 'application/pdf');
-    if (!files.length) { showToast.error('Toetatud on PDF- ja CSV-failid'); return; }
+    const files = Array.from(e.dataTransfer.files).filter((f) => /\.(pdf|csv|xml)$/i.test(f.name) || f.type === 'application/pdf');
+    if (!files.length) { showToast.error('Toetatud on PDF-, e-arve XML- ja CSV-failid'); return; }
     // A new invoice nobody has typed into yet becomes the imported one; once there
     // is data (or on an existing invoice) a dropped PDF is this invoice's original.
     if (mode === 'create' && !dirty) void importDropped(files);

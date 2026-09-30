@@ -9,7 +9,7 @@ export const ostuarved: Guide = {
   slug: 'ostuarved',
   title: 'Ostuarved: import, kinnitamine ja maksmine',
   summary:
-    'Kuidas ostuarve Arvelosse jõuab (PDF, Bolt CSV, pangatehingust), kuidas see kinnitatakse ja konteeritakse ning kuidas koostada maksekorraldus.',
+    'Kuidas ostuarve Arvelosse jõuab (PDF, e-arve XML, Bolt CSV, pangatehingust), kuidas see kinnitatakse ja konteeritakse ning kuidas koostada maksekorraldus.',
   category: 'arved',
   minutes: 12,
   updatedAt: '2026-09-30',
@@ -45,6 +45,7 @@ export const ostuarved: Guide = {
       rows: [
         ['PDF nimekirja lohistamine või **Laadi üles**', 'Arvelo tuvastab PDF-ist tarnija, summad ja read ning loob **arve mustandi**, mis ilmub kohe nimekirja. Kui tarnijat ei tuvastatud või arve võib olla duplikaat, jääb fail ülevaatusele (vt allpool).'],
         ['PDF uue ostuarve lehele lohistamine', 'Sama tuvastus; loodud mustand avaneb kohe. Kui fail vajab ülevaatust, avaneb see impordi ülevaatuses.'],
+        ['E-arve XML', 'Eesti e-arve standardi või UBL / PEPPOL (EL-i tarnijad) fail. Andmed loetakse failist täpselt; failis olev PDF saab originaaliks. Ühes Eesti e-arve failis võib olla mitu arvet — igast tekib oma mustand.'],
         ['CSV (Bolt eksport)', 'Iga faili rea arvelink laaditakse alla ja töödeldakse nagu PDF — tuvastatud arved tekivad mustanditena. Fail peab sisaldama veergu `user_invoice_link`.'],
         ['Käsitsi', '**Uus ostuarve** (klahv **U**) — sisesta andmed ise.'],
         ['Pangatehingust', 'Kui pangatehingul pole arvet, saad selle ülevaatuses märkida „originaal puudub". Tekib pangamustand, mis ootab originaali.'],
@@ -54,7 +55,7 @@ export const ostuarved: Guide = {
       type: 'callout',
       tone: 'info',
       title: 'Toetatud failid',
-      text: 'Arvelo töötleb **PDF-faile** ja **Bolt CSV-d**. Teised failid (nt pildid) jäetakse vahele ja sellest antakse teada.',
+      text: 'Arvelo töötleb **PDF-faile**, **e-arve XML-i** (Eesti standard ja UBL / PEPPOL) ja **Bolt CSV-d**. Teised failid (nt pildid) jäetakse vahele ja sellest antakse teada. E-arve, mis on adresseeritud teisele ettevõttele, jääb alati ülevaatusele.',
     },
     {
       type: 'list',

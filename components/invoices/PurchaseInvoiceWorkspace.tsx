@@ -235,9 +235,9 @@ export default function PurchaseInvoiceWorkspace() {
   const remindNow = (inv: InvoiceListItem) => run(`remind:${inv.id}`, async () => { const r = await invoicesApi.sendReceiptReminder(inv.id); setReminders((m) => { const n = { ...m }; delete n[inv.id]; return n; }); await loadInvoices(inv.id); showToast.success(`Meeldetuletus ${r.reminder_number} saadetud · ${r.sent_to}`); });
   const noDoc = (inv: InvoiceListItem) => run(`nodoc:${inv.id}`, async () => { if (!inv.bank_transaction_id) throw new Error('Pangatehing pole seotud'); await bankingApi.dismissMissingReceipt(inv.bank_transaction_id, { reason: 'Originaali ei tule' }); await loadInvoices(inv.id); showToast.success('Meeldetuletused peatatud · kanne tehakse ilma originaalita'); });
   const uploadFiles = (files: FileList | File[]) => { const all = Array.from(files); const target = uploadTarget.current; uploadTarget.current = null;
-    // The backend reads PDFs (and Bolt CSV exports); say so instead of failing per file.
-    const list = all.filter((f) => /\.(pdf|csv)$/i.test(f.name) || f.type === 'application/pdf');
-    if (list.length < all.length) showToast.error(`Toetatud on PDF- ja CSV-failid — ${all.length - list.length} faili jäeti vahele`);
+    // The backend reads PDFs, e-invoice XML and Bolt CSV exports; say so instead of failing per file.
+    const list = all.filter((f) => /\.(pdf|csv|xml)$/i.test(f.name) || f.type === 'application/pdf');
+    if (list.length < all.length) showToast.error(`Toetatud on PDF-, e-arve XML- ja CSV-failid — ${all.length - list.length} faili jäeti vahele`);
     if (!list.length) return; void run('upload', async () => {
     let attached = 0, linked = 0, created = 0, duplicates = 0; const review: string[] = [];
     for (const f of list) {
@@ -245,6 +245,11 @@ export default function PurchaseInvoiceWorkspace() {
         const summary = await importApi.importBoltCsv(f);
         created += summary.items.filter((i) => i.draft_invoice_id).length; duplicates += summary.duplicate_count;
         summary.items.forEach((i) => { if (i.status === 'processed' && !i.draft_invoice_id && i.import_id) review.push(i.import_id); });
+        continue;
+      }
+      if (/\.xml$/i.test(f.name)) {
+        const einvoice = await importApi.uploadPurchaseInvoiceEinvoice(f);
+        einvoice.results.forEach((r) => { if (r.status === 'skipped_duplicate') duplicates += 1; else if (r.status === 'attached') linked += 1; else if (r.draft_invoice_id) created += 1; else review.push(r.import.id); });
         continue;
       }
       const result = await importApi.uploadPurchaseInvoicePdf(f, target ? { target_invoice_id: target.id } : undefined);
@@ -278,13 +283,13 @@ export default function PurchaseInvoiceWorkspace() {
   return <div ref={rootRef} className={`${styles.workspace} ${styles.relativeCard}`} style={workspaceStyle}
     onDragOver={(e) => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); setDragOver(true); } }} onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }} onDrop={(e) => { if (e.dataTransfer.files.length) { e.preventDefault(); setDragOver(false); uploadFiles(e.dataTransfer.files); } }}>
     {dragOver && <div className={styles.dropHint}>Lase lahti — laadime faili üles</div>}
-    <input ref={fileRef} type="file" accept=".pdf,.csv" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
+    <input ref={fileRef} type="file" accept=".pdf,.csv,.xml" multiple hidden onChange={(e) => { if (e.target.files) uploadFiles(e.target.files); e.target.value = ''; }} />
     <div className={styles.hdr}><div className={styles.topbar}><h1>Ostuarved</h1><span className={styles.sub}>{rangeLabel} · {periodInvoices.length} arvet</span>
       <div className={styles.metrics}><Metric label="Maksmisele" value={money(metrics.topay)} /><Metric label="Üle tähtaja" value={money(metrics.over)} negative /><Metric label="7 päeva jooksul" value={money(metrics.week)} /></div>
       <div className={styles.actions}>
         <span className={styles.relative}><button className={`${styles.button} ${styles.primary}`} disabled={action === 'upload'} onClick={() => setMenu(menu === 'upload' ? null : 'upload')}>{action === 'upload' ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}Laadi üles</button>
           {menu === 'upload' && <div className={`${styles.menu} ${styles.uploadMenu}`}>
-            {[['pdf', 'PDF', 'Tuvastame tarnija, summad ja read ning loome mustandi', '.pdf'], ['csv', 'CSV / Bolt eksport', 'Mitu arvet korraga', '.csv']].map(([k, l, d, accept]) => <button key={k} className={styles.menuItem} onClick={() => { setMenu(null); uploadTarget.current = null; if (fileRef.current) { fileRef.current.accept = accept; fileRef.current.click(); } }}><span>{l}<span className={styles.menuDesc}>{d}</span></span></button>)}
+            {[['pdf', 'PDF', 'Tuvastame tarnija, summad ja read ning loome mustandi', '.pdf'], ['xml', 'E-arve XML', 'Eesti e-arve või UBL / PEPPOL — andmed loetakse failist täpselt', '.xml'], ['csv', 'CSV / Bolt eksport', 'Mitu arvet korraga', '.csv']].map(([k, l, d, accept]) => <button key={k} className={styles.menuItem} onClick={() => { setMenu(null); uploadTarget.current = null; if (fileRef.current) { fileRef.current.accept = accept; fileRef.current.click(); } }}><span>{l}<span className={styles.menuDesc}>{d}</span></span></button>)}
             <div className={styles.menuFoot}>Faili võib lohistada ka otse nimekirjale</div>
           </div>}</span>
         <Link className={styles.button} href="/invoices/new?type=purchase_invoice"><Plus size={14} />Uus ostuarve <span className={styles.key} style={{ color: 'var(--a-text-3)', borderColor: 'var(--a-border-strong)', background: 'var(--a-surface-2)' }}>U</span></Link>
@@ -299,7 +304,7 @@ export default function PurchaseInvoiceWorkspace() {
       <div className={styles.relative}><button className={`${styles.picker} ${vat !== 'all' ? styles.pickerActive : ''}`} onClick={() => setMenu(menu === 'vat' ? null : 'vat')}>KM: {VAT_CODES.find((x) => x.key === vat)?.short}<ChevronDown size={12} /></button>{menu === 'vat' && <div className={`${styles.menu} ${styles.menuLeft}`}>{VAT_CODES.map((code) => <button key={code.key} className={`${styles.menuItem} ${vat === code.key ? styles.menuOn : ''}`} onClick={() => { setVat(code.key); setMenu(null); }}>{code.label}<span className={styles.pill}>{baseFiltered.filter((r) => hasVatCode(r, code.key)).length}</span></button>)}</div>}</div>
     </div>}</div>
     {error && <div className={styles.notice}>{error}</div>}
-    {importReview && <div className={`${styles.warning} ${styles.importReview}`}><Upload size={14} /><span className={styles.warningText}><b>{importReview.length}</b> üleslaaditud faili vajab ülevaatust — tarnija on tuvastamata, arve võib olla duplikaat või read puuduvad</span><Link className={`${styles.button} ${styles.small} ${styles.primary}`} href={`/invoices/purchase-imports?import=${importReview[0]}`}>Vaata üle</Link><button className={`${styles.button} ${styles.small} ${styles.ghost}`} title="Sulge" onClick={() => setImportReview(null)}>✕</button></div>}
+    {importReview && <div className={`${styles.warning} ${styles.importReview}`}><Upload size={14} /><span className={styles.warningText}><b>{importReview.length}</b> {importReview.length === 1 ? 'üleslaaditud arve vajab' : 'üleslaaditud arvet vajavad'} ülevaatust — tarnija on tuvastamata, arve võib olla duplikaat või read puuduvad</span><Link className={`${styles.button} ${styles.small} ${styles.primary}`} href={`/invoices/purchase-imports?import=${importReview[0]}`}>Vaata üle</Link><button className={`${styles.button} ${styles.small} ${styles.ghost}`} title="Sulge" onClick={() => setImportReview(null)}>✕</button></div>}
     {mode === 'list' ? <div className={`${styles.body} ${wide ? styles.bodyWide : ''}`}>
       <section ref={listRef} className={`${styles.card} ${styles.listColumn}`}>
         {checked.size ? <div className={`${styles.listHeader} ${styles.listHeaderSel}`}><span><b>{checkedRows.length}</b> valitud</span><span style={{ color: 'var(--a-text-3)' }}>·</span><span className={styles.mono}>maksmisele <b>{money(checkedPayable.reduce((n, r) => n + openAmount(r), 0))}</b>{checkedPayable.length < checkedRows.length && <span style={{ color: 'var(--a-text-3)' }}> ({checkedPayable.length} arvet)</span>}</span>
