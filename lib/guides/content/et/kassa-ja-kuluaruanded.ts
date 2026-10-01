@@ -96,7 +96,7 @@ export const kassaJaKuluaruanded: Guide = {
         { title: 'Saada kutse', text: '**Kuluaruanded → Töötajate iseteenindus**: vali töötaja (partner), sisesta tema e-post ja vajuta **Saada kutse**. Kuluaruande lehelt avaneb sama aken juba valitud töötajaga. Kutse kehtib 7 päeva.' },
         { title: 'Töötaja liitub', text: 'Töötaja avab e-kirjast lingi ja vajutab **Liitu ja logi sisse**. Ta jõuab otse vaatesse **Minu kuluaruanded**. Telefonis pakutakse kohe **pääsuvõtit**: järgmine sisselogimine käib sõrmejälje või näotuvastusega.' },
         { title: 'Töötaja lisab tšekid', text: '**Uus → Lisa tšekk**: pildista tšekk, sisesta müüja, mille eest, summa koos käibemaksuga ja KM määr. Kulukontoks pannakse ettevõtte vaikimisi ostukulu konto. Lõpuks **Esita kinnitamiseks**.' },
-        { title: 'Raamatupidaja kinnitab', text: 'Esitatud kuluaruanne on nimekirjas olekuga „Esitatud“. Kontrolli tšekke, vajadusel muuda kulukontot ja vajuta **Kinnita ja konteeri**. Pärast esitamist töötaja aruannet enam muuta ei saa.' },
+        { title: 'Raamatupidaja kinnitab', text: 'Esitamisel saavad ettevõtte omanik, administraatorid ja raamatupidajad e-kirja lingiga kuluaruandele. Esitatud kuluaruanne on nimekirjas olekuga „Esitatud“. Kontrolli tšekke, vajadusel muuda kulukontot ja vajuta **Kinnita ja konteeri**. Pärast esitamist töötaja aruannet enam muuta ei saa.' },
       ],
     },
     {
