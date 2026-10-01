@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, Plus, ReceiptText, Smartphone, X } from 'lucide-react';
+import { Loader2, Plus, ReceiptText, ShieldCheck, Smartphone, X } from 'lucide-react';
 import { accountingApi, type PartnerOption } from '@/lib/api/accounting.api';
 import { expenseReportsApi, type ExpenseReportListItem } from '@/lib/api/cashExpense.api';
 import { getErrorMessage } from '@/lib/api/client';
@@ -12,6 +12,7 @@ import { getIsoToday } from '@/lib/utils/date';
 import { HelpLink } from '@/components/guides/HelpLink';
 import { EXPENSE_STATUS_TONE } from '@/components/accounting/expenses/status';
 import { EmployeeAccessDialog } from '@/components/accounting/expenses/EmployeeAccessDialog';
+import { ExpenseApprovalDialog } from '@/components/accounting/expenses/ExpenseApprovalDialog';
 
 const money = (value: number) => value.toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dateText = (value: string) => value.split('-').reverse().join('.');
@@ -23,6 +24,7 @@ export default function ExpenseReportsPage() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [inviting, setInviting] = useState(false);
+  const [approval, setApproval] = useState(false);
 
   useEffect(() => {
     expenseReportsApi.list().then(setReports).catch((err) => {
@@ -40,6 +42,10 @@ export default function ExpenseReportsPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <HelpLink slug="kassa-ja-kuluaruanded" />
+          <button type="button" onClick={() => setApproval(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            {t('approval.button')}
+          </button>
           <button type="button" onClick={() => setInviting(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[var(--a-border)] bg-[var(--a-surface)] px-3 text-[13px] font-medium text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
             <Smartphone className="h-3.5 w-3.5" />
             {t('access.button')}
@@ -116,6 +122,7 @@ export default function ExpenseReportsPage() {
 
       {creating && <NewReportDialog onClose={() => setCreating(false)} />}
       {inviting && <EmployeeAccessDialog onClose={() => setInviting(false)} />}
+      {approval && <ExpenseApprovalDialog onClose={() => setApproval(false)} />}
     </div>
   );
 }

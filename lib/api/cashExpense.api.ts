@@ -146,7 +146,31 @@ export type ReceiptInput = {
   tax_rate: number;
 };
 
+export type ExpenseApprovalMember = { id: string; name: string | null; email: string; role: string };
+
+export type ExpenseApprovalSettings = {
+  available: boolean;
+  approver_user_ids: string[];
+  notify_user_ids: string[];
+  members: ExpenseApprovalMember[];
+  effective_approver_ids: string[];
+  restricted: boolean;
+  can_approve: boolean;
+  can_manage: boolean;
+};
+
 export const expenseReportsApi = {
+  async approvalSettings(): Promise<ExpenseApprovalSettings> {
+    const response = await apiClient.get<ApiResponse<ExpenseApprovalSettings>>('/api/expense-reports/approval-settings');
+    return response.data.data;
+  },
+
+  async updateApprovalSettings(input: { approver_user_ids: string[]; notify_user_ids: string[] }): Promise<ExpenseApprovalSettings> {
+    const response = await apiClient.put<ApiResponse<ExpenseApprovalSettings>>('/api/expense-reports/approval-settings', input);
+    return response.data.data;
+  },
+
+
   async list(params?: { status?: string }): Promise<ExpenseReportListItem[]> {
     const response = await apiClient.get<ApiResponse<ExpenseReportListItem[]>>('/api/expense-reports', { params });
     return response.data.data;

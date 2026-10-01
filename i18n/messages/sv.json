@@ -1601,6 +1601,19 @@
       "pending": "Inbjudan väntar: {email}",
       "noAccess": "Ingen självserviceåtkomst ännu.",
       "hasPasskey": "Nyckel tillagd"
+    },
+    "approval": {
+      "button": "Godkännare",
+      "title": "Godkännare av utläggsredovisningar",
+      "close": "Stäng",
+      "save": "Spara",
+      "approversTitle": "Vem kan godkänna",
+      "approversHint": "Om ingen väljs kan alla redovisare, administratörer och ägaren godkänna.",
+      "notifyTitle": "Vem får avisering",
+      "notifyHint": "E-post när en anställd skickar en utläggsredovisning. Om ingen väljs aviseras godkännarna.",
+      "readOnly": "Ägaren och administratörer kan ändra godkännarna.",
+      "needsMigration": "Inställningen kräver databasmigrering 108.",
+      "notApprover": "Endast utsedda godkännare kan godkänna utläggsredovisningar"
     }
   },
   "rikEinvoice": {

@@ -28,6 +28,8 @@ export default function ExpenseReportPage() {
   const router = useRouter();
   const [report, setReport] = useState<ExpenseReport | null>(null);
   const [inviting, setInviting] = useState(false);
+  // null = still loading or the setting is unavailable: the backend decides
+  const [canApprove, setCanApprove] = useState<boolean | null>(null);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [cashDesks, setCashDesks] = useState<PaymentMethod[]>([]);
@@ -39,6 +41,10 @@ export default function ExpenseReportPage() {
   const [cashPayout, setCashPayout] = useState(false);
 
   const reload = useCallback(() => expenseReportsApi.get(id).then(setReport), [id]);
+
+  useEffect(() => {
+    expenseReportsApi.approvalSettings().then((settings) => setCanApprove(settings.can_approve)).catch(() => setCanApprove(null));
+  }, []);
 
   useEffect(() => {
     reload().catch((err) => setError(getErrorMessage(err)));
@@ -137,7 +143,7 @@ export default function ExpenseReportPage() {
             </>
           )}
           {editable && (
-            <button type="button" disabled={!!busy || report.receipts.length === 0} onClick={() => { if (window.confirm(t('confirmApprove', { total: money(report.total) }))) void run('approve', () => expenseReportsApi.approve(id), t('approved')); }} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)] disabled:opacity-50">
+            <button type="button" disabled={!!busy || report.receipts.length === 0 || canApprove === false} title={canApprove === false ? t('approval.notApprover') : undefined} onClick={() => { if (window.confirm(t('confirmApprove', { total: money(report.total) }))) void run('approve', () => expenseReportsApi.approve(id), t('approved')); }} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)] disabled:opacity-50">
               {busy === 'approve' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               {t('approve')}
             </button>

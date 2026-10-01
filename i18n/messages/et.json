@@ -3049,6 +3049,19 @@
       "pending": "Kutse ootab: {email}",
       "noAccess": "Iseteeninduse ligipääsu veel pole.",
       "hasPasskey": "Pääsuvõti lisatud"
+    },
+    "approval": {
+      "button": "Kinnitajad",
+      "title": "Kuluaruannete kinnitajad",
+      "close": "Sulge",
+      "save": "Salvesta",
+      "approversTitle": "Kes saavad kinnitada",
+      "approversHint": "Kui kedagi ei vali, saavad kinnitada kõik raamatupidajad, administraatorid ja omanik.",
+      "notifyTitle": "Kes saavad teavituse",
+      "notifyHint": "E-kiri, kui töötaja esitab kuluaruande. Kui kedagi ei vali, saavad teavituse kinnitajad.",
+      "readOnly": "Kinnitajaid saavad muuta omanik ja administraatorid.",
+      "needsMigration": "Seade vajab andmebaasi migratsiooni 108.",
+      "notApprover": "Kuluaruandeid saavad kinnitada ainult määratud kinnitajad"
     }
   },
   "rikEinvoice": {

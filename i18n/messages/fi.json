@@ -1615,6 +1615,19 @@
       "pending": "Kutsu odottaa: {email}",
       "noAccess": "Itsepalvelupääsyä ei vielä ole.",
       "hasPasskey": "Pääsyavain lisätty"
+    },
+    "approval": {
+      "button": "Hyväksyjät",
+      "title": "Kululaskujen hyväksyjät",
+      "close": "Sulje",
+      "save": "Tallenna",
+      "approversTitle": "Kuka voi hyväksyä",
+      "approversHint": "Jos ketään ei valita, kaikki kirjanpitäjät, ylläpitäjät ja omistaja voivat hyväksyä.",
+      "notifyTitle": "Kuka saa ilmoituksen",
+      "notifyHint": "Sähköposti, kun työntekijä lähettää kululaskun. Jos ketään ei valita, ilmoitus menee hyväksyjille.",
+      "readOnly": "Omistaja ja ylläpitäjät voivat muuttaa hyväksyjiä.",
+      "needsMigration": "Asetus vaatii tietokantamigraation 108.",
+      "notApprover": "Vain nimetyt hyväksyjät voivat hyväksyä kululaskuja"
     }
   },
   "rikEinvoice": {

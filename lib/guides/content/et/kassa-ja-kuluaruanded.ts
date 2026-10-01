@@ -96,7 +96,7 @@ export const kassaJaKuluaruanded: Guide = {
         { title: 'Saada kutse', text: '**Kuluaruanded → Töötajate iseteenindus**: vali töötaja (partner), sisesta tema e-post ja vajuta **Saada kutse**. Kuluaruande lehelt avaneb sama aken juba valitud töötajaga. Kutse kehtib 7 päeva.' },
         { title: 'Töötaja liitub', text: 'Töötaja avab e-kirjast lingi ja vajutab **Liitu ja logi sisse**. Ta jõuab otse vaatesse **Minu kuluaruanded**. Telefonis pakutakse kohe **pääsuvõtit**: järgmine sisselogimine käib sõrmejälje või näotuvastusega.' },
         { title: 'Töötaja lisab tšekid', text: '**Uus → Lisa tšekk**: pildista tšekk, sisesta müüja, mille eest, summa koos käibemaksuga ja KM määr. Kulukontoks pannakse ettevõtte vaikimisi ostukulu konto. Lõpuks **Esita kinnitamiseks**.' },
-        { title: 'Raamatupidaja kinnitab', text: 'Esitamisel saavad ettevõtte omanik, administraatorid ja raamatupidajad e-kirja lingiga kuluaruandele. Esitatud kuluaruanne on nimekirjas olekuga „Esitatud“. Kontrolli tšekke, vajadusel muuda kulukontot ja vajuta **Kinnita ja konteeri**. Pärast esitamist töötaja aruannet enam muuta ei saa.' },
+        { title: 'Raamatupidaja kinnitab', text: 'Esitamisel saavad teavitatud kasutajad e-kirja lingiga kuluaruandele. Esitatud kuluaruanne on nimekirjas olekuga „Esitatud“. Kontrolli tšekke, vajadusel muuda kulukontot ja vajuta **Kinnita ja konteeri**. Pärast esitamist töötaja aruannet enam muuta ei saa.' },
       ],
     },
     {
@@ -105,6 +105,7 @@ export const kassaJaKuluaruanded: Guide = {
         'Sisselogimiseks valib töötaja sisselogimislehel **Logi sisse pääsuvõtmega** või **Saada sisselogimislink e-postile**. Link kehtib 15 minutit ja ühe korra.',
         'Kui link on aegunud, saab samal lehel kohe uue tellida.',
         'Kui töötaja on juba ettevõtte kasutaja (nt raamatupidaja), seotakse tema konto töötajaga ja ta näeb oma kuluaruandeid aadressil /minu.',
+        '**Kuluaruanded → Kinnitajad** määrab, kes saavad kuluaruandeid kinnitada ja kes saavad esitamise kohta e-kirja. Kui kedagi pole valitud, kinnitavad kõik raamatupidajad, administraatorid ja omanik ning teavituse saavad kinnitajad. Muuta saavad omanik ja administraatorid.',
         '**Eemalda ligipääs** samas aknas võtab iseteeninduse ära; töötaja varasemad kuluaruanded jäävad alles.',
       ],
     },

@@ -3049,6 +3049,19 @@
       "pending": "Invite pending: {email}",
       "noAccess": "No self-service access yet.",
       "hasPasskey": "Passkey added"
+    },
+    "approval": {
+      "button": "Approvers",
+      "title": "Expense report approvers",
+      "close": "Close",
+      "save": "Save",
+      "approversTitle": "Who can approve",
+      "approversHint": "If nobody is selected, all accountants, admins and the owner can approve.",
+      "notifyTitle": "Who gets notified",
+      "notifyHint": "An e-mail when an employee submits an expense report. If nobody is selected, the approvers are notified.",
+      "readOnly": "The owner and admins can change the approvers.",
+      "needsMigration": "This setting needs database migration 108.",
+      "notApprover": "Only the designated approvers can approve expense reports"
     }
   },
   "rikEinvoice": {
