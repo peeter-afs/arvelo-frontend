@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { getErrorMessage } from '@/lib/api/client';
-import { projectWipApi, type InvoiceWipPlan, type WipPreview, type WipRelease, type WipReleaseMode } from '@/lib/api/projectWip.api';
+import { projectWipApi, type InvoiceWipPlan, type ProjectCompletion, type WipPreview, type WipRelease, type WipReleaseMode } from '@/lib/api/projectWip.api';
 import { showToast } from '@/components/ui/Toast';
 import own from './SalesWipPanel.module.css';
 
@@ -24,6 +24,11 @@ type Props = {
   currency: string;
   plan: InvoiceWipPlan | null;
   onPlanChange: (plan: InvoiceWipPlan | null, userChange: boolean) => void;
+  /** The project's current status (completed projects show their date instead of the choice). */
+  projectStatus?: 'in_progress' | 'completed' | null;
+  projectCompletedAt?: string | null;
+  completion: ProjectCompletion | null;
+  onCompletionChange: (completion: ProjectCompletion) => void;
 };
 
 /**
@@ -32,7 +37,7 @@ type Props = {
  * every source line 100 %; a percent applies to every line; an amount is turned into one percent.
  * Source lines stay folded until asked for; a line's own percent overrides the common one.
  */
-export function SalesWipPanel({ styles: s, projectId, projectLabel, invoiceId, locked, net, currency, plan, onPlanChange }: Props) {
+export function SalesWipPanel({ styles: s, projectId, projectLabel, invoiceId, locked, net, currency, plan, onPlanChange, projectStatus, projectCompletedAt, completion, onCompletionChange }: Props) {
   const [preview, setPreview] = useState<WipPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,8 +88,35 @@ export function SalesWipPanel({ styles: s, projectId, projectLabel, invoiceId, l
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locked, preview, projectId]);
 
+  const dateText = (iso?: string | null) => (iso ? iso.slice(0, 10).split('-').reverse().join('.') : '');
+  /** Complete the project on confirm. Default (auto): ticked when the whole WIP balance goes to cost. */
+  const completionRow = (willEmpty: boolean) => {
+    if (projectStatus === 'completed') {
+      return <div className={s.kv}><span>Projekti olek</span><b>Lõpetatud{projectCompletedAt ? ` ${dateText(projectCompletedAt)}` : ''}</b></div>;
+    }
+    const mode = completion?.project_id === projectId ? completion.mode : 'auto';
+    const checked = mode === 'complete' || (mode === 'auto' && willEmpty);
+    return (
+      <>
+        <label className={own.toggle}>
+          <input type="checkbox" checked={checked} onChange={(e) => onCompletionChange({ project_id: projectId, mode: e.target.checked ? 'complete' : 'keep' })} />
+          <span>Märgi projekt arve kinnitamisel lõpetatuks</span>
+        </label>
+        {mode === 'auto' && willEmpty && <div className={s.jnote}>Märgitud, sest arvega kantakse kogu lõpetamata tööde jääk kuluks.</div>}
+      </>
+    );
+  };
+
   if (locked) {
-    if (!releases || releases.length === 0) return null;
+    if ((!releases || releases.length === 0) && !projectId) return null;
+    if (!releases || releases.length === 0) {
+      return (
+        <div className={s.sec}>
+          <div className={s.sech}>Projekt<span className={s.r}>{projectLabel}</span></div>
+          <div className={s.kv}><span>Projekti olek</span><b>{projectStatus === 'completed' ? `Lõpetatud${projectCompletedAt ? ` ${dateText(projectCompletedAt)}` : ''}` : 'Pooleli'}</b></div>
+        </div>
+      );
+    }
     const retry = async (r: WipRelease) => {
       setBusy(true);
       try { const next = await projectWipApi.retry(r.id); setReleases((rs) => (rs || []).map((x) => (x.id === r.id ? next : x))); showToast.success('Lõpetamata tööd kanti kuluks'); }
@@ -106,11 +138,21 @@ export function SalesWipPanel({ styles: s, projectId, projectLabel, invoiceId, l
             )}
           </div>
         ))}
+        <div className={s.kv}><span>Projekti olek</span><b>{projectStatus === 'completed' ? `Lõpetatud${projectCompletedAt ? ` ${dateText(projectCompletedAt)}` : ''}` : 'Pooleli'}</b></div>
       </div>
     );
   }
 
-  if (!projectId || !preview || (preview.remaining_total === 0 && preview.sources.every((x) => x.remaining === 0))) return null;
+  if (!projectId || !preview) return null;
+  if (preview.remaining_total === 0 && preview.sources.every((x) => x.remaining === 0)) {
+    // no work in progress on this project: only the completion choice
+    return (
+      <div className={s.sec}>
+        <div className={s.sech}>Projekt<span className={s.r}>{projectLabel}</span></div>
+        {completionRow(false)}
+      </div>
+    );
+  }
 
   const setPlan = (patch: Partial<InvoiceWipPlan>) =>
     onPlanChange({ project_id: projectId, mode, percent: plan?.percent ?? null, amount: plan?.amount ?? null, line_overrides: plan?.line_overrides ?? null, enabled: true, ...patch }, true);
@@ -191,6 +233,7 @@ export function SalesWipPanel({ styles: s, projectId, projectLabel, invoiceId, l
           <div className={s.jnote}>Kanne Dr kulu / Kr lõpetamata tööd tehakse arve kinnitamisel arve kuupäevaga.</div>
         </>
       )}
+      <div style={{ marginTop: 8 }}>{completionRow(enabled && preview.remaining_total > 0 && Math.abs(preview.amount - preview.remaining_total) < 0.005)}</div>
     </div>
   );
 }

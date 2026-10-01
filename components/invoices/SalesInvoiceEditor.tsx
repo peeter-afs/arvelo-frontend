@@ -25,7 +25,7 @@ import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import { SalesWipPanel } from './SalesWipPanel';
 import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
-import type { InvoiceWipPlan } from '@/lib/api/projectWip.api';
+import type { InvoiceWipPlan, ProjectCompletion } from '@/lib/api/projectWip.api';
 import styles from './SalesInvoiceEditor.module.css';
 
 type SupplyType = 'domestic' | 'intra_community' | 'reverse_charge' | 'third_country';
@@ -207,6 +207,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const [projects, setProjects] = useState<Project[]>([]);
   /** invoices.meta.wip_release: how much of the project's lõpetamata tööd is released to cost on confirm. */
   const [wipPlan, setWipPlan] = useState<InvoiceWipPlan | null>(() => (initial?.invoice.meta?.wip_release as InvoiceWipPlan | undefined) || null);
+  /** invoices.meta.project_completion: mark the project completed when the invoice is confirmed. */
+  const [projectCompletion, setProjectCompletion] = useState<ProjectCompletion | null>(() => (initial?.invoice.meta?.project_completion as ProjectCompletion | undefined) || null);
 
   const [extra, setExtra] = useState<Extra>(DEFAULT_EXTRA);
   const [coll, setColl] = useState(false);
@@ -272,6 +274,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       const { header, movedImportNote } = headerFrom(detail, vatEnabled);
       setInvoice(detail.invoice); setHdr(header); setLines(detail.lines.map(lineFrom));
       setWipPlan((detail.invoice.meta?.wip_release as InvoiceWipPlan | undefined) || null);
+      setProjectCompletion((detail.invoice.meta?.project_completion as ProjectCompletion | undefined) || null);
       if (movedImportNote && ['draft', 'rejected'].includes(detail.invoice.status)) setDirty(true);
     }).catch((e) => live && setLoadError(getErrorMessage(e))).finally(() => live && setLoading(false));
     return () => { live = false; };
@@ -529,6 +532,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   }, [hdr.project, lines]);
   const wipProject = projects.find((p) => p.id === wipProjectId);
   const onWipPlan = useCallback((plan: InvoiceWipPlan | null) => { setWipPlan(plan); setDirty(true); }, []);
+  const onProjectCompletion = useCallback((value: ProjectCompletion) => { setProjectCompletion(value); setDirty(true); }, []);
 
   /* ── persistence ── */
   const validationMessage = () => {
@@ -553,6 +557,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       billing_address: hdr.billing.trim(), delivery_address: hdr.shipping.trim(), contact_name: hdr.contactName.trim(), contact_email: hdr.contactEmail.trim(), contact_phone: hdr.contactPhone.trim(),
       internal_note: hdr.inote.trim(), cost_center_id: hdr.costCenter || undefined, project_id: hdr.project || undefined, cost_center: undefined, project: undefined, author_user_id: hdr.authorId || undefined, vat_code: vat.key,
       wip_release: wipPlan && wipPlan.project_id === wipProjectId ? wipPlan : undefined,
+      project_completion: projectCompletion && projectCompletion.project_id === wipProjectId ? projectCompletion : undefined,
     },
     lines: lines.map((l) => {
       const meta: Record<string, string> = {};
@@ -884,6 +889,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
               styles={styles} projectId={wipProjectId} projectLabel={wipProject ? dimensionLabel(wipProject) : 'Projekt'}
               invoiceId={invoice?.id || id || null} locked={locked} net={totals.net} currency={hdr.currency}
               plan={wipPlan} onPlanChange={onWipPlan}
+              projectStatus={wipProject?.status || null} projectCompletedAt={wipProject?.completed_at || null}
+              completion={projectCompletion} onCompletionChange={onProjectCompletion}
             />
           )}
           <div className={styles.sec}>

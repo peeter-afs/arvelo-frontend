@@ -13,6 +13,12 @@ export type WipPlan = {
   line_overrides?: Record<string, number> | null;
 };
 
+/**
+ * Stored on a sales invoice draft as invoices.meta.project_completion: complete the project on confirm.
+ * auto = only when the invoice releases the whole WIP balance; complete / keep = the user's choice.
+ */
+export type ProjectCompletion = { project_id: string; mode: 'auto' | 'complete' | 'keep' };
+
 /** Stored on a sales invoice draft as invoices.meta.wip_release. */
 export type InvoiceWipPlan = WipPlan & { project_id: string; enabled?: boolean };
 
