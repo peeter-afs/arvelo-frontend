@@ -1298,7 +1298,7 @@ function TeamTab({
   };
 
   const roles: UserRole[] = ['owner', 'admin', 'accountant', 'viewer'];
-  const roleLabel = (r: UserRole) => ({ owner: t('roleOwner'), admin: t('roleAdmin'), accountant: t('roleAccountant'), viewer: t('roleViewer') }[r] ?? r);
+  const roleLabel = (r: UserRole) => ({ owner: t('roleOwner'), admin: t('roleAdmin'), accountant: t('roleAccountant'), viewer: t('roleViewer'), employee: t('roleEmployee') }[r] ?? r);
 
   return (
     <div className="space-y-6">
@@ -1460,7 +1460,8 @@ function TeamTab({
                         onChange={(e) => void handleRoleChange(m, e.target.value as UserRole)}
                         className="h-[28px] max-lg:h-9 max-sm:max-w-[120px] rounded-[6px] border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[12.5px] text-[var(--a-text)]"
                       >
-                        {roles.filter((r) => currentRole === 'owner' || r !== 'owner').map((r) => (
+                        {/* Employees (self-service) are invited from Expense reports; an existing one can be promoted */}
+                        {[...roles.filter((r) => currentRole === 'owner' || r !== 'owner'), ...(m.role === 'employee' ? ['employee' as UserRole] : [])].map((r) => (
                           <option key={r} value={r}>{roleLabel(r)}</option>
                         ))}
                       </select>

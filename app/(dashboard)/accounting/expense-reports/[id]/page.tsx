@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, Paperclip, Trash2 } from 'lucide-react';
+import { Loader2, Paperclip, Smartphone, Trash2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { expenseReportsApi, type ExpenseReport } from '@/lib/api/cashExpense.api';
 import { getErrorMessage } from '@/lib/api/client';
@@ -13,6 +13,7 @@ import { paymentMethodsApi, type PaymentMethod } from '@/lib/api/paymentMethods.
 import { getIsoToday } from '@/lib/utils/date';
 import { CashOrderDialog } from '@/components/accounting/cash/CashOrderDialog';
 import { EXPENSE_STATUS_TONE } from '@/components/accounting/expenses/status';
+import { EmployeeAccessDialog } from '@/components/accounting/expenses/EmployeeAccessDialog';
 import { showToast } from '@/components/ui/Toast';
 
 const money = (value: number) => value.toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -26,6 +27,7 @@ export default function ExpenseReportPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [report, setReport] = useState<ExpenseReport | null>(null);
+  const [inviting, setInviting] = useState(false);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
   const [partners, setPartners] = useState<PartnerOption[]>([]);
   const [cashDesks, setCashDesks] = useState<PaymentMethod[]>([]);
@@ -121,6 +123,9 @@ export default function ExpenseReportPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => setInviting(true)} title={t('access.button')} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[var(--a-border)] px-3 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]">
+            <Smartphone className="h-3.5 w-3.5" /> <span className="max-sm:hidden">{t('access.button')}</span>
+          </button>
           {report.status === 'draft' && (
             <>
               <button type="button" disabled={!!busy} onClick={() => { if (window.confirm(t('confirmDelete'))) void expenseReportsApi.remove(id).then(() => router.push('/accounting/expense-reports')).catch((err) => setError(getErrorMessage(err))); }} className="inline-flex h-9 items-center rounded-md border border-[var(--a-border)] px-3 text-[13px] text-[var(--a-text-2)] hover:text-[var(--a-neg)]">
@@ -287,6 +292,7 @@ export default function ExpenseReportPage() {
           onCreated={() => reload()}
         />
       )}
+      {inviting && <EmployeeAccessDialog partner={{ id: report.employee_partner_id, name: report.employee_name ?? '' }} onClose={() => setInviting(false)} />}
     </div>
   );
 }

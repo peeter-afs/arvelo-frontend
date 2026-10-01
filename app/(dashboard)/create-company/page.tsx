@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import type { Tenant } from '@/lib/types/auth.types';
+import type { Tenant, UserRole } from '@/lib/types/auth.types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertCircle, ArrowRight, Building2, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
@@ -17,7 +17,7 @@ export default function CreateCompanyPage() {
   const { user, tenant, setTenant, setTokens } = useAuthStore();
   const [availableTenants, setAvailableTenants] = useState<Array<{
     tenant: { id: string; name: string; base_currency: string };
-    role: 'owner' | 'admin' | 'accountant' | 'viewer';
+    role: UserRole;
     is_default: boolean;
   }>>([]);
   const [isLoadingTenants, setIsLoadingTenants] = useState(false);

@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { AlertCircle, CheckCircle2, Loader2, UserPlus } from 'lucide-react';
 import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 type InviteState =
   | { status: 'loading' }
@@ -18,6 +19,7 @@ function AcceptInviteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { setSession } = useAuthStore();
 
   const [invite, setInvite] = useState<InviteState>({ status: 'loading' });
   const [name, setName] = useState('');
@@ -60,11 +62,35 @@ function AcceptInviteContent() {
     return () => clearTimeout(timer);
   }, [countdown, router, successMessage]);
 
+  const isEmployeeInvite = invite.status === 'valid' && invite.role === 'employee';
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage('');
 
     if (!token) return;
+
+    // Employee self-service invites are passwordless: accepting signs the person in
+    if (isEmployeeInvite) {
+      setIsLoading(true);
+      try {
+        const result = await authApi.acceptInvite({ token, name: name.trim() || undefined });
+        if (result.session) {
+          const session = result.session;
+          setSession(session.user, session.tenant || null, session.role || null, session.access_token, session.refresh_token);
+          router.replace('/minu');
+          return;
+        }
+        // An account that also keeps the books with 2FA signs in the normal way
+        setExistingAccount(true);
+        setSuccessMessage(t('acceptInviteSuccessExisting'));
+      } catch (error) {
+        setErrorMessage(getErrorMessage(error));
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
 
     if (password.length < 8) {
       setErrorMessage(t('errors.passwordMinLengthWithPeriod'));
@@ -135,7 +161,9 @@ function AcceptInviteContent() {
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-slate-900 sm:text-2xl">{t('acceptInviteTitle')}</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {t('acceptInviteSubtitle', { tenantName: invite.tenantName })}
+          {isEmployeeInvite
+            ? t('acceptInviteEmployeeSubtitle', { tenantName: invite.tenantName })
+            : t('acceptInviteSubtitle', { tenantName: invite.tenantName })}
         </p>
       </div>
 
@@ -190,6 +218,7 @@ function AcceptInviteContent() {
           />
         </div>
 
+        {!isEmployeeInvite && (<>
         <div>
           <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-slate-700">
             {t('newPassword')}
@@ -223,6 +252,11 @@ function AcceptInviteContent() {
             style={{ fontSize: '16px' }}
           />
         </div>
+        </>)}
+
+        {isEmployeeInvite && (
+          <p className="text-sm text-slate-500">{t('acceptInviteEmployeeHint')}</p>
+        )}
 
         <button
           type="submit"
@@ -237,7 +271,7 @@ function AcceptInviteContent() {
           ) : (
             <>
               <UserPlus className="h-4 w-4" />
-              <span>{t('acceptInviteButton')}</span>
+              <span>{isEmployeeInvite ? t('acceptInviteEmployeeButton') : t('acceptInviteButton')}</span>
             </>
           )}
         </button>

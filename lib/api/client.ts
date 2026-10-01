@@ -110,6 +110,14 @@ apiClient.interceptors.response.use(
         return Promise.reject(error);
       }
 
+      // Employee accounts only have the self-service view
+      if (code === 'EMPLOYEE_SCOPE' && typeof window !== 'undefined') {
+        if (!window.location.pathname.startsWith('/minu')) {
+          window.location.href = '/minu';
+        }
+        return Promise.reject(error);
+      }
+
       // No access to resource
       console.error('Access denied:', error.response.data);
     }

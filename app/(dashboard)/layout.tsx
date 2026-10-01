@@ -18,13 +18,20 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { tenant, isAuthenticated, isLoading } = useAuthStore();
+  const { tenant, role, isAuthenticated, isLoading } = useAuthStore();
+  const isEmployee = role === 'employee';
   const isCreateCompanyPage = pathname === '/create-company';
   // The invoice preview has its own header with breadcrumb and actions (design_handoff_arve_eelvaade).
   const hideCommandBar = /^\/invoices\/[^/]+\/preview$/.test(pathname || '');
 
   useEffect(() => {
     if (isLoading || !isAuthenticated) {
+      return;
+    }
+
+    // Employee accounts only have the self-service view
+    if (isEmployee) {
+      router.replace('/minu');
       return;
     }
 
@@ -35,7 +42,10 @@ export default function DashboardLayout({
     if (tenant && isCreateCompanyPage) {
       router.push('/');
     }
-  }, [isAuthenticated, isCreateCompanyPage, isLoading, router, tenant]);
+  }, [isAuthenticated, isCreateCompanyPage, isEmployee, isLoading, router, tenant]);
+
+  // Don't mount the bookkeeping shell (it loads company data) for an employee being redirected
+  if (isEmployee) return null;
 
   return (
     <ProtectedRoute>

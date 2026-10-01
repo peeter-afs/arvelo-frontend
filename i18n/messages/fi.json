@@ -1061,7 +1061,8 @@
     "meritPalkBatchesTitle": "Imported months",
     "meritPalkBatchStatus": "Status",
     "meritPalkBatchLines": "Lines",
-    "meritPalkBatchError": "Error"
+    "meritPalkBatchError": "Error",
+    "roleEmployee": "Työntekijä"
   },
   "dashboard": {
     "welcomeBack": "Tervetuloa takaisin",
@@ -1137,7 +1138,24 @@
     "passwordPlaceholder": "Vähintään 8 merkkiä",
     "confirmPasswordPlaceholder": "Kirjoita salasana uudelleen",
     "redirectingIn": "Ohjataan {countdown} sekunnin kuluttua...",
-    "backToLogin": "Takaisin kirjautumiseen"
+    "backToLogin": "Takaisin kirjautumiseen",
+    "acceptInviteEmployeeSubtitle": "{tenantName} kutsuu sinut syöttämään kululaskuja. Salasanaa ei tarvita.",
+    "acceptInviteEmployeeHint": "Jatkossa kirjaudut sähköpostiin lähetetyllä linkillä tai puhelimen pääsyavaimella (sormenjälki tai kasvot).",
+    "acceptInviteEmployeeButton": "Liity ja kirjaudu",
+    "loginLink": {
+      "switch": "Lähetä kirjautumislinkki sähköpostiin",
+      "passkey": "Kirjaudu pääsyavaimella",
+      "description": "Lähetämme sähköpostiisi linkin, jolla kirjaudut ilman salasanaa. Linkki on voimassa 15 minuuttia.",
+      "send": "Lähetä linkki",
+      "sentTitle": "Tarkista sähköpostisi",
+      "sentDescription": "Jos osoite {email} on käytössä Arvelossa, lähetimme sinne kirjautumislinkin. Linkki on voimassa 15 minuuttia.",
+      "sendAgain": "Lähetä uusi linkki",
+      "usePassword": "Kirjaudu salasanalla",
+      "signingIn": "Kirjaudutaan…",
+      "expiredTitle": "Linkki ei ole enää voimassa",
+      "invalid": "Kirjautumislinkki on virheellinen. Tilaa uusi linkki.",
+      "sendNew": "Lähetä uusi linkki"
+    }
   },
   "aiInvoice": {
     "title": "AI-lasku",
@@ -1576,7 +1594,28 @@
     "add": "Lisää",
     "receiptHint": "Summa on kuitin loppusumma sis. ALV; netto ja ALV lasketaan verokannasta. Kuitti tallennetaan ostolaskuna, joten ostojen ALV päätyy veroilmoitukselle.",
     "reimburseHint": "Korvaa pankista: pankkitapahtumien tarkistuksessa valitse ”Kirjaa tilille”, tili {account} ja kumppani {employee}. Tai maksa kassasta.",
-    "reimbursementOf": "Kululaskun korvaus"
+    "reimbursementOf": "Kululaskun korvaus",
+    "access": {
+      "button": "Työntekijöiden itsepalvelu",
+      "title": "Työntekijän itsepalvelu",
+      "intro": "Työntekijä syöttää kululaskut ja kuitit puhelimella. Hän saa sähköpostikutsun ilman salasanaa: kirjautuminen tapahtuu sähköpostilinkillä, ja puhelimessa tarjotaan pääsyavainta. Kirjanpitoa hän ei näe.",
+      "employee": "Työntekijä",
+      "employeePlaceholder": "Hae kumppaneista",
+      "noMatches": "Ei löytynyt. Lisää työntekijä ensin kumppaniksi.",
+      "email": "Työntekijän sähköposti",
+      "send": "Lähetä kutsu",
+      "resend": "Lähetä kutsu uudelleen",
+      "close": "Sulje",
+      "revoke": "Poista pääsy",
+      "confirmRevoke": "Poistetaanko työntekijän {name} itsepalvelupääsy?",
+      "revoked": "Pääsy poistettiin.",
+      "invited": "Kutsu lähetettiin osoitteeseen {email}. Se on voimassa 7 päivää.",
+      "inviteNotSent": "Kutsu luotiin, mutta sähköpostin lähetys epäonnistui. Yritä lähettää uudelleen.",
+      "linked": "{email} on jo yrityksen käyttäjä: hänet liitettiin tähän työntekijään ja hän näkee kululaskunsa itsepalvelussa.",
+      "pending": "Kutsu odottaa: {email}",
+      "noAccess": "Itsepalvelupääsyä ei vielä ole.",
+      "hasPasskey": "Pääsyavain lisätty"
+    }
   },
   "rikEinvoice": {
     "title": "Verkkolaskut (RIK e-arveldaja)",
@@ -1833,5 +1872,48 @@
     "rotateTitle": "Vaihda osoite?",
     "rotateDescription": "Yritys saa uuden osoitteen, eikä vanhaan osoitteeseen lähetettyjä viestejä enää oteta vastaan.",
     "workspaceHint": "tai lähetä laskut sähköpostilla"
+  },
+  "selfService": {
+    "title": "Omat kululaskut",
+    "signOut": "Kirjaudu ulos",
+    "newReport": "Uusi",
+    "empty": "Ei vielä kululaskuja. Aloita painikkeella \"Uusi\" ja lisää kuitit.",
+    "notLinked": "Käyttäjääsi ei ole liitetty työntekijään tässä yrityksessä. Pyydä kirjanpitäjää lähettämään sinulle kululaskukutsu.",
+    "receiptCount": "{count, plural, one {# kuitti} other {# kuittia}}",
+    "back": "Takaisin",
+    "reportTitle": "Kululasku {number}",
+    "noReceipts": "Kuitteja ei ole vielä lisätty.",
+    "total": "Yhteensä",
+    "addReceipt": "Lisää kuitti",
+    "removeReceipt": "Poista kuitti",
+    "confirmRemoveReceipt": "Poistetaanko tämä kuitti?",
+    "submit": "Lähetä hyväksyttäväksi",
+    "confirmSubmit": "Lähetetäänkö kululasku {total} €? Lähettämisen jälkeen vain kirjanpitäjä voi muuttaa sitä.",
+    "deleteReport": "Poista kululasku",
+    "confirmDelete": "Poistetaanko tämä kululasku kuitteineen?",
+    "statusHint": {
+      "submitted": "Lähetetty. Kirjanpitäjä tarkistaa ja hyväksyy sen.",
+      "approved": "Hyväksytty. Summa korvataan sinulle.",
+      "reimbursed": "Korvattu."
+    },
+    "newReceipt": "Uusi kuitti",
+    "cancel": "Peruuta",
+    "takePhoto": "Kuvaa kuitti",
+    "vendor": "Mistä ostit",
+    "vendorPlaceholder": "Esim. Prisma, Neste",
+    "description": "Mihin",
+    "descriptionPlaceholder": "Esim. polttoaine, toimistotarvikkeet",
+    "amount": "Yhteensä (€)",
+    "vat": "ALV",
+    "date": "Päivämäärä",
+    "receiptNo": "Kuitin nro",
+    "amountHint": "Syötä kuitin kokonaissumma arvonlisäveroineen.",
+    "saveReceipt": "Tallenna kuitti",
+    "passkeyTitle": "Kirjaudu ensi kerralla yhdellä napautuksella",
+    "passkeyText": "Lisää pääsyavain ja kirjaudu sormenjäljellä tai kasvoilla ilman sähköpostilinkkiä.",
+    "passkeyAdd": "Lisää pääsyavain",
+    "passkeyLater": "Myöhemmin",
+    "passkeyDeviceName": "Puhelin",
+    "retry": "Yritä uudelleen"
   }
 }

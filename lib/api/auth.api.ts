@@ -175,16 +175,51 @@ export const authApi = {
   },
 
   /**
-   * Accept an invite: set password and join the company
+   * Accept an invite: set password and join the company. Employee self-service invites are
+   * passwordless and return a session right away.
    */
-  async acceptInvite(payload: { token: string; password: string; name?: string }): Promise<{
+  async acceptInvite(payload: { token: string; password?: string; name?: string }): Promise<{
     email: string;
     existingAccount: boolean;
+    session?: Session;
   }> {
-    const response = await apiClient.post<ApiResponse<{ email: string; existingAccount: boolean }>>(
+    const response = await apiClient.post<ApiResponse<{ email: string; existingAccount: boolean; session?: Session }>>(
       '/api/auth/accept-invite',
       payload
     );
+    return response.data.data!;
+  },
+
+  /**
+   * E-mail a one-time sign-in link. Always succeeds (does not reveal whether the e-mail exists).
+   */
+  async requestLoginLink(email: string): Promise<void> {
+    await apiClient.post('/api/auth/login-link', { email });
+  },
+
+  /**
+   * Sign in with a link from the e-mail. May still ask for the second factor.
+   */
+  async verifyLoginLink(token: string): Promise<Session> {
+    const response = await apiClient.post<ApiResponse<Session>>('/api/auth/login-link/verify', { token });
+    return response.data.data!;
+  },
+
+  /**
+   * Passkey sign-in without e-mail or password (the browser picks the account).
+   */
+  async passkeyLoginOptions(): Promise<{ options: unknown; challenge_token: string }> {
+    const response = await apiClient.post<ApiResponse<{ options: unknown; challenge_token: string }>>(
+      '/api/auth/passkey/options'
+    );
+    return response.data.data!;
+  },
+
+  async passkeyLoginVerify(challengeToken: string, assertion: unknown): Promise<Session> {
+    const response = await apiClient.post<ApiResponse<Session>>('/api/auth/passkey/verify', {
+      challenge_token: challengeToken,
+      response: assertion,
+    });
     return response.data.data!;
   },
 };

@@ -1047,7 +1047,8 @@
     "meritPalkBatchesTitle": "Imported months",
     "meritPalkBatchStatus": "Status",
     "meritPalkBatchLines": "Lines",
-    "meritPalkBatchError": "Error"
+    "meritPalkBatchError": "Error",
+    "roleEmployee": "Anställd"
   },
   "dashboard": {
     "welcomeBack": "Välkommen tillbaka",
@@ -1123,7 +1124,24 @@
     "passwordPlaceholder": "Minst 8 tecken",
     "confirmPasswordPlaceholder": "Upprepa ditt lösenord",
     "redirectingIn": "Omdirigerar om {countdown} s...",
-    "backToLogin": "Tillbaka till inloggning"
+    "backToLogin": "Tillbaka till inloggning",
+    "acceptInviteEmployeeSubtitle": "{tenantName} bjuder in dig att lämna utläggsredovisningar. Inget lösenord behövs.",
+    "acceptInviteEmployeeHint": "Därefter loggar du in med en länk som skickas till din e-post eller med en nyckel på telefonen (fingeravtryck eller ansikte).",
+    "acceptInviteEmployeeButton": "Gå med och logga in",
+    "loginLink": {
+      "switch": "Skicka en inloggningslänk till e-post",
+      "passkey": "Logga in med nyckel",
+      "description": "Vi skickar en länk till din e-post så att du kan logga in utan lösenord. Länken gäller i 15 minuter.",
+      "send": "Skicka länk",
+      "sentTitle": "Kolla din inkorg",
+      "sentDescription": "Om {email} används i Arvelo har vi skickat en inloggningslänk dit. Länken gäller i 15 minuter.",
+      "sendAgain": "Skicka en ny länk",
+      "usePassword": "Logga in med lösenord",
+      "signingIn": "Loggar in…",
+      "expiredTitle": "Länken gäller inte längre",
+      "invalid": "Inloggningslänken är ogiltig. Begär en ny.",
+      "sendNew": "Skicka en ny länk"
+    }
   },
   "aiInvoice": {
     "title": "AI-faktura",
@@ -1562,7 +1580,28 @@
     "add": "Lägg till",
     "receiptHint": "Beloppet är kvittots totalbelopp inkl. moms; netto och moms följer av momssatsen. Varje kvitto sparas som leverantörsfaktura så att ingående moms kommer med i momsdeklarationen.",
     "reimburseHint": "Ersätt från banken: välj ”Bokför på konto” i bankgranskningen, konto {account} och partner {employee}. Eller betala från kassan.",
-    "reimbursementOf": "Ersättning för utläggsredovisning"
+    "reimbursementOf": "Ersättning för utläggsredovisning",
+    "access": {
+      "button": "Självservice för anställda",
+      "title": "Självservice för anställd",
+      "intro": "Den anställda lämnar utläggsredovisningar och kvitton i telefonen. Hen får en inbjudan via e-post utan lösenord: inloggning sker med en e-postlänk och en nyckel erbjuds i telefonen. Hen ser inte bokföringen.",
+      "employee": "Anställd",
+      "employeePlaceholder": "Sök bland partner",
+      "noMatches": "Hittades inte. Lägg först till den anställda som partner.",
+      "email": "Den anställdas e-post",
+      "send": "Skicka inbjudan",
+      "resend": "Skicka inbjudan igen",
+      "close": "Stäng",
+      "revoke": "Ta bort åtkomst",
+      "confirmRevoke": "Ta bort självserviceåtkomsten för {name}?",
+      "revoked": "Åtkomsten togs bort.",
+      "invited": "Inbjudan skickades till {email}. Den gäller i 7 dagar.",
+      "inviteNotSent": "Inbjudan skapades men e-postmeddelandet kunde inte skickas. Försök skicka igen.",
+      "linked": "{email} är redan användare i företaget: hen kopplades till denna anställda och ser sina utläggsredovisningar i självservicen.",
+      "pending": "Inbjudan väntar: {email}",
+      "noAccess": "Ingen självserviceåtkomst ännu.",
+      "hasPasskey": "Nyckel tillagd"
+    }
   },
   "rikEinvoice": {
     "title": "E-fakturor (RIK e-arveldaja)",
@@ -1819,5 +1858,48 @@
     "rotateTitle": "Byt adress?",
     "rotateDescription": "Företaget får en ny adress och e-post till den gamla tas inte längre emot.",
     "workspaceHint": "eller skicka fakturor via e-post"
+  },
+  "selfService": {
+    "title": "Mina utläggsredovisningar",
+    "signOut": "Logga ut",
+    "newReport": "Ny",
+    "empty": "Inga utläggsredovisningar ännu. Börja med \"Ny\" och lägg till kvitton.",
+    "notLinked": "Din användare är inte kopplad till en anställd i detta företag. Be din redovisare att skicka en inbjudan.",
+    "receiptCount": "{count, plural, one {# kvitto} other {# kvitton}}",
+    "back": "Tillbaka",
+    "reportTitle": "Utläggsredovisning {number}",
+    "noReceipts": "Inga kvitton tillagda ännu.",
+    "total": "Totalt",
+    "addReceipt": "Lägg till kvitto",
+    "removeReceipt": "Ta bort kvitto",
+    "confirmRemoveReceipt": "Ta bort detta kvitto?",
+    "submit": "Skicka för godkännande",
+    "confirmSubmit": "Skicka utläggsredovisningen på {total} €? Efter det kan bara redovisaren ändra den.",
+    "deleteReport": "Radera utläggsredovisning",
+    "confirmDelete": "Radera denna utläggsredovisning med kvitton?",
+    "statusHint": {
+      "submitted": "Skickad. Redovisaren granskar och godkänner den.",
+      "approved": "Godkänd. Beloppet ersätts till dig.",
+      "reimbursed": "Ersatt."
+    },
+    "newReceipt": "Nytt kvitto",
+    "cancel": "Avbryt",
+    "takePhoto": "Fotografera kvittot",
+    "vendor": "Var köpte du",
+    "vendorPlaceholder": "T.ex. ICA, Neste",
+    "description": "Vad",
+    "descriptionPlaceholder": "T.ex. bränsle, kontorsmaterial",
+    "amount": "Totalt (€)",
+    "vat": "Moms",
+    "date": "Datum",
+    "receiptNo": "Kvitto nr",
+    "amountHint": "Ange kvittots totalbelopp inklusive moms.",
+    "saveReceipt": "Spara kvitto",
+    "passkeyTitle": "Logga in med ett tryck nästa gång",
+    "passkeyText": "Lägg till en nyckel och logga in med fingeravtryck eller ansikte, utan e-postlänk.",
+    "passkeyAdd": "Lägg till nyckel",
+    "passkeyLater": "Senare",
+    "passkeyDeviceName": "Telefon",
+    "retry": "Försök igen"
   }
 }

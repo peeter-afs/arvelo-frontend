@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
@@ -9,7 +9,8 @@ import { authApi } from '@/lib/api/auth.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { TwoFactorMethod } from '@/lib/types/auth.types';
 import { startAuthentication } from '@simplewebauthn/browser';
-import { Loader2, AlertCircle, CheckCircle, KeyRound, Mail } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle, KeyRound, Mail, Link2 } from 'lucide-react';
+import { takePending2fa } from '@/lib/auth/pending2fa';
 
 function LoginForm() {
   const t = useTranslations('auth');
@@ -32,6 +33,19 @@ function LoginForm() {
   const [codeMode, setCodeMode] = useState<'totp' | 'email'>('totp');
   const [emailCodeSent, setEmailCodeSent] = useState(false);
   const [emailCodeSending, setEmailCodeSending] = useState(false);
+  const [mode, setMode] = useState<'password' | 'link'>(searchParams.get('mode') === 'link' ? 'link' : 'password');
+  const [linkSent, setLinkSent] = useState(false);
+  const [passkeySupported, setPasskeySupported] = useState(false);
+
+  useEffect(() => {
+    setPasskeySupported(typeof window !== 'undefined' && 'PublicKeyCredential' in window);
+    const pending = takePending2fa();
+    if (!pending) return;
+    setRequires2fa(true);
+    setTwoFactorToken(pending.token);
+    setTwoFactorMethods(pending.methods);
+    setCodeMode(pending.methods.includes('totp') ? 'totp' : 'email');
+  }, []);
 
   const completeLogin = async (session: Awaited<ReturnType<typeof authApi.login>>) => {
     setSession(
@@ -42,7 +56,38 @@ function LoginForm() {
       session.refresh_token
     );
     await new Promise(resolve => setTimeout(resolve, 100));
-    router.push(returnUrl);
+    // Employees only have the self-service view
+    router.push(session.role === 'employee' && !returnUrl.startsWith('/minu') ? '/minu' : returnUrl);
+  };
+
+  const handleSendLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+    try {
+      await authApi.requestLoginLink(email.trim());
+      setLinkSent(true);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setError('');
+    setIsLoading(true);
+    try {
+      const { options, challenge_token } = await authApi.passkeyLoginOptions();
+      const assertion = await startAuthentication({ optionsJSON: options as never });
+      await completeLogin(await authApi.passkeyLoginVerify(challenge_token, assertion));
+    } catch (err) {
+      if ((err as Error)?.name !== 'NotAllowedError') {
+        setError(getErrorMessage(err));
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -286,6 +331,70 @@ function LoginForm() {
             {t('backToLogin')}
           </button>
         </form>
+      ) : mode === 'link' ? (
+        /* E-mailed sign-in link */
+        linkSent ? (
+          <div className="space-y-5">
+            <div className="rounded-lg border-l-4 border-emerald-500 bg-emerald-50 p-4 flex items-start gap-3">
+              <Mail className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-emerald-900">{t('loginLink.sentTitle')}</p>
+                <p className="text-sm text-emerald-700 mt-0.5">{t('loginLink.sentDescription', { email: email.trim() })}</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setLinkSent(false)}
+              className="w-full py-2 text-sm text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
+            >
+              {t('loginLink.sendAgain')}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('password'); setLinkSent(false); }}
+              className="w-full py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              {t('loginLink.usePassword')}
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSendLink} className="space-y-5">
+            <p className="text-sm text-slate-600">{t('loginLink.description')}</p>
+            <div>
+              <label htmlFor="link-email" className="block text-sm font-medium text-slate-700 mb-1.5">
+                {t('emailAddress')}
+              </label>
+              <input
+                id="link-email"
+                type="email"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full h-11 px-4 border border-slate-200 rounded-lg focus:outline-none focus:border-[var(--primary)] focus:ring-4 focus:ring-[var(--primary)]/10 transition-all disabled:opacity-50"
+                placeholder="you@example.com"
+                disabled={isLoading}
+                autoFocus
+                style={{ fontSize: '16px' }}
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isLoading || !email.trim()}
+              className="w-full h-11 sm:h-12 rounded-lg bg-[var(--primary)] text-white font-medium hover:bg-[var(--primary-hover)] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm flex items-center justify-center gap-2"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
+              {t('loginLink.send')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('password')}
+              className="w-full py-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              {t('loginLink.usePassword')}
+            </button>
+          </form>
+        )
       ) : (
         /* Login Form */
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -351,6 +460,35 @@ function LoginForm() {
               t('signIn')
             )}
           </button>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-xs text-slate-400 uppercase">{t('twoFactor.or')}</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          <div className="grid gap-2">
+            {passkeySupported && (
+              <button
+                type="button"
+                onClick={handlePasskeyLogin}
+                disabled={isLoading}
+                className="w-full h-11 rounded-lg border border-slate-300 bg-white text-slate-800 font-medium hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                <KeyRound className="h-4 w-4" />
+                {t('loginLink.passkey')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => { setMode('link'); setError(''); }}
+              disabled={isLoading}
+              className="w-full h-11 rounded-lg border border-slate-300 bg-white text-slate-800 font-medium hover:bg-slate-50 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+            >
+              <Link2 className="h-4 w-4" />
+              {t('loginLink.switch')}
+            </button>
+          </div>
         </form>
       )}
 

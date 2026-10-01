@@ -2477,7 +2477,8 @@
     "cancelInvite": "Cancel invite",
     "cancelInviteConfirm": "Cancel the invitation sent to {email}? The emailed link will stop working.",
     "cancelInviteButton": "Cancel invite",
-    "inviteEmailFailed": "Invite for {email} was saved, but the email could not be sent. Check the mail settings and use resend."
+    "inviteEmailFailed": "Invite for {email} was saved, but the email could not be sent. Check the mail settings and use resend.",
+    "roleEmployee": "Employee"
   },
   "dashboard": {
     "welcomeBack": "Welcome back",
@@ -2642,7 +2643,24 @@
     "inviteErrorExpired": "This invitation has expired. Ask your administrator to send a new one.",
     "inviteErrorCancelled": "This invitation has been cancelled. Contact your administrator if you think this is a mistake.",
     "inviteErrorUsed": "This invitation has already been used. You can sign in with your account.",
-    "inviteErrorInvalid": "This invite link is invalid or has been replaced by a newer one. Use the most recent invitation email, or ask your administrator to resend it."
+    "inviteErrorInvalid": "This invite link is invalid or has been replaced by a newer one. Use the most recent invitation email, or ask your administrator to resend it.",
+    "acceptInviteEmployeeSubtitle": "{tenantName} invites you to submit expense reports. No password needed.",
+    "acceptInviteEmployeeHint": "Later you sign in with a link sent to your e-mail or with a passkey on your phone (fingerprint or face).",
+    "acceptInviteEmployeeButton": "Join and sign in",
+    "loginLink": {
+      "switch": "E-mail me a sign-in link",
+      "passkey": "Sign in with a passkey",
+      "description": "We will e-mail you a link to sign in without a password. The link is valid for 15 minutes.",
+      "send": "Send link",
+      "sentTitle": "Check your inbox",
+      "sentDescription": "If {email} is used in Arvelo, we sent a sign-in link there. The link is valid for 15 minutes.",
+      "sendAgain": "Send a new link",
+      "usePassword": "Sign in with password",
+      "signingIn": "Signing in…",
+      "expiredTitle": "The link is no longer valid",
+      "invalid": "The sign-in link is invalid. Request a new one.",
+      "sendNew": "Send a new link"
+    }
   },
   "aiInvoice": {
     "title": "AI Invoice",
@@ -3010,7 +3028,28 @@
     "add": "Add",
     "receiptHint": "The amount is the receipt total including VAT; net and VAT follow from the rate. Each receipt is stored as a purchase invoice, so its input VAT reaches the VAT return.",
     "reimburseHint": "Reimburse from the bank: in bank review choose “Post to account”, account {account} and partner {employee}. Or pay from the cash desk with “Pay from cash desk”.",
-    "reimbursementOf": "Reimbursement of expense report"
+    "reimbursementOf": "Reimbursement of expense report",
+    "access": {
+      "button": "Employee self-service",
+      "title": "Employee self-service",
+      "intro": "The employee enters expense reports and receipts on their phone. They get an e-mail invite with no password: they sign in with an e-mailed link, and a passkey is offered on the phone. They cannot see the books.",
+      "employee": "Employee",
+      "employeePlaceholder": "Search partners",
+      "noMatches": "Not found. Add the employee as a partner first.",
+      "email": "Employee's e-mail",
+      "send": "Send invite",
+      "resend": "Resend invite",
+      "close": "Close",
+      "revoke": "Remove access",
+      "confirmRevoke": "Remove self-service access for {name}?",
+      "revoked": "Access removed.",
+      "invited": "Invite sent to {email}. It is valid for 7 days.",
+      "inviteNotSent": "The invite was created but the e-mail could not be sent. Try resending.",
+      "linked": "{email} is already a user of the company: they were linked to this employee and see their expense reports in self-service.",
+      "pending": "Invite pending: {email}",
+      "noAccess": "No self-service access yet.",
+      "hasPasskey": "Passkey added"
+    }
   },
   "rikEinvoice": {
     "title": "E-invoices (RIK e-Financials)",
@@ -3267,5 +3306,48 @@
     "rotateTitle": "Change address?",
     "rotateDescription": "Your company gets a new address and mail sent to the old one is no longer accepted. Tell your suppliers the new address.",
     "workspaceHint": "or send invoices by e-mail"
+  },
+  "selfService": {
+    "title": "My expense reports",
+    "signOut": "Sign out",
+    "newReport": "New",
+    "empty": "No expense reports yet. Start with \"New\" and add your receipts.",
+    "notLinked": "Your user is not linked to an employee in this company. Ask your accountant to send you an expense report invite.",
+    "receiptCount": "{count, plural, one {# receipt} other {# receipts}}",
+    "back": "Back",
+    "reportTitle": "Expense report {number}",
+    "noReceipts": "No receipts added yet.",
+    "total": "Total",
+    "addReceipt": "Add receipt",
+    "removeReceipt": "Remove receipt",
+    "confirmRemoveReceipt": "Remove this receipt?",
+    "submit": "Submit for approval",
+    "confirmSubmit": "Submit the expense report of {total} €? After submitting only the accountant can change it.",
+    "deleteReport": "Delete expense report",
+    "confirmDelete": "Delete this expense report with its receipts?",
+    "statusHint": {
+      "submitted": "Submitted. The accountant will review and approve it.",
+      "approved": "Approved. The amount will be reimbursed to you.",
+      "reimbursed": "Reimbursed."
+    },
+    "newReceipt": "New receipt",
+    "cancel": "Cancel",
+    "takePhoto": "Take a photo of the receipt",
+    "vendor": "Where did you buy",
+    "vendorPlaceholder": "E.g. Rimi, Neste",
+    "description": "What for",
+    "descriptionPlaceholder": "E.g. fuel, office supplies",
+    "amount": "Total (€)",
+    "vat": "VAT",
+    "date": "Date",
+    "receiptNo": "Receipt no",
+    "amountHint": "Enter the receipt total including VAT.",
+    "saveReceipt": "Save receipt",
+    "passkeyTitle": "Sign in with one tap next time",
+    "passkeyText": "Add a passkey and sign in with your fingerprint or face, without an e-mail link.",
+    "passkeyAdd": "Add passkey",
+    "passkeyLater": "Later",
+    "passkeyDeviceName": "Phone",
+    "retry": "Try again"
   }
 }

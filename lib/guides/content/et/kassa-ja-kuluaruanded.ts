@@ -1,8 +1,8 @@
 import type { Guide } from '../../types';
 
 /**
- * Sõnastus järgib `cash`, `expenseReports` ja `partnerStatement` tekste — kui UI-s
- * muutub nupu nimi, muuda ka siin.
+ * Sõnastus järgib `cash`, `expenseReports`, `selfService` ja `auth.loginLink` tekste — kui UI-s
+ * muutub nupu nimi, muuda ka siin. Töötaja iseteenindus: migratsioon 107, /minu, EmployeeAccessDialog.
  */
 export const kassaJaKuluaruanded: Guide = {
   slug: 'kassa-ja-kuluaruanded',
@@ -10,8 +10,8 @@ export const kassaJaKuluaruanded: Guide = {
   summary:
     'Sularaha kassaorderitega ja kassaraamat; töötaja oma rahaga tehtud kulud kuluaruandega; partneri kontokaart ja saldoteatis.',
   category: 'raamatupidamine',
-  minutes: 7,
-  updatedAt: '2026-09-27',
+  minutes: 9,
+  updatedAt: '2026-10-01',
   relatedRoutes: ['/accounting/cash', '/accounting/expense-reports', '/reports/partner-statement'],
   blocks: [
     { type: 'heading', text: 'Kassa' },
@@ -82,6 +82,31 @@ export const kassaJaKuluaruanded: Guide = {
       tone: 'info',
       text:
         '„Võlg töötajale“ kuluaruande päises on töötaja saldo aruandvate isikute kontol kõigi tema kuluaruannete ja ettemaksude peale kokku. Kui töötajale anti enne ettemaks kassast, väheneb see võlg vastavalt.',
+    },
+
+    { type: 'heading', text: 'Töötaja sisestab kuluaruanded ise' },
+    {
+      type: 'paragraph',
+      text:
+        'Töötaja saab tšekid ise telefonis sisestada. Ta ei vaja parooli ega näe raamatupidamist — ainult oma kuluaruandeid.',
+    },
+    {
+      type: 'steps',
+      items: [
+        { title: 'Saada kutse', text: '**Kuluaruanded → Töötajate iseteenindus**: vali töötaja (partner), sisesta tema e-post ja vajuta **Saada kutse**. Kuluaruande lehelt avaneb sama aken juba valitud töötajaga. Kutse kehtib 7 päeva.' },
+        { title: 'Töötaja liitub', text: 'Töötaja avab e-kirjast lingi ja vajutab **Liitu ja logi sisse**. Ta jõuab otse vaatesse **Minu kuluaruanded**. Telefonis pakutakse kohe **pääsuvõtit**: järgmine sisselogimine käib sõrmejälje või näotuvastusega.' },
+        { title: 'Töötaja lisab tšekid', text: '**Uus → Lisa tšekk**: pildista tšekk, sisesta müüja, mille eest, summa koos käibemaksuga ja KM määr. Kulukontoks pannakse ettevõtte vaikimisi ostukulu konto. Lõpuks **Esita kinnitamiseks**.' },
+        { title: 'Raamatupidaja kinnitab', text: 'Esitatud kuluaruanne on nimekirjas olekuga „Esitatud“. Kontrolli tšekke, vajadusel muuda kulukontot ja vajuta **Kinnita ja konteeri**. Pärast esitamist töötaja aruannet enam muuta ei saa.' },
+      ],
+    },
+    {
+      type: 'list',
+      items: [
+        'Sisselogimiseks valib töötaja sisselogimislehel **Logi sisse pääsuvõtmega** või **Saada sisselogimislink e-postile**. Link kehtib 15 minutit ja ühe korra.',
+        'Kui link on aegunud, saab samal lehel kohe uue tellida.',
+        'Kui töötaja on juba ettevõtte kasutaja (nt raamatupidaja), seotakse tema konto töötajaga ja ta näeb oma kuluaruandeid aadressil /minu.',
+        '**Eemalda ligipääs** samas aknas võtab iseteeninduse ära; töötaja varasemad kuluaruanded jäävad alles.',
+      ],
     },
 
     { type: 'heading', text: 'Partneri kontokaart ja saldoteatis' },

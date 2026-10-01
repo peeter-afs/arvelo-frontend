@@ -2477,7 +2477,8 @@
     "cancelInvite": "Tühista kutse",
     "cancelInviteConfirm": "Kas tühistada aadressile {email} saadetud kutse? E-kirjaga saadetud link lõpetab töötamise.",
     "cancelInviteButton": "Tühista kutse",
-    "inviteEmailFailed": "{email} kutse salvestati, aga e-kirja ei õnnestunud saata. Kontrolli meiliseadeid ja kasuta \"Saada uuesti\"."
+    "inviteEmailFailed": "{email} kutse salvestati, aga e-kirja ei õnnestunud saata. Kontrolli meiliseadeid ja kasuta \"Saada uuesti\".",
+    "roleEmployee": "Töötaja"
   },
   "dashboard": {
     "welcomeBack": "Tere tulemast tagasi",
@@ -2642,7 +2643,24 @@
     "inviteErrorExpired": "See kutse on aegunud. Palu administraatoril saata uus kutse.",
     "inviteErrorCancelled": "See kutse on tühistatud. Kui arvad, et tegu on eksitusega, võta ühendust administraatoriga.",
     "inviteErrorUsed": "See kutse on juba kasutatud. Saad oma kontoga sisse logida.",
-    "inviteErrorInvalid": "See kutselink on vigane või asendatud uuemaga. Kasuta kõige uuemat kutse-e-kirja või palu administraatoril kutse uuesti saata."
+    "inviteErrorInvalid": "See kutselink on vigane või asendatud uuemaga. Kasuta kõige uuemat kutse-e-kirja või palu administraatoril kutse uuesti saata.",
+    "acceptInviteEmployeeSubtitle": "{tenantName} kutsub sind kuluaruandeid sisestama. Parooli pole vaja.",
+    "acceptInviteEmployeeHint": "Edaspidi logid sisse e-postile saadetud lingiga või telefoni pääsuvõtmega (sõrmejälg või näotuvastus).",
+    "acceptInviteEmployeeButton": "Liitu ja logi sisse",
+    "loginLink": {
+      "switch": "Saada sisselogimislink e-postile",
+      "passkey": "Logi sisse pääsuvõtmega",
+      "description": "Saadame sulle e-postile lingi, millega saad ilma paroolita sisse logida. Link kehtib 15 minutit.",
+      "send": "Saada link",
+      "sentTitle": "Vaata oma postkasti",
+      "sentDescription": "Kui aadress {email} on Arvelos kasutusel, saatsime sinna sisselogimislingi. Link kehtib 15 minutit.",
+      "sendAgain": "Saada uus link",
+      "usePassword": "Logi sisse parooliga",
+      "signingIn": "Login sisse…",
+      "expiredTitle": "Link ei kehti enam",
+      "invalid": "Sisselogimislink on vigane. Telli uus link.",
+      "sendNew": "Saada uus link"
+    }
   },
   "aiInvoice": {
     "title": "AI arve",
@@ -3010,7 +3028,28 @@
     "add": "Lisa",
     "receiptHint": "Summa on tšeki kogusumma koos käibemaksuga; neto ja KM arvutatakse määra järgi. Tšekk salvestatakse ostuarvena, nii et sisendkäibemaks jõuab KMD-sse.",
     "reimburseHint": "Hüvita töötajale pangast: pangatehingute ülevaatuses vali „Kanna kontole“, konto {account} ja partner {employee}. Või maksa kassast nupuga „Maksa kassast“.",
-    "reimbursementOf": "Kuluaruande hüvitis"
+    "reimbursementOf": "Kuluaruande hüvitis",
+    "access": {
+      "button": "Töötajate iseteenindus",
+      "title": "Töötaja iseteenindus",
+      "intro": "Töötaja saab telefonis ise kuluaruandeid ja tšekke sisestada. Ta saab e-postiga kutse, parooli pole vaja: sisselogimiseks saadetakse link ja telefonis pakutakse pääsuvõtit. Raamatupidamist ta ei näe.",
+      "employee": "Töötaja",
+      "employeePlaceholder": "Otsi partnerite seast",
+      "noMatches": "Ei leitud. Lisa töötaja enne partnerina.",
+      "email": "Töötaja e-post",
+      "send": "Saada kutse",
+      "resend": "Saada kutse uuesti",
+      "close": "Sulge",
+      "revoke": "Eemalda ligipääs",
+      "confirmRevoke": "Eemaldada töötaja {name} iseteeninduse ligipääs?",
+      "revoked": "Ligipääs eemaldati.",
+      "invited": "Kutse saadeti aadressile {email}. See kehtib 7 päeva.",
+      "inviteNotSent": "Kutse loodi, aga e-kirja saatmine ebaõnnestus. Proovi uuesti saata.",
+      "linked": "{email} on juba ettevõtte kasutaja: ta seoti selle töötajaga ja näeb iseteeninduses oma kuluaruandeid.",
+      "pending": "Kutse ootab: {email}",
+      "noAccess": "Iseteeninduse ligipääsu veel pole.",
+      "hasPasskey": "Pääsuvõti lisatud"
+    }
   },
   "rikEinvoice": {
     "title": "E-arved (RIK e-arveldaja)",
@@ -3267,5 +3306,48 @@
     "rotateTitle": "Uuenda aadressi?",
     "rotateDescription": "Ettevõte saab uue aadressi ja vanale aadressile saadetud kirju enam vastu ei võeta. Teata uus aadress tarnijatele.",
     "workspaceHint": "või saada arved e-postiga"
+  },
+  "selfService": {
+    "title": "Minu kuluaruanded",
+    "signOut": "Logi välja",
+    "newReport": "Uus",
+    "empty": "Kuluaruandeid veel pole. Alusta nupuga „Uus“ ja lisa tšekid.",
+    "notLinked": "Sinu kasutaja pole selles ettevõttes töötajaga seotud. Palu raamatupidajal saata sulle kuluaruannete kutse.",
+    "receiptCount": "{count, plural, one {# tšekk} other {# tšekki}}",
+    "back": "Tagasi",
+    "reportTitle": "Kuluaruanne {number}",
+    "noReceipts": "Tšekke pole veel lisatud.",
+    "total": "Kokku",
+    "addReceipt": "Lisa tšekk",
+    "removeReceipt": "Eemalda tšekk",
+    "confirmRemoveReceipt": "Eemaldada see tšekk?",
+    "submit": "Esita kinnitamiseks",
+    "confirmSubmit": "Esitada kuluaruanne summas {total} €? Pärast esitamist saab seda muuta ainult raamatupidaja.",
+    "deleteReport": "Kustuta kuluaruanne",
+    "confirmDelete": "Kustutada see kuluaruanne koos tšekkidega?",
+    "statusHint": {
+      "submitted": "Esitatud. Raamatupidaja vaatab selle üle ja kinnitab.",
+      "approved": "Kinnitatud. Summa hüvitatakse sulle.",
+      "reimbursed": "Hüvitatud."
+    },
+    "newReceipt": "Uus tšekk",
+    "cancel": "Tühista",
+    "takePhoto": "Pildista tšekk",
+    "vendor": "Kust ostsid",
+    "vendorPlaceholder": "Nt Rimi, Neste",
+    "description": "Mille eest",
+    "descriptionPlaceholder": "Nt kütus, kontoritarbed",
+    "amount": "Summa kokku (€)",
+    "vat": "Käibemaks",
+    "date": "Kuupäev",
+    "receiptNo": "Tšeki nr",
+    "amountHint": "Sisesta tšeki kogusumma koos käibemaksuga.",
+    "saveReceipt": "Salvesta tšekk",
+    "passkeyTitle": "Logi järgmine kord sisse ühe puudutusega",
+    "passkeyText": "Lisa pääsuvõti ja logi edaspidi sisse sõrmejälje või näotuvastusega, ilma e-posti lingita.",
+    "passkeyAdd": "Lisa pääsuvõti",
+    "passkeyLater": "Hiljem",
+    "passkeyDeviceName": "Telefon",
+    "retry": "Proovi uuesti"
   }
 }
