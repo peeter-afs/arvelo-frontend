@@ -1,18 +1,19 @@
 import type { Guide } from '../../types';
 
 /**
- * Kontrollitud koodist 2026-09-30 (migratsioon 103, ProjectWipService, SalesWipPanel,
- * /accounting/projects/wip, /reports/dimensions). Nupunimed: „LT", „Kanna arve kinnitamisel kuluks",
- * „Näita ridu", „Kanna kuluks", „Tühista" — kui UI-s muutub, muuda ka siin.
+ * Kontrollitud koodist 2026-10-01 (migratsioonid 103, 105, 106; ProjectWipService, SalesWipPanel,
+ * DimensionCreate, DimensionsPanel, /accounting/projects/wip, /reports/dimensions). Nupunimed: „LT",
+ * „Pooleli/Lõpetatud", „+ Lisa uus projekt…", „Kanna arve kinnitamisel kuluks", „Märgi projekt arve
+ * kinnitamisel lõpetatuks", „Näita ridu", „Kanna kuluks", „Tühista" — kui UI-s muutub, muuda ka siin.
  */
 export const projektiKuluarvestus: Guide = {
   slug: 'projekti-kuluarvestus',
-  title: 'Projektipõhine kuluarvestus (lõpetamata tööd)',
+  title: 'Projektid: kuluarvestus, lõpetamata tööd ja projektimüük',
   summary:
-    'Projekti ostud kogutakse bilansikontole „Lõpetamata tööd" ja kantakse kuluks alles siis, kui samale projektile tehakse müügiarve. Nii on projekti tulu ja kulu samas kuus.',
+    'Projekti ostud kogutakse bilansikontole „Lõpetamata tööd" ja kantakse kuluks alles siis, kui samale projektile tehakse müügiarve. Projekti saab müügiarvega lõpetatuks märkida ning aruandes näed iga projekti tulemust ja olekut.',
   category: 'raamatupidamine',
-  minutes: 7,
-  updatedAt: '2026-09-30',
+  minutes: 9,
+  updatedAt: '2026-10-01',
   relatedRoutes: ['/accounting/projects/wip', '/reports/dimensions', '/invoices/purchase', '/invoices/sales'],
   blocks: [
     {
@@ -29,7 +30,17 @@ export const projektiKuluarvestus: Guide = {
       items: [
         { title: 'Ava Seaded → Andmehaldus', text: 'Plokis **Lõpetamata tööd** on kaks kontot: kogumiskonto (vaikimisi 1420 Lõpetamata tööd) ja mahakandmise kulukonto (vaikimisi 4000). Konto 1420 luuakse ise, kui seda veel pole.' },
         { title: 'Lülita projektil sisse „LT"', text: 'Kulukohtade ja projektide plokis on iga projekti real nupp **LT**. Kui see on sees, pakub ostuarve selle projekti ridadele automaatselt lõpetamata tööde kontot.' },
+        { title: 'Vali, kes võivad projekte luua', text: 'Samas plokis on valik **Uusi kulukohti ja projekte võivad luua**: raamatupidajad ja administraatorid (vaikimisi), ainult administraatorid ja omanik või ainult seadetes. Valikut saavad muuta administraator ja omanik.' },
       ],
+    },
+
+    { type: 'heading', text: 'Projekti ja kulukoha lisamine arvel' },
+    {
+      type: 'paragraph',
+      text:
+        'Projekti ei pea eelnevalt seadetes looma. Ostu- ja müügiarve kulukoha ning projekti valiku lõpus on **+ Lisa uus kulukoht…** ja **+ Lisa uus projekt…**. ' +
+        'Avaneb väike vorm (kood ja nimi; projektil ka kulukoht, seos arve partneriga ja **Lõpetamata tööd**) ning uus projekt valitakse kohe arvele. ' +
+        'Kui loomise õigus on piiratud, neid valikuid arvel ei näidata — siis vali olemasolev projekt või palu administraatoril see lisada.',
     },
 
     { type: 'heading', text: 'Ostuarve: read projektile' },
@@ -66,6 +77,30 @@ export const projektiKuluarvestus: Guide = {
         'Kui mahakandmist ei soovi, eemalda linnuke **Kanna arve kinnitamisel kuluks**.',
       ],
     },
+
+    { type: 'heading', text: 'Projekti lõpetamine müügiarvega' },
+    {
+      type: 'paragraph',
+      text:
+        'Paneelis on valik **Märgi projekt arve kinnitamisel lõpetatuks**. Kinnitamisel märgitakse projekt lõpetatuks ja lõpetamise kuupäevaks saab **arve kuupäev**.',
+    },
+    {
+      type: 'table',
+      headers: ['Olukord', 'Vaikimisi'],
+      rows: [
+        ['Arvega kantakse kuluks kogu lõpetamata tööde jääk', 'märgitud — projekt loetakse lõpetatuks'],
+        ['Kuluks kantakse ainult osa (nt 50%)', 'märkimata — projekt jääb pooleli'],
+        ['Projektil pole lõpetamata töid', 'märkimata'],
+      ],
+    },
+    {
+      type: 'list',
+      items: [
+        'Valikut saab alati ise muuta: nt vahearve puhul jäta märkimata, viimase arve puhul märgi.',
+        'Kui projekt on juba lõpetatud, näitab paneel valiku asemel lõpetamise kuupäeva.',
+        'Projekti olekut saab muuta ka **Seaded → Andmehaldus** projekti real nupuga **Pooleli / Lõpetatud**.',
+      ],
+    },
     {
       type: 'callout',
       tone: 'info',
@@ -84,7 +119,7 @@ export const projektiKuluarvestus: Guide = {
     },
     {
       type: 'paragraph',
-      text: 'Kui müügiarve krediteeritakse, saab kreeditarvel märkida **Taasta kuluks kantud lõpetamata tööd**. Siis tühistatakse arvega tehtud mahakandmine kreeditarve kinnitamisel.',
+      text: 'Kui müügiarve krediteeritakse, saab kreeditarvel märkida **Taasta kuluks kantud lõpetamata tööd**. Siis tühistatakse arvega tehtud mahakandmine kreeditarve kinnitamisel ja projekt märgitakse uuesti **pooleliolevaks**.',
     },
 
     { type: 'heading', text: 'Aruanne' },
@@ -94,6 +129,15 @@ export const projektiKuluarvestus: Guide = {
         '**Aruanded → Kulukohad ja projektid** näitab projekti tulu, kulu, tulemit, marginaali ja lõpetamata tööde jääki perioodi lõpus. ' +
         'Aruanne põhineb pearaamatul, seega on seal ka käsikanded, millel on projekt. Enne selle funktsiooni kasutuselevõttu kinnitatud arved ' +
         'võetakse arve ridadelt ja märgitakse sildiga „arvelt".',
+    },
+    {
+      type: 'list',
+      items: [
+        'Veerg **Olek** näitab, kas projekt on **pooleli** või **lõpetatud** (lõpetamise kuupäev on näha hiirega sildil).',
+        'Filtriga **Olek** näed ainult pooleliolevaid või lõpetatud projekte; kokkuvõtted arvestavad filtrit.',
+        '**⚠ hoiatus** lõpetatud projekti juures tähendab, et sellel on veel lõpetamata tööde jääk — kanna see kuluks (müügiarvega või **Pearaamat → Lõpetamata tööd**).',
+        'Projekti real avaneb kontode kaupa jaotus ja kanderead; lõpetamata tööde summa viib projekti lõpetamata tööde lehele.',
+      ],
     },
     {
       type: 'callout',
