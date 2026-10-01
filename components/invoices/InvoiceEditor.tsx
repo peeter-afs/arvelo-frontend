@@ -24,6 +24,7 @@ import InvoiceLinesEditor, {
 import { ProductModal } from '@/components/invoices/ProductModal';
 import { productsApi, type Product } from '@/lib/api/products.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
+import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
 type InvoiceType = 'sales_invoice' | 'purchase_invoice' | 'sales_credit_note' | 'purchase_credit_note';
@@ -200,6 +201,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
 
   const totals = useMemo(() => computeTotals(lines), [lines]);
   const projectGroups = useMemo(() => groupProjects(projects, partnerId), [projects, partnerId]);
+  const dims = useDimensionCreator({ costCenters, setCostCenters, setProjects, partnerId, partnerName: partners.find((p) => p.id === partnerId)?.name || null });
 
   const accountFilterType: 'revenue' | 'expense' =
     type === 'purchase_invoice' || type === 'purchase_credit_note' ? 'expense' : 'revenue';
@@ -369,23 +371,25 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                     <span>{t('wipRestoreLabel', { amount: Number(wipRelease.amount).toLocaleString('et-EE', { minimumFractionDigits: 2 }) })}</span>
                   </label>
                 )}
-                {(costCenters.length > 0 || projects.length > 0) && (
+                {(costCenters.length > 0 || projects.length > 0 || dims.canCreate) && (
                   <>
                     <Field label={t('costCenter')}>
-                      <select value={costCenterId} onChange={(e) => setCostCenterId(e.target.value)} className={selectClass}>
+                      <select value={costCenterId} onChange={(e) => dims.pick('cost_center', e.target.value, setCostCenterId)} className={selectClass}>
                         <option value="">—</option>
                         {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+                        {dims.newOption('cost_center')}
                       </select>
                     </Field>
                     <Field label={t('project')}>
                       <select
                         value={projectId}
-                        onChange={(e) => { const p = projects.find((x) => x.id === e.target.value); setProjectId(e.target.value); if (p?.cost_center_id) setCostCenterId(p.cost_center_id); }}
+                        onChange={(e) => dims.pick('project', e.target.value, (v, created) => { const p = (created as Project | undefined) || projects.find((x) => x.id === v); setProjectId(v); if (p?.cost_center_id) setCostCenterId(p.cost_center_id); }, costCenterId || undefined)}
                         className={selectClass}
                       >
                         <option value="">—</option>
                         {projectGroups.own.length > 0 && <optgroup label={t('partnerProjects')}>{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
                         {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? t('otherProjects') : t('project')}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                        {dims.newOption('project')}
                       </select>
                     </Field>
                   </>
@@ -457,6 +461,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
                 onQuickAdd={(line) => setQuickAddLine(line)}
                 costCenters={costCenters}
                 projects={projects}
+                dimensionCreator={dims}
                 dimensionDefaults={{ cost_center_id: costCenterId || undefined, project_id: projectId || undefined }}
                 partnerId={partnerId}
               />
@@ -471,6 +476,7 @@ export default function InvoiceEditor({ mode, invoiceId, defaultType = 'sales_in
           </>
         )}
 
+        {dims.dialog}
         {quickAddLine && (
           <ProductModal
             initial={{

@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Loader2, Plus, Trash2 } from 'lucide-react';
-import { costCentersApi, projectsApi, type CostCenter, type Project } from '@/lib/api/dimensions.api';
+import { costCentersApi, projectsApi, dimensionPolicyApi, type CostCenter, type DimensionCreatePolicy, type DimensionPermissions, type Project } from '@/lib/api/dimensions.api';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { accountingApi, type PartnerRecord } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { showToast } from '@/components/ui/Toast';
@@ -26,6 +27,15 @@ export function DimensionsPanel() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<{ kind: Kind; row: Row } | null>(null);
+  const [perm, setPerm] = useState<DimensionPermissions | null>(null);
+  const role = useAuthStore((st) => st.role);
+  const isAdmin = role === 'owner' || role === 'admin';
+  useEffect(() => { void dimensionPolicyApi.get(true).then(setPerm); }, []);
+  const changePolicy = async (policy: DimensionCreatePolicy) => {
+    try { setPerm(await dimensionPolicyApi.update(policy)); showToast.success(t('dimPolicySaved')); }
+    catch (e) { showToast.error(getErrorMessage(e)); }
+  };
+  const canCreate = perm ? perm.can_create : false;
 
   const load = async () => {
     setError(null);
@@ -54,20 +64,32 @@ export function DimensionsPanel() {
     <div className="rounded-xl border border-slate-200 p-4 sm:p-6">
       <h3 className="text-base font-semibold text-slate-900">{t('dimensionsTitle')}</h3>
       <p className="mt-1 text-sm text-slate-500">{t('dimensionsDescription')}</p>
+      {perm && (
+        <label className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-700">
+          <span className="font-medium">{t('dimPolicyLabel')}</span>
+          {isAdmin ? (
+            <select className="h-9 rounded-lg border border-slate-200 px-2.5 text-sm" value={perm.policy} onChange={(e) => void changePolicy(e.target.value as DimensionCreatePolicy)}>
+              {(['accountant', 'admin', 'settings_only'] as const).map((p) => <option key={p} value={p}>{t(`dimPolicy_${p}`)}</option>)}
+            </select>
+          ) : (
+            <span className="text-slate-500">{t(`dimPolicy_${perm.policy}`)}</span>
+          )}
+        </label>
+      )}
       {error && <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
       {loading ? (
         <div className="mt-4 flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" /></div>
       ) : (
         <div className="mt-4 grid gap-6 xl:grid-cols-[2fr_3fr]">
           <DimensionList
-            kind="cost_center" title={t('costCenters')} rows={costCenters} busy={busy}
+            kind="cost_center" title={t('costCenters')} rows={costCenters} busy={busy} canCreate={canCreate}
             labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired') }}
             onCreate={(input) => run('cost_center:new', () => costCentersApi.create(input))}
             onSave={(id, patch) => save('cost_center', id, patch)}
             onDelete={(row) => setDeleting({ kind: 'cost_center', row })}
           />
           <DimensionList
-            kind="project" title={t('projects')} rows={projects} busy={busy}
+            kind="project" title={t('projects')} rows={projects} busy={busy} canCreate={canCreate}
             labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired'), costCenter: t('parentCostCenter'), partner: t('dimensionPartner'), wip: t('wipShort'), wipHint: t('wipEnabledHint') }}
             costCenters={costCenters.filter((c) => c.is_active)} partners={partners}
             onCreate={(input) => run('project:new', () => projectsApi.create(input))}
@@ -90,8 +112,8 @@ type Labels = { code: string; name: string; empty: string; add: string; del: str
 const wipToggle = (on: boolean) =>
   `${smallButton} px-2 ${on ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'text-slate-400'}`;
 
-function DimensionList({ kind, title, rows, busy, labels, costCenters, partners, onCreate, onSave, onDelete }: {
-  kind: Kind; title: string; rows: Row[]; busy: string | null; labels: Labels; costCenters?: CostCenter[]; partners?: PartnerRecord[];
+function DimensionList({ kind, title, rows, busy, canCreate, labels, costCenters, partners, onCreate, onSave, onDelete }: {
+  kind: Kind; title: string; rows: Row[]; busy: string | null; canCreate: boolean; labels: Labels; costCenters?: CostCenter[]; partners?: PartnerRecord[];
   onCreate: (input: { code?: string; name: string; cost_center_id?: string | null; partner_id?: string | null; wip_enabled?: boolean }) => Promise<unknown>;
   onSave: (id: string, patch: Record<string, unknown>) => Promise<unknown>;
   onDelete: (row: Row) => void;
@@ -155,7 +177,7 @@ function DimensionList({ kind, title, rows, busy, labels, costCenters, partners,
             </div>
           );
         })}
-        <div className={`grid ${grid} items-center gap-2 border-t border-slate-100 pt-2 max-md:border-t-0 ${mobileCard}`}>
+        {canCreate && <div className={`grid ${grid} items-center gap-2 border-t border-slate-100 pt-2 max-md:border-t-0 ${mobileCard}`}>
           <input className={inputClass} placeholder={labels.code} value={draft.code} onChange={(ev) => setDraft((d) => ({ ...d, code: ev.target.value }))} />
           <input className={inputClass} placeholder={labels.name} value={draft.name} onChange={(ev) => setDraft((d) => ({ ...d, name: ev.target.value }))} onKeyDown={(ev) => { if (ev.key === 'Enter') create(); }} />
           {isProject && (
@@ -176,7 +198,7 @@ function DimensionList({ kind, title, rows, busy, labels, costCenters, partners,
             {busy === `${kind}:new` ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}{labels.add}
           </button>
           </div>
-        </div>
+        </div>}
       </div>
     </div>
   );

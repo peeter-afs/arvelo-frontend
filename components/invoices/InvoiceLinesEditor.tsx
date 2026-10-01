@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import type { DimensionCreator } from '@/components/accounting/DimensionCreate';
 import { Eye, EyeOff, PackagePlus, Plus, Trash2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { AccountOption } from '@/lib/api/accounting.api';
@@ -95,6 +96,8 @@ type Props = {
   projects?: Project[];
   /** Header defaults a new line inherits. */
   dimensionDefaults?: { cost_center_id?: string; project_id?: string };
+  /** "+ Lisa uus …" in the dimension selects (useDimensionCreator in the parent). */
+  dimensionCreator?: Pick<DimensionCreator, 'canCreate' | 'newOption' | 'pick'>;
   /** Invoice partner: their projects are listed first. */
   partnerId?: string;
 };
@@ -113,6 +116,7 @@ export default function InvoiceLinesEditor({
   costCenters,
   projects,
   dimensionDefaults,
+  dimensionCreator,
   partnerId,
 }: Props) {
   const t = useTranslations('invoices');
@@ -121,11 +125,11 @@ export default function InvoiceLinesEditor({
   const [showSupply, setShowSupply] = useState(false);
   const [productMenuRow, setProductMenuRow] = useState<number | null>(null);
   const [showDims, setShowDims] = useState(() => lines.some((l) => l.cost_center_id || l.project_id));
-  const dimsAvailable = Boolean(costCenters?.length || projects?.length);
+  const dimsAvailable = Boolean(costCenters?.length || projects?.length || dimensionCreator?.canCreate);
   const dimsVisible = dimsAvailable && showDims;
   const projectGroups = groupProjects(projects || [], partnerId);
-  const projectPatch = (project_id: string): Partial<EditorLine> => {
-    const p = projects?.find((x) => x.id === project_id);
+  const projectPatch = (project_id: string, created?: Project): Partial<EditorLine> => {
+    const p = created?.id === project_id ? created : projects?.find((x) => x.id === project_id);
     return p?.cost_center_id ? { project_id, cost_center_id: p.cost_center_id } : { project_id };
   };
 
@@ -324,18 +328,20 @@ export default function InvoiceLinesEditor({
                 </MCell>
                 {dimsVisible && (
                   <MCell label={t('costCenter')} className="max-md:order-4 max-md:col-span-2">
-                  <select value={line.cost_center_id || ''} onChange={(event) => update(index, { cost_center_id: event.target.value })} className={`${inputClass} text-[12px]`}>
+                  <select value={line.cost_center_id || ''} onChange={(event) => (dimensionCreator ? dimensionCreator.pick('cost_center', event.target.value, (v) => update(index, { cost_center_id: v })) : update(index, { cost_center_id: event.target.value }))} className={`${inputClass} text-[12px]`}>
                     <option value="">—</option>
                     {(costCenters || []).map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+                    {dimensionCreator?.newOption('cost_center')}
                   </select>
                   </MCell>
                 )}
                 {dimsVisible && (
                   <MCell label={t('project')} className="max-md:order-4 max-md:col-span-2">
-                  <select value={line.project_id || ''} onChange={(event) => update(index, projectPatch(event.target.value))} className={`${inputClass} text-[12px]`}>
+                  <select value={line.project_id || ''} onChange={(event) => (dimensionCreator ? dimensionCreator.pick('project', event.target.value, (v, created) => update(index, projectPatch(v, created as Project | undefined)), line.cost_center_id || undefined) : update(index, projectPatch(event.target.value)))} className={`${inputClass} text-[12px]`}>
                     <option value="">—</option>
                     {projectGroups.own.length > 0 && <optgroup label={t('partnerProjects')}>{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
                     {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? t('otherProjects') : t('project')}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+                    {dimensionCreator?.newOption('project')}
                   </select>
                   </MCell>
                 )}

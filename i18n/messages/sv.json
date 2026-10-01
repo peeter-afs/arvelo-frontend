@@ -643,7 +643,12 @@
     "wipReversed": "Avräkning återförd",
     "journalProject": "Projekt",
     "journalNoProject": "— inget projekt —",
-    "recentTransactions": "Senaste transaktioner"
+    "recentTransactions": "Senaste transaktioner",
+    "dimPolicyLabel": "Nya kostnadsställen och projekt kan skapas av:",
+    "dimPolicy_accountant": "bokförare och administratörer (även på fakturor)",
+    "dimPolicy_admin": "endast administratörer och ägaren (även på fakturor)",
+    "dimPolicy_settings_only": "administratörer och ägaren, endast i inställningar",
+    "dimPolicySaved": "Behörighet sparad"
   },
   "reports": {
     "dimensionReport": "Kostnadsställen och projekt",

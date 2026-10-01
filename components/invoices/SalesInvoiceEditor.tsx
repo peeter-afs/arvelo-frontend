@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import { SalesWipPanel } from './SalesWipPanel';
+import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import type { InvoiceWipPlan } from '@/lib/api/projectWip.api';
 import styles from './SalesInvoiceEditor.module.css';
 
@@ -439,11 +440,13 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
 
   /* ── dimension options: the partner's own projects first, everything else after ── */
   const projectGroups = useMemo(() => groupProjects(projects, hdr.partnerId), [projects, hdr.partnerId]);
+  const dims = useDimensionCreator({ costCenters, setCostCenters, setProjects, partnerId: hdr.partnerId, partnerName: hdr.partnerName });
   const CostCenterOptions = ({ current }: { current: string }) => (
     <>
       <option value="">—</option>
       {current && !costCenters.some((c) => c.id === current) && <option value={current}>(tundmatu kulukoht)</option>}
       {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+      {dims.newOption('cost_center')}
     </>
   );
   const ProjectOptions = ({ current }: { current: string }) => (
@@ -452,11 +455,12 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       {current && !projects.some((p) => p.id === current) && <option value={current}>(tundmatu projekt)</option>}
       {projectGroups.own.length > 0 && <optgroup label="Kliendi projektid">{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
       {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? 'Muud projektid' : 'Projektid'}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+      {dims.newOption('project')}
     </>
   );
   /** A project configured under a cost centre brings that cost centre along. */
-  const projectPatch = (projectId: string): { project: string; costCenter?: string } => {
-    const p = projects.find((x) => x.id === projectId);
+  const projectPatch = (projectId: string, created?: Project): { project: string; costCenter?: string } => {
+    const p = created?.id === projectId ? created : projects.find((x) => x.id === projectId);
     return p?.cost_center_id ? { project: projectId, costCenter: p.cost_center_id } : { project: projectId };
   };
 
@@ -779,8 +783,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                     <select className={styles.inp} value={hdr.authorId} onChange={(e) => setH({ authorId: e.target.value })}><option value="">—</option>{authorOptions.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
                   </div>
                   {showInote && <div className={`${styles.fld} ${styles.wide}`}><div className={styles.lbl}>Sisemärkus <span className={styles.r}>ei ole arvel</span></div><input className={styles.inp} value={hdr.inote} placeholder="Nähtav ainult raamatupidajale" onChange={(e) => setH({ inote: e.target.value })} /></div>}
-                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} onChange={(e) => setH({ costCenter: e.target.value })}><CostCenterOptions current={hdr.costCenter} /></select></div>}
-                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} onChange={(e) => setH(projectPatch(e.target.value))}><ProjectOptions current={hdr.project} /></select></div>}
+                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} onChange={(e) => dims.pick('cost_center', e.target.value, (v) => setH({ costCenter: v }))}><CostCenterOptions current={hdr.costCenter} /></select></div>}
+                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} onChange={(e) => dims.pick('project', e.target.value, (v, created) => setH(projectPatch(v, created as Project | undefined)), hdr.costCenter)}><ProjectOptions current={hdr.project} /></select></div>}
                 </div>
               </div>
 
@@ -817,8 +821,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                               <option value="">—</option>{revenueAccounts.map((a) => <option key={a.id} value={a.id} title={a.name}>{a.code}</option>)}
                             </select>
                           </div>
-                          {extra.lcc && <div data-col="cc" data-l="Kulukoht"><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
-                          {extra.lprj && <div data-col="prj" data-l="Projekt"><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} onChange={(e) => { const patch = projectPatch(e.target.value); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }}><ProjectOptions current={l.project} /></select></div>}
+                          {extra.lcc && <div data-col="cc" data-l="Kulukoht"><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} onChange={(e) => dims.pick('cost_center', e.target.value, (v) => updateLine(i, { cost_center: v }))}><CostCenterOptions current={l.cost_center} /></select></div>}
+                          {extra.lprj && <div data-col="prj" data-l="Projekt"><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} onChange={(e) => dims.pick('project', e.target.value, (v, created) => { const patch = projectPatch(v, created as Project | undefined); updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}) }); }, l.cost_center)}><ProjectOptions current={l.project} /></select></div>}
                           <div data-col="qty" data-l="Kogus"><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
                           <div data-col="unit" data-l="Ühik"><select className={`${styles.in} ${styles.sel}`} value={l.unit} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
                           <div data-col="price" data-l="Ühikuhind"><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>
@@ -913,6 +917,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
         </div>
       </div>
 
+      {dims.dialog}
       <ConfirmDialog open={confirmCancel} onOpenChange={setConfirmCancel} title="Jäta muudatused salvestamata?" description="Arvel on salvestamata muudatusi. Loobumisel lähevad need kaduma." confirmLabel="Loobu muudatustest" variant="warning"
         onConfirm={() => { setDirty(false); router.push('/invoices/sales'); }} />
       <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title="Kustuta mustand?" description={`Mustand ${numberText || ''} kustutatakse jäädavalt. Kinnitatud arveid ei saa kustutada, neid saab ainult krediteerida.`} confirmLabel="Kustuta mustand"

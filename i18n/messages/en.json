@@ -1213,7 +1213,12 @@
     "wipReversed": "Release reversed",
     "journalProject": "Project",
     "journalNoProject": "— no project —",
-    "recentTransactions": "Recent transactions"
+    "recentTransactions": "Recent transactions",
+    "dimPolicyLabel": "New cost centres and projects can be created by:",
+    "dimPolicy_accountant": "accountants and administrators (also on invoices)",
+    "dimPolicy_admin": "administrators and the owner only (also on invoices)",
+    "dimPolicy_settings_only": "administrators and the owner, in Settings only",
+    "dimPolicySaved": "Permission saved"
   },
   "exchangeRates": {
     "title": "Exchange Rates",

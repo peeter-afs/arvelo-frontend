@@ -1213,7 +1213,12 @@
     "wipReversed": "Mahakandmine tühistatud",
     "journalProject": "Projekt",
     "journalNoProject": "— projektita —",
-    "recentTransactions": "Viimased kanded"
+    "recentTransactions": "Viimased kanded",
+    "dimPolicyLabel": "Uusi kulukohti ja projekte võivad luua:",
+    "dimPolicy_accountant": "raamatupidajad ja administraatorid (ka arvel)",
+    "dimPolicy_admin": "ainult administraatorid ja omanik (ka arvel)",
+    "dimPolicy_settings_only": "ainult administraatorid ja omanik, ainult seadetes",
+    "dimPolicySaved": "Õigus salvestatud"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

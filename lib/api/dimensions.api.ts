@@ -28,6 +28,29 @@ export type DimensionInput = {
   partner_id?: string | null;
   is_active?: boolean;
   wip_enabled?: boolean;
+  /** Where it is created from; the backend checks the company's create policy against it. */
+  context?: 'invoice' | 'settings';
+};
+
+/** Who may create cost centres / projects (Settings → Data management). */
+export type DimensionCreatePolicy = 'accountant' | 'admin' | 'settings_only';
+export type DimensionPermissions = { policy: DimensionCreatePolicy; can_create: boolean; can_create_on_invoice: boolean };
+
+let permissionsPromise: Promise<DimensionPermissions> | null = null;
+export const dimensionPolicyApi = {
+  /** Cached per page load; the policy rarely changes. */
+  get(force = false) {
+    if (!permissionsPromise || force) {
+      permissionsPromise = apiClient.get<ApiResponse<DimensionPermissions>>('/api/dimensions/policy').then((r) => r.data.data)
+        .catch(() => ({ policy: 'accountant' as const, can_create: false, can_create_on_invoice: false }));
+    }
+    return permissionsPromise;
+  },
+  async update(policy: DimensionCreatePolicy) {
+    const response = await apiClient.put<ApiResponse<DimensionPermissions>>('/api/dimensions/policy', { policy });
+    permissionsPromise = Promise.resolve(response.data.data);
+    return response.data.data;
+  },
 };
 
 function api<T extends CostCenter>(path: string) {

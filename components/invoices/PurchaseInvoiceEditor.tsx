@@ -23,6 +23,7 @@ import { invoicesApi, type InvoiceDetail, type InvoiceDraftPayload, type Invoice
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
 import { projectWipApi } from '@/lib/api/projectWip.api';
+import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SplitAccountsDialog, type SplitPart } from './SplitAccountsDialog';
@@ -529,11 +530,13 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
 
   /* ── dimension options: the supplier's own projects first, everything else after ── */
   const projectGroups = useMemo(() => groupProjects(projects, hdr.partnerId), [projects, hdr.partnerId]);
+  const dims = useDimensionCreator({ costCenters, setCostCenters, setProjects, partnerId: hdr.partnerId, partnerName: hdr.partnerName });
   const CostCenterOptions = ({ current }: { current: string }) => (
     <>
       <option value="">—</option>
       {current && !costCenters.some((c) => c.id === current) && <option value={current}>(tundmatu kulukoht)</option>}
       {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
+      {dims.newOption('cost_center')}
     </>
   );
   const ProjectOptions = ({ current }: { current: string }) => (
@@ -542,26 +545,28 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
       {current && !projects.some((p) => p.id === current) && <option value={current}>(tundmatu projekt)</option>}
       {projectGroups.own.length > 0 && <optgroup label="Tarnija projektid">{projectGroups.own.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
       {projectGroups.other.length > 0 && <optgroup label={projectGroups.own.length ? 'Muud projektid' : 'Projektid'}>{projectGroups.other.map((p) => <option key={p.id} value={p.id}>{dimensionLabel(p)}</option>)}</optgroup>}
+      {dims.newOption('project')}
     </>
   );
-  const projectPatch = (projectId: string): { project: string; costCenter?: string } => {
-    const p = projects.find((x) => x.id === projectId);
+  const findProject = (projectId: string, created?: Project) => (created?.id === projectId ? created : projects.find((x) => x.id === projectId));
+  const projectPatch = (projectId: string, created?: Project): { project: string; costCenter?: string } => {
+    const p = findProject(projectId, created);
     return p?.cost_center_id ? { project: projectId, costCenter: p.cost_center_id } : { project: projectId };
   };
-  const isWipProject = (projectId: string) => !!wipAccountId && !!projects.find((x) => x.id === projectId)?.wip_enabled;
+  const isWipProject = (projectId: string, created?: Project) => !!wipAccountId && !!findProject(projectId, created)?.wip_enabled;
   /** A WIP project moves the line to the WIP account; leaving one puts the default cost account back. */
-  const wipAccountPatch = (line: Line, projectId: string): Partial<Line> => {
-    if (isWipProject(projectId)) return line.account_id === wipAccountId ? {} : { account_id: wipAccountId };
+  const wipAccountPatch = (line: Line, projectId: string, created?: Project): Partial<Line> => {
+    if (isWipProject(projectId, created)) return line.account_id === wipAccountId ? {} : { account_id: wipAccountId };
     return line.account_id === wipAccountId && wipAccountId ? { account_id: expenseDefault } : {};
   };
-  const setLineProject = (i: number, projectId: string) => {
-    const patch = projectPatch(projectId);
-    updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}), ...wipAccountPatch(lines[i], projectId) });
+  const setLineProject = (i: number, projectId: string, created?: Project) => {
+    const patch = projectPatch(projectId, created);
+    updateLine(i, { project: patch.project, ...(patch.costCenter ? { cost_center: patch.costCenter } : {}), ...wipAccountPatch(lines[i], projectId, created) });
   };
-  const setHeaderProject = (projectId: string) => {
-    setH(projectPatch(projectId));
+  const setHeaderProject = (projectId: string, created?: Project) => {
+    setH(projectPatch(projectId, created));
     // lines without their own project follow the header
-    setLines((ls) => ls.map((l) => (l.project.trim() ? l : { ...l, ...wipAccountPatch(l, projectId) })));
+    setLines((ls) => ls.map((l) => (l.project.trim() ? l : { ...l, ...wipAccountPatch(l, projectId, created) })));
   };
   const wipAccount = wipAccountId ? accountMap.get(wipAccountId) : undefined;
   const AccountOptions = ({ current }: { current: string }) => (
@@ -989,8 +994,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                     <select className={styles.inp} value={hdr.approverId} disabled={!editable} onChange={(e) => setH({ approverId: e.target.value })}><option value="">—</option>{approverOptions.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select>
                   </div>
                   {showInote && <div className={`${styles.fld} ${styles.wide}`}><div className={styles.lbl}>Sisemärkus <span className={styles.r}>ainult raamatupidajale</span></div><input className={styles.inp} value={hdr.inote} disabled={!editable} onChange={(e) => setH({ inote: e.target.value })} /></div>}
-                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} disabled={!editable} onChange={(e) => setH({ costCenter: e.target.value })}><CostCenterOptions current={hdr.costCenter} /></select></div>}
-                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} disabled={!editable} onChange={(e) => setHeaderProject(e.target.value)}><ProjectOptions current={hdr.project} /></select></div>}
+                  {extra.hcc && <div className={styles.fld}><div className={styles.lbl}>Kulukoht <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.costCenter} disabled={!editable} onChange={(e) => dims.pick('cost_center', e.target.value, (v) => setH({ costCenter: v }))}><CostCenterOptions current={hdr.costCenter} /></select></div>}
+                  {extra.hprj && <div className={styles.fld}><div className={styles.lbl}>Projekt <span className={styles.r}>ridadel</span></div><select className={styles.inp} value={hdr.project} disabled={!editable} onChange={(e) => dims.pick('project', e.target.value, (v, created) => setHeaderProject(v, created as Project | undefined), hdr.costCenter)}><ProjectOptions current={hdr.project} /></select></div>}
                 </div>
               </div>
 
@@ -1012,8 +1017,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                               <AccountOptions current={l.account_id} />
                             </select>
                           </div>
-                          {extra.lcc && <div data-col="cc" data-l="Kulukoht"><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} disabled={!editable} onChange={(e) => updateLine(i, { cost_center: e.target.value })}><CostCenterOptions current={l.cost_center} /></select></div>}
-                          {extra.lprj && <div data-col="prj" data-l="Projekt"><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} disabled={!editable} onChange={(e) => setLineProject(i, e.target.value)}><ProjectOptions current={l.project} /></select></div>}
+                          {extra.lcc && <div data-col="cc" data-l="Kulukoht"><select className={`${styles.in} ${styles.sel}`} value={l.cost_center} title={costCenters.find((c) => c.id === l.cost_center)?.name || 'Kulukoht'} disabled={!editable} onChange={(e) => dims.pick('cost_center', e.target.value, (v) => updateLine(i, { cost_center: v }))}><CostCenterOptions current={l.cost_center} /></select></div>}
+                          {extra.lprj && <div data-col="prj" data-l="Projekt"><select className={`${styles.in} ${styles.sel}`} value={l.project} title={projects.find((p) => p.id === l.project)?.name || 'Projekt'} disabled={!editable} onChange={(e) => dims.pick('project', e.target.value, (v, created) => setLineProject(i, v, created as Project | undefined), l.cost_center)}><ProjectOptions current={l.project} /></select></div>}
                           <div data-col="qty" data-l="Kogus"><input className={`${styles.in} ${styles.r}`} inputMode="decimal" value={l.quantity} disabled={!editable} onChange={(e) => updateLine(i, { quantity: e.target.value })} /></div>
                           <div data-col="unit" data-l="Ühik"><select className={`${styles.in} ${styles.sel}`} value={l.unit} disabled={!editable} onChange={(e) => updateLine(i, { unit: e.target.value })}>{unitOptions(l.unit).map((u) => <option key={u}>{u}</option>)}</select></div>
                           <div data-col="price" data-l="Ühikuhind"><input className={`${styles.in} ${styles.r} ${styles.mono}`} inputMode="decimal" value={l.unit_price} placeholder="0,00" disabled={!editable} onChange={(e) => updateLine(i, { unit_price: e.target.value })} onBlur={(e) => { if (e.target.value.trim()) updateLine(i, { unit_price: fmtNum(num(e.target.value)) }); }} /></div>
@@ -1152,6 +1157,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         </div>
       </div>
 
+      {dims.dialog}
       <SplitAccountsDialog open={splitOpen} onOpenChange={setSplitOpen} currency={hdr.currency} defaultAccountId={expenseDefault}
         lines={lines.map((l) => ({ key: l.key, description: l.description, account_id: l.account_id, net: lineNet(l) }))}
         accounts={[...expenseAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name })), ...assetAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name, group: 'Vara' }))]}
