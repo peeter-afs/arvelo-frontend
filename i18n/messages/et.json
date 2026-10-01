@@ -1218,7 +1218,10 @@
     "dimPolicy_accountant": "raamatupidajad ja administraatorid (ka arvel)",
     "dimPolicy_admin": "ainult administraatorid ja omanik (ka arvel)",
     "dimPolicy_settings_only": "ainult administraatorid ja omanik, ainult seadetes",
-    "dimPolicySaved": "Õigus salvestatud"
+    "dimPolicySaved": "Õigus salvestatud",
+    "projectStatusInProgress": "Pooleli",
+    "projectStatusCompleted": "Lõpetatud",
+    "projectStatusHint": "Projekti olek: vajuta, et märkida lõpetatuks või uuesti pooleliolevaks. Olek on näha projektide aruandes."
   },
   "exchangeRates": {
     "title": "Vahetuskursid",
@@ -1515,7 +1518,13 @@
     "dimDocument": "Dokument",
     "dimLegacy": "arvelt",
     "dimLegacyHint": "Arve kinnitati enne, kui kanderidadele hakati projekti kirjutama — summa on võetud arve ridadelt",
-    "dimAll": "Kõik"
+    "dimAll": "Kõik",
+    "dimStatus": "Olek",
+    "dimStatusInProgress": "Pooleli",
+    "dimStatusCompleted": "Lõpetatud",
+    "dimCompletedOn": "Lõpetatud {date}",
+    "dimCompletedAt": "Lõpetamise kuupäev",
+    "dimCompletedWithWip": "Projekt on lõpetatud, aga sellel on veel lõpetamata tööde jääk — kanna see kuluks."
   },
   "annualReport": {
     "title": "Majandusaasta aruanne",

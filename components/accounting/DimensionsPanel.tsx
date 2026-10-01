@@ -90,7 +90,7 @@ export function DimensionsPanel() {
           />
           <DimensionList
             kind="project" title={t('projects')} rows={projects} busy={busy} canCreate={canCreate}
-            labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired'), costCenter: t('parentCostCenter'), partner: t('dimensionPartner'), wip: t('wipShort'), wipHint: t('wipEnabledHint') }}
+            labels={{ code: t('dimensionCode'), name: t('dimensionName'), empty: t('noDimensions'), add: tc('add'), del: tc('delete'), activate: t('activate'), deactivate: t('deactivate'), nameRequired: t('dimensionNameRequired'), costCenter: t('parentCostCenter'), partner: t('dimensionPartner'), wip: t('wipShort'), wipHint: t('wipEnabledHint'), inProgress: t('projectStatusInProgress'), completed: t('projectStatusCompleted'), statusHint: t('projectStatusHint') }}
             costCenters={costCenters.filter((c) => c.is_active)} partners={partners}
             onCreate={(input) => run('project:new', () => projectsApi.create(input))}
             onSave={(id, patch) => save('project', id, patch)}
@@ -107,7 +107,7 @@ export function DimensionsPanel() {
   );
 }
 
-type Labels = { code: string; name: string; empty: string; add: string; del: string; activate: string; deactivate: string; nameRequired: string; costCenter?: string; partner?: string; wip?: string; wipHint?: string };
+type Labels = { code: string; name: string; empty: string; add: string; del: string; activate: string; deactivate: string; nameRequired: string; costCenter?: string; partner?: string; wip?: string; wipHint?: string; inProgress?: string; completed?: string; statusHint?: string };
 
 const wipToggle = (on: boolean) =>
   `${smallButton} px-2 ${on ? 'border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100' : 'text-slate-400'}`;
@@ -168,6 +168,13 @@ function DimensionList({ kind, title, rows, busy, canCreate, labels, costCenters
                 </>
               )}
               <div className="flex items-center gap-1 max-md:col-span-2 max-md:justify-end">
+                {isProject && (
+                  <button type="button" title={labels.statusHint} aria-pressed={p.status === 'completed'} disabled={rowBusy}
+                    className={`${smallButton} px-2 ${p.status === 'completed' ? 'border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100' : ''}`}
+                    onClick={() => void onSave(row.id, { status: p.status === 'completed' ? 'in_progress' : 'completed' })}>
+                    {p.status === 'completed' ? labels.completed : labels.inProgress}
+                  </button>
+                )}
                 {isProject && (
                   <button type="button" className={wipToggle(!!p.wip_enabled)} title={labels.wipHint} aria-pressed={!!p.wip_enabled} disabled={rowBusy} onClick={() => void onSave(row.id, { wip_enabled: !p.wip_enabled })}>{labels.wip}</button>
                 )}

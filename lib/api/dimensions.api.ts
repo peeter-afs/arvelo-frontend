@@ -19,6 +19,9 @@ export type Project = CostCenter & {
   partner_id: string | null;
   /** Purchase lines of this project go to the WIP (lõpetamata tööd) account until sold. Migration 103. */
   wip_enabled?: boolean;
+  /** In progress or completed, with the completion date (migration 106). */
+  status?: 'in_progress' | 'completed';
+  completed_at?: string | null;
 };
 
 export type DimensionInput = {
@@ -28,6 +31,8 @@ export type DimensionInput = {
   partner_id?: string | null;
   is_active?: boolean;
   wip_enabled?: boolean;
+  status?: 'in_progress' | 'completed';
+  completed_at?: string | null;
   /** Where it is created from; the backend checks the company's create policy against it. */
   context?: 'invoice' | 'settings';
 };

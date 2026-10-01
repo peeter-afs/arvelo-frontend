@@ -648,7 +648,10 @@
     "dimPolicy_accountant": "bokförare och administratörer (även på fakturor)",
     "dimPolicy_admin": "endast administratörer och ägaren (även på fakturor)",
     "dimPolicy_settings_only": "administratörer och ägaren, endast i inställningar",
-    "dimPolicySaved": "Behörighet sparad"
+    "dimPolicySaved": "Behörighet sparad",
+    "projectStatusInProgress": "Pågår",
+    "projectStatusCompleted": "Avslutat",
+    "projectStatusHint": "Projektstatus: klicka för att markera som avslutat eller pågående."
   },
   "reports": {
     "dimensionReport": "Kostnadsställen och projekt",
@@ -750,7 +753,13 @@
     "dimDocument": "Dokument",
     "dimLegacy": "faktura",
     "dimLegacyHint": "Bokförd innan verifikationsrader fick projekt — beloppet kommer från fakturaraderna",
-    "dimAll": "Alla"
+    "dimAll": "Alla",
+    "dimStatus": "Status",
+    "dimStatusInProgress": "Pågår",
+    "dimStatusCompleted": "Avslutat",
+    "dimCompletedOn": "Avslutat {date}",
+    "dimCompletedAt": "Avslutat den",
+    "dimCompletedWithWip": "Projektet är avslutat men har kvar pågående arbeten — kostnadsför dem."
   },
   "invoices": {
     "costCenter": "Kostnadsställe",

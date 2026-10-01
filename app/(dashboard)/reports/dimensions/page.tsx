@@ -2,7 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Calendar, ChevronDown, ChevronRight, Download, PieChart } from 'lucide-react';
+import { AlertTriangle, Calendar, ChevronDown, ChevronRight, Download, PieChart } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { reportsApi, type DimensionAccountRow, type DimensionReportData, type DimensionReportLine, type DimensionReportRow } from '@/lib/api/reports.api';
 import { costCentersApi, projectsApi, dimensionLabel, type CostCenter, type Project } from '@/lib/api/dimensions.api';
@@ -36,6 +36,7 @@ export default function DimensionReportPage() {
   const [view, setView] = useState<View>('project');
   const [projectFilter, setProjectFilter] = useState('');
   const [costCenterFilter, setCostCenterFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'' | 'in_progress' | 'completed'>('');
   const [projects, setProjects] = useState<Project[]>([]);
   const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
   const [data, setData] = useState<DimensionReportData | null>(null);
@@ -52,11 +53,11 @@ export default function DimensionReportPage() {
     if (!startDate || !endDate) return;
     setLoading(true); setError(null);
     try {
-      setData(await reportsApi.getDimensionReport(startDate, endDate, includeDrafts, { project_id: projectFilter || undefined, cost_center_id: costCenterFilter || undefined }));
+      setData(await reportsApi.getDimensionReport(startDate, endDate, includeDrafts, { project_id: projectFilter || undefined, cost_center_id: costCenterFilter || undefined, project_status: statusFilter || undefined }));
     }
     catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [startDate, endDate, includeDrafts, projectFilter, costCenterFilter]);
+  }, [startDate, endDate, includeDrafts, projectFilter, costCenterFilter, statusFilter]);
   useEffect(() => { void fetchData(); }, [fetchData]);
 
   const rows: DimensionReportRow[] = useMemo(() => (view === 'cost_center' ? data?.cost_centers : data?.projects) || [], [data, view]);
@@ -83,13 +84,14 @@ export default function DimensionReportPage() {
     downloadCsv(
       rows.map((r) => ({
         code: r.code || '', name: rowName(r), cost_center: r.cost_center_name || '', partner: r.partner_name || '',
+        status: r.id && r.status ? (r.status === 'completed' ? t('dimStatusCompleted') : t('dimStatusInProgress')) : '', completed_at: r.completed_at || '',
         revenue: r.revenue, costs: r.costs, result: r.result, margin: r.margin_pct ?? '', wip: r.wip_balance ?? 0,
         draft_revenue: r.draft_revenue ?? 0, draft_costs: r.draft_costs ?? 0,
       })),
       `${view === 'cost_center' ? 'cost-centers' : 'projects'}-${startDate}-${endDate}.csv`,
       [
         { key: 'code', label: tAccounting('dimensionCode') }, { key: 'name', label: tAccounting('dimensionName') },
-        ...(view === 'project' ? [{ key: 'cost_center', label: tAccounting('parentCostCenter') }, { key: 'partner', label: t('dimPartner') }] : []),
+        ...(view === 'project' ? [{ key: 'cost_center', label: tAccounting('parentCostCenter') }, { key: 'partner', label: t('dimPartner') }, { key: 'status', label: t('dimStatus') }, { key: 'completed_at', label: t('dimCompletedAt') }] : []),
         { key: 'revenue', label: t('dimRevenue') }, { key: 'costs', label: t('dimCosts') }, { key: 'result', label: t('dimResult') },
         { key: 'margin', label: t('dimMargin') }, { key: 'wip', label: t('dimWip') },
         ...(showDrafts ? [{ key: 'draft_revenue', label: t('dimDraftRevenue') }, { key: 'draft_costs', label: t('dimDraftCosts') }] : []),
@@ -99,7 +101,7 @@ export default function DimensionReportPage() {
 
   const totals = data?.totals || { revenue: 0, costs: 0, result: 0 };
   const inputStyle = { border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text-primary)' };
-  const labelCols = view === 'project' ? 6 : 4;
+  const labelCols = view === 'project' ? 7 : 4;
   const colCount = labelCols + 4 + (showWip ? 1 : 0) + (showDrafts ? 2 : 0);
   const cards: Array<[string, number, string]> = [
     [t('dimRevenue'), totals.revenue, 'var(--success)'],
@@ -152,6 +154,14 @@ export default function DimensionReportPage() {
               {costCenters.map((c) => <option key={c.id} value={c.id}>{dimensionLabel(c)}</option>)}
             </select>
           </div>
+          <div className="min-w-0">
+            <label className="mb-2 block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>{t('dimStatus')}</label>
+            <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as '' | 'in_progress' | 'completed'); setOpen(null); }} className="w-full sm:w-40 rounded-lg px-3 py-2" style={inputStyle}>
+              <option value="">{t('dimAll')}</option>
+              <option value="in_progress">{t('dimStatusInProgress')}</option>
+              <option value="completed">{t('dimStatusCompleted')}</option>
+            </select>
+          </div>
           <div className="col-span-2 flex sm:inline-flex rounded-lg p-1" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
             {(['project', 'cost_center'] as View[]).map((v) => (
               <button key={v} type="button" onClick={() => { setView(v); setOpen(null); }} className="max-sm:flex-1 max-sm:min-h-9 rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
@@ -192,6 +202,7 @@ export default function DimensionReportPage() {
                   <th className={`${th} text-left max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)]`} style={{ color: 'var(--text-muted)' }}>{tAccounting('dimensionName')}</th>
                   {view === 'project' && <th className={`${th} text-left`} style={{ color: 'var(--text-muted)' }}>{tAccounting('parentCostCenter')}</th>}
                   {view === 'project' && <th className={`${th} text-left`} style={{ color: 'var(--text-muted)' }}>{t('dimPartner')}</th>}
+                  {view === 'project' && <th className={`${th} text-left`} style={{ color: 'var(--text-muted)' }}>{t('dimStatus')}</th>}
                   <th className={`${th} text-right`} style={{ color: 'var(--text-muted)' }}>{t('dimInvoices')}</th>
                   <th className={`${th} text-right border-l`} style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}>{t('dimRevenue')}</th>
                   <th className={`${th} text-right`} style={{ color: 'var(--text-muted)' }}>{t('dimCosts')}</th>
@@ -215,6 +226,20 @@ export default function DimensionReportPage() {
                         <td className={`${td} max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:max-w-[160px] max-sm:truncate max-sm:bg-[var(--a-surface)]`} style={{ color: 'var(--text-primary)', fontStyle: row.id ? undefined : 'italic' }} title={rowName(row)}>{rowName(row)}</td>
                         {view === 'project' && <td className={td} style={{ color: 'var(--text-secondary)' }}>{row.cost_center_name || '—'}</td>}
                         {view === 'project' && <td className={td} style={{ color: 'var(--text-secondary)' }}>{row.partner_name || '—'}</td>}
+                        {view === 'project' && (
+                          <td className={td}>
+                            {row.id ? (
+                              <span className="inline-flex items-center gap-1.5">
+                                <span className={`rounded px-1.5 py-0.5 text-[11px] font-semibold ${row.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-sky-50 text-sky-700'}`} title={row.completed_at ? t('dimCompletedOn', { date: dateText(row.completed_at) }) : undefined}>
+                                  {row.status === 'completed' ? t('dimStatusCompleted') : t('dimStatusInProgress')}
+                                </span>
+                                {row.status === 'completed' && (row.wip_balance || 0) !== 0 && (
+                                  <span title={t('dimCompletedWithWip')} className="text-amber-600"><AlertTriangle className="h-4 w-4" /></span>
+                                )}
+                              </span>
+                            ) : <span style={{ color: 'var(--text-muted)' }}>—</span>}
+                          </td>
+                        )}
                         <td className={`${td} text-right font-mono tabular-nums`} style={{ color: 'var(--text-secondary)' }}>{row.sales_invoices + row.purchase_invoices}</td>
                         <td className={`${td} text-right font-mono tabular-nums border-l`} style={{ color: 'var(--text-primary)', borderColor: 'var(--border)' }}>{row.revenue ? fmt(row.revenue) : '-'}</td>
                         <td className={`${td} text-right font-mono tabular-nums`} style={{ color: 'var(--text-primary)' }}>{row.costs ? fmt(row.costs) : '-'}</td>

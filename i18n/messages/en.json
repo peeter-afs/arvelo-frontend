@@ -1218,7 +1218,10 @@
     "dimPolicy_accountant": "accountants and administrators (also on invoices)",
     "dimPolicy_admin": "administrators and the owner only (also on invoices)",
     "dimPolicy_settings_only": "administrators and the owner, in Settings only",
-    "dimPolicySaved": "Permission saved"
+    "dimPolicySaved": "Permission saved",
+    "projectStatusInProgress": "In progress",
+    "projectStatusCompleted": "Completed",
+    "projectStatusHint": "Project status: click to mark it completed or back in progress. Shown in the project report."
   },
   "exchangeRates": {
     "title": "Exchange Rates",
@@ -1515,7 +1518,13 @@
     "dimDocument": "Document",
     "dimLegacy": "invoice",
     "dimLegacyHint": "Posted before journal lines carried the project — the amount comes from the invoice lines",
-    "dimAll": "All"
+    "dimAll": "All",
+    "dimStatus": "Status",
+    "dimStatusInProgress": "In progress",
+    "dimStatusCompleted": "Completed",
+    "dimCompletedOn": "Completed {date}",
+    "dimCompletedAt": "Completed on",
+    "dimCompletedWithWip": "The project is completed but still has work in progress — expense it."
   },
   "annualReport": {
     "title": "Annual Report",

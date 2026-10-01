@@ -654,7 +654,10 @@
     "dimPolicy_accountant": "kirjanpitäjät ja ylläpitäjät (myös laskulla)",
     "dimPolicy_admin": "vain ylläpitäjät ja omistaja (myös laskulla)",
     "dimPolicy_settings_only": "vain ylläpitäjät ja omistaja, vain asetuksissa",
-    "dimPolicySaved": "Oikeus tallennettu"
+    "dimPolicySaved": "Oikeus tallennettu",
+    "projectStatusInProgress": "Kesken",
+    "projectStatusCompleted": "Valmis",
+    "projectStatusHint": "Projektin tila: napsauta merkitäksesi valmiiksi tai takaisin keskeneräiseksi."
   },
   "reports": {
     "dimensionReport": "Kustannuspaikat ja projektit",
@@ -756,7 +759,13 @@
     "dimDocument": "Tosite",
     "dimLegacy": "laskulta",
     "dimLegacyHint": "Kirjattu ennen kuin vientirivit saivat projektin — summa laskuriveiltä",
-    "dimAll": "Kaikki"
+    "dimAll": "Kaikki",
+    "dimStatus": "Tila",
+    "dimStatusInProgress": "Kesken",
+    "dimStatusCompleted": "Valmis",
+    "dimCompletedOn": "Valmistui {date}",
+    "dimCompletedAt": "Valmistumispäivä",
+    "dimCompletedWithWip": "Projekti on valmis, mutta sillä on vielä keskeneräisiä töitä — kirjaa ne kuluksi."
   },
   "invoices": {
     "costCenter": "Kustannuspaikka",

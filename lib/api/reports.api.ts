@@ -204,6 +204,9 @@ export type DimensionReportRow = {
   cost_center_name?: string | null;
   partner_id?: string | null;
   partner_name?: string | null;
+  /** Projects: in progress or completed (with the completion date). */
+  status?: 'in_progress' | 'completed' | null;
+  completed_at?: string | null;
   revenue: number;
   costs: number;
   result: number;
@@ -279,12 +282,13 @@ async function downloadXml(url: string, startDate: string, endDate: string): Pro
 
 export const reportsApi = {
   /** Revenue and costs by cost centre / project, from the general ledger (journal line dimensions). */
-  async getDimensionReport(startDate: string, endDate: string, includeDrafts = false, filters: { project_id?: string; cost_center_id?: string } = {}) {
+  async getDimensionReport(startDate: string, endDate: string, includeDrafts = false, filters: { project_id?: string; cost_center_id?: string; project_status?: 'in_progress' | 'completed' } = {}) {
     const response = await apiClient.get<ApiResponse<DimensionReportData>>('/api/reports/dimensions', {
       params: {
         start_date: startDate, end_date: endDate, include_drafts: includeDrafts ? 'true' : 'false',
         ...(filters.project_id ? { project_id: filters.project_id } : {}),
         ...(filters.cost_center_id ? { cost_center_id: filters.cost_center_id } : {}),
+        ...(filters.project_status ? { project_status: filters.project_status } : {}),
       },
     });
     return response.data.data;
