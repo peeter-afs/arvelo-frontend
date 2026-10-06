@@ -1973,7 +1973,18 @@
       "uploadHint": "Lataa tiedosto e-MTA:n TSD-palkanmaksunäkymässä, tarkista summat ja vahvista ilmoitus siellä.",
       "forPeriod": "TSD {period}",
       "downloaded": "TSD-tiedosto ({period}) ladattu. Lataa se e-MTA:han.",
-      "cancellationFile": "TSD-peruutustiedosto"
+      "cancellationFile": "TSD-peruutustiedosto",
+      "format": "Tiedostomuoto",
+      "formatXbrl": "Tietopohjainen TSD — maksuittain",
+      "formatXbrlHint": "EMTA:n uusi muoto: jokainen maksu (päivä + laji) on oma kirjauksensa.",
+      "formatXbrlMonthly": "Tietopohjainen TSD — kuukausikooste henkilöittäin",
+      "formatXbrlMonthlyHint": "Henkilön kuukauden saman lajin maksut yhdeksi kirjaukseksi (viimeisen maksun päivällä).",
+      "formatXbrlMonthlyShort": "XBRL kuukausikooste",
+      "formatCsv": "CSV — vanha TSD liite 1 (kuukausi)",
+      "formatCsvHint": "Yksi rivi henkilöä ja lajia kohden. e-MTA hyväksyy muodon vuoden 2027 loppuun.",
+      "includeSent": "Sisällytä aiemmin ladatut kirjaukset",
+      "includeSentHint": "Oletuksena aiemmassa tiedostossa olleet kirjaukset jätetään pois — e-MTA ei hyväksy samaa kirjausta uudestaan uutena.",
+      "manualLink": "Syötän käsin"
     },
     "employeesSubtitle": "Työntekijät, hallituksen jäsenet ja toimeksiantosopimuksella työskentelevät.",
     "showInactive": "Näytä passiiviset",
@@ -2187,6 +2198,32 @@
     "contractsInForce": "{count, plural, one {Tässä kuussa on voimassa # sopimus} other {Tässä kuussa on voimassa # sopimusta}}: {names}",
     "noContractsInMonth": "Tässä kuussa ei ole voimassa yhtään sopimusta — valitse kuukausi, jolloin sopimus on voimassa, tai tarkista sopimuksen alku.",
     "noContractsAtAll": "Ei vielä työntekijöitä sopimuksineen — lisää ne ensin:",
-    "noLinesHint": "Työkuukautena ei ollut voimassa yhtään sopimusta. Lisää sopimus tai poista luonnos ja valitse oikea kuukausi."
+    "noLinesHint": "Työkuukautena ei ollut voimassa yhtään sopimusta. Lisää sopimus tai poista luonnos ja valitse oikea kuukausi.",
+    "tsdManual": {
+      "nav": "TSD",
+      "title": "TSD käsin syöttämistä varten",
+      "subtitle": "Maksukuukausi koottuna henkilöittäin ja maksulajeittain — samat rivit kuin e-MTA:ssa. Napsauta arvoa kopioidaksesi.",
+      "empty": "Tässä kuussa ei ole kirjattuja palkanmaksuja.",
+      "type": "Laji",
+      "amount": "Maksu",
+      "exemption": "Verovapaa tulo",
+      "minIncrease": "SV-minimin lisä",
+      "copy": "Kopioi",
+      "payments": "{count} maksua yhteensä",
+      "howTitle": "Näin syötät",
+      "how1": "Avaa e-MTA:ssa TSD:n palkanmaksunäkymä ja valitse sama maksukuukausi.",
+      "how2": "Lisää jokaiselta riviltä henkilötunnus, maksulaji ja summa; verovapaa tulo ja sosiaaliveron lisä, jos ne on täytetty.",
+      "how3": "Vertaa e-MTA:n laskemia veroja tähän taulukkoon ja vahvista ilmoitus.",
+      "summaryNote": "{payments} maksua, {rows} riviä koostamisen jälkeen.",
+      "exportsTitle": "Tämän kuun tiedostot",
+      "noExports": "Tiedostoja ei ole vielä ladattu.",
+      "exportFormat": {
+        "xbrl": "XBRL maksuittain",
+        "xbrl_monthly": "XBRL kuukausikooste",
+        "xbrl_cancel": "Peruutustiedosto",
+        "csv": "CSV (liite 1)"
+      },
+      "entries": "{count} kirjausta"
+    }
   }
 }

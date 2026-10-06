@@ -44,6 +44,7 @@ export function usePathCrumbs(crumbs?: string[]) {
     employees: tPayroll('employees'),
     runs: tPayroll('runs'),
     absences: tPayroll('absences'),
+    tsd: tPayroll('tsdManual.nav'),
     accounting: tNavigation('books'),
     accounts: tAccounting('chartOfAccounts'),
     bank: tAccounting('bankWorkspace'),

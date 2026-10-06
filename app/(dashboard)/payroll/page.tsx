@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Download, Loader2, Plus, Settings, Users, Wallet, X } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { payrollApi, type PayrollEmployee, type PayrollRunListItem } from '@/lib/api/payroll.api';
+import { payrollApi, type PayrollEmployee, type PayrollRunListItem, type TsdFormat } from '@/lib/api/payroll.api';
 import { HelpLink } from '@/components/guides/HelpLink';
 import { currentMonth, dateText, money, monthText, previousMonth, RUN_STATUS_TONE } from '@/components/payroll/format';
 
@@ -228,6 +228,8 @@ function NewRunDialog({ onClose }: { onClose: () => void }) {
 function TsdDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations('payroll');
   const [period, setPeriod] = useState(currentMonth());
+  const [format, setFormat] = useState<TsdFormat>('xbrl');
+  const [includeSent, setIncludeSent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -235,7 +237,7 @@ function TsdDialog({ onClose }: { onClose: () => void }) {
     setBusy(true);
     setError(null);
     try {
-      await payrollApi.downloadTsd(period);
+      await payrollApi.downloadTsd(period, format, includeSent);
       onClose();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -244,6 +246,12 @@ function TsdDialog({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const formats: Array<{ value: TsdFormat; label: string; hint: string }> = [
+    { value: 'xbrl', label: t('tsd.formatXbrl'), hint: t('tsd.formatXbrlHint') },
+    { value: 'xbrl_monthly', label: t('tsd.formatXbrlMonthly'), hint: t('tsd.formatXbrlMonthlyHint') },
+    { value: 'csv', label: t('tsd.formatCsv'), hint: t('tsd.formatCsvHint') },
+  ];
+
   return (
     <Dialog
       title={t('tsd.title')}
@@ -251,6 +259,9 @@ function TsdDialog({ onClose }: { onClose: () => void }) {
       busy={busy}
       footer={
         <>
+          <Link href={`/payroll/tsd?period=${period}`} className="mr-auto inline-flex h-9 items-center text-[13px] font-medium text-[var(--a-accent)] hover:underline">
+            {t('tsd.manualLink')}
+          </Link>
           <button type="button" onClick={onClose} className="h-9 rounded-md border border-[var(--a-border)] px-3 text-[13px]">{t('cancel')}</button>
           <button type="button" disabled={!period || busy} onClick={() => void download()} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)] disabled:opacity-50">
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
@@ -259,11 +270,31 @@ function TsdDialog({ onClose }: { onClose: () => void }) {
         </>
       }
     >
-      <p className="text-[12.5px] text-[var(--a-text-2)]">{t('tsd.hint')}</p>
       <label className="block">
         <span className="mb-1 block font-medium text-[var(--a-text-2)]">{t('tsd.period')}</span>
         <input type="month" value={period} onChange={(e) => setPeriod(e.target.value)} className="h-10 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-bg)] px-3" />
       </label>
+      <div className="space-y-1.5">
+        <span className="block font-medium text-[var(--a-text-2)]">{t('tsd.format')}</span>
+        {formats.map((f) => (
+          <label key={f.value} className={`flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2 ${format === f.value ? 'border-[var(--a-accent)] bg-[var(--a-surface-2)]' : 'border-[var(--a-border)]'}`}>
+            <input type="radio" name="tsd-format" checked={format === f.value} onChange={() => setFormat(f.value)} className="mt-0.5" />
+            <span>
+              <span className="block text-[13px] font-medium text-[var(--a-text)]">{f.label}</span>
+              <span className="block text-[11.5px] text-[var(--a-text-3)]">{f.hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
+      {format !== 'csv' && (
+        <label className="flex items-start gap-2 text-[12.5px]">
+          <input type="checkbox" checked={includeSent} onChange={(e) => setIncludeSent(e.target.checked)} className="mt-0.5" />
+          <span>
+            {t('tsd.includeSent')}
+            <span className="block text-[11.5px] text-[var(--a-text-3)]">{t('tsd.includeSentHint')}</span>
+          </span>
+        </label>
+      )}
       <p className="text-[11.5px] text-[var(--a-text-3)]">{t('tsd.uploadHint')}</p>
       {error && <div className="rounded-lg bg-[var(--a-neg-soft)] px-3 py-2 text-[var(--a-neg)]">{error}</div>}
     </Dialog>

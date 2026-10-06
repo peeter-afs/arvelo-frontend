@@ -3407,7 +3407,18 @@
       "uploadHint": "Upload the file in the e-MTA TSD payroll payments view, check the totals there and confirm the declaration.",
       "forPeriod": "TSD {period}",
       "downloaded": "TSD file ({period}) downloaded. Upload it to e-MTA.",
-      "cancellationFile": "TSD cancellation file"
+      "cancellationFile": "TSD cancellation file",
+      "format": "File format",
+      "formatXbrl": "Data-based TSD — per payment",
+      "formatXbrlHint": "EMTA's new format: every payment (date + type) is its own entry.",
+      "formatXbrlMonthly": "Data-based TSD — monthly per person",
+      "formatXbrlMonthlyHint": "All of a person's payments of one type in the month as one entry (dated with the last payment).",
+      "formatXbrlMonthlyShort": "XBRL monthly",
+      "formatCsv": "CSV — old TSD annex 1 (monthly)",
+      "formatCsvHint": "One row per person and type. e-MTA accepts this format until the end of 2027.",
+      "includeSent": "Include entries downloaded before",
+      "includeSentHint": "By default entries already in an earlier file are left out — e-MTA does not accept the same entry as new again.",
+      "manualLink": "Enter by hand"
     },
     "employeesSubtitle": "Employees, board members and service providers who are paid a fee.",
     "showInactive": "Show inactive",
@@ -3621,6 +3632,32 @@
     "contractsInForce": "{count, plural, one {# contract is in force this month} other {# contracts are in force this month}}: {names}",
     "noContractsInMonth": "No contract is in force this month — choose a month when a contract runs, or check the contract start.",
     "noContractsAtAll": "No employees with a contract yet — add them first:",
-    "noLinesHint": "No contract was in force in the work month. Add one with “Add contract”, or delete the draft and choose the right month."
+    "noLinesHint": "No contract was in force in the work month. Add one with “Add contract”, or delete the draft and choose the right month.",
+    "tsdManual": {
+      "nav": "TSD",
+      "title": "TSD for manual entry",
+      "subtitle": "The payout month summed per person and payment type — the same rows that go into e-MTA. Click a value to copy it.",
+      "empty": "No posted payroll is paid out in this month.",
+      "type": "Type",
+      "amount": "Payment",
+      "exemption": "Tax-free income",
+      "minIncrease": "ST minimum top-up",
+      "copy": "Copy",
+      "payments": "{count} payments summed",
+      "howTitle": "How to enter",
+      "how1": "Open the TSD payroll payments view in e-MTA and choose the same payout month.",
+      "how2": "For each row add the personal code, payment type and amount; tax-free income and the social tax top-up when filled.",
+      "how3": "Compare e-MTA's tax amounts with this table and confirm the declaration.",
+      "summaryNote": "{payments} payments, {rows} rows after summing per person and type.",
+      "exportsTitle": "Files for this month",
+      "noExports": "No file downloaded yet.",
+      "exportFormat": {
+        "xbrl": "XBRL per payment",
+        "xbrl_monthly": "XBRL monthly",
+        "xbrl_cancel": "Cancellation file",
+        "csv": "CSV (annex 1)"
+      },
+      "entries": "{count} entries"
+    }
   }
 }

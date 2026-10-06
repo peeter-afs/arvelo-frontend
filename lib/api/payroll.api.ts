@@ -203,6 +203,34 @@ export type LeaveBalance = {
   balance: number;
 };
 
+export type TsdFormat = 'xbrl' | 'xbrl_monthly' | 'csv';
+
+export type TsdPreviewRow = {
+  personal_code: string;
+  name: string;
+  payment_type: string;
+  payment_count: number;
+  last_payment_date: string;
+  exemption_code: '610' | '650' | null;
+  amount: number;
+  social_tax_base: number;
+  min_base_increase: number;
+  social_tax: number;
+  pension: number;
+  unemployment_employee: number;
+  unemployment_employer: number;
+  exemption: number;
+  income_tax: number;
+};
+
+export type TsdPreview = {
+  period: string;
+  rows: TsdPreviewRow[];
+  totals: Omit<TsdPreviewRow, 'personal_code' | 'name' | 'payment_type' | 'payment_count' | 'last_payment_date' | 'exemption_code'>;
+  payment_count: number;
+  exports: Array<{ format: string; created_at: string; entry_count: number }>;
+};
+
 export type Payslip = {
   run_id: string;
   period_month: string;
@@ -365,8 +393,19 @@ export const payrollApi = {
   },
 
   /** Download the data-based TSD (XBRL GL) for a payout month. */
-  async downloadTsd(period: string) {
-    downloadBlob(await getBlob('/api/payroll/tsd', { period }), `TSD_${period}.xml`, 'application/xml');
+  /**
+   * TSD file for a payout month: data-based XBRL per payment or summed per
+   * person, or the old annex 1 CSV. XBRL leaves out entries an earlier file
+   * already carried unless `includeSent`.
+   */
+  async downloadTsd(period: string, format: TsdFormat = 'xbrl', includeSent = false) {
+    const blob = await getBlob('/api/payroll/tsd', { period, format, ...(includeSent ? { include_sent: '1' } : {}) });
+    const name = format === 'csv' ? `TSD_lisa1_${period}.csv` : `TSD_${period}${format === 'xbrl_monthly' ? '_koond' : ''}.xml`;
+    downloadBlob(blob, name, format === 'csv' ? 'text/csv' : 'application/xml');
+  },
+  async tsdPreview(period: string) {
+    const response = await apiClient.get<ApiResponse<TsdPreview>>('/api/payroll/tsd/preview', { params: { period } });
+    return response.data.data;
   },
   async downloadTsdCancellation(id: string, period: string) {
     downloadBlob(await getBlob(`/api/payroll/runs/${id}/tsd-cancellation`), `TSD_${period}_tuhistamine.xml`, 'application/xml');

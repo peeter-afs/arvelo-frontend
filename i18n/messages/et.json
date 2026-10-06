@@ -3407,7 +3407,18 @@
       "uploadHint": "Laadi fail üles e-MTA TSD palgaväljamaksete vaates, kontrolli seal koondsummasid ja kinnita deklaratsioon.",
       "forPeriod": "TSD {period}",
       "downloaded": "TSD fail ({period}) laaditi alla. Laadi see e-MTA-sse üles.",
-      "cancellationFile": "TSD tühistusfail"
+      "cancellationFile": "TSD tühistusfail",
+      "format": "Faili vorming",
+      "formatXbrl": "Andmepõhine TSD — väljamakse kaupa",
+      "formatXbrlHint": "EMTA uus vorming: iga väljamakse (kuupäev + liik) on eraldi kirje.",
+      "formatXbrlMonthly": "Andmepõhine TSD — kuu koond inimese kohta",
+      "formatXbrlMonthlyHint": "Kõik inimese kuu väljamaksed ühe liigi kaupa üheks kirjeks (viimase makse kuupäevaga).",
+      "formatXbrlMonthlyShort": "XBRL kuukoond",
+      "formatCsv": "CSV — vana TSD lisa 1 (kuu koond)",
+      "formatCsvHint": "Üks rida inimese ja liigi kohta. e-MTA võtab seda vormingut vastu kuni 2027. aasta lõpuni.",
+      "includeSent": "Kaasa ka varem alla laaditud kirjed",
+      "includeSentHint": "Vaikimisi jäetakse välja kirjed, mis on juba varasemas failis — e-MTA ei võta sama kirjet uuesti uuena vastu.",
+      "manualLink": "Sisestan käsitsi"
     },
     "employeesSubtitle": "Töötajad, juhatuse liikmed ja võlaõiguslike lepingutega isikud, kellele makstakse tasu.",
     "showInactive": "Näita mitteaktiivseid",
@@ -3621,6 +3632,32 @@
     "contractsInForce": "{count, plural, one {Selles kuus kehtib # leping} other {Selles kuus kehtib # lepingut}}: {names}",
     "noContractsInMonth": "Selles kuus ei kehti ühtegi lepingut — vali kuu, mil leping on jõus, või kontrolli lepingu algust.",
     "noContractsAtAll": "Töötajaid lepingutega veel pole — lisa need enne:",
-    "noLinesHint": "Töökuul ei kehtinud ühtegi lepingut. Lisa leping nupuga „Lisa leping“ või kustuta mustand ja vali õige kuu."
+    "noLinesHint": "Töökuul ei kehtinud ühtegi lepingut. Lisa leping nupuga „Lisa leping“ või kustuta mustand ja vali õige kuu.",
+    "tsdManual": {
+      "nav": "TSD",
+      "title": "TSD käsitsi sisestamiseks",
+      "subtitle": "Väljamakse kuu andmed inimese ja väljamakse liigi kaupa kokku võetuna — samad read, mis lähevad e-MTA-sse. Klõpsa väärtusel, et see kopeerida.",
+      "empty": "Selles kuus pole konteeritud palgaarvestuse väljamakseid.",
+      "type": "Liik",
+      "amount": "Väljamakse",
+      "exemption": "Maksuvaba tulu",
+      "minIncrease": "SM miinimumi lisa",
+      "copy": "Kopeeri",
+      "payments": "{count} väljamakset kokku",
+      "howTitle": "Kuidas sisestada",
+      "how1": "Ava e-MTA-s TSD palgaväljamaksete vaade ja vali sama väljamakse kuu.",
+      "how2": "Lisa iga rea kohta isikukood, väljamakse liik ja summa; maksuvaba tulu ja sotsiaalmaksu miinimumi lisa, kui need on täidetud.",
+      "how3": "Võrdle e-MTA arvutatud maksusummasid selle tabeli omadega ja kinnita deklaratsioon.",
+      "summaryNote": "{payments} väljamakset, {rows} rida pärast inimese ja liigi kaupa kokkuvõtmist.",
+      "exportsTitle": "Selle kuu failid",
+      "noExports": "Faile pole veel alla laaditud.",
+      "exportFormat": {
+        "xbrl": "XBRL väljamakse kaupa",
+        "xbrl_monthly": "XBRL kuukoond",
+        "xbrl_cancel": "Tühistusfail",
+        "csv": "CSV (lisa 1)"
+      },
+      "entries": "{count} kirjet"
+    }
   }
 }

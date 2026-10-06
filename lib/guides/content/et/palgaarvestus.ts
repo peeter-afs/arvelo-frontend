@@ -96,10 +96,28 @@ export const palgaarvestus: Guide = {
     {
       type: 'steps',
       items: [
-        { title: 'Laadi fail alla', text: '**Palgaarvestus → TSD fail**, vali väljamakse kuu — või arvestuse lehel nupp **TSD**.' },
-        { title: 'Laadi üles e-MTA-s', text: 'e-MTA TSD palgaväljamaksete vaates vali faili üleslaadimine (XBRL GL).' },
+        { title: 'Laadi fail alla', text: '**Palgaarvestus → TSD fail**, vali väljamakse kuu ja vorming — või arvestuse lehel nupp **TSD**.' },
+        { title: 'Laadi üles e-MTA-s', text: 'e-MTA TSD palgaväljamaksete vaates vali faili üleslaadimine.' },
         { title: 'Kontrolli ja kinnita', text: 'e-MTA koostab andmetest deklaratsiooni; kontrolli summasid ja kinnita deklaratsioon e-MTA-s.' },
       ],
+    },
+    {
+      type: 'table',
+      headers: ['Vorming', 'Mida sisaldab', 'Millal kasutada'],
+      rows: [
+        ['Andmepõhine TSD — väljamakse kaupa', 'iga väljamakse (kuupäev + liik) eraldi kirjena', 'EMTA uus põhivorming'],
+        ['Andmepõhine TSD — kuu koond', 'inimese kuu väljamaksed liigi kaupa üheks kirjeks (nt palk 1. ja boonus 20. kuupäeval)', 'kui soovid kuu kaupa kokkuvõtet uues vormingus'],
+        ['CSV — vana lisa 1', 'üks rida inimese ja liigi kohta', 'e-MTA võtab vastu kuni 2027. aasta lõpuni'],
+      ],
+    },
+    {
+      type: 'paragraph',
+      text:
+        'Käsitsi sisestamiseks ava **Palgaarvestus → TSD**: näed sama kuu ridu inimese ja liigi kaupa kokku võetuna, iga väärtus on ühe klõpsuga kopeeritav. Sisesta read e-MTA palgaväljamaksete vaates ja võrdle e-MTA arvutatud maksusummasid tabeli kokkuvõttega. Eri inimesi ühele reale kokku võtta ei saa — maksuvaba tulu, kogumispension ja sotsiaalmaksu miinimum on inimesepõhised.',
+    },
+    {
+      type: 'paragraph',
+      text: 'XBRL-faili jäävad vaikimisi välja kirjed, mis olid juba varasemas failis (e-MTA ei võta sama kirjet uuesti uuena vastu). Kui laadisid faili alla, aga ei saatnud seda, märgi „Kaasa ka varem alla laaditud kirjed“.',
     },
     {
       type: 'callout',

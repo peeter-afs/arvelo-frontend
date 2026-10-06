@@ -1959,7 +1959,18 @@
       "uploadHint": "Ladda upp filen i e-MTA:s TSD-vy för löneutbetalningar, kontrollera summorna där och bekräfta deklarationen.",
       "forPeriod": "TSD {period}",
       "downloaded": "TSD-filen ({period}) har laddats ner. Ladda upp den i e-MTA.",
-      "cancellationFile": "TSD-annulleringsfil"
+      "cancellationFile": "TSD-annulleringsfil",
+      "format": "Filformat",
+      "formatXbrl": "Datadriven TSD — per utbetalning",
+      "formatXbrlHint": "EMTA:s nya format: varje utbetalning (datum + typ) är en egen post.",
+      "formatXbrlMonthly": "Datadriven TSD — månad per person",
+      "formatXbrlMonthlyHint": "En persons utbetalningar av samma typ under månaden som en post (med sista betalningens datum).",
+      "formatXbrlMonthlyShort": "XBRL månad",
+      "formatCsv": "CSV — gamla TSD bilaga 1 (månad)",
+      "formatCsvHint": "En rad per person och typ. e-MTA tar emot formatet till slutet av 2027.",
+      "includeSent": "Ta med tidigare nedladdade poster",
+      "includeSentHint": "Som standard utelämnas poster som redan finns i en tidigare fil — e-MTA tar inte emot samma post som ny igen.",
+      "manualLink": "Mata in manuellt"
     },
     "employeesSubtitle": "Anställda, styrelseledamöter och uppdragstagare som får ersättning.",
     "showInactive": "Visa inaktiva",
@@ -2173,6 +2184,32 @@
     "contractsInForce": "{count, plural, one {# avtal gäller denna månad} other {# avtal gäller denna månad}}: {names}",
     "noContractsInMonth": "Inget avtal gäller denna månad — välj en månad då ett avtal gäller, eller kontrollera avtalets start.",
     "noContractsAtAll": "Inga anställda med avtal ännu — lägg till dem först:",
-    "noLinesHint": "Inget avtal gällde under arbetsmånaden. Lägg till ett avtal eller ta bort utkastet och välj rätt månad."
+    "noLinesHint": "Inget avtal gällde under arbetsmånaden. Lägg till ett avtal eller ta bort utkastet och välj rätt månad.",
+    "tsdManual": {
+      "nav": "TSD",
+      "title": "TSD för manuell inmatning",
+      "subtitle": "Utbetalningsmånaden summerad per person och utbetalningstyp — samma rader som i e-MTA. Klicka på ett värde för att kopiera det.",
+      "empty": "Inga bokförda löneutbetalningar denna månad.",
+      "type": "Typ",
+      "amount": "Utbetalning",
+      "exemption": "Skattefri inkomst",
+      "minIncrease": "SS-minimumtillägg",
+      "copy": "Kopiera",
+      "payments": "{count} utbetalningar summerade",
+      "howTitle": "Så matar du in",
+      "how1": "Öppna TSD-vyn för löneutbetalningar i e-MTA och välj samma utbetalningsmånad.",
+      "how2": "Lägg för varje rad till personnummer, utbetalningstyp och belopp; skattefri inkomst och socialskattetillägg om ifyllda.",
+      "how3": "Jämför e-MTA:s skattebelopp med tabellen och bekräfta deklarationen.",
+      "summaryNote": "{payments} utbetalningar, {rows} rader efter summering.",
+      "exportsTitle": "Filer för månaden",
+      "noExports": "Inga filer nedladdade ännu.",
+      "exportFormat": {
+        "xbrl": "XBRL per utbetalning",
+        "xbrl_monthly": "XBRL månad",
+        "xbrl_cancel": "Annulleringsfil",
+        "csv": "CSV (bilaga 1)"
+      },
+      "entries": "{count} poster"
+    }
   }
 }
