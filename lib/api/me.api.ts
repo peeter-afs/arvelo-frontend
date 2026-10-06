@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Payslip } from './payroll.api';
+import type { LeaveOverview, LeaveRequest, LeaveRequestInput, Payslip } from './payroll.api';
 import type { ApiResponse } from '../types/auth.types';
 import type { ExpenseReport, ExpenseReportListItem } from './cashExpense.api';
 
@@ -67,6 +67,22 @@ export const meApi = {
 
   async removeReport(id: string): Promise<void> {
     await apiClient.delete(`/api/me/expense-reports/${id}`);
+  },
+
+  /** Holiday balance, own leave applications and approved holidays. */
+  async leave(): Promise<LeaveOverview> {
+    const response = await apiClient.get<ApiResponse<LeaveOverview>>('/api/me/leave');
+    return response.data.data!;
+  },
+
+  async applyLeave(input: LeaveRequestInput): Promise<LeaveRequest> {
+    const response = await apiClient.post<ApiResponse<LeaveRequest>>('/api/me/leave-requests', input);
+    return response.data.data!;
+  },
+
+  async cancelLeave(id: string): Promise<LeaveRequest> {
+    const response = await apiClient.post<ApiResponse<LeaveRequest>>(`/api/me/leave-requests/${id}/cancel`);
+    return response.data.data!;
   },
 
   /** Posted payslips of the signed-in employee, newest first. */

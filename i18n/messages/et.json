@@ -3658,6 +3658,38 @@
         "csv": "CSV (lisa 1)"
       },
       "entries": "{count} kirjet"
+    },
+    "leaveRequest": {
+      "title": "Puhkused",
+      "apply": "Taotle puhkust",
+      "balance": "Puhkusejääk {days} päeva",
+      "balanceHint": "{annual} päeva aastas",
+      "days": "{days, plural, one {# päev} other {# päeva}}",
+      "balanceAfter": "jääk pärast {days} p",
+      "overBalance": "Taotlus ületab puhkusejäägi — raamatupidaja võib seda siiski kinnitada.",
+      "kind": {
+        "vacation": "Põhipuhkus",
+        "unpaid": "Palgata puhkus"
+      },
+      "status": {
+        "submitted": "Ootab otsust",
+        "approved": "Kinnitatud",
+        "rejected": "Tagasi lükatud",
+        "cancelled": "Tagasi võetud"
+      },
+      "withdraw": "Võta tagasi",
+      "timingBeforeHint": "Puhkusetasu makstakse sulle enne puhkuse algust.",
+      "timingWithSalaryHint": "Puhkusetasu makstakse koos järgmise palgaga.",
+      "comment": "Kommentaar (valikuline)",
+      "submit": "Saada avaldus",
+      "pendingTitle": "{count, plural, one {# puhkuseavaldus ootab otsust} other {# puhkuseavaldust ootab otsust}}",
+      "notApprover": "Sa ei ole puhkuseavalduste kinnitaja",
+      "approve": "Kinnita",
+      "reject": "Lükka tagasi",
+      "rejectTitle": "Lükka avaldus tagasi: {name}",
+      "rejectNote": "Põhjus töötajale (valikuline)",
+      "approversTitle": "Puhkuseavalduste kinnitajad",
+      "approversHint": "Kui kedagi pole valitud, saavad kinnitada kõik omanikud, administraatorid ja raamatupidajad. Kinnitajad saavad uue avalduse kohta e-kirja."
     }
   }
 }

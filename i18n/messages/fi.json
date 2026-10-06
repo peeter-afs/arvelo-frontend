@@ -2224,6 +2224,38 @@
         "csv": "CSV (liite 1)"
       },
       "entries": "{count} kirjausta"
+    },
+    "leaveRequest": {
+      "title": "Lomat",
+      "apply": "Hae lomaa",
+      "balance": "Lomasaldo {days} päivää",
+      "balanceHint": "{annual} päivää vuodessa",
+      "days": "{days, plural, one {# päivä} other {# päivää}}",
+      "balanceAfter": "saldo jälkeen {days} pv",
+      "overBalance": "Hakemus ylittää lomasaldon — kirjanpitäjä voi silti hyväksyä sen.",
+      "kind": {
+        "vacation": "Vuosiloma",
+        "unpaid": "Palkaton vapaa"
+      },
+      "status": {
+        "submitted": "Odottaa",
+        "approved": "Hyväksytty",
+        "rejected": "Hylätty",
+        "cancelled": "Peruttu"
+      },
+      "withdraw": "Peru",
+      "timingBeforeHint": "Lomapalkka maksetaan ennen loman alkua.",
+      "timingWithSalaryHint": "Lomapalkka maksetaan seuraavan palkan mukana.",
+      "comment": "Kommentti (valinnainen)",
+      "submit": "Lähetä hakemus",
+      "pendingTitle": "{count, plural, one {# lomahakemus odottaa} other {# lomahakemusta odottaa}}",
+      "notApprover": "Et ole lomahakemusten hyväksyjä",
+      "approve": "Hyväksy",
+      "reject": "Hylkää",
+      "rejectTitle": "Hylkää hakemus: {name}",
+      "rejectNote": "Syy työntekijälle (valinnainen)",
+      "approversTitle": "Lomahakemusten hyväksyjät",
+      "approversHint": "Jos ketään ei ole valittu, kaikki omistajat, ylläpitäjät ja kirjanpitäjät voivat hyväksyä. Hyväksyjät saavat sähköpostin uudesta hakemuksesta."
     }
   }
 }

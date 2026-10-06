@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { payrollApi, type PayrollAccountKey, type PayrollSettings, type VacationPayTiming } from '@/lib/api/payroll.api';
+import { payrollApi, type LeaveApprovers, type PayrollAccountKey, type PayrollSettings, type VacationPayTiming } from '@/lib/api/payroll.api';
 
 /** Posting accounts in entry order, with the class of accounts each one is chosen from. */
 const ACCOUNT_FIELDS: Array<{ key: PayrollAccountKey; prefix: string; code: string }> = [
@@ -28,6 +28,8 @@ export default function PayrollSettingsPage() {
   const [paymentDay, setPaymentDay] = useState('10');
   const [reference, setReference] = useState('');
   const [timing, setTiming] = useState<VacationPayTiming>('before_leave');
+  const [approvers, setApprovers] = useState<LeaveApprovers | null>(null);
+  const [approverIds, setApproverIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -41,8 +43,13 @@ export default function PayrollSettingsPage() {
         setPaymentDay(String(s.payment_day));
         setReference(s.emta_reference ?? '');
         setTiming(s.vacation_pay_timing);
+        setApproverIds(s.leave_approver_user_ids ?? []);
       })
       .catch((err) => setError(getErrorMessage(err)));
+  }, []);
+
+  useEffect(() => {
+    payrollApi.leaveApprovers().then(setApprovers).catch(() => {});
   }, []);
 
   const save = async () => {
@@ -50,7 +57,7 @@ export default function PayrollSettingsPage() {
     setError(null);
     setSaved(false);
     try {
-      const next = await payrollApi.updateSettings({ ...draft, payment_day: Number(paymentDay) || 10, emta_reference: reference.trim() || null, vacation_pay_timing: timing });
+      const next = await payrollApi.updateSettings({ ...draft, payment_day: Number(paymentDay) || 10, emta_reference: reference.trim() || null, vacation_pay_timing: timing, leave_approver_user_ids: approverIds });
       setSettings(next);
       setSaved(true);
     } catch (err) {
@@ -99,6 +106,26 @@ export default function PayrollSettingsPage() {
               </label>
             </div>
           </section>
+
+          {approvers && approvers.members.length > 0 && (
+            <section className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
+              <h2 className="mb-1 text-[14px] font-semibold">{t('leaveRequest.approversTitle')}</h2>
+              <p className="mb-3 text-[12px] text-[var(--a-text-3)]">{t('leaveRequest.approversHint')}</p>
+              <div className="space-y-1.5">
+                {approvers.members.map((m) => (
+                  <label key={m.id} className="flex items-center gap-2 text-[13px]">
+                    <input
+                      type="checkbox"
+                      checked={approverIds.includes(m.id)}
+                      onChange={(e) => setApproverIds((ids) => (e.target.checked ? [...ids, m.id] : ids.filter((id) => id !== m.id)))}
+                    />
+                    <span>{m.name || m.email}</span>
+                    <span className="text-[12px] text-[var(--a-text-3)]">{m.email}</span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4">
             <h2 className="mb-1 text-[14px] font-semibold">{t('postingAccounts')}</h2>

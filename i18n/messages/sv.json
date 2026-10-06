@@ -2210,6 +2210,38 @@
         "csv": "CSV (bilaga 1)"
       },
       "entries": "{count} poster"
+    },
+    "leaveRequest": {
+      "title": "Ledighet",
+      "apply": "Ansök om ledighet",
+      "balance": "Semestersaldo {days} dagar",
+      "balanceHint": "{annual} dagar per år",
+      "days": "{days, plural, one {# dag} other {# dagar}}",
+      "balanceAfter": "{days} d kvar efter",
+      "overBalance": "Ansökan överstiger semestersaldot — bokföraren kan ändå godkänna den.",
+      "kind": {
+        "vacation": "Semester",
+        "unpaid": "Tjänstledigt utan lön"
+      },
+      "status": {
+        "submitted": "Väntar",
+        "approved": "Godkänd",
+        "rejected": "Avslagen",
+        "cancelled": "Återkallad"
+      },
+      "withdraw": "Återkalla",
+      "timingBeforeHint": "Semesterlönen betalas före semesterns början.",
+      "timingWithSalaryHint": "Semesterlönen betalas med nästa lön.",
+      "comment": "Kommentar (valfri)",
+      "submit": "Skicka ansökan",
+      "pendingTitle": "{count, plural, one {# ledighetsansökan väntar} other {# ledighetsansökningar väntar}}",
+      "notApprover": "Du är inte godkännare av ledighet",
+      "approve": "Godkänn",
+      "reject": "Avslå",
+      "rejectTitle": "Avslå ansökan: {name}",
+      "rejectNote": "Orsak till den anställde (valfri)",
+      "approversTitle": "Godkännare av ledighet",
+      "approversHint": "Om ingen är vald kan alla ägare, administratörer och bokförare godkänna. Godkännarna får e-post om en ny ansökan."
     }
   }
 }

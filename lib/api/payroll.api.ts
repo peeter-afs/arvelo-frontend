@@ -148,6 +148,7 @@ export type PayrollSettings = Record<PayrollAccountKey, string | null> & {
   payment_day: number;
   emta_reference: string | null;
   vacation_pay_timing: VacationPayTiming;
+  leave_approver_user_ids: string[];
   accounts: Record<PayrollAccountKey, { id: string; code: string; name: string } | null>;
 };
 
@@ -231,6 +232,47 @@ export type TsdPreview = {
   exports: Array<{ format: string; created_at: string; entry_count: number }>;
 };
 
+export type LeaveKind = 'vacation' | 'unpaid';
+export type LeaveStatus = 'submitted' | 'approved' | 'rejected' | 'cancelled';
+
+export type LeaveRequestInput = {
+  kind: LeaveKind;
+  start_date: string;
+  end_date: string;
+  vacation_pay_timing?: VacationPayTiming | null;
+  comment?: string | null;
+};
+
+export type LeaveRequest = LeaveRequestInput & {
+  id: string;
+  employee_id: string;
+  status: LeaveStatus;
+  days: number;
+  decision_note: string | null;
+  decided_at: string | null;
+  absence_id: string | null;
+  created_at: string;
+  employee_name?: string | null;
+  balance?: LeaveBalance | null;
+};
+
+export type LeaveOverview = {
+  employee: { id: string; name: string | null };
+  balances: LeaveBalance[];
+  requests: LeaveRequest[];
+  absences: Array<{ id: string; kind: AbsenceKind; start_date: string; end_date: string; days: number }>;
+  default_timing: VacationPayTiming;
+  employment: boolean;
+};
+
+export type LeaveApprovers = {
+  members: Array<{ id: string; name: string | null; email: string; role: string }>;
+  approver_user_ids: string[];
+  effective_approver_ids: string[];
+  restricted: boolean;
+  can_approve: boolean;
+};
+
 export type Payslip = {
   run_id: string;
   period_month: string;
@@ -276,7 +318,12 @@ export const payrollApi = {
     return response.data.data;
   },
   async updateSettings(
-    payload: Partial<Record<PayrollAccountKey, string | null>> & { payment_day?: number; emta_reference?: string | null; vacation_pay_timing?: VacationPayTiming }
+    payload: Partial<Record<PayrollAccountKey, string | null>> & {
+      payment_day?: number;
+      emta_reference?: string | null;
+      vacation_pay_timing?: VacationPayTiming;
+      leave_approver_user_ids?: string[];
+    }
   ) {
     const response = await apiClient.put<ApiResponse<PayrollSettings>>('/api/payroll/settings', payload);
     return response.data.data;
@@ -337,6 +384,23 @@ export const payrollApi = {
   },
   async refreshAbsences(id: string) {
     const response = await apiClient.post<ApiResponse<PayrollRunDetail>>(`/api/payroll/runs/${id}/refresh-absences`);
+    return response.data.data;
+  },
+
+  async pendingLeave() {
+    const response = await apiClient.get<ApiResponse<{ requests: LeaveRequest[]; can_approve: boolean }>>('/api/payroll/leave-requests/pending');
+    return response.data.data;
+  },
+  async approveLeave(id: string, payload: { vacation_pay_timing?: VacationPayTiming | null; note?: string | null } = {}) {
+    const response = await apiClient.post<ApiResponse<{ request: LeaveRequest }>>(`/api/payroll/leave-requests/${id}/approve`, payload);
+    return response.data.data;
+  },
+  async rejectLeave(id: string, note?: string | null) {
+    const response = await apiClient.post<ApiResponse<LeaveRequest>>(`/api/payroll/leave-requests/${id}/reject`, { note: note || null });
+    return response.data.data;
+  },
+  async leaveApprovers() {
+    const response = await apiClient.get<ApiResponse<LeaveApprovers>>('/api/payroll/leave-approvers');
     return response.data.data;
   },
 

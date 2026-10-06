@@ -3658,6 +3658,38 @@
         "csv": "CSV (annex 1)"
       },
       "entries": "{count} entries"
+    },
+    "leaveRequest": {
+      "title": "Leave",
+      "apply": "Apply for leave",
+      "balance": "Holiday balance {days} days",
+      "balanceHint": "{annual} days a year",
+      "days": "{days, plural, one {# day} other {# days}}",
+      "balanceAfter": "{days} d left after",
+      "overBalance": "The application exceeds the holiday balance — the bookkeeper may still approve it.",
+      "kind": {
+        "vacation": "Annual leave",
+        "unpaid": "Unpaid leave"
+      },
+      "status": {
+        "submitted": "Waiting",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "cancelled": "Withdrawn"
+      },
+      "withdraw": "Withdraw",
+      "timingBeforeHint": "Holiday pay is paid to you before the leave starts.",
+      "timingWithSalaryHint": "Holiday pay is paid with your next salary.",
+      "comment": "Comment (optional)",
+      "submit": "Send application",
+      "pendingTitle": "{count, plural, one {# leave application waiting} other {# leave applications waiting}}",
+      "notApprover": "You are not a leave approver",
+      "approve": "Approve",
+      "reject": "Reject",
+      "rejectTitle": "Reject application: {name}",
+      "rejectNote": "Reason for the employee (optional)",
+      "approversTitle": "Leave approvers",
+      "approversHint": "With nobody chosen, every owner, admin and accountant can approve. Approvers get an e-mail about a new application."
     }
   }
 }

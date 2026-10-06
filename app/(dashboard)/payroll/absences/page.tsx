@@ -8,6 +8,7 @@ import { ArrowLeft, Banknote, CalendarOff, Loader2, Plus } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { payrollApi, type Absence, type PayrollEmployee, type VacationPayTiming } from '@/lib/api/payroll.api';
 import { AbsenceDialog } from '@/components/payroll/AbsenceDialog';
+import { LeaveRequestsPanel } from '@/components/payroll/LeaveRequestsPanel';
 import { dateText } from '@/components/payroll/format';
 
 const KIND_TONE: Record<string, string> = {
@@ -100,6 +101,8 @@ function AbsencesView() {
       </div>
 
       {error && <div className="mb-4 rounded-lg bg-[var(--a-neg-soft)] px-3 py-2 text-[13px] text-[var(--a-neg)]">{error}</div>}
+
+      <LeaveRequestsPanel onDecided={load} />
 
       <div className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)]">
         {absences === null ? (

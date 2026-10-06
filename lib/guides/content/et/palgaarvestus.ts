@@ -160,6 +160,20 @@ export const palgaarvestus: Guide = {
       text: '**Puhkusejääk** on töötaja kaardil: 28 päeva aastas (lepingus muudetav) teenitakse kalendripäevade järgi. Kui palgaarvestus tuleb teisest programmist, sisesta lepingule kasutamata päevade algjääk ja selle kuupäev.',
     },
 
+    { type: 'heading', text: 'Puhkuseavaldused' },
+    {
+      type: 'steps',
+      items: [
+        { title: 'Töötaja taotleb', text: 'Iseteeninduses (**/minu**) näeb töötaja oma puhkusejääki ja vajutab **Taotle puhkust**: põhipuhkus või palgata puhkus, kuupäevad ning põhipuhkuse puhul, kas puhkusetasu makstakse **enne puhkust** või **koos palgaga**. Otsustamata avalduse saab ta tagasi võtta.' },
+        { title: 'Kinnitaja otsustab', text: 'Kinnitajad saavad e-kirja; avaldused ootavad **Palgaarvestus → Puudumised** lehe ülaosas. Kinnitamisel saab puhkusetasu maksmise viisi veel muuta.' },
+        { title: 'Kinnitamisel tekib puudumine', text: 'Puudumine arvestatakse palka (kuupalk, puhkusetasu) nagu käsitsi lisatud puudumine. Tagasilükkamine ei mõjuta palka. Töötaja saab otsuse kohta e-kirja.' },
+      ],
+    },
+    {
+      type: 'paragraph',
+      text: 'Kinnitajad valitakse **Palgaarvestus → Seaded** all. Kui kedagi pole valitud, saavad kinnitada kõik omanikud, administraatorid ja raamatupidajad. Puhkust saab taotleda töötaja, kes on palgaarvestuses töölepinguga ja kellel on iseteeninduse ligipääs.',
+    },
+
     { type: 'heading', text: 'Töötaja palgaleht' },
     {
       type: 'paragraph',
@@ -171,7 +185,7 @@ export const palgaarvestus: Guide = {
       tone: 'info',
       title: 'Mida palgaarvestus veel ei tee',
       text:
-        'Puhkuseavaldused töötaja iseteenindusest, mitteresidendid, erisoodustused, kinnipidamised (nt täitmisteated) ja töötamise register (TÖR). Tööõnnetuse, kutsehaiguse ja rasedusega seotud haigushüvitis sisestatakse käsitsi.',
+        'Mitteresidendid, erisoodustused, kinnipidamised (nt täitmisteated) ja töötamise register (TÖR). Tööõnnetuse, kutsehaiguse ja rasedusega seotud haigushüvitis sisestatakse käsitsi.',
     },
   ],
 };
