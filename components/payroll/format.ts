@@ -33,3 +33,7 @@ export function parseAmount(text: string): number {
   const n = Number(String(text).replace(/\s+/g, '').replace(',', '.'));
   return Number.isFinite(n) ? n : 0;
 }
+
+/** Day counts with up to one decimal, Estonian style (21,4). */
+export const daysText = (value: number | null | undefined) =>
+  Number(value || 0).toLocaleString('et-EE', { maximumFractionDigits: 1 });

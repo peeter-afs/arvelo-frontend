@@ -6,7 +6,7 @@ import { CalendarPlus, Loader2, Palmtree, X } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { meApi } from '@/lib/api/me.api';
 import type { LeaveKind, LeaveOverview, LeaveStatus, VacationPayTiming } from '@/lib/api/payroll.api';
-import { dateText } from './format';
+import { dateText, daysText } from './format';
 import { vacationDays } from './holidays';
 
 const STATUS_TONE: Record<LeaveStatus, string> = {
@@ -58,10 +58,10 @@ export function LeaveSection() {
         <div className={`${card} mb-3 flex items-center gap-3 px-4 py-3`}>
           <Palmtree className="h-5 w-5 flex-shrink-0 text-[var(--a-accent)]" />
           <div className="min-w-0 flex-1">
-            <div className="text-[15px] font-semibold text-[var(--a-text)]">{t('leaveRequest.balance', { days: balance.balance })}</div>
+            <div className="text-[15px] font-semibold text-[var(--a-text)]">{t('leaveRequest.balance', { days: daysText(balance.balance) })}</div>
             <div className="text-[12.5px] text-[var(--a-text-3)]">
               {t('leaveRequest.balanceHint', { annual: balance.annual_days })}
-              {balance.planned > 0 ? ` · ${t('leave.planned', { days: balance.planned })}` : ''}
+              {balance.planned > 0 ? ` · ${t('leave.planned', { days: daysText(balance.planned) })}` : ''}
             </div>
           </div>
         </div>
@@ -199,7 +199,7 @@ function ApplyDialog({ defaultTiming, balance, onClose, onDone }: { defaultTimin
           {days > 0 && (
             <div className="rounded-lg bg-[var(--a-surface-2)] px-3 py-2 text-[13.5px] text-[var(--a-text-2)]">
               {t('leaveRequest.days', { days })}
-              {after !== null && <> · {t('leaveRequest.balanceAfter', { days: after })}</>}
+              {after !== null && <> · {t('leaveRequest.balanceAfter', { days: daysText(after) })}</>}
               {after !== null && after < 0 && <div className="mt-0.5 text-[12.5px] text-[var(--a-warn)]">{t('leaveRequest.overBalance')}</div>}
             </div>
           )}

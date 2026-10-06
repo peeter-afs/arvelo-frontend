@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Check, Inbox, Loader2, X } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
 import { payrollApi, type LeaveRequest, type VacationPayTiming } from '@/lib/api/payroll.api';
-import { dateText } from './format';
+import { dateText, daysText } from './format';
 
 /** Leave applications waiting for a decision — approve (creates the absence) or reject. */
 export function LeaveRequestsPanel({ onDecided }: { onDecided: () => void }) {
@@ -95,7 +95,7 @@ function PendingRow({
         </div>
         <div className="text-[12.5px] text-[var(--a-text-2)]">
           <span className="font-mono">{dateText(r.start_date)}–{dateText(r.end_date)}</span> · {t('leaveRequest.days', { days: r.days })}
-          {after !== null && <> · {t('leaveRequest.balanceAfter', { days: after })}</>}
+          {after !== null && <> · {t('leaveRequest.balanceAfter', { days: daysText(after) })}</>}
         </div>
         {r.comment && <div className="text-[12.5px] text-[var(--a-text-3)]">„{r.comment}“</div>}
       </div>

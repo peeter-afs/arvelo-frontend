@@ -16,7 +16,7 @@ import {
   type PayrollEmployee,
 } from '@/lib/api/payroll.api';
 import { getIsoToday } from '@/lib/utils/date';
-import { dateText, money, parseAmount } from '@/components/payroll/format';
+import { dateText, daysText, money, parseAmount } from '@/components/payroll/format';
 
 const field = 'h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-bg)] px-2.5 text-[13px]';
 const label = 'mb-1 block text-[12px] font-medium text-[var(--a-text-2)]';
@@ -390,10 +390,10 @@ function EmployeeDialog({
                     <li key={b.contract_id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[12.5px]">
                       <span className="text-[var(--a-text-2)]">{b.title || t('contractType.employment')} · {t('leave.perYear', { days: b.annual_days })}</span>
                       <span className="text-[var(--a-text-3)]">
-                        {t('leave.summary', { opening: b.opening, accrued: b.accrued, used: b.used })}
-                        {b.planned > 0 ? ` · ${t('leave.planned', { days: b.planned })}` : ''}
+                        {t('leave.summary', { opening: daysText(b.opening), accrued: daysText(b.accrued), used: daysText(b.used) })}
+                        {b.planned > 0 ? ` · ${t('leave.planned', { days: daysText(b.planned) })}` : ''}
                       </span>
-                      <span className="font-semibold text-[var(--a-text)]">{t('leave.balance', { days: b.balance })}</span>
+                      <span className="font-semibold text-[var(--a-text)]">{t('leave.balance', { days: daysText(b.balance) })}</span>
                     </li>
                   ))}
                 </ul>
