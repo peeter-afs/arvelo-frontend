@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Download, Loader2, Plus, Settings, Users, Wallet, X } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
-import { payrollApi, type PayrollRunListItem } from '@/lib/api/payroll.api';
+import { payrollApi, type PayrollEmployee, type PayrollRunListItem } from '@/lib/api/payroll.api';
 import { HelpLink } from '@/components/guides/HelpLink';
 import { currentMonth, dateText, money, monthText, previousMonth, RUN_STATUS_TONE } from '@/components/payroll/format';
 
@@ -148,10 +148,28 @@ function Dialog({ title, onClose, busy, children, footer }: { title: string; onC
 function NewRunDialog({ onClose }: { onClose: () => void }) {
   const t = useTranslations('payroll');
   const router = useRouter();
-  const [month, setMonth] = useState(previousMonth());
+  const [employees, setEmployees] = useState<PayrollEmployee[] | null>(null);
+  const [chosenMonth, setChosenMonth] = useState<string | null>(null);
   const [paymentDate, setPaymentDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    payrollApi.employees().then(setEmployees).catch(() => setEmployees([]));
+  }, []);
+
+  const contracts = useMemo(
+    () => (employees ?? []).flatMap((e) => e.contracts.map((c) => ({ ...c, employee: e.name ?? '—' }))),
+    [employees]
+  );
+  // Usually last month; for a first payroll that would be before anyone was hired.
+  const defaultMonth = useMemo(() => {
+    const last = previousMonth();
+    const first = contracts.map((c) => c.start_date.slice(0, 7)).sort()[0];
+    return first && first > last ? first : last;
+  }, [contracts]);
+  const month = chosenMonth ?? defaultMonth;
+  const inForce = contracts.filter((c) => c.start_date <= `${month}-31` && (!c.end_date || c.end_date >= `${month}-01`));
 
   const submit = async () => {
     setSaving(true);
@@ -174,7 +192,7 @@ function NewRunDialog({ onClose }: { onClose: () => void }) {
       footer={
         <>
           <button type="button" onClick={onClose} className="h-9 rounded-md border border-[var(--a-border)] px-3 text-[13px]">{t('cancel')}</button>
-          <button type="button" disabled={!month || saving} onClick={() => void submit()} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)] disabled:opacity-50">
+          <button type="button" disabled={!month || saving || employees === null || inForce.length === 0} onClick={() => void submit()} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)] disabled:opacity-50">
             {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             {t('createRun')}
           </button>
@@ -184,7 +202,18 @@ function NewRunDialog({ onClose }: { onClose: () => void }) {
       <p className="text-[12.5px] text-[var(--a-text-2)]">{t('newRunHint')}</p>
       <label className="block">
         <span className="mb-1 block font-medium text-[var(--a-text-2)]">{t('workMonth')}</span>
-        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className={field} />
+        <input type="month" value={month} onChange={(e) => setChosenMonth(e.target.value)} className={field} />
+        {employees !== null &&
+          (inForce.length > 0 ? (
+            <span className="mt-1 block text-[11.5px] text-[var(--a-text-3)]">
+              {t('contractsInForce', { count: inForce.length, names: [...new Set(inForce.map((c) => c.employee))].join(', ') })}
+            </span>
+          ) : (
+            <span className="mt-1 block rounded-md bg-[var(--a-warn-soft)] px-2 py-1.5 text-[12px] text-[var(--a-warn)]">
+              {contracts.length === 0 ? t('noContractsAtAll') : t('noContractsInMonth')}{' '}
+              <Link href="/payroll/employees" className="font-medium underline">{t('employees')}</Link>
+            </span>
+          ))}
       </label>
       <label className="block">
         <span className="mb-1 block font-medium text-[var(--a-text-2)]">{t('paymentDate')}</span>

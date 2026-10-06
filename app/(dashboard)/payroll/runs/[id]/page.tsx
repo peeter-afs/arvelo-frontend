@@ -232,7 +232,10 @@ export default function PayrollRunPage() {
           <tbody>
             {run.lines.length === 0 && (
               <tr>
-                <td colSpan={10} className="px-3 py-8 text-center text-[var(--a-text-3)]">{t('noLines')}</td>
+                <td colSpan={10} className="px-3 py-8 text-center text-[var(--a-text-3)]">
+                  <div>{t('noLines')}</div>
+                  {isDraft && <div className="mt-1 text-[12.5px]">{t('noLinesHint')}</div>}
+                </td>
               </tr>
             )}
             {run.lines.map((line) => (

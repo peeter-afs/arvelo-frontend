@@ -3617,6 +3617,10 @@
       "withNextSalary": "with salary",
       "fromApplication": "from application",
       "listHint": "Adding an absence updates the payroll draft of that month automatically."
-    }
+    },
+    "contractsInForce": "{count, plural, one {# contract is in force this month} other {# contracts are in force this month}}: {names}",
+    "noContractsInMonth": "No contract is in force this month — choose a month when a contract runs, or check the contract start.",
+    "noContractsAtAll": "No employees with a contract yet — add them first:",
+    "noLinesHint": "No contract was in force in the work month. Add one with “Add contract”, or delete the draft and choose the right month."
   }
 }

@@ -3617,6 +3617,10 @@
       "withNextSalary": "palgaga",
       "fromApplication": "avalduselt",
       "listHint": "Puudumise lisamisel uuendatakse sama kuu palgaarvestuse mustand automaatselt."
-    }
+    },
+    "contractsInForce": "{count, plural, one {Selles kuus kehtib # leping} other {Selles kuus kehtib # lepingut}}: {names}",
+    "noContractsInMonth": "Selles kuus ei kehti ühtegi lepingut — vali kuu, mil leping on jõus, või kontrolli lepingu algust.",
+    "noContractsAtAll": "Töötajaid lepingutega veel pole — lisa need enne:",
+    "noLinesHint": "Töökuul ei kehtinud ühtegi lepingut. Lisa leping nupuga „Lisa leping“ või kustuta mustand ja vali õige kuu."
   }
 }

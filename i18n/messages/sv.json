@@ -2169,6 +2169,10 @@
       "withNextSalary": "med lönen",
       "fromApplication": "från ansökan",
       "listHint": "När frånvaro läggs till uppdateras månadens löneutkast automatiskt."
-    }
+    },
+    "contractsInForce": "{count, plural, one {# avtal gäller denna månad} other {# avtal gäller denna månad}}: {names}",
+    "noContractsInMonth": "Inget avtal gäller denna månad — välj en månad då ett avtal gäller, eller kontrollera avtalets start.",
+    "noContractsAtAll": "Inga anställda med avtal ännu — lägg till dem först:",
+    "noLinesHint": "Inget avtal gällde under arbetsmånaden. Lägg till ett avtal eller ta bort utkastet och välj rätt månad."
   }
 }

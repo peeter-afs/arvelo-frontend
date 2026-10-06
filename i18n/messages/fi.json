@@ -2183,6 +2183,10 @@
       "withNextSalary": "palkan mukana",
       "fromApplication": "hakemuksesta",
       "listHint": "Poissaolon lisääminen päivittää saman kuun palkkaluonnoksen automaattisesti."
-    }
+    },
+    "contractsInForce": "{count, plural, one {Tässä kuussa on voimassa # sopimus} other {Tässä kuussa on voimassa # sopimusta}}: {names}",
+    "noContractsInMonth": "Tässä kuussa ei ole voimassa yhtään sopimusta — valitse kuukausi, jolloin sopimus on voimassa, tai tarkista sopimuksen alku.",
+    "noContractsAtAll": "Ei vielä työntekijöitä sopimuksineen — lisää ne ensin:",
+    "noLinesHint": "Työkuukautena ei ollut voimassa yhtään sopimusta. Lisää sopimus tai poista luonnos ja valitse oikea kuukausi."
   }
 }
