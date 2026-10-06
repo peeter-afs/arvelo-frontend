@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { payrollApi, type PayrollAccountKey, type PayrollSettings } from '@/lib/api/payroll.api';
+import { payrollApi, type PayrollAccountKey, type PayrollSettings, type VacationPayTiming } from '@/lib/api/payroll.api';
 
 /** Posting accounts in entry order, with the class of accounts each one is chosen from. */
 const ACCOUNT_FIELDS: Array<{ key: PayrollAccountKey; prefix: string; code: string }> = [
@@ -27,6 +27,7 @@ export default function PayrollSettingsPage() {
   const [draft, setDraft] = useState<Partial<Record<PayrollAccountKey, string | null>>>({});
   const [paymentDay, setPaymentDay] = useState('10');
   const [reference, setReference] = useState('');
+  const [timing, setTiming] = useState<VacationPayTiming>('before_leave');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -39,6 +40,7 @@ export default function PayrollSettingsPage() {
         setDraft(Object.fromEntries(ACCOUNT_FIELDS.map(({ key }) => [key, s[key]])));
         setPaymentDay(String(s.payment_day));
         setReference(s.emta_reference ?? '');
+        setTiming(s.vacation_pay_timing);
       })
       .catch((err) => setError(getErrorMessage(err)));
   }, []);
@@ -48,7 +50,7 @@ export default function PayrollSettingsPage() {
     setError(null);
     setSaved(false);
     try {
-      const next = await payrollApi.updateSettings({ ...draft, payment_day: Number(paymentDay) || 10, emta_reference: reference.trim() || null });
+      const next = await payrollApi.updateSettings({ ...draft, payment_day: Number(paymentDay) || 10, emta_reference: reference.trim() || null, vacation_pay_timing: timing });
       setSettings(next);
       setSaved(true);
     } catch (err) {
@@ -86,6 +88,14 @@ export default function PayrollSettingsPage() {
                 <span className="mb-1 block text-[12px] font-medium text-[var(--a-text-2)]">{t('emtaReference')}</span>
                 <input value={reference} onChange={(e) => setReference(e.target.value.replace(/\D/g, ''))} inputMode="numeric" className={`${field} font-mono`} />
                 <span className="mt-1 block text-[11.5px] text-[var(--a-text-3)]">{t('emtaReferenceHint')}</span>
+              </label>
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-[12px] font-medium text-[var(--a-text-2)]">{t('absence.timingDefault')}</span>
+                <select value={timing} onChange={(e) => setTiming(e.target.value as VacationPayTiming)} className={field}>
+                  <option value="before_leave">{t('absence.timingBefore')}</option>
+                  <option value="with_salary">{t('absence.timingWithSalary')}</option>
+                </select>
+                <span className="mt-1 block text-[11.5px] text-[var(--a-text-3)]">{t('absence.timingDefaultHint')}</span>
               </label>
             </div>
           </section>

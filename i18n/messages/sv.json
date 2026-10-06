@@ -2014,7 +2014,9 @@
       "noIban": "IBAN saknas",
       "runNoPersonalCode": "{name}: personnummer saknas — TSD kan inte skapas.",
       "runNoIban": "{name}: IBAN saknas — betalningen kan inte skapas.",
-      "partialMonth": "{name}: avtalet började eller slutade under månaden — kontrollera lönen och socialskatteminimum."
+      "partialMonth": "{name}: avtalet började eller slutade under månaden — kontrollera lönen och socialskatteminimum.",
+      "vacationUnpaid": "{name}: semestern börjar {date}, semesterlönen är obetald (betalas separat före semestern).",
+      "sickManual": "{name}: sjukintyg {date} är ett specialfall (arbetsolycka, graviditet m.m.) — ange ersättningen manuellt."
     },
     "runTitle": "Lönekörning {month}",
     "journalEntry": "Verifikation",
@@ -2096,6 +2098,77 @@
     "paidOn": "Utbetald {date}",
     "exemptionApplied": "Tillämpat grundavdrag {amount} €",
     "employerPaid": "Arbetsgivaren betalade dessutom {social} € socialskatt och {ui} € arbetslöshetsavgift.",
-    "print": "Skriv ut"
+    "print": "Skriv ut",
+    "absences": "Frånvaro",
+    "absencesSubtitle": "Semester, sjukfrånvaro och tjänstledighet utan lön. De styr månadslön, semesterlön och sjuklön.",
+    "allEmployees": "Alla anställda",
+    "extraRun": "Extra utbetalning",
+    "refreshAbsences": "Uppdatera från frånvaro",
+    "refreshAbsencesHint": "Beräknar grundlön, semesterlön och sjuklön på nytt från frånvaron. Manuella rader behålls.",
+    "autoItem": "Beräknad från avtal och frånvaro",
+    "leave": {
+      "title": "Semestersaldo",
+      "none": "Inget anställningsavtal.",
+      "perYear": "{days} d per år",
+      "summary": "ingående {opening} + intjänat {accrued} − uttaget {used}",
+      "planned": "planerat {days} d",
+      "balance": "saldo {days} d",
+      "annualDays": "Semesterdagar per år",
+      "opening": "Ingående semestersaldo",
+      "openingHint": "Outtagna dagar per datum (t.ex. vid byte från annat lönesystem)."
+    },
+    "absence": {
+      "add": "Lägg till frånvaro",
+      "edit": "Redigera frånvaro",
+      "locked": "Frånvaron är redan betald i en godkänd eller bokförd lönekörning. Annullera körningen för att ändra.",
+      "contract": "Avtal",
+      "anyContract": "Första anställningsavtalet",
+      "kindLabel": "Typ",
+      "kind": {
+        "vacation": "Semester",
+        "sick": "Sjukfrånvaro",
+        "unpaid": "Tjänstledigt utan lön",
+        "other": "Annan frånvaro"
+      },
+      "timing": "Semesterlön",
+      "timingBefore": "Separat före semestern",
+      "timingWithSalary": "Med lönen (enligt avtal)",
+      "timingHint": "Enligt lag betalas semesterlön före semestern om inget annat avtalats.",
+      "timingBeforeShort": "betalas före semestern",
+      "timingWithSalaryShort": "betalas med lönen",
+      "timingDefault": "Standard för semesterlön",
+      "timingDefaultHint": "Standard för ny semester; kan ändras per semester.",
+      "sickCase": "Typ av sjukintyg",
+      "sickCases": {
+        "illness": "Sjukdom",
+        "work_accident": "Arbetsolycka / yrkessjukdom",
+        "pregnancy": "Graviditetsrelaterad",
+        "other": "Annat"
+      },
+      "certificate": "Intygsnr",
+      "averageOverride": "Genomsnittlig dagslön",
+      "averageAuto": "beräknas",
+      "notes": "Anteckningar",
+      "vacationDays": "Semesterdagar (helgdagar undantagna)",
+      "sickDays": "Sjukdagar",
+      "employerDays": "Dagar som arbetsgivaren betalar ({first}–{last})",
+      "averageSource": {
+        "history": "Genomsnittlig dagslön (6 mån)",
+        "contract": "Genomsnittlig dagslön (avtal)",
+        "override": "Genomsnittlig dagslön (manuell)"
+      },
+      "averageHint": "{wages} € / {days} dagar, {from}–{to}",
+      "sickManual": "Ange specialfallets sjuklön manuellt i lönekörningen.",
+      "vacationPay": "Semesterlön",
+      "sickPay": "Sjuklön ({rate}%)",
+      "empty": "Ingen frånvaro.",
+      "period": "Period",
+      "details": "Detaljer",
+      "payment": "Lön",
+      "payVacation": "Betala semesterlön",
+      "withNextSalary": "med lönen",
+      "fromApplication": "från ansökan",
+      "listHint": "När frånvaro läggs till uppdateras månadens löneutkast automatiskt."
+    }
   }
 }

@@ -157,6 +157,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
             children: [
               { label: tPayroll('runs'), href: '/payroll' },
               { label: tPayroll('employees'), href: '/payroll/employees' },
+              { label: tPayroll('absences'), href: '/payroll/absences' },
               { label: tPayroll('settings'), href: '/payroll/settings' },
             ],
           },

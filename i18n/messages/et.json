@@ -3462,7 +3462,9 @@
       "noIban": "IBAN puudub",
       "runNoPersonalCode": "{name}: isikukood puudub — TSD-d ei saa koostada.",
       "runNoIban": "{name}: IBAN puudub — väljamakset ei saa koostada.",
-      "partialMonth": "{name}: leping algas või lõppes kuu sees — kontrolli põhipalka ja sotsiaalmaksu miinimumi."
+      "partialMonth": "{name}: leping algas või lõppes kuu sees — kontrolli põhipalka ja sotsiaalmaksu miinimumi.",
+      "vacationUnpaid": "{name}: puhkus algab {date}, puhkusetasu on maksmata (makstakse enne puhkust eraldi).",
+      "sickManual": "{name}: haigusleht {date} on erijuht (tööõnnetus, rasedus vm) — sisesta hüvitis käsitsi."
     },
     "runTitle": "Palgaarvestus {month}",
     "journalEntry": "Kanne",
@@ -3544,6 +3546,77 @@
     "paidOn": "Makstud {date}",
     "exemptionApplied": "Arvestatud maksuvaba tulu {amount} €",
     "employerPaid": "Tööandja maksis lisaks sotsiaalmaksu {social} € ja töötuskindlustusmakset {ui} €.",
-    "print": "Prindi"
+    "print": "Prindi",
+    "absences": "Puudumised",
+    "absencesSubtitle": "Puhkused, haiguslehed ja palgata puhkused. Nende põhjal arvutatakse kuupalk, puhkusetasu ja haigushüvitis.",
+    "allEmployees": "Kõik töötajad",
+    "extraRun": "Lisamakse",
+    "refreshAbsences": "Uuenda puudumiste põhjal",
+    "refreshAbsencesHint": "Arvutab põhipalga, puhkusetasu ja haigushüvitise puudumiste põhjal uuesti. Käsitsi lisatud read jäävad alles.",
+    "autoItem": "Arvutatud lepingu ja puudumiste põhjal",
+    "leave": {
+      "title": "Puhkusejääk",
+      "none": "Töölepingut pole.",
+      "perYear": "{days} p aastas",
+      "summary": "algjääk {opening} + teenitud {accrued} − kasutatud {used}",
+      "planned": "planeeritud {days} p",
+      "balance": "jääk {days} p",
+      "annualDays": "Puhkusepäevi aastas",
+      "opening": "Puhkusejääk alguses",
+      "openingHint": "Kasutamata päevad seisuga (nt üleminekul teisest palgaprogrammist)."
+    },
+    "absence": {
+      "add": "Lisa puudumine",
+      "edit": "Muuda puudumist",
+      "locked": "Selle puudumise eest on juba makstud kinnitatud või konteeritud palgaarvestuses. Muutmiseks tühista enne see arvestus.",
+      "contract": "Leping",
+      "anyContract": "Esimene tööleping",
+      "kindLabel": "Liik",
+      "kind": {
+        "vacation": "Põhipuhkus",
+        "sick": "Haigusleht",
+        "unpaid": "Palgata puhkus",
+        "other": "Muu puudumine"
+      },
+      "timing": "Puhkusetasu maksmine",
+      "timingBefore": "Enne puhkust eraldi maksena",
+      "timingWithSalary": "Koos palgaga (kokkuleppel)",
+      "timingHint": "Seaduse järgi makstakse puhkusetasu enne puhkust, kui pole kokku lepitud teisiti.",
+      "timingBeforeShort": "tasu enne puhkust",
+      "timingWithSalaryShort": "tasu koos palgaga",
+      "timingDefault": "Puhkusetasu maksmine vaikimisi",
+      "timingDefaultHint": "Uue puhkuse vaikimisi valik; puhkuse juures saab muuta.",
+      "sickCase": "Haiguslehe liik",
+      "sickCases": {
+        "illness": "Haigus",
+        "work_accident": "Tööõnnetus / kutsehaigus",
+        "pregnancy": "Rasedusega seotud",
+        "other": "Muu"
+      },
+      "certificate": "Haiguslehe nr",
+      "averageOverride": "Keskmine päevatasu",
+      "averageAuto": "arvutatakse",
+      "notes": "Märkused",
+      "vacationDays": "Puhkusepäevi (riigipühad välja arvatud)",
+      "sickDays": "Haiguspäevi",
+      "employerDays": "Tööandja makstavad päevad ({first}.–{last}.)",
+      "averageSource": {
+        "history": "Keskmine päevatasu (6 kuud)",
+        "contract": "Keskmine päevatasu (lepingu järgi)",
+        "override": "Keskmine päevatasu (käsitsi)"
+      },
+      "averageHint": "{wages} € / {days} päeva, {from}–{to}",
+      "sickManual": "Erijuhu haigushüvitis sisesta palgaarvestuses käsitsi.",
+      "vacationPay": "Puhkusetasu",
+      "sickPay": "Haigushüvitis ({rate}%)",
+      "empty": "Puudumisi pole.",
+      "period": "Periood",
+      "details": "Täpsustus",
+      "payment": "Tasu",
+      "payVacation": "Maksa puhkusetasu",
+      "withNextSalary": "palgaga",
+      "fromApplication": "avalduselt",
+      "listHint": "Puudumise lisamisel uuendatakse sama kuu palgaarvestuse mustand automaatselt."
+    }
   }
 }

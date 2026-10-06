@@ -2028,7 +2028,9 @@
       "noIban": "IBAN puuttuu",
       "runNoPersonalCode": "{name}: henkilötunnus puuttuu — TSD:tä ei voi muodostaa.",
       "runNoIban": "{name}: IBAN puuttuu — maksua ei voi luoda.",
-      "partialMonth": "{name}: sopimus alkoi tai päättyi kesken kuukauden — tarkista palkka ja sosiaaliveron vähimmäismäärä."
+      "partialMonth": "{name}: sopimus alkoi tai päättyi kesken kuukauden — tarkista palkka ja sosiaaliveron vähimmäismäärä.",
+      "vacationUnpaid": "{name}: loma alkaa {date}, lomapalkka maksamatta (maksetaan erikseen ennen lomaa).",
+      "sickManual": "{name}: sairausloma {date} on erityistapaus (työtapaturma, raskaus tms.) — syötä korvaus käsin."
     },
     "runTitle": "Palkkalaskelma {month}",
     "journalEntry": "Kirjaus",
@@ -2110,6 +2112,77 @@
     "paidOn": "Maksettu {date}",
     "exemptionApplied": "Huomioitu verovapaa tulo {amount} €",
     "employerPaid": "Työnantaja maksoi lisäksi sosiaaliveroa {social} € ja työttömyysvakuutusmaksua {ui} €.",
-    "print": "Tulosta"
+    "print": "Tulosta",
+    "absences": "Poissaolot",
+    "absencesSubtitle": "Lomat, sairauslomat ja palkattomat vapaat. Niiden perusteella lasketaan kuukausipalkka, lomapalkka ja sairausajan korvaus.",
+    "allEmployees": "Kaikki työntekijät",
+    "extraRun": "Lisämaksu",
+    "refreshAbsences": "Päivitä poissaoloista",
+    "refreshAbsencesHint": "Laskee peruspalkan, lomapalkan ja sairausajan korvauksen uudelleen poissaoloista. Käsin lisätyt rivit säilyvät.",
+    "autoItem": "Laskettu sopimuksen ja poissaolojen perusteella",
+    "leave": {
+      "title": "Lomasaldo",
+      "none": "Ei työsopimusta.",
+      "perYear": "{days} pv vuodessa",
+      "summary": "alkusaldo {opening} + ansaittu {accrued} − käytetty {used}",
+      "planned": "suunniteltu {days} pv",
+      "balance": "saldo {days} pv",
+      "annualDays": "Lomapäiviä vuodessa",
+      "opening": "Lomasaldo alussa",
+      "openingHint": "Käyttämättömät päivät tiettynä päivänä (esim. siirryttäessä toisesta palkkajärjestelmästä)."
+    },
+    "absence": {
+      "add": "Lisää poissaolo",
+      "edit": "Muokkaa poissaoloa",
+      "locked": "Tämä poissaolo on jo maksettu hyväksytyssä tai kirjatussa palkkalaskelmassa. Peru laskelma muuttaaksesi.",
+      "contract": "Sopimus",
+      "anyContract": "Ensimmäinen työsopimus",
+      "kindLabel": "Laji",
+      "kind": {
+        "vacation": "Vuosiloma",
+        "sick": "Sairausloma",
+        "unpaid": "Palkaton vapaa",
+        "other": "Muu poissaolo"
+      },
+      "timing": "Lomapalkan maksu",
+      "timingBefore": "Erikseen ennen lomaa",
+      "timingWithSalary": "Palkan mukana (sopimuksesta)",
+      "timingHint": "Lain mukaan lomapalkka maksetaan ennen lomaa, ellei toisin sovita.",
+      "timingBeforeShort": "maksetaan ennen lomaa",
+      "timingWithSalaryShort": "maksetaan palkan mukana",
+      "timingDefault": "Lomapalkan oletusmaksutapa",
+      "timingDefaultHint": "Uuden loman oletus; voidaan muuttaa loman kohdalla.",
+      "sickCase": "Sairausloman laji",
+      "sickCases": {
+        "illness": "Sairaus",
+        "work_accident": "Työtapaturma / ammattitauti",
+        "pregnancy": "Raskauteen liittyvä",
+        "other": "Muu"
+      },
+      "certificate": "Todistuksen nro",
+      "averageOverride": "Keskimääräinen päiväpalkka",
+      "averageAuto": "lasketaan",
+      "notes": "Huomautukset",
+      "vacationDays": "Lomapäiviä (pyhät pois lukien)",
+      "sickDays": "Sairauspäiviä",
+      "employerDays": "Työnantajan maksamat päivät ({first}.–{last}.)",
+      "averageSource": {
+        "history": "Keskipäiväpalkka (6 kk)",
+        "contract": "Keskipäiväpalkka (sopimuksesta)",
+        "override": "Keskipäiväpalkka (käsin)"
+      },
+      "averageHint": "{wages} € / {days} päivää, {from}–{to}",
+      "sickManual": "Syötä erityistapauksen korvaus palkkalaskelmaan käsin.",
+      "vacationPay": "Lomapalkka",
+      "sickPay": "Sairausajan korvaus ({rate}%)",
+      "empty": "Ei poissaoloja.",
+      "period": "Jakso",
+      "details": "Tarkenne",
+      "payment": "Palkka",
+      "payVacation": "Maksa lomapalkka",
+      "withNextSalary": "palkan mukana",
+      "fromApplication": "hakemuksesta",
+      "listHint": "Poissaolon lisääminen päivittää saman kuun palkkaluonnoksen automaattisesti."
+    }
   }
 }

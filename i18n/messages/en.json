@@ -3462,7 +3462,9 @@
       "noIban": "IBAN missing",
       "runNoPersonalCode": "{name}: personal code missing — the TSD cannot be built.",
       "runNoIban": "{name}: IBAN missing — the payment cannot be created.",
-      "partialMonth": "{name}: the contract started or ended during the month — check the salary and the social tax minimum."
+      "partialMonth": "{name}: the contract started or ended during the month — check the salary and the social tax minimum.",
+      "vacationUnpaid": "{name}: holiday starts {date}, holiday pay not yet paid (paid separately before the leave).",
+      "sickManual": "{name}: sick leave {date} is a special case (work accident, pregnancy etc.) — enter the benefit by hand."
     },
     "runTitle": "Payroll {month}",
     "journalEntry": "Journal entry",
@@ -3544,6 +3546,77 @@
     "paidOn": "Paid {date}",
     "exemptionApplied": "Tax-free income applied {amount} €",
     "employerPaid": "The employer also paid {social} € social tax and {ui} € unemployment insurance.",
-    "print": "Print"
+    "print": "Print",
+    "absences": "Absences",
+    "absencesSubtitle": "Holidays, sick leave and unpaid leave. They drive the monthly salary, holiday pay and sick pay.",
+    "allEmployees": "All employees",
+    "extraRun": "Extra payout",
+    "refreshAbsences": "Update from absences",
+    "refreshAbsencesHint": "Recalculates base salary, holiday pay and sick pay from the absences. Items added by hand are kept.",
+    "autoItem": "Calculated from the contract and absences",
+    "leave": {
+      "title": "Holiday balance",
+      "none": "No employment contract.",
+      "perYear": "{days} days a year",
+      "summary": "opening {opening} + earned {accrued} − used {used}",
+      "planned": "planned {days} d",
+      "balance": "balance {days} d",
+      "annualDays": "Holiday days per year",
+      "opening": "Opening holiday balance",
+      "openingHint": "Unused days as of a date (e.g. when moving from another payroll system)."
+    },
+    "absence": {
+      "add": "Add absence",
+      "edit": "Edit absence",
+      "locked": "This absence is already paid in an approved or posted payroll run. Cancel that run to change it.",
+      "contract": "Contract",
+      "anyContract": "First employment contract",
+      "kindLabel": "Type",
+      "kind": {
+        "vacation": "Annual leave",
+        "sick": "Sick leave",
+        "unpaid": "Unpaid leave",
+        "other": "Other absence"
+      },
+      "timing": "Holiday pay",
+      "timingBefore": "Separately before the leave",
+      "timingWithSalary": "With the salary (by agreement)",
+      "timingHint": "By law holiday pay is paid before the leave unless agreed otherwise.",
+      "timingBeforeShort": "paid before leave",
+      "timingWithSalaryShort": "paid with salary",
+      "timingDefault": "Default holiday pay timing",
+      "timingDefaultHint": "Default for a new holiday; can be changed per holiday.",
+      "sickCase": "Sick leave type",
+      "sickCases": {
+        "illness": "Illness",
+        "work_accident": "Work accident / occupational disease",
+        "pregnancy": "Pregnancy related",
+        "other": "Other"
+      },
+      "certificate": "Certificate no.",
+      "averageOverride": "Average daily pay",
+      "averageAuto": "calculated",
+      "notes": "Notes",
+      "vacationDays": "Holiday days (public holidays excluded)",
+      "sickDays": "Sick days",
+      "employerDays": "Days paid by the employer ({first}–{last})",
+      "averageSource": {
+        "history": "Average daily pay (6 months)",
+        "contract": "Average daily pay (from contract)",
+        "override": "Average daily pay (manual)"
+      },
+      "averageHint": "{wages} € / {days} days, {from}–{to}",
+      "sickManual": "Enter the special-case sick pay by hand in the payroll run.",
+      "vacationPay": "Holiday pay",
+      "sickPay": "Sick pay ({rate}%)",
+      "empty": "No absences.",
+      "period": "Period",
+      "details": "Details",
+      "payment": "Pay",
+      "payVacation": "Pay holiday pay",
+      "withNextSalary": "with salary",
+      "fromApplication": "from application",
+      "listHint": "Adding an absence updates the payroll draft of that month automatically."
+    }
   }
 }

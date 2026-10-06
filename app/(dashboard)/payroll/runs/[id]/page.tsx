@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { AlertTriangle, ArrowLeft, Banknote, CheckCircle2, Download, Loader2, Plus, RotateCcw, Trash2, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Banknote, CheckCircle2, Download, Loader2, Plus, RefreshCw, RotateCcw, Sparkles, Trash2, X } from 'lucide-react';
 import { bankingApi, type BankAccountRecord } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 import {
@@ -78,7 +78,9 @@ export default function PayrollRunPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-[20px] font-semibold text-[var(--a-text)]">{t('runTitle', { month: monthText(run.period_month) })}</h1>
             <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${RUN_STATUS_TONE[run.status]}`}>{t(`status.${run.status}`)}</span>
+            {run.run_type === 'extra' && <span className="rounded-full bg-[var(--a-surface-2)] px-2 py-0.5 text-[11px] font-medium text-[var(--a-text-2)]">{t('extraRun')}</span>}
           </div>
+          {run.description && run.run_type === 'extra' && <div className="mt-0.5 text-[13px] text-[var(--a-text-2)]">{run.description}</div>}
           <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] text-[var(--a-text-2)]">
             <span>{t('paymentDate')}:</span>
             {isDraft ? (
@@ -102,6 +104,12 @@ export default function PayrollRunPage() {
         <div className="flex flex-wrap gap-2">
           {isDraft && (
             <>
+              {run.run_type === 'regular' && (
+                <button type="button" className={btn} disabled={busy !== null} onClick={() => void act('refresh', () => payrollApi.refreshAbsences(run.id))} title={t('refreshAbsencesHint')}>
+                  {busy === 'refresh' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  {t('refreshAbsences')}
+                </button>
+              )}
               <button type="button" className={btn} onClick={() => setAdding(true)}>
                 <Plus className="h-3.5 w-3.5" />
                 {t('addLine')}
@@ -171,11 +179,27 @@ export default function PayrollRunPage() {
       {run.warnings.length > 0 && run.status !== 'cancelled' && (
         <div className="mb-3 space-y-0.5 rounded-lg bg-[var(--a-warn-soft)] px-3 py-2 text-[12.5px] text-[var(--a-warn)]">
           {run.warnings.map((w) => {
-            const [code, who] = w.split(':');
+            const [code, who, date, absenceId] = w.split(':');
+            const text =
+              code === 'missing_personal_code' ? t('warning.runNoPersonalCode', { name: who })
+              : code === 'missing_iban' ? t('warning.runNoIban', { name: who })
+              : code === 'vacation_unpaid' ? t('warning.vacationUnpaid', { name: who, date: dateText(date) })
+              : code === 'sick_manual' ? t('warning.sickManual', { name: who, date: dateText(date) })
+              : t('warning.partialMonth', { name: who });
             return (
-              <div key={w} className="flex items-center gap-1.5">
+              <div key={w} className="flex flex-wrap items-center gap-1.5">
                 <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-                {code === 'missing_personal_code' ? t('warning.runNoPersonalCode', { name: who }) : code === 'missing_iban' ? t('warning.runNoIban', { name: who }) : t('warning.partialMonth', { name: who })}
+                {text}
+                {code === 'vacation_unpaid' && absenceId && (
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => void act(`pay-${absenceId}`, () => payrollApi.vacationPayout(absenceId), (result) => result && router.push(`/payroll/runs/${result.id}`))}
+                    className="ml-1 rounded border border-current px-1.5 py-0.5 text-[11.5px] font-medium hover:bg-white/40 disabled:opacity-50"
+                  >
+                    {t('absence.payVacation')}
+                  </button>
+                )}
               </div>
             );
           })}
@@ -339,7 +363,14 @@ function Modal({ title, onClose, children, footer, wide }: { title: string; onCl
   );
 }
 
-type ItemDraft = { kind: EarningKind; description: string; amount: string; hours: string };
+type ItemDraft = {
+  kind: EarningKind;
+  description: string;
+  amount: string;
+  hours: string;
+  /** Generated fields, kept until the item is edited by hand. */
+  origin: Pick<EarningItem, 'auto' | 'absence_id' | 'days' | 'daily_rate'>;
+};
 
 function LineDialog({
   line,
@@ -356,7 +387,13 @@ function LineDialog({
 }) {
   const t = useTranslations('payroll');
   const [items, setItems] = useState<ItemDraft[]>(
-    line.items.map((item) => ({ kind: item.kind, description: item.description ?? '', amount: String(item.amount), hours: item.hours ? String(item.hours) : '' }))
+    line.items.map((item) => ({
+      kind: item.kind,
+      description: item.description ?? '',
+      amount: String(item.amount),
+      hours: item.hours ? String(item.hours) : '',
+      origin: { auto: item.auto, absence_id: item.absence_id, days: item.days, daily_rate: item.daily_rate },
+    }))
   );
   const [applyMin, setApplyMin] = useState(line.apply_min_social_tax);
   const [override, setOverride] = useState(line.exemption_override === null ? '' : String(line.exemption_override));
@@ -364,7 +401,9 @@ function LineDialog({
   const [error, setError] = useState<string | null>(null);
   const kinds = line.payment_type === '10' ? KINDS : KINDS.filter((k) => k !== 'sick');
 
-  const update = (index: number, patch: Partial<ItemDraft>) => setItems((list) => list.map((item, i) => (i === index ? { ...item, ...patch } : item)));
+  // Editing a generated item makes it manual, so rebuilding from absences leaves it alone.
+  const update = (index: number, patch: Partial<ItemDraft>) =>
+    setItems((list) => list.map((item, i) => (i === index ? { ...item, ...patch, origin: { ...item.origin, auto: false } } : item)));
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     setError(null);
@@ -400,6 +439,7 @@ function LineDialog({
                   void run(() =>
                     onSave({
                       items: items.map((item) => ({
+                        ...item.origin,
                         kind: item.kind,
                         description: item.description.trim() || null,
                         amount: parseAmount(item.amount),
@@ -444,7 +484,10 @@ function LineDialog({
                 </select>
               </td>
               <td className="py-1 pr-2">
-                <input disabled={!editable} value={item.description} onChange={(e) => update(index, { description: e.target.value })} className={input} />
+                <div className="flex items-center gap-1">
+                  {item.origin.auto && <span title={t('autoItem')}><Sparkles className="h-3.5 w-3.5 flex-shrink-0 text-[var(--a-accent)]" /></span>}
+                  <input disabled={!editable} value={item.description} onChange={(e) => update(index, { description: e.target.value })} className={input} />
+                </div>
               </td>
               <td className="py-1 pr-2">
                 <input disabled={!editable} value={item.hours} onChange={(e) => update(index, { hours: e.target.value })} inputMode="decimal" className={`${input} text-right font-mono`} />
@@ -464,7 +507,7 @@ function LineDialog({
           <tr>
             <td colSpan={3} className="pt-2">
               {editable && (
-                <button type="button" onClick={() => setItems((list) => [...list, { kind: 'bonus', description: '', amount: '', hours: '' }])} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--a-accent)]">
+                <button type="button" onClick={() => setItems((list) => [...list, { kind: 'bonus', description: '', amount: '', hours: '', origin: {} }])} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--a-accent)]">
                   <Plus className="h-3.5 w-3.5" />
                   {t('addItem')}
                 </button>

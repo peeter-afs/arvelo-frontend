@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { ArrowLeft, Loader2, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { ArrowLeft, CalendarOff, Loader2, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { accountingApi, type AccountOption, type PartnerOption } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { costCentersApi, dimensionLabel, projectsApi, type CostCenter, type Project } from '@/lib/api/dimensions.api';
@@ -11,6 +11,7 @@ import {
   payrollApi,
   type ContractInput,
   type ContractType,
+  type LeaveBalance,
   type PayrollContract,
   type PayrollEmployee,
 } from '@/lib/api/payroll.api';
@@ -199,9 +200,12 @@ function EmployeeDialog({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [balances, setBalances] = useState<LeaveBalance[]>([]);
+
   useEffect(() => {
     if (isNew) accountingApi.getPartners().then(setPartners).catch(() => {});
-  }, [isNew]);
+    else payrollApi.leaveBalance(employee.id).then(setBalances).catch(() => {});
+  }, [isNew, employee]);
 
   const matches = useMemo(() => {
     const needle = name.trim().toLocaleLowerCase('et');
@@ -369,6 +373,33 @@ function EmployeeDialog({
               )}
             </div>
           )}
+          {!isNew && (
+            <div className="rounded-lg border border-[var(--a-border)]">
+              <div className="flex items-center justify-between border-b border-[var(--a-border)] px-3 py-2">
+                <div className="text-[12.5px] font-semibold text-[var(--a-text)]">{t('leave.title')}</div>
+                <Link href={`/payroll/absences?employee=${employee.id}`} className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--a-accent)]">
+                  <CalendarOff className="h-3.5 w-3.5" />
+                  {t('absences')}
+                </Link>
+              </div>
+              {balances.length === 0 ? (
+                <div className="px-3 py-3 text-[12.5px] text-[var(--a-text-3)]">{t('leave.none')}</div>
+              ) : (
+                <ul className="divide-y divide-[var(--a-border)]">
+                  {balances.map((b) => (
+                    <li key={b.contract_id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-[12.5px]">
+                      <span className="text-[var(--a-text-2)]">{b.title || t('contractType.employment')} · {t('leave.perYear', { days: b.annual_days })}</span>
+                      <span className="text-[var(--a-text-3)]">
+                        {t('leave.summary', { opening: b.opening, accrued: b.accrued, used: b.used })}
+                        {b.planned > 0 ? ` · ${t('leave.planned', { days: b.planned })}` : ''}
+                      </span>
+                      <span className="font-semibold text-[var(--a-text)]">{t('leave.balance', { days: b.balance })}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
           {error && <div className="rounded-lg bg-[var(--a-neg-soft)] px-3 py-2 text-[var(--a-neg)]">{error}</div>}
         </div>
         <div className="flex flex-shrink-0 justify-end gap-2 border-t border-[var(--a-border)] px-4 py-3">
@@ -475,6 +506,33 @@ function ContractFields({ value, onChange, lookups }: { value: ContractInput; on
           ))}
         </select>
       </label>
+      {value.contract_type === 'employment' && (
+        <>
+          <label className="block">
+            <span className={label}>{t('leave.annualDays')}</span>
+            <input
+              defaultValue={value.annual_leave_days ?? 28}
+              onChange={(e) => set('annual_leave_days', e.target.value === '' ? 28 : Math.round(parseAmount(e.target.value)))}
+              inputMode="numeric"
+              className={`${field} text-right font-mono`}
+            />
+          </label>
+          <label className="block">
+            <span className={label}>{t('leave.opening')}</span>
+            <div className="flex gap-2">
+              <input
+                defaultValue={value.leave_opening_days ? String(value.leave_opening_days) : ''}
+                onChange={(e) => set('leave_opening_days', parseAmount(e.target.value))}
+                placeholder="0"
+                inputMode="decimal"
+                className={`${field} w-20 text-right font-mono`}
+              />
+              <input type="date" value={value.leave_opening_date ?? ''} onChange={(e) => set('leave_opening_date', e.target.value || null)} className={field} />
+            </div>
+            <span className="mt-1 block text-[11.5px] text-[var(--a-text-3)]">{t('leave.openingHint')}</span>
+          </label>
+        </>
+      )}
       {lookups.costCenters.length > 0 && (
         <label className="block">
           <span className={label}>{t('costCenter')}</span>
@@ -528,6 +586,9 @@ function ContractDialog({
           expense_account_id: contract.expense_account_id,
           cost_center_id: contract.cost_center_id,
           project_id: contract.project_id,
+          annual_leave_days: contract.annual_leave_days,
+          leave_opening_days: contract.leave_opening_days,
+          leave_opening_date: contract.leave_opening_date,
         }
       : emptyContract()
   );

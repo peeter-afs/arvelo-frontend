@@ -24,6 +24,9 @@ export type PayrollContract = {
   expense_account_id: string | null;
   cost_center_id: string | null;
   project_id: string | null;
+  annual_leave_days: number;
+  leave_opening_days: number;
+  leave_opening_date: string | null;
 };
 
 export type PayrollEmployee = {
@@ -43,7 +46,12 @@ export type PayrollEmployee = {
   contracts: PayrollContract[];
 };
 
-export type ContractInput = Omit<PayrollContract, 'id' | 'employee_id' | 'workload'> & { workload?: number };
+export type ContractInput = Omit<PayrollContract, 'id' | 'employee_id' | 'workload' | 'annual_leave_days' | 'leave_opening_days' | 'leave_opening_date'> & {
+  workload?: number;
+  annual_leave_days?: number;
+  leave_opening_days?: number;
+  leave_opening_date?: string | null;
+};
 
 export type EmployeeInput = {
   partner_id?: string | null;
@@ -66,6 +74,11 @@ export type EarningItem = {
   description: string | null;
   amount: number;
   hours?: number | null;
+  /** Generated from the contract or an absence; cleared when edited by hand. */
+  auto?: boolean;
+  absence_id?: string | null;
+  days?: number | null;
+  daily_rate?: number | null;
 };
 
 export type PayrollTotals = {
@@ -103,6 +116,7 @@ export type PayrollRun = {
   period_month: string;
   payment_date: string;
   status: PayrollRunStatus;
+  run_type: 'regular' | 'extra';
   description: string | null;
   journal_entry_id: string | null;
   reversal_journal_entry_id: string | null;
@@ -128,10 +142,65 @@ export type PayrollAccountKey =
   | 'unemployment_account_id'
   | 'pension_account_id';
 
+export type VacationPayTiming = 'before_leave' | 'with_salary';
+
 export type PayrollSettings = Record<PayrollAccountKey, string | null> & {
   payment_day: number;
   emta_reference: string | null;
+  vacation_pay_timing: VacationPayTiming;
   accounts: Record<PayrollAccountKey, { id: string; code: string; name: string } | null>;
+};
+
+export type AbsenceKind = 'vacation' | 'sick' | 'unpaid' | 'other';
+export type SickCase = 'illness' | 'work_accident' | 'pregnancy' | 'other';
+
+export type AbsenceInput = {
+  employee_id: string;
+  contract_id?: string | null;
+  kind: AbsenceKind;
+  start_date: string;
+  end_date: string;
+  vacation_pay_timing?: VacationPayTiming | null;
+  sick_case?: SickCase | null;
+  sick_certificate?: string | null;
+  average_daily_override?: number | null;
+  notes?: string | null;
+};
+
+export type Absence = AbsenceInput & {
+  id: string;
+  source: 'manual' | 'application';
+  paid_in?: Array<{ run_id: string; status: PayrollRunStatus }>;
+};
+
+export type AveragePay = {
+  daily: number;
+  source: 'history' | 'contract' | 'override';
+  wages: number;
+  calendar_days: number;
+  window_start: string;
+  window_end: string;
+};
+
+export type AbsencePreview = {
+  days: number;
+  amount: number;
+  average: AveragePay | null;
+  employer_days?: number;
+  sick_rule?: { firstDay: number; lastDay: number; rate: number };
+  manual?: boolean;
+};
+
+export type LeaveBalance = {
+  contract_id: string;
+  title: string | null;
+  annual_days: number;
+  accrual_start: string;
+  opening: number;
+  accrued: number;
+  used: number;
+  planned: number;
+  balance: number;
 };
 
 export type Payslip = {
@@ -178,7 +247,9 @@ export const payrollApi = {
     const response = await apiClient.get<ApiResponse<PayrollSettings>>('/api/payroll/settings');
     return response.data.data;
   },
-  async updateSettings(payload: Partial<Record<PayrollAccountKey, string | null>> & { payment_day?: number; emta_reference?: string | null }) {
+  async updateSettings(
+    payload: Partial<Record<PayrollAccountKey, string | null>> & { payment_day?: number; emta_reference?: string | null; vacation_pay_timing?: VacationPayTiming }
+  ) {
     const response = await apiClient.put<ApiResponse<PayrollSettings>>('/api/payroll/settings', payload);
     return response.data.data;
   },
@@ -207,6 +278,38 @@ export const payrollApi = {
   },
   async deleteContract(employeeId: string, contractId: string) {
     await apiClient.delete(`/api/payroll/employees/${employeeId}/contracts/${contractId}`);
+  },
+
+  async absences(params?: { employee_id?: string; from?: string; to?: string }) {
+    const response = await apiClient.get<ApiResponse<Absence[]>>('/api/payroll/absences', { params });
+    return response.data.data;
+  },
+  async previewAbsence(payload: AbsenceInput) {
+    const response = await apiClient.post<ApiResponse<AbsencePreview>>('/api/payroll/absences/preview', payload);
+    return response.data.data;
+  },
+  async createAbsence(payload: AbsenceInput) {
+    const response = await apiClient.post<ApiResponse<Absence>>('/api/payroll/absences', payload);
+    return response.data.data;
+  },
+  async updateAbsence(id: string, payload: AbsenceInput) {
+    const response = await apiClient.put<ApiResponse<Absence>>(`/api/payroll/absences/${id}`, payload);
+    return response.data.data;
+  },
+  async deleteAbsence(id: string) {
+    await apiClient.delete(`/api/payroll/absences/${id}`);
+  },
+  async vacationPayout(id: string, paymentDate?: string | null) {
+    const response = await apiClient.post<ApiResponse<PayrollRunDetail>>(`/api/payroll/absences/${id}/vacation-payout`, { payment_date: paymentDate || null });
+    return response.data.data;
+  },
+  async leaveBalance(employeeId: string) {
+    const response = await apiClient.get<ApiResponse<LeaveBalance[]>>(`/api/payroll/employees/${employeeId}/leave-balance`);
+    return response.data.data;
+  },
+  async refreshAbsences(id: string) {
+    const response = await apiClient.post<ApiResponse<PayrollRunDetail>>(`/api/payroll/runs/${id}/refresh-absences`);
+    return response.data.data;
   },
 
   async runs() {

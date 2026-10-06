@@ -10,7 +10,7 @@ export const palgaarvestus: Guide = {
   summary:
     'Töötajad ja lepingud, kuu palgaarvestus, maksud ja kanne, palga ja maksude väljamaksed ning andmepõhine TSD e-MTA-sse.',
   category: 'raamatupidamine',
-  minutes: 8,
+  minutes: 11,
   updatedAt: '2026-10-06',
   relatedRoutes: ['/payroll'],
   blocks: [
@@ -46,7 +46,7 @@ export const palgaarvestus: Guide = {
       type: 'steps',
       items: [
         { title: 'Uus palgaarvestus', text: 'Vali töökuu. Mustandisse tulevad kõik lepingud, mis sel kuul kehtivad. Väljamakse kuupäev on vaikimisi järgmise kuu palgapäev.' },
-        { title: 'Kontrolli ja täienda', text: 'Klõpsa töötaja real, et lisada preemia, puhkusetasu, haigushüvitis või muuta põhipalka (nt kui leping algas kuu keskel). Iga muudatuse järel arvutatakse kogu arvestus uuesti.' },
+        { title: 'Kontrolli ja täienda', text: 'Põhipalk, puhkusetasu ja haigushüvitis arvutatakse lepingu ja puudumiste põhjal (✦ märgiga read). Klõpsa töötaja real, et lisada preemia või muuta summasid — muudetud rida jääb käsitsi reaks. Iga muudatuse järel arvutatakse kogu arvestus uuesti.' },
         { title: 'Kinnita', text: 'Summad lukustuvad. Vajadusel saab **Ava muutmiseks**.' },
         { title: 'Konteeri', text: 'Tehakse üks kanne töökuu viimase kuupäevaga.' },
       ],
@@ -109,6 +109,39 @@ export const palgaarvestus: Guide = {
         'Iga väljamakse saadetakse püsiva tunnusega ja sama tunnust ei saa uuesti „uue“ väljamaksena saata. Kui esitatud arvestus on vale: **Tühista** arvestus (tehakse stornokanne), laadi alla **TSD tühistusfail** ja laadi see e-MTA-sse, seejärel koosta uus arvestus ja uus TSD fail.',
     },
 
+    { type: 'heading', text: 'Puudumised: puhkus ja haigusleht' },
+    {
+      type: 'paragraph',
+      text:
+        'Sisesta puudumised **Palgaarvestus → Puudumised** all. Puudumise põhjal arvutab Arvelo kuupalga töötatud tööpäevade järgi, puhkusetasu ja tööandja makstava haigushüvitise. Kui sama kuu palgaarvestus on mustandis, uuendatakse see automaatselt; käsitsi lisatud read jäävad alles.',
+    },
+    {
+      type: 'table',
+      headers: ['Puudumine', 'Kuupalk', 'Makstakse'],
+      rows: [
+        ['Põhipuhkus', 'väheneb puhkuse tööpäevade võrra', 'puhkusetasu = keskmine päevatasu × puhkusepäevad (riigipühad ei ole puhkusepäevad)'],
+        ['Haigusleht', 'väheneb haiguse tööpäevade võrra', '4.–8. päev 70% keskmisest päevatasust (haigushüvitis, TSD liik 24); 1.–3. päeva eest ei maksta, alates 9. päevast maksab Tervisekassa'],
+        ['Palgata puhkus', 'väheneb', '—'],
+      ],
+    },
+    {
+      type: 'paragraph',
+      text:
+        '**Keskmine päevatasu** = puudumisele eelnenud 6 kalendrikuu töötasu (ilma puhkusetasu ja haigushüvitiseta) jagatud nende kuude kalendripäevadega, millest on maha arvatud puudumise päevad. Riigipühi maha ei arvata. Lühema töösuhte puhul arvestatakse töötatud aega; kui palgaajalugu Arvelos puudub, võetakse aluseks lepingujärgne tasu. Vajadusel saab keskmise päevatasu puudumise juures käsitsi sisestada (nt kui ajalugu on vanas palgaprogrammis).',
+    },
+    {
+      type: 'steps',
+      items: [
+        { title: 'Vali puhkusetasu maksmise viis', text: '**Enne puhkust eraldi maksena** (seaduse vaikimisi viis) või **koos palgaga** (kokkuleppel). Ettevõtte vaikimisi valik on seadetes; iga puhkuse juures saab seda muuta. Hiljem tuleb see valik otse töötaja puhkuseavalduselt.' },
+        { title: 'Eraldi makse', text: 'Puudumiste loendis või palgaarvestuse hoiatuses vajuta **Maksa puhkusetasu**. Tekib lisamakse-arvestus väljamaksega puhkusele eelneval tööpäeval: kinnita, konteeri, koosta maksed. Maksuvaba tulu ja sotsiaalmaksu miinimum jagatakse sama väljamaksekuu arvestuste vahel.' },
+        { title: 'Koos palgaga', text: 'Puhkusetasu tuleb automaatselt selle kuu palgaarvestusse, mil puhkus algab.' },
+      ],
+    },
+    {
+      type: 'paragraph',
+      text: '**Puhkusejääk** on töötaja kaardil: 28 päeva aastas (lepingus muudetav) teenitakse kalendripäevade järgi. Kui palgaarvestus tuleb teisest programmist, sisesta lepingule kasutamata päevade algjääk ja selle kuupäev.',
+    },
+
     { type: 'heading', text: 'Töötaja palgaleht' },
     {
       type: 'paragraph',
@@ -120,7 +153,7 @@ export const palgaarvestus: Guide = {
       tone: 'info',
       title: 'Mida palgaarvestus veel ei tee',
       text:
-        'Puhkusetasu keskmise töötasu arvutus ja haigushüvitise päevade arvestus (summa sisestatakse praegu käsitsi), mitteresidendid, erisoodustused, kinnipidamised (nt täitmisteated) ja töötamise register (TÖR).',
+        'Puhkuseavaldused töötaja iseteenindusest, mitteresidendid, erisoodustused, kinnipidamised (nt täitmisteated) ja töötamise register (TÖR). Tööõnnetuse, kutsehaiguse ja rasedusega seotud haigushüvitis sisestatakse käsitsi.',
     },
   ],
 };

@@ -103,6 +103,7 @@ export default function PayrollRunsPage() {
                   <tr key={run.id} className="border-b border-[var(--a-border)] last:border-0 hover:bg-[var(--a-surface-2)]">
                     <td className="px-4 py-2">
                       <Link href={`/payroll/runs/${run.id}`} className="font-medium text-[var(--a-accent)] hover:underline">{monthText(run.period_month)}</Link>
+                      {run.run_type === 'extra' && <span className="ml-1.5 rounded-full bg-[var(--a-surface-2)] px-1.5 py-0.5 text-[10.5px] text-[var(--a-text-2)]">{t('extraRun')}</span>}
                     </td>
                     <td className="px-4 py-2 font-mono">{dateText(run.payment_date)}</td>
                     <td className="px-4 py-2">{run.employee_count}</td>
