@@ -13,6 +13,7 @@ import type { ApiResponse } from '@/lib/types/auth.types';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { getIsoToday } from '@/lib/utils/date';
 import { EXPENSE_STATUS_TONE } from '@/components/accounting/expenses/status';
+import { PayslipsSection } from '@/components/payroll/PayslipsSection';
 
 const money = (value: number) => value.toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dateText = (value: string) => value.split('-').reverse().join('.');
@@ -128,6 +129,7 @@ export default function SelfServicePage() {
               ))}
             </ul>
           )}
+          <PayslipsSection />
         </>
       )}
     </div>

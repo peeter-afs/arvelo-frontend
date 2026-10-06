@@ -38,7 +38,11 @@ export function usePathCrumbs(crumbs?: string[]) {
   const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
   const tClients = useTranslations('clients');
+  const tPayroll = useTranslations('payroll');
   const labels = {
+    payroll: tPayroll('title'),
+    employees: tPayroll('employees'),
+    runs: tPayroll('runs'),
     accounting: tNavigation('books'),
     accounts: tAccounting('chartOfAccounts'),
     bank: tAccounting('bankWorkspace'),

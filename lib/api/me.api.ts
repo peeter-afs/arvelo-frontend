@@ -1,4 +1,5 @@
 import apiClient from './client';
+import type { Payslip } from './payroll.api';
 import type { ApiResponse } from '../types/auth.types';
 import type { ExpenseReport, ExpenseReportListItem } from './cashExpense.api';
 
@@ -66,6 +67,12 @@ export const meApi = {
 
   async removeReport(id: string): Promise<void> {
     await apiClient.delete(`/api/me/expense-reports/${id}`);
+  },
+
+  /** Posted payslips of the signed-in employee, newest first. */
+  async payslips(): Promise<Payslip[]> {
+    const response = await apiClient.get<ApiResponse<Payslip[]>>('/api/me/payslips');
+    return response.data.data!;
   },
 };
 

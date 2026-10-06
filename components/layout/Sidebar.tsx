@@ -19,6 +19,7 @@ import {
   Settings,
   type LucideIcon,
   X,
+  Wallet,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -62,7 +63,7 @@ function initials(value?: string | null) {
 }
 
 function isActivePath(pathname: string, href: string) {
-  if (href === '/' || href === '/invoices' || href === '/accounting/journal' || href === '/settings') {
+  if (href === '/' || href === '/invoices' || href === '/accounting/journal' || href === '/settings' || href === '/payroll') {
     return pathname === href;
   }
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -72,6 +73,7 @@ const SECTION_PATH_PREFIXES: Record<string, string[]> = {
   invoices: ['/invoices/'],
   bank: ['/accounting/bank-'],
   ledger: ['/accounting/journal/'],
+  payroll: ['/payroll/'],
   settings: ['/settings/'],
 };
 
@@ -94,6 +96,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
   const tInvoices = useTranslations('invoices');
   const tReports = useTranslations('reports');
   const tExpenses = useTranslations('recurringExpenses');
+  const tPayroll = useTranslations('payroll');
   const { user, role, logout } = useAuthStore();
   const {
     isCollapsed,
@@ -144,6 +147,21 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tAccounting('paymentBatches'), href: '/accounting/payment-batches' },
       ],
     },
+    // Salaries are for bookkeepers only (the API refuses read-only members).
+    ...(role === 'owner' || role === 'admin' || role === 'accountant'
+      ? [
+          {
+            id: 'payroll',
+            label: tPayroll('title'),
+            icon: Wallet,
+            children: [
+              { label: tPayroll('runs'), href: '/payroll' },
+              { label: tPayroll('employees'), href: '/payroll/employees' },
+              { label: tPayroll('settings'), href: '/payroll/settings' },
+            ],
+          },
+        ]
+      : []),
     {
       id: 'ledger',
       label: tReports('generalLedger'),
