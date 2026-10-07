@@ -27,6 +27,23 @@ export type PaymentListItem = {
   invoice_status?: string | null;
   invoice_type?: string | null;
   partner_name?: string | null;
+  /** Where the payment came from (bank statement line, payment batch, entered by hand). */
+  source?: 'bank_import' | 'manual' | 'payment_batch';
+  bank_account_name?: string | null;
+  payment_method_name?: string | null;
+  payment_method_kind?: string | null;
+  payment_batch_id?: string | null;
+  payment_batch_name?: string | null;
+  journal_entry_number?: string | null;
+  reversal_journal_entry_number?: string | null;
+};
+
+export type PaymentJournalLine = {
+  journal_entry_id: string;
+  account_code: string | null;
+  account_name: string | null;
+  debit: number;
+  credit: number;
 };
 
 export type PaymentDetail = PaymentListItem & {
@@ -36,6 +53,9 @@ export type PaymentDetail = PaymentListItem & {
   invoice_paid_amount?: number | string | null;
   invoice_open_amount?: number | string | null;
   payment_reference?: string | null;
+  journal_lines?: PaymentJournalLine[];
+  created_by_email?: string | null;
+  reversed_by_email?: string | null;
 };
 
 export const paymentsApi = {

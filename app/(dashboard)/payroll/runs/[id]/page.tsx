@@ -94,10 +94,10 @@ export default function PayrollRunPage() {
               <span className="font-mono">{dateText(run.payment_date)}</span>
             )}
             {run.journal_entry_id && (
-              <Link href={`/accounting/journal/${run.journal_entry_id}`} className="text-[var(--a-accent)] hover:underline">{t('journalEntry')}</Link>
+              <Link href={`/accounting/journal/${run.journal_entry_id}/edit`} className="text-[var(--a-accent)] hover:underline">{t('journalEntry')}</Link>
             )}
             {run.payment_batch_id && (
-              <Link href="/accounting/payment-batches" className="text-[var(--a-accent)] hover:underline">{t('paymentBatch')}</Link>
+              <Link href={`/accounting/payment-batches?batch=${run.payment_batch_id}`} className="text-[var(--a-accent)] hover:underline">{t('paymentBatch')}</Link>
             )}
           </div>
         </div>

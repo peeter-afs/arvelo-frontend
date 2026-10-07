@@ -220,6 +220,18 @@ export type PaymentBatchListItem = {
   bank_status?: string | null;
   bank_status_reason?: string | null;
   bank_status_at?: string | null;
+  generated_at?: string | null;
+  uploaded_at?: string | null;
+  confirmed_at?: string | null;
+  voided_at?: string | null;
+  void_reason?: string | null;
+  /** Where the batch was made: Ostuarved, a payroll run or by hand. */
+  origin?: 'purchase_invoices' | 'payroll' | 'manual';
+  payroll_run_id?: string | null;
+  /** "Palgaarvestus 09/2026" */
+  payroll_run_label?: string | null;
+  invoice_count?: number;
+  payee_names?: string[];
   created_at: string;
   updated_at: string;
 };
@@ -552,7 +564,7 @@ export const bankingApi = {
     return response.data.data;
   },
 
-  async listPaymentBatches(params?: { status?: string; limit?: number; offset?: number }) {
+  async listPaymentBatches(params?: { status?: string; origin?: string; limit?: number; offset?: number }) {
     const response = await apiClient.get<ApiResponse<{
       items: PaymentBatchListItem[];
       total: number;
@@ -637,7 +649,7 @@ export const bankingApi = {
   },
 
   async voidPaymentBatch(id: string, payload?: { reason?: string }) {
-    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/void`, payload || {});
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult & { released_payroll_run_label?: string | null }>>(`/api/banking/payment-batches/${id}/void`, payload || {});
     return response.data.data;
   },
 
