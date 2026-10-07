@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { getErrorMessage } from '@/lib/api/client';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { FlaskConical } from 'lucide-react';
@@ -15,6 +16,21 @@ export function DemoNotice() {
   const email = useAuthStore((s) => s.user?.email);
   const isDemo = Boolean(email?.toLowerCase().endsWith(DEMO_DOMAIN));
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [ending, setEnding] = useState(false);
+  const logout = useAuthStore((s) => s.logout);
+
+  const endDemo = async () => {
+    if (!window.confirm(t('endConfirm'))) return;
+    setEnding(true);
+    try {
+      await demoApi.end();
+      logout();
+      window.location.href = '/demo?ended=1';
+    } catch (err) {
+      window.alert(getErrorMessage(err));
+      setEnding(false);
+    }
+  };
 
   useEffect(() => {
     if (!isDemo) return;
@@ -48,6 +64,9 @@ export function DemoNotice() {
       <Link href="/accounting/migration" className="shrink-0 font-semibold underline max-sm:ml-7 max-sm:py-1">
         {t('tryMigration')}
       </Link>
+      <button type="button" onClick={() => void endDemo()} disabled={ending} className="shrink-0 underline opacity-80 hover:opacity-100 disabled:opacity-50 max-sm:py-1">
+        {t('end')}
+      </button>
     </div>
   );
 }

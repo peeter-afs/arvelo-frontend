@@ -2315,7 +2315,10 @@
         "kontroll": "Balance sheet {transition}"
       }
     },
-    "tryMigration": "Prova en flytt"
+    "tryMigration": "Prova en flytt",
+    "end": "Avsluta demon",
+    "endConfirm": "Avsluta demon? Hela demomiljön raderas direkt och kan inte återställas.",
+    "ended": "Demon är avslutad och all dess data raderad."
   },
   "migration": {
     "title": "Migration",

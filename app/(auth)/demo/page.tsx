@@ -16,6 +16,7 @@ function DemoStart() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const expired = searchParams.get('expired') === '1';
+  const ended = searchParams.get('ended') === '1';
   const { setSession, logout } = useAuthStore();
 
   const [isStarting, setIsStarting] = useState(false);
@@ -52,6 +53,13 @@ function DemoStart() {
         {t('title')}
       </h2>
       <p className="text-slate-600 mb-6">{t('subtitle')}</p>
+
+      {ended && !isStarting && (
+        <div className="mb-5 flex items-start gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <span>{t('ended')}</span>
+        </div>
+      )}
 
       {expired && !isStarting && (
         <div className="mb-5 flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">

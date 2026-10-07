@@ -2329,7 +2329,10 @@
         "kontroll": "Balance sheet {transition}"
       }
     },
-    "tryMigration": "Kokeile siirtoa"
+    "tryMigration": "Kokeile siirtoa",
+    "end": "Lopeta demo",
+    "endConfirm": "Lopetetaanko demo? Koko demoympäristö poistetaan heti, eikä sitä voi palauttaa.",
+    "ended": "Demo on lopetettu ja kaikki sen tiedot poistettu."
   },
   "migration": {
     "title": "Migration",

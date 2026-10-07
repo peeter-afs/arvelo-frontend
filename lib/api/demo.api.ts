@@ -31,6 +31,11 @@ export const demoApi = {
     URL.revokeObjectURL(url);
   },
 
+  /** Deletes the whole sandbox now. */
+  async end(): Promise<void> {
+    await apiClient.post('/api/demo/end', {});
+  },
+
   async status(): Promise<DemoStatus> {
     const response = await apiClient.get<ApiResponse<DemoStatus>>('/api/demo/status');
     return response.data.data!;

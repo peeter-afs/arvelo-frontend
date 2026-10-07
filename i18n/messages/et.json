@@ -3763,7 +3763,10 @@
         "kontroll": "Bilanss {transition}"
       }
     },
-    "tryMigration": "Proovi ülekolimist"
+    "tryMigration": "Proovi ülekolimist",
+    "end": "Lõpeta demo",
+    "endConfirm": "Kas lõpetada demo? Kogu demokeskkond kustutatakse kohe ja seda ei saa taastada.",
+    "ended": "Demo on lõpetatud ja kõik selle andmed kustutatud."
   },
   "migration": {
     "title": "Ülekolimine",

@@ -3763,7 +3763,10 @@
         "kontroll": "Balance sheet {transition}"
       }
     },
-    "tryMigration": "Try a migration"
+    "tryMigration": "Try a migration",
+    "end": "End demo",
+    "endConfirm": "End the demo? The whole demo environment is deleted at once and cannot be restored.",
+    "ended": "The demo has ended and all its data was deleted."
   },
   "migration": {
     "title": "Migration",
