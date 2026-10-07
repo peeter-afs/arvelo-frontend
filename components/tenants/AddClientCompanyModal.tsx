@@ -74,6 +74,9 @@ export function AddClientCompanyModal({ open, onClose, onCreated }: Props) {
               {switchError && <p className="text-[12.5px] text-[var(--a-neg)]">{switchError}</p>}
               <div className="flex flex-wrap justify-end gap-2">
                 <Button onClick={onClose} disabled={!!switchingId}>{t('stayInBureau')}</Button>
+                <Button onClick={() => void switchTenant(created, 'owner', '/accounting/migration')} disabled={!!switchingId}>
+                  {t('startMigration')}
+                </Button>
                 <Button variant="primary" onClick={() => void switchTenant(created, 'owner')} disabled={!!switchingId}>
                   {switchingId ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowRight className="h-3.5 w-3.5" />}
                   {t('openNow')}

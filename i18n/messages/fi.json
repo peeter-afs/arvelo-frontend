@@ -237,7 +237,7 @@
     "partnersSubtitle": "Asiakkaat, toimittajat, työntekijät",
     "partnersCounts": "{contacts} yhteystietoa · {customers} asiakasta · {suppliers} toimittajaa",
     "obPartnerColumn": "Kumppanisarake",
-    "sourceMeritUsed": "Lähde: Merit",
+    "sourceMeritUsed": "Lähde: vakiomuotoinen saldotaulukko",
     "obCreatedOnConfirmHint": "Tili luodaan vahvistettaessa",
     "journalWorkspace": "Päiväkirjan työtila",
     "entriesInView": "{count} kirjausta näkymässä",
@@ -677,7 +677,8 @@
       "other_expenses": "Muut kulut",
       "financial": "Rahoitustuotot ja -kulut",
       "income_tax": "Tuloverot"
-    }
+    },
+    "migration": "Siirto"
   },
   "reports": {
     "dimensionReport": "Kustannuspaikat ja projektit",
@@ -1748,7 +1749,9 @@
     "openPurchases": "Open purchase invoices",
     "openBank": "Open bank review",
     "openReminders": "Open reminders",
-    "openKmd": "Open VAT report"
+    "openKmd": "Open VAT report",
+    "migrate": "Siirto",
+    "startMigration": "Aloita siirto"
   },
   "startup": {
     "title": "Startup bookkeeping",
@@ -2302,5 +2305,116 @@
     "signIn": "Kirjaudu",
     "banner": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä. Voimassa {date} asti.",
     "bannerNoDate": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä."
+  },
+  "migration": {
+    "title": "Migration",
+    "loading": "Loading…",
+    "subtitle": "Move the company's bookkeeping from the previous software into Arvelo. Each step says what to export from the old software and where to load it in Arvelo.",
+    "progress": "{done} / {total} steps done",
+    "exportTitle": "Export from the previous software",
+    "asOf": "as of {date}",
+    "company": {
+      "title": "Company details",
+      "body": "Check that the registry code, VAT number and address are right — they go on invoices, VAT returns and reports.",
+      "registryCode": "Registry code",
+      "vatNumber": "VAT number",
+      "address": "Address",
+      "action": "Open company settings"
+    },
+    "strategy": {
+      "title": "Transition",
+      "body": "Choose where the books in Arvelo start. It decides which reports you need from the old software.",
+      "action": "Choose the transition",
+      "change": "Change the transition",
+      "with_general": {
+        "title": "From the start of the year",
+        "body": "Last year's closing balance sheet and open invoices. The simplest way."
+      },
+      "mid_year": {
+        "title": "Mid-year",
+        "body": "Plus this year's turnover up to the transition date."
+      },
+      "subledger_only": {
+        "title": "Open invoices only",
+        "body": "Customer and supplier balances; no general-ledger opening balances."
+      }
+    },
+    "accounts": {
+      "title": "Chart of accounts",
+      "body": "Bring your chart of accounts over if you used accounts of your own. If the old software had the usual Estonian chart, the Arvelo standard chart fits and you can skip this step.",
+      "export": "Chart of accounts (Excel, CSV or PDF)",
+      "imported": "{count} accounts in the chart",
+      "standard": "Standard chart in use ({count} accounts)",
+      "standardHint": "The opening balance import creates missing accounts itself if the file has accounts that are not here.",
+      "action": "Import chart of accounts"
+    },
+    "balance": {
+      "title": "Opening balances",
+      "notNeeded": "not needed for this transition",
+      "body": "Load last year's closing balance sheet. Balances are read from the file and mapped to Arvelo accounts; you review every line before confirming.",
+      "bodyMidYear": "Load last year's closing balance sheet and this year's turnover up to the transition date, so the whole year's turnover is in Arvelo and the annual report comes out right.",
+      "exportBalance": "Balance sheet (trial balance) at year end — Excel or PDF",
+      "exportTurnover": "Turnover from the start of the year to the transition date — Excel or PDF",
+      "balanceSheet": "Balance sheet imported",
+      "turnover": "Turnover imported",
+      "action": "Open opening balances"
+    },
+    "openItems": {
+      "title": "Open invoices",
+      "body": "Unpaid customer and supplier invoices come over per partner, so payments in the bank can be matched to them right away.",
+      "exportReceivables": "Customer balances (unpaid invoices) per partner and invoice",
+      "exportPayables": "Supplier balances (unpaid invoices) per partner and invoice",
+      "receivables": "Customer balances imported",
+      "payables": "Supplier balances imported",
+      "partners": "Partners: {count}",
+      "partnersHint": "Partners are created by the balance import and completed from the business register.",
+      "action": "Import open invoices"
+    },
+    "bank": {
+      "title": "Bank",
+      "body": "Add the bank accounts and load the statement from the transition date on. You get it from the internet bank, not the old software.",
+      "export": "Bank statement from the transition date — camt.053 XML (recommended) or CSV, from the internet bank",
+      "accounts": "Bank accounts with IBAN: {count}",
+      "transactions": "Bank transactions: {count}",
+      "range": "{from} – {to}",
+      "action": "Import bank statement"
+    },
+    "control": {
+      "title": "Check and lock",
+      "body": "Review the opening balances and lock them. Once locked they cannot be changed by accident.",
+      "bodyMidYear": "Load the old software's balance sheet as of the transition date. Arvelo compares every account and shows the differences; when everything matches, lock the opening balances.",
+      "export": "Balance sheet as of the transition date — Excel or PDF",
+      "locked": "Opening balances locked",
+      "lockedHint": "Locking is the last step — until then you can re-import layers.",
+      "action": "Open the check",
+      "status": {
+        "none": "Not checked yet",
+        "pending": "Check pending",
+        "passed": "Check passed — all accounts match",
+        "failed": "The check found differences",
+        "locked": "Check passed and locked"
+      }
+    },
+    "daily": {
+      "title": "Daily work",
+      "optional": "recommended",
+      "body": "Once the balances are in place, set up what saves manual work every day.",
+      "purchases": {
+        "title": "Purchase invoices",
+        "body": "PDFs and e-invoices turn into drafts by themselves; the company can get its own e-mail address for invoices."
+      },
+      "recurring": {
+        "title": "Recurring invoices",
+        "body": "Monthly invoices are prepared and sent automatically."
+      },
+      "einvoices": {
+        "title": "E-invoices",
+        "body": "Sending and receiving e-invoices."
+      },
+      "team": {
+        "title": "Users",
+        "body": "Invite the client's people to a view of only what concerns them."
+      }
+    }
   }
 }

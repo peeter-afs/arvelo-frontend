@@ -298,7 +298,15 @@ export default function ClientsPage() {
                     <td className="px-3.5 py-2.5 text-[12.5px] text-[var(--a-text-2)]">
                       {client.my_role ? <span className="capitalize">{client.my_role}</span> : <span className="text-[var(--a-text-3)]">{t('notMember')}</span>}
                     </td>
-                    <td className="px-3.5 py-2.5 text-right">
+                    <td className="whitespace-nowrap px-3.5 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => openClient(client, '/accounting/migration')}
+                        disabled={!client.my_role || !!switchingId}
+                        className="mr-2 text-[12.5px] font-medium text-[var(--a-text-2)] hover:text-[var(--primary)] hover:underline disabled:opacity-50"
+                      >
+                        {t('migrate')}
+                      </button>
                       <Button
                         onClick={() => openClient(client)}
                         disabled={!client.my_role || !!switchingId}

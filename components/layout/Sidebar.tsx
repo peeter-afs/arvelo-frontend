@@ -172,6 +172,7 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tAccounting('chartOfAccounts'), href: '/accounting/accounts' },
         { label: tAccounting('journal'), href: '/accounting/journal' },
         { label: tExpenses('title'), href: '/accounting/recurring-expenses' },
+        { label: tAccounting('migration'), href: '/accounting/migration' },
         { label: tAccounting('openingBalances'), href: '/accounting/opening-balances' },
         { label: tAccounting('monthEnd'), href: '/accounting/month-end' },
         { label: tAccounting('projectWip'), href: '/accounting/projects/wip' },

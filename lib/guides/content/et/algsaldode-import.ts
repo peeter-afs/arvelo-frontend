@@ -56,7 +56,7 @@ export const algsaldodeImport: Guide = {
         },
         {
           title: 'Dokumendid vana tarkvarast',
-          text: 'Vaata alt tabelist, millised dokumendid sinu stsenaariumi jaoks vaja on. Kõige kindlam vorming on Merit Excel; muud PDF-id ja Excelid loeb AI-parser.',
+          text: 'Vaata alt tabelist, millised dokumendid sinu stsenaariumi jaoks vaja on. Kõige kindlam on Exceli fail, kus on konto kood ja lõppsaldo deebet/kreedit veergudena; muud PDF-id ja Excelid loeb AI-parser.',
         },
         {
           title: 'Kontrolli, et algsaldosid pole juba imporditud',
@@ -66,7 +66,7 @@ export const algsaldodeImport: Guide = {
     },
     {
       type: 'paragraph',
-      text: 'Faili üleslaadimisel saad valida välja **Impordi allikas**: „Automaatne tuvastus" (vaikeväärtus, sobib enamasti), „Merit" või „Muu (AI)". Vali käsitsi ainult siis, kui automaatne tuvastus loeb faili valesti.',
+      text: 'Faili üleslaadimisel saad valida välja **Impordi allikas**: „Automaatne tuvastus" (vaikeväärtus, sobib enamasti), „Standardne saldotabel" või „Muu (AI)". Vali käsitsi ainult siis, kui automaatne tuvastus loeb faili valesti.',
     },
 
     { type: 'heading', text: 'Vali impordiviis' },

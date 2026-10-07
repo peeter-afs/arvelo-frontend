@@ -246,11 +246,11 @@
     "parsePdf": "Parsi PDF",
     "importSource": "Impordi allikas",
     "importSourceAuto": "Automaatne tuvastus",
-    "importSourceMerit": "Merit",
+    "importSourceMerit": "Standardne saldotabel (Excel/PDF)",
     "importSourceGeneric": "Muu (AI)",
-    "sourceMeritUsed": "Allikas: Merit",
+    "sourceMeritUsed": "Allikas: standardne saldotabel",
     "sourceAiUsed": "Allikas: AI ({model})",
-    "sourceMeritDetected": "tuvastati Merit",
+    "sourceMeritDetected": "tuvastati standardne saldotabel",
     "warnings": "Hoiatused",
     "openingDate": "Alguskuupäev",
     "lockedToGlOpeningDate": "Lukustatud pearaamatu algsaldo kuupäevale",
@@ -1241,7 +1241,8 @@
       "other_expenses": "Muud ärikulud",
       "financial": "Finantstulud ja -kulud",
       "income_tax": "Tulumaks"
-    }
+    },
+    "migration": "Ülekolimine"
   },
   "exchangeRates": {
     "title": "Vahetuskursid",
@@ -3182,7 +3183,9 @@
     "openPurchases": "Ava ostuarved",
     "openBank": "Ava panga ülevaatus",
     "openReminders": "Ava meeldetuletused",
-    "openKmd": "Ava KMD aruanne"
+    "openKmd": "Ava KMD aruanne",
+    "migrate": "Ülekolimine",
+    "startMigration": "Alusta ülekolimist"
   },
   "startup": {
     "title": "Alustava ettevõtte raamatupidamine",
@@ -3736,5 +3739,116 @@
     "signIn": "Logi sisse",
     "banner": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta. Kehtib kuni {date}.",
     "bannerNoDate": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta."
+  },
+  "migration": {
+    "title": "Ülekolimine",
+    "loading": "Laen…",
+    "subtitle": "Too ettevõtte raamatupidamine eelmisest programmist Arvelosse. Iga samm ütleb, mida vanast programmist välja võtta ja kuhu see Arvelos laadida.",
+    "progress": "{done} / {total} sammu tehtud",
+    "exportTitle": "Võta eelmisest programmist",
+    "asOf": "seisuga {date}",
+    "company": {
+      "title": "Ettevõtte andmed",
+      "body": "Kontrolli, et registrikood, KMKR number ja aadress on õiged — need lähevad arvetele, KMD-le ja aruannetele.",
+      "registryCode": "Registrikood",
+      "vatNumber": "KMKR number",
+      "address": "Aadress",
+      "action": "Ava ettevõtte seaded"
+    },
+    "strategy": {
+      "title": "Ülemineku viis",
+      "body": "Vali, mis seisust raamatupidamine Arvelos algab. Sellest sõltub, milliseid aruandeid vanast programmist vaja on.",
+      "action": "Vali ülemineku viis",
+      "change": "Muuda ülemineku viisi",
+      "with_general": {
+        "title": "Aasta algusest",
+        "body": "Eelmise aasta lõpu bilanss ja avatud arved. Lihtsaim viis."
+      },
+      "mid_year": {
+        "title": "Keset aastat",
+        "body": "Lisaks bilansile jooksva aasta käibeandmik kuni üleminekupäevani."
+      },
+      "subledger_only": {
+        "title": "Ainult avatud arved",
+        "body": "Ostjate ja tarnijate saldod, pearaamatu algsaldosid ei impordita."
+      }
+    },
+    "accounts": {
+      "title": "Kontoplaan",
+      "body": "Too oma kontoplaan üle, kui kasutasid omi kontosid. Kui vanas programmis oli tavapärane Eesti kontoplaan, sobib Arvelo standardkontoplaan ja selle sammu võid vahele jätta.",
+      "export": "Kontoplaan (Excel, CSV või PDF)",
+      "imported": "Kontoplaanis {count} kontot",
+      "standard": "Kasutusel standardkontoplaan ({count} kontot)",
+      "standardHint": "Algsaldode import loob puuduvad kontod ise, kui failis on kontosid, mida siin pole.",
+      "action": "Impordi kontoplaan"
+    },
+    "balance": {
+      "title": "Algsaldod",
+      "notNeeded": "pole selle ülemineku viisi puhul vaja",
+      "body": "Laadi eelmise aasta lõpu bilanss. Kontode saldod loetakse failist ja seotakse Arvelo kontodega; enne kinnitamist näed kõiki ridu üle.",
+      "bodyMidYear": "Laadi eelmise aasta lõpu bilanss ja jooksva aasta käibeandmik kuni üleminekupäevani. Nii on Arvelos kogu aasta käive olemas ja aasta aruanne tuleb õige.",
+      "exportBalance": "Bilanss (proovibilanss) aasta lõpu seisuga — Excel või PDF",
+      "exportTurnover": "Käibeandmik aasta algusest kuni üleminekupäevani — Excel või PDF",
+      "balanceSheet": "Bilanss imporditud",
+      "turnover": "Käibeandmik imporditud",
+      "action": "Ava algsaldod"
+    },
+    "openItems": {
+      "title": "Avatud arved",
+      "body": "Ostjate ja tarnijate tasumata arved tulevad üle partnerite kaupa, et laekumisi ja makseid saaks pangas kohe arvetega siduda.",
+      "exportReceivables": "Ostjate saldod (laekumata arved) partnerite ja arvete kaupa",
+      "exportPayables": "Tarnijate saldod (tasumata arved) partnerite ja arvete kaupa",
+      "receivables": "Ostjate saldod imporditud",
+      "payables": "Tarnijate saldod imporditud",
+      "partners": "Partnereid: {count}",
+      "partnersHint": "Partnerid luuakse saldode impordil ise, andmed täiendatakse äriregistrist.",
+      "action": "Impordi avatud arved"
+    },
+    "bank": {
+      "title": "Pank",
+      "body": "Lisa pangakontod ja laadi väljavõte üleminekupäevast alates. Väljavõtte saad internetipangast, mitte vanast programmist.",
+      "export": "Pangaväljavõte üleminekupäevast — camt.053 XML (soovitatav) või CSV, internetipangast",
+      "accounts": "Pangakontosid IBAN-iga: {count}",
+      "transactions": "Pangatehinguid: {count}",
+      "range": "{from} – {to}",
+      "action": "Impordi pangaväljavõte"
+    },
+    "control": {
+      "title": "Kontroll ja lukustus",
+      "body": "Vaata algsaldod üle ja lukusta need. Pärast lukustamist ei saa algsaldosid kogemata muuta.",
+      "bodyMidYear": "Laadi vana programmi bilanss üleminekupäeva seisuga. Arvelo võrdleb iga kontot ja näitab erinevused; kui kõik klapib, lukusta algsaldod.",
+      "export": "Bilanss üleminekupäeva seisuga — Excel või PDF",
+      "locked": "Algsaldod lukustatud",
+      "lockedHint": "Lukustamine on viimane samm — seni saad kihte uuesti importida.",
+      "action": "Ava kontroll",
+      "status": {
+        "none": "Kontrolli pole veel tehtud",
+        "pending": "Kontroll ootab",
+        "passed": "Kontroll läbitud — kõik kontod klapivad",
+        "failed": "Kontrollis on erinevusi",
+        "locked": "Kontroll läbitud ja lukustatud"
+      }
+    },
+    "daily": {
+      "title": "Igapäevatöö",
+      "optional": "soovituslik",
+      "body": "Kui saldod on paigas, seadista see, mis säästab igapäevast käsitööd.",
+      "purchases": {
+        "title": "Ostuarved",
+        "body": "PDF-id ja e-arved muutuvad ise mustanditeks; ettevõttele saab anda oma e-posti aadressi arvete jaoks."
+      },
+      "recurring": {
+        "title": "Korduvad arved",
+        "body": "Igakuised arved koostatakse ja saadetakse ise."
+      },
+      "einvoices": {
+        "title": "E-arved",
+        "body": "E-arvete saatmine ja vastuvõtmine."
+      },
+      "team": {
+        "title": "Kasutajad",
+        "body": "Kutsu kliendi inimesed ainult neid puudutava vaate jaoks."
+      }
+    }
   }
 }
