@@ -14,7 +14,7 @@ export function CompanyInfo({ variant = 'dark' }: { variant?: 'dark' | 'light' }
   return (
     <div className={`text-xs leading-relaxed ${muted}`}>
       <p>
-        {t('productOf')} <span className={`font-medium ${strong}`}>{COMPANY.name}</span>
+        {t.rich('createdBy', { name: COMPANY.name, b: (chunks) => <span className={`font-medium ${strong}`}>{chunks}</span> })}
       </p>
       <p>
         {t('registryCode')} {COMPANY.registryCode} · {t('vatNumber')} {COMPANY.vatNumber}

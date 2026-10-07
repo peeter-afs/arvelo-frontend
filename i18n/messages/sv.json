@@ -2429,15 +2429,15 @@
     }
   },
   "company": {
-    "productOf": "Arvelo är en produkt från",
     "registryCode": "Org.nr",
     "vatNumber": "Momsnr",
     "aboutLink": "Om oss",
     "aboutTitle": "Om oss",
-    "about1": "Bakom Arvelo står AutoFutur Systems OÜ — ett estniskt mjukvaruföretag med mer än 15 års erfarenhet av att utveckla och leverera affärsprogramvara.",
+    "about1": "Arvelo är skapat av AutoFutur Systems OÜ. Vi är ett estniskt mjukvaruföretag med mer än 15 års erfarenhet av att utveckla och leverera affärsprogramvara.",
     "about2": "I dag används våra lösningar dagligen av bilverkstäder och reservdelsimportörer. Därför vet vi hur programvara som ett företag förlitar sig på varje dag måste vara: den ska fungera, vara snabb och supporten ska svara.",
-    "about3": "Arvelo växte fram ur samma erfarenhet. Vi bygger bokföringsprogram för företag och redovisningsbyråer — utvecklat i Tallinn, till ett pris som är rättvist även för små företag.",
+    "about3": "Arvelo växte fram ur samma erfarenhet.",
     "tryDemo": "Prova demon",
-    "signIn": "Logga in"
+    "signIn": "Logga in",
+    "createdBy": "Arvelo är skapat av <b>{name}</b>"
   }
 }
