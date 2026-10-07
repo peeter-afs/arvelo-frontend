@@ -36,6 +36,7 @@ import { HelpLink } from '@/components/guides/HelpLink';
 import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
 import { getIsoToday } from '@/lib/utils/date';
 import { DemoSampleFiles } from '@/components/demo/DemoSampleFiles';
+import { suggestRoleRemaps } from '@/lib/constants/systemRoles';
 
 const OPENING_BALANCES_GUIDE = 'algsaldode-import';
 
@@ -187,6 +188,7 @@ export default function OpeningBalancesPage() {
   const [commitResult, setCommitResult] = useState<CommitResult | null>(null);
   const [importResult, setImportResult] = useState<OpeningBalanceImportResult | null>(null);
   const [roleDialogAccounts, setRoleDialogAccounts] = useState<AccountOption[] | null>(null);
+  const [roleDialogSuggestions, setRoleDialogSuggestions] = useState<Record<string, string> | undefined>(undefined);
   // System-account (role) mapping: shown as its own step right after the balance
   // sheet is committed, and as a banner for as long as any role is unset.
   const [showSystemRoles, setShowSystemRoles] = useState(false);
@@ -748,7 +750,7 @@ export default function OpeningBalancesPage() {
         }));
       }
       await refreshBatches();
-      await maybeOfferRoleMapping();
+      await maybeOfferRoleMapping(generalRows);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
@@ -895,26 +897,26 @@ export default function OpeningBalancesPage() {
 
   // After committing opening balances, offer to map system roles to the imported
   // chart — but only while the roles still point at the app's default accounts.
-  const maybeOfferRoleMapping = async () => {
+  // Offer moving roles off the system accounts only when this import clearly put
+  // a role's balance on another account (old chart with its own codes). With the
+  // standard chart the system accounts are the right ones and nothing pops up.
+  const maybeOfferRoleMapping = async (rows: GeneralRow[]) => {
     try {
       const [settings, accountList] = await Promise.all([
         accountingApi.getAccountingSettings().catch(() => null),
         accountingApi.getAccounts().catch(() => []),
       ]);
       if (!settings) return;
-      const byId = new Map(accountList.map((a) => [a.id, a]));
-      const roleIds = [
-        settings.accounts_receivable_account_id,
-        settings.accounts_payable_account_id,
-        settings.sales_revenue_account_id,
-        settings.purchase_expense_account_id,
-        settings.vat_output_account_id,
-        settings.vat_input_account_id,
-        settings.bank_account_default_id,
-      ];
-      const stillOnDefaults = roleIds.some((id) => id && byId.get(id)?.system_code);
-      const hasImportedAccounts = accountList.some((a) => !a.system_code);
-      if (stillOnDefaults && hasImportedAccounts) {
+      const idByCode = new Map(accountList.map((a) => [a.code, a.id]));
+      const used = new Set(
+        rows
+          .filter((row) => Number(row.amount || 0) !== 0)
+          .map((row) => row.account_id || idByCode.get(row.account_code) || '')
+          .filter(Boolean)
+      );
+      const suggestions = suggestRoleRemaps(settings as unknown as Record<string, string | null>, accountList, used);
+      if (Object.keys(suggestions).length > 0) {
+        setRoleDialogSuggestions(suggestions);
         setRoleDialogAccounts(accountList);
       }
     } catch {
@@ -1527,6 +1529,7 @@ export default function OpeningBalancesPage() {
       <RoleMappingDialog
         open={roleDialogAccounts !== null}
         accounts={roleDialogAccounts || []}
+        suggestions={roleDialogSuggestions}
         onApply={(mapping) => accountingApi.applyImportedSystemRoles(mapping)}
         onClose={() => setRoleDialogAccounts(null)}
       />

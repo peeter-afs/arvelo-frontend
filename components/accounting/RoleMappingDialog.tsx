@@ -12,13 +12,15 @@ type ApplyResult = { remapped: string[]; removed: string[]; kept_with_warning: s
 type RoleMappingDialogProps = {
   open: boolean;
   accounts: AccountOption[];
+  /** Preselected targets for the roles worth moving; every other role starts skipped. */
+  suggestions?: Record<string, string>;
   onApply: (mapping: Record<string, { account_id: string }>) => Promise<ApplyResult>;
   onClose: () => void;
 };
 
 const normalize = (value: string) => value.toLowerCase();
 
-export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMappingDialogProps) {
+export function RoleMappingDialog({ open, accounts, suggestions, onApply, onClose }: RoleMappingDialogProps) {
   const t = useTranslations('accounting');
   // Only the user's own (non-system) accounts are valid mapping targets.
   const targets = useMemo(() => accounts.filter((account) => !account.system_code), [accounts]);
@@ -38,11 +40,16 @@ export function RoleMappingDialog({ open, accounts, onApply, onClose }: RoleMapp
       const byName = targets.find((a) => role.nameHints.some((hint) => normalize(a.name).includes(hint)));
       next[role.setting_key] = byCode?.id || byName?.id || '';
     }
-    setSelection(next);
-    setSkipped({});
+    if (suggestions) {
+      setSelection({ ...next, ...suggestions });
+      setSkipped(Object.fromEntries(SYSTEM_ROLES.filter((role) => !suggestions[role.setting_key]).map((role) => [role.setting_key, true])));
+    } else {
+      setSelection(next);
+      setSkipped({});
+    }
     setResult(null);
     setError(null);
-  }, [open, targets]);
+  }, [open, targets, suggestions]);
 
   if (!open) return null;
 
