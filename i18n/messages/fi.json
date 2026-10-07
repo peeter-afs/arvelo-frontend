@@ -2441,5 +2441,17 @@
         "body": "Invite the client's people to a view of only what concerns them."
       }
     }
+  },
+  "company": {
+    "productOf": "Arvelon takana on",
+    "registryCode": "Y-tunnus",
+    "vatNumber": "ALV-nro",
+    "aboutLink": "Meistä",
+    "aboutTitle": "Meistä",
+    "about1": "Arvelon takana on AutoFutur Systems OÜ — virolainen ohjelmistoyritys, jolla on yli 15 vuoden kokemus liiketoimintaohjelmistojen kehittämisestä ja tarjoamisesta.",
+    "about2": "Ratkaisujamme käyttävät päivittäin autokorjaamot ja varaosien maahantuojat. Siksi tiedämme, millainen ohjelmiston, johon yritys luottaa joka päivä, on oltava: sen on toimittava, oltava nopea ja tuen on vastattava.",
+    "about3": "Arvelo syntyi samasta kokemuksesta. Teemme kirjanpito-ohjelmistoa yrityksille ja tilitoimistoille — kehitetty Tallinnassa, hinnalla joka on reilu myös pienelle yritykselle.",
+    "tryDemo": "Kokeile demoa",
+    "signIn": "Kirjaudu"
   }
 }

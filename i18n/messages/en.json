@@ -3875,5 +3875,17 @@
         "body": "Invite the client's people to a view of only what concerns them."
       }
     }
+  },
+  "company": {
+    "productOf": "Arvelo is a product of",
+    "registryCode": "Registry code",
+    "vatNumber": "VAT no",
+    "aboutLink": "About us",
+    "aboutTitle": "About us",
+    "about1": "Arvelo is made by AutoFutur Systems OÜ — an Estonian software company with more than 15 years of experience building and providing business software.",
+    "about2": "Today our solutions are used every day by car service centres and spare-parts importers. That is where we learned what software a business relies on daily has to be: it must work, be fast, and support must answer.",
+    "about3": "Arvelo grew out of that experience. We build accounting software for companies and accounting firms — developed in Tallinn, with support in Estonian and a price that is fair to small companies too.",
+    "tryDemo": "Try the demo",
+    "signIn": "Sign in"
   }
 }

@@ -3875,5 +3875,17 @@
         "body": "Kutsu kliendi inimesed ainult neid puudutava vaate jaoks."
       }
     }
+  },
+  "company": {
+    "productOf": "Arvelo on toode, mille taga on",
+    "registryCode": "Registrikood",
+    "vatNumber": "KMKR",
+    "aboutLink": "Meist",
+    "aboutTitle": "Meist",
+    "about1": "Arvelo taga on AutoFutur Systems OÜ — Eesti tarkvaraettevõte, kellel on üle 15 aasta kogemust äritarkvara arendamisel ja pakkumisel.",
+    "about2": "Täna kasutavad meie lahendusi igapäevaselt autoteenindused ja varuosade maaletoojad. Sealt teame, mida tähendab tarkvara, millele ettevõte iga päev toetub: see peab töötama, olema kiire ja tugi peab vastama.",
+    "about3": "Arvelo sündis samast kogemusest. Teeme raamatupidamistarkvara ettevõtetele ja raamatupidamisbüroodele — arendame Tallinnas, tugi on eesti keeles ja hind on õiglane ka väikesele ettevõttele.",
+    "tryDemo": "Proovi demot",
+    "signIn": "Logi sisse"
   }
 }

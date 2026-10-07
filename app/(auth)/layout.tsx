@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { Building2, Landmark, ShieldCheck } from 'lucide-react';
+import { CompanyInfo } from '@/components/layout/CompanyInfo';
 
 export default function AuthLayout({
   children,
@@ -56,8 +57,9 @@ export default function AuthLayout({
           </div>
 
           {/* Bottom */}
-          <div>
-            <p className="text-xs text-slate-500">{t('footer')}</p>
+          <div className="space-y-3">
+            <p className="text-xs text-slate-400">{t('footer')}</p>
+            <CompanyInfo />
           </div>
         </div>
       </div>
@@ -79,6 +81,10 @@ export default function AuthLayout({
         {/* Form Container */}
         <div className="w-full max-w-[420px] mt-16 md:mt-0 animate-fade-in">
           {children}
+          {/* The branding panel (with the company details) is desktop-only. */}
+          <div className="mt-10 border-t border-slate-200 pt-4 md:hidden">
+            <CompanyInfo variant="light" />
+          </div>
         </div>
       </div>
 
