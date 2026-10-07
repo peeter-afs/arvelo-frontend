@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, type ReactNode } from 'react';
-import { ReportsProvider } from '@/components/reports/ReportsProvider';
+import { ReportsProvider, useReports } from '@/components/reports/ReportsProvider';
 import { ReportRail } from '@/components/reports/ReportRail';
 import styles from '@/components/reports/Reports.module.css';
 
@@ -9,14 +9,21 @@ import styles from '@/components/reports/Reports.module.css';
 export default function ReportsLayout({ children }: { children: ReactNode }) {
   return (
     <ReportsProvider>
-      <div className={styles.shell}>
-        <Suspense fallback={<div className={styles.card} />}>
-          <ReportRail />
-        </Suspense>
-        <div className={styles.main}>
-          <Suspense fallback={null}>{children}</Suspense>
-        </div>
-      </div>
+      <Shell>{children}</Shell>
     </ReportsProvider>
+  );
+}
+
+function Shell({ children }: { children: ReactNode }) {
+  const { railCollapsed } = useReports();
+  return (
+    <div className={`${styles.shell} ${railCollapsed ? styles.shellCollapsed : ''}`}>
+      <Suspense fallback={<div className={styles.card} />}>
+        <ReportRail />
+      </Suspense>
+      <div className={styles.main}>
+        <Suspense fallback={null}>{children}</Suspense>
+      </div>
+    </div>
   );
 }

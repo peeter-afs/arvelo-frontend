@@ -19,7 +19,12 @@ type ReportsContextValue = {
   views: ReportView[];
   reloadViews: () => Promise<ReportView[]>;
   toast: (message: string) => void;
+  /** The report rail is folded up into a pill in the top bar: the report gets the full width. */
+  railCollapsed: boolean;
+  setRailCollapsed: (collapsed: boolean) => void;
 };
+
+const RAIL_KEY = 'arvelo.reports.rail';
 
 const ReportsContext = createContext<ReportsContextValue | null>(null);
 
@@ -37,6 +42,14 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   const yearsReady = yearsFor === (tenantId ?? '');
   const [views, setViews] = useState<ReportView[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [railCollapsed, setRailState] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try { return localStorage.getItem(RAIL_KEY) === 'collapsed'; } catch { return false; }
+  });
+  const setRailCollapsed = useCallback((collapsed: boolean) => {
+    setRailState(collapsed);
+    try { localStorage.setItem(RAIL_KEY, collapsed ? 'collapsed' : 'open'); } catch { /* ignore */ }
+  }, []);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -69,7 +82,10 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     toastTimer.current = setTimeout(() => setMessage(null), 2400);
   }, []);
 
-  const value = useMemo(() => ({ fiscalYears, yearsReady, views, reloadViews, toast }), [fiscalYears, yearsReady, views, reloadViews, toast]);
+  const value = useMemo(
+    () => ({ fiscalYears, yearsReady, views, reloadViews, toast, railCollapsed, setRailCollapsed }),
+    [fiscalYears, yearsReady, views, reloadViews, toast, railCollapsed, setRailCollapsed],
+  );
 
   return (
     <ReportsContext.Provider value={value}>

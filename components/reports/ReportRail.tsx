@@ -5,7 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Search } from 'lucide-react';
+import { ChevronDown, ChevronUp, Search } from 'lucide-react';
 import { REPORTS, REPORT_GROUPS, reportBySlug, reportHref, type ReportDef } from '@/lib/reports/registry';
 import { fiscalYearOf } from '@/lib/reports/periods';
 import { norm } from '@/lib/reports/format';
@@ -36,7 +36,7 @@ export function ReportRail() {
   const params = useSearchParams();
   const router = useRouter();
   const company = useAuthStore((s) => s.tenant?.name);
-  const { views, fiscalYears } = useReports();
+  const { views, fiscalYears, railCollapsed, setRailCollapsed } = useReports();
   const [query, setQuery] = useState('');
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,11 +68,13 @@ export function ReportRail() {
       if (t?.matches?.('input,select,textarea,[contenteditable="true"]')) return;
       if (document.querySelector('[data-report-print]')) return;
       e.preventDefault();
-      inputRef.current?.focus();
+      // A folded rail opens first, then the search takes focus.
+      setRailCollapsed(false);
+      requestAnimationFrame(() => inputRef.current?.focus());
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [setRailCollapsed]);
 
   useEffect(() => {
     listRef.current?.querySelector(`.${styles.riKb}`)?.scrollIntoView({ block: 'nearest' });
@@ -100,8 +102,10 @@ export function ReportRail() {
   const year = fiscalYearOf(new Date(), fiscalYears).start.getFullYear();
 
   return (
-    <aside className={`${styles.card} ${styles.rail}`} aria-label="Aruanded">
-      <div className={styles.rh}>Aruanded</div>
+    <aside className={`${styles.card} ${styles.rail}`} aria-label="Aruanded" hidden={railCollapsed}>
+      <button className={styles.rh} onClick={() => setRailCollapsed(true)} title="Peida aruannete loend · aruanne täislaiuses" aria-expanded="true">
+        Aruanded <ChevronUp size={14} className={styles.rhIcon} />
+      </button>
       <div className={styles.rsearch}>
         <Search size={13} />
         <input
@@ -151,5 +155,16 @@ export function ReportRail() {
       </div>
       <div className={styles.rf}>{company ? `${company} · ` : ''}aruandeaasta {year}</div>
     </aside>
+  );
+}
+
+/** The folded rail: a pill as tall as the report title, in front of it. Click opens the list again. */
+export function RailPill() {
+  const { railCollapsed, setRailCollapsed } = useReports();
+  if (!railCollapsed) return null;
+  return (
+    <button className={styles.railPill} onClick={() => setRailCollapsed(false)} title="Näita aruannete loendit (/)" aria-expanded="false">
+      Aruanded <ChevronDown size={13} />
+    </button>
   );
 }

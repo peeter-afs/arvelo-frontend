@@ -19,6 +19,7 @@ import { CompareButton, PeriodButton } from './ReportFilters';
 import { SaveViewPopover } from './SaveViewPopover';
 import { PrintSheet } from './PrintSheet';
 import { useReports } from './ReportsProvider';
+import { RailPill } from './ReportRail';
 import type { UseReport } from './useReport';
 import styles from './Reports.module.css';
 
@@ -218,6 +219,7 @@ export function ReportPage<D>({
   return (
     <>
       <div className={styles.topbar}>
+        <RailPill />
         <h1>{title}</h1>
         {sub && <span className={styles.sub}>{sub}</span>}
         {metrics.length > 0 && (
