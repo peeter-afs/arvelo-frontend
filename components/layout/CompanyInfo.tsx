@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { COMPANY } from '@/lib/company';
 
-/** Who is behind Arvelo: name, codes, address and contact — for the public pages. */
+/** Who is behind Arvelo and how to reach us. Registry code, VAT no and address live on /meist. */
 export function CompanyInfo({ variant = 'dark' }: { variant?: 'dark' | 'light' }) {
   const t = useTranslations('company');
   const muted = 'text-slate-500';
@@ -16,10 +16,6 @@ export function CompanyInfo({ variant = 'dark' }: { variant?: 'dark' | 'light' }
       <p>
         {t.rich('createdBy', { name: COMPANY.name, b: (chunks) => <span className={`font-medium ${strong}`}>{chunks}</span> })}
       </p>
-      <p>
-        {t('registryCode')} {COMPANY.registryCode} · {t('vatNumber')} {COMPANY.vatNumber}
-      </p>
-      <p>{COMPANY.address}</p>
       {(COMPANY.email || COMPANY.phone) && (
         <p>
           {COMPANY.email && <a href={`mailto:${COMPANY.email}`} className={link}>{COMPANY.email}</a>}
