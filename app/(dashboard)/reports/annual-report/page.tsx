@@ -1,14 +1,26 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { FileText, Download, Upload, RefreshCw, Plus, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useCallback, useEffect, useState } from 'react';
+import { Download, FileText, Loader2, Plus, RefreshCw, Upload } from 'lucide-react';
 import { annualReportApi, type AnnualReportSubmission } from '@/lib/api/annualReport.api';
 import { accountingApi, type FiscalYearWithPeriods } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { dmy, rangeText } from '@/lib/reports/format';
+import { ReportPage, reportStyles as styles } from '@/components/reports/ReportPage';
+import { Combobox } from '@/components/reports/ReportFilters';
+import { useReport } from '@/components/reports/useReport';
+
+const STATUS: Record<AnnualReportSubmission['status'], [string, 'ok' | 'info' | 'draft' | 'bad' | 'pend']> = {
+  draft: ['Mustand', 'draft'],
+  generating: ['Genereerimine…', 'info'],
+  generated: ['Genereeritud', 'info'],
+  submitting: ['Esitamine…', 'pend'],
+  submitted: ['Esitatud', 'pend'],
+  accepted: ['Vastu võetud', 'ok'],
+  rejected: ['Tagasi lükatud', 'bad'],
+  error: ['Viga', 'bad'],
+};
+const TAG_CLASS = { ok: styles.tagOk, info: styles.tagInfo, draft: styles.tagDraft, bad: styles.tagBad, pend: styles.tagPend };
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -19,279 +31,125 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const t = useTranslations('annualReport');
-  const config: Record<string, { bg: string; text: string; Icon: typeof CheckCircle2 }> = {
-    draft: { bg: 'bg-slate-100', text: 'text-slate-700', Icon: Clock },
-    generating: { bg: 'bg-blue-100', text: 'text-blue-700', Icon: Loader2 },
-    generated: { bg: 'bg-indigo-100', text: 'text-indigo-700', Icon: FileText },
-    submitting: { bg: 'bg-blue-100', text: 'text-blue-700', Icon: Loader2 },
-    submitted: { bg: 'bg-amber-100', text: 'text-amber-700', Icon: Upload },
-    accepted: { bg: 'bg-emerald-100', text: 'text-emerald-700', Icon: CheckCircle2 },
-    rejected: { bg: 'bg-red-100', text: 'text-red-700', Icon: XCircle },
-    error: { bg: 'bg-red-100', text: 'text-red-700', Icon: XCircle },
-  };
-  const c = config[status] || config.draft;
-  const Icon = c.Icon;
-
-  return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ${c.bg} ${c.text}`}>
-      <Icon className={`h-3.5 w-3.5 ${status === 'generating' || status === 'submitting' ? 'animate-spin' : ''}`} />
-      {t(`status_${status}`)}
-    </span>
-  );
-}
+const yearLabel = (fy: { date_start: string; date_end: string; is_closed?: boolean }) =>
+  `${rangeText(fy.date_start, fy.date_end)}${fy.is_closed ? ' · suletud' : ''}`;
 
 export default function AnnualReportPage() {
-  const t = useTranslations('annualReport');
-  const tc = useTranslations('common');
-
-  const [submissions, setSubmissions] = useState<AnnualReportSubmission[]>([]);
-  const [fiscalYears, setFiscalYears] = useState<FiscalYearWithPeriods[]>([]);
-  const [selectedFiscalYear, setSelectedFiscalYear] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const report = useReport('annual-report');
+  const [submissions, setSubmissions] = useState<AnnualReportSubmission[] | null>(null);
+  const [years, setYears] = useState<FiscalYearWithPeriods[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const fyId = report.filters.fy || years[0]?.id || '';
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const load = useCallback(async () => {
     try {
-      const [subs, years] = await Promise.all([
-        annualReportApi.listSubmissions(),
-        accountingApi.listFiscalYears(),
-      ]);
+      const [subs, fys] = await Promise.all([annualReportApi.listSubmissions(), accountingApi.listFiscalYears()]);
       setSubmissions(subs);
-      setFiscalYears(years);
-      if (years.length > 0 && !selectedFiscalYear) {
-        setSelectedFiscalYear(years[0].id);
-      }
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
+      setYears(fys);
+      setError(null);
+    } catch (e) {
+      setError(getErrorMessage(e));
+      setSubmissions((s) => s ?? []);
     }
-  }, [selectedFiscalYear]);
+  }, []);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    let live = true;
+    Promise.all([annualReportApi.listSubmissions(), accountingApi.listFiscalYears()])
+      .then(([subs, fys]) => { if (live) { setSubmissions(subs); setYears(fys); } })
+      .catch((e) => { if (live) { setError(getErrorMessage(e)); setSubmissions([]); } });
+    return () => { live = false; };
+  }, []);
 
-  const handleCreate = async () => {
-    if (!selectedFiscalYear) return;
-    setActionLoading('create');
-    try {
-      await annualReportApi.createSubmission(selectedFiscalYear);
-      await fetchData();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setActionLoading(null);
-    }
+  const act = (key: string, fn: () => Promise<unknown>) => async () => {
+    setBusy(key);
+    try { await fn(); await load(); } catch (e) { setError(getErrorMessage(e)); } finally { setBusy(null); }
   };
 
-  const handleGenerate = async (id: string) => {
-    setActionLoading(id);
-    try {
-      await annualReportApi.generateXbrl(id);
-      await fetchData();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleDownload = async (id: string) => {
-    try {
-      const blob = await annualReportApi.downloadXbrl(id);
-      downloadBlob(blob, `annual_report_${id}.xbrl`);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    }
-  };
-
-  const handleSubmit = async (id: string) => {
-    setActionLoading(id);
-    try {
-      await annualReportApi.submitToRik(id);
-      await fetchData();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const handleCheckStatus = async (id: string) => {
-    setActionLoading(id);
-    try {
-      await annualReportApi.checkStatus(id);
-      await fetchData();
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  if (loading) {
-    return <PageSkeleton hasStats={false} tableRows={4} tableColumns={5} />;
-  }
-
-  if (error && submissions.length === 0) {
-    return (
-      <div>
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {t('title')}
-          </h1>
-        </div>
-        <ErrorState message={error} onRetry={fetchData} />
-      </div>
-    );
-  }
+  const shown = (submissions ?? []).filter((s) => !report.filters.fy || s.fiscal_year_id === report.filters.fy);
+  const accepted = (submissions ?? []).filter((s) => s.status === 'accepted').length;
 
   return (
-    <div>
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {t('title')}
-        </h1>
-        <p className="mt-1 text-sm sm:text-base" style={{ color: 'var(--text-secondary)' }}>
-          {t('description')}
-        </p>
-      </div>
-
-      {error && (
-        <div className="card mb-6 border-red-200 bg-red-50 p-4 text-sm text-red-700">
-          {error}
-        </div>
-      )}
-
-      {/* Create new submission */}
-      <div className="card mb-6 p-4 sm:p-6">
-        <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>
-          {t('newSubmission')}
-        </h2>
-        <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
-          <div className="flex-1">
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
-              {t('fiscalYear')}
-            </label>
-            <select
-              value={selectedFiscalYear}
-              onChange={(e) => setSelectedFiscalYear(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              style={{ border: '1px solid var(--border)', color: 'var(--text-primary)', backgroundColor: 'var(--surface)' }}
-            >
-              {fiscalYears.map((fy) => (
-                <option key={fy.id} value={fy.id}>
-                  {fy.date_start} — {fy.date_end} {fy.is_closed ? `(${tc('closed')})` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={handleCreate}
-            disabled={!selectedFiscalYear || actionLoading === 'create'}
-            className="px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            {actionLoading === 'create' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
-            <span>{t('createSubmission')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Submissions list */}
-      {submissions.length === 0 ? (
-        <EmptyState
-          icon={FileText}
-          title={t('noSubmissions')}
-          message={t('noSubmissionsMessage')}
+    <ReportPage
+      report={report}
+      loading={submissions === null}
+      print={false}
+      metrics={submissions ? [
+        { label: 'Esitamisi', value: String(submissions.length) },
+        { label: 'Vastu võetud', value: String(accepted), tone: accepted ? 'pos' : undefined },
+      ] : []}
+      filters={<>
+        <Combobox
+          items={years}
+          value={fyId}
+          onChange={(id) => report.set({ fy: id })}
+          label={yearLabel}
+          placeholder="Vali majandusaasta"
         />
-      ) : (
-        <div className="space-y-4">
-          {submissions.map((sub) => (
-            <div key={sub.id} className="card p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2">
-                    <StatusBadge status={sub.status} />
-                    {sub.fiscal_year && (
-                      <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                        {sub.fiscal_year.date_start} — {sub.fiscal_year.date_end}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {tc('created')}: {new Date(sub.created_at).toLocaleDateString()}
-                    {sub.submitted_at && ` | ${t('submitted')}: ${new Date(sub.submitted_at).toLocaleDateString()}`}
-                  </p>
-                  {sub.error_message && (
-                    <p className="text-xs text-red-600 mt-1 break-words">{sub.error_message}</p>
-                  )}
-                  {sub.rik_document_id && (
-                    <p className="text-xs mt-1 break-all" style={{ color: 'var(--text-muted)' }}>
-                      RIK ID: {sub.rik_document_id}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {(sub.status === 'draft' || sub.status === 'error') && (
-                    <button
-                      onClick={() => handleGenerate(sub.id)}
-                      disabled={actionLoading === sub.id}
-                      className="max-lg:min-h-9 px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
-                      style={{ backgroundColor: 'var(--primary)' }}
-                    >
-                      {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-                      {t('generateXbrl')}
-                    </button>
-                  )}
-
-                  {(sub.status === 'generated' || sub.status === 'submitted' || sub.status === 'accepted') && (
-                    <button
-                      onClick={() => handleDownload(sub.id)}
-                      className="max-lg:min-h-9 px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
-                      style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                    >
-                      <Download className="h-4 w-4" />
-                      {t('downloadXbrl')}
-                    </button>
-                  )}
-
-                  {sub.status === 'generated' && (
-                    <button
-                      onClick={() => handleSubmit(sub.id)}
-                      disabled={actionLoading === sub.id}
-                      className="max-lg:min-h-9 px-3 py-1.5 text-sm text-white rounded-lg flex items-center gap-1.5 hover:opacity-90 disabled:opacity-50"
-                      style={{ backgroundColor: 'var(--success, #16a34a)' }}
-                    >
-                      {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                      {t('submitToRik')}
-                    </button>
-                  )}
-
-                  {(sub.status === 'submitted') && (
-                    <button
-                      onClick={() => handleCheckStatus(sub.id)}
-                      disabled={actionLoading === sub.id}
-                      className="max-lg:min-h-9 px-3 py-1.5 text-sm rounded-lg flex items-center gap-1.5 hover:opacity-80"
-                      style={{ border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                    >
-                      {actionLoading === sub.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      {t('checkStatus')}
-                    </button>
-                  )}
-                </div>
+        <button className={`${styles.btn} ${styles.primary}`} disabled={!fyId || busy === 'create'} onClick={act('create', () => annualReportApi.createSubmission(fyId))}>
+          {busy === 'create' ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />} Loo esitamine
+        </button>
+      </>}
+      body={
+        <>
+          <div className={styles.listhead}>
+            <b>{shown.length} esitamist</b>
+            <span className={styles.mut}>· XBRL Äriregistrile</span>
+            <div className={styles.listheadR}><span className={styles.mut}>Bilanss ja kasumiaruanne tulevad pearaamatust</span></div>
+          </div>
+          {error && <div className={`${styles.note} ${styles.noteBad}`}>{error}</div>}
+          {submissions === null ? (
+            <div className={styles.empty}>Laadin…</div>
+          ) : shown.length === 0 ? (
+            <div className={styles.empty}>Esitamisi ei ole. Vali majandusaasta ja loo uus esitamine.</div>
+          ) : (
+            <div className={styles.tscroll}>
+              <div className={styles.rt} style={{ ['--rc' as string]: 'minmax(240px,1fr) 130px 110px 110px minmax(220px,auto)' }}>
+                <div className={styles.rhd}><div>Majandusaasta</div><div>Olek</div><div>Loodud</div><div>Esitatud</div><div className={styles.n}>Tegevused</div></div>
+                {shown.map((s) => {
+                  const [label, kind] = STATUS[s.status] ?? STATUS.draft;
+                  const working = busy === s.id;
+                  return (
+                    <div key={s.id} className={`${styles.rr} ${styles.ln} ${styles.lnStatic} ${styles.lnFlat}`} style={{ alignItems: 'center' }}>
+                      <div className={styles.acc} style={{ flexDirection: 'column', gap: 1 }}>
+                        <span className={styles.nmStrong}>{s.fiscal_year ? yearLabel(s.fiscal_year) : '—'}</span>
+                        {s.error_message && <small className={styles.cNeg} style={{ whiteSpace: 'normal' }}>{s.error_message}</small>}
+                        {s.rik_document_id && <small className={styles.mut}>RIK ID {s.rik_document_id}</small>}
+                      </div>
+                      <div><span className={`${styles.tag} ${TAG_CLASS[kind]}`} style={{ marginLeft: 0 }}>{label}</span></div>
+                      <div className={styles.mono}>{dmy(s.created_at.slice(0, 10))}</div>
+                      <div className={styles.mono}>{s.submitted_at ? dmy(s.submitted_at.slice(0, 10)) : '–'}</div>
+                      <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+                        {(s.status === 'draft' || s.status === 'error') && (
+                          <button className={`${styles.btn} ${styles.sm} ${styles.primary}`} disabled={working} onClick={act(s.id, () => annualReportApi.generateXbrl(s.id))}>
+                            {working ? <Loader2 size={12} className="animate-spin" /> : <FileText size={12} />} Genereeri XBRL
+                          </button>
+                        )}
+                        {(s.status === 'generated' || s.status === 'submitted' || s.status === 'accepted') && (
+                          <button className={`${styles.btn} ${styles.sm}`} onClick={act(`dl-${s.id}`, async () => downloadBlob(await annualReportApi.downloadXbrl(s.id), `annual_report_${s.id}.xbrl`))}>
+                            <Download size={12} /> XBRL
+                          </button>
+                        )}
+                        {s.status === 'generated' && (
+                          <button className={`${styles.btn} ${styles.sm} ${styles.primary}`} disabled={working} onClick={act(s.id, () => annualReportApi.submitToRik(s.id))}>
+                            {working ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />} Esita Äriregistrile
+                          </button>
+                        )}
+                        {s.status === 'submitted' && (
+                          <button className={`${styles.btn} ${styles.sm}`} disabled={working} onClick={act(s.id, () => annualReportApi.checkStatus(s.id))}>
+                            {working ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />} Kontrolli olekut
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+          )}
+        </>
+      }
+    />
   );
 }

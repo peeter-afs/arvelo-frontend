@@ -1,401 +1,60 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Scale, Download, Filter, Calendar } from 'lucide-react';
-import { useTranslations } from 'next-intl';
-import { reportsApi, type TrialBalanceData } from '@/lib/api/reports.api';
-import { getErrorMessage } from '@/lib/api/client';
-import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
-import { downloadCsv } from '@/lib/utils/csvExport';
-import { getIsoToday } from '@/lib/utils/date';
-import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { EmptyState } from '@/components/ui/EmptyState';
+import { useMemo } from 'react';
+import { AlertTriangle, Check } from 'lucide-react';
+import { reportsApi } from '@/lib/api/reports.api';
+import { buildTrialBalance } from '@/lib/reports/build/ledger';
+import { fiscalYearOf } from '@/lib/reports/periods';
+import { fmtEur, fromIso, rangeText, toIso } from '@/lib/reports/format';
+import { ReportPage, reportStyles as styles } from '@/components/reports/ReportPage';
+import { AccountLedgerDrill } from '@/components/reports/AccountLedgerDrill';
+import { useReport } from '@/components/reports/useReport';
+import { useReportData } from '@/components/reports/useReportData';
+import { useReports } from '@/components/reports/ReportsProvider';
 
 export default function TrialBalancePage() {
-  const t = useTranslations('reports');
-  const tAccounting = useTranslations('accounting');
-  const tCommon = useTranslations('common');
-
-  const [asOfDate, setAsOfDate] = useClientDateInput(getIsoToday);
-  const [data, setData] = useState<TrialBalanceData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchData = useCallback(async () => {
-    if (!asOfDate) {
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await reportsApi.getTrialBalance(asOfDate);
-      setData(result);
-    } catch (err) {
-      setError(getErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, [asOfDate]);
-
-  useEffect(() => {
-    if (!asOfDate) {
-      return;
-    }
-
-    fetchData();
-  }, [asOfDate, fetchData]);
-
-  if (loading || !asOfDate) {
-    return <PageSkeleton hasStats tableRows={10} tableColumns={4} />;
-  }
-
-  if (error) {
-    return (
-      <div>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {t('trialBalance')}
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {tAccounting('debit')} &amp; {tAccounting('credit')}
-          </p>
-        </div>
-        <ErrorState message={error} onRetry={fetchData} />
-      </div>
-    );
-  }
-
-  if (!data || data.accounts.length === 0) {
-    return (
-      <div>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            {t('trialBalance')}
-          </h1>
-          <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-            {tAccounting('debit')} &amp; {tAccounting('credit')}
-          </p>
-        </div>
-        <EmptyState
-          icon={Scale}
-          title={t('trialBalance')}
-          message={tCommon('noData')}
-        />
-      </div>
-    );
-  }
-
-  const { accounts, totalDebit, totalCredit, isBalanced } = data;
+  const report = useReport('trial-balance');
+  const { period, ready } = report;
+  const { fiscalYears } = useReports();
+  const { data, loading, error } = useReportData(() => reportsApi.getTrialBalance(period.asOf), [period.asOf], ready);
+  const built = useMemo(() => (data ? buildTrialBalance(data) : null), [data]);
+  const drillFrom = period.asOf ? toIso(fiscalYearOf(fromIso(period.asOf), fiscalYears).start) : '';
+  const balanced = !!data && Math.abs(built?.diff ?? 0) < 0.01;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-          {t('trialBalance')}
-        </h1>
-        <p className="mt-1" style={{ color: 'var(--text-secondary)' }}>
-          {tAccounting('debit')} &amp; {tAccounting('credit')}
-        </p>
-      </div>
-
-      {/* Date Selector */}
-      <div
-        className="card mb-6 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 p-4 sm:p-6"
-      >
-        <div className="flex space-x-4 items-end">
-          <div className="max-sm:flex-1">
-            <label
-              className="block text-sm font-medium mb-2"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <Calendar className="inline h-4 w-4 mr-1" />
-              {tCommon('date')}
-            </label>
-            <input
-              type="date"
-              value={asOfDate}
-              onChange={(e) => setAsOfDate(e.target.value)}
-              className="max-sm:w-full px-4 py-2 rounded-lg focus:outline-none focus:ring-2"
-              style={{
-                border: '1px solid var(--border)',
-                backgroundColor: 'var(--surface)',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
+    <ReportPage
+      report={report}
+      model={built?.model}
+      loading={loading || !ready}
+      error={error}
+      empty="Kandeid ei ole"
+      metrics={data ? [
+        { label: 'Deebet', value: fmtEur(data.totalDebit) },
+        { label: 'Kreedit', value: fmtEur(data.totalCredit) },
+        { label: 'Vahe', value: fmtEur(built?.diff ?? 0), tone: balanced ? undefined : 'neg' },
+      ] : []}
+      listhead={data && <>
+        <b>{data.accounts.length} kontot</b>
+        <span className={styles.mut}>· {period.text} · kõik kanded algusest</span>
+        <div className={styles.listheadR}><span className={styles.mut}>Klõps kontol avab pearaamatu</span><span>Summad eurodes</span></div>
+      </>}
+      footer={data && (
+        <div className={`${styles.check} ${balanced ? styles.checkOk : styles.checkBad}`}>
+          {balanced ? <Check size={13} /> : <AlertTriangle size={13} />}
+          <span>{balanced ? 'Proovibilanss on tasakaalus: deebet = kreedit' : `Proovibilanss ei ole tasakaalus · vahe ${fmtEur(built?.diff ?? 0)}`}</span>
         </div>
-
-        <div className="flex space-x-2">
-          <button
-            className="max-sm:flex-1 max-sm:justify-center px-4 py-2 rounded-lg flex items-center space-x-2 hover:opacity-80 transition-opacity"
-            style={{
-              border: '1px solid var(--border)',
-              color: 'var(--text-primary)',
-            }}
-          >
-            <Filter className="h-5 w-5" />
-            <span>{tCommon('filter')}</span>
-          </button>
-          <button
-            onClick={() => {
-              const rows = accounts.map((a) => ({
-                account_code: a.account_code,
-                account_name: a.account_name,
-                account_type: a.account_type,
-                debit: a.debit,
-                credit: a.credit,
-                balance: a.debit - a.credit,
-              }));
-              downloadCsv(rows, `trial-balance-${asOfDate}.csv`, [
-                { key: 'account_code', label: 'Account Code' },
-                { key: 'account_name', label: 'Account Name' },
-                { key: 'account_type', label: 'Account Type' },
-                { key: 'debit', label: 'Debit' },
-                { key: 'credit', label: 'Credit' },
-                { key: 'balance', label: 'Balance' },
-              ]);
-            }}
-            className="max-sm:flex-1 max-sm:justify-center px-4 py-2 rounded-lg flex items-center space-x-2 text-white hover:opacity-90 transition-opacity"
-            style={{ backgroundColor: 'var(--primary)' }}
-          >
-            <Download className="h-5 w-5" />
-            <span>{tCommon('export')}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Desktop Table */}
-      <div className="card overflow-hidden max-lg:overflow-x-auto hidden md:block">
-        <table className="min-w-full">
-          <thead style={{ backgroundColor: 'var(--surface-elevated)' }}>
-            <tr>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tAccounting('accountCode')}
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tAccounting('accountName')}
-              </th>
-              <th
-                className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tAccounting('accountType')}
-              </th>
-              <th
-                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tAccounting('debit')}
-              </th>
-              <th
-                className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                {tAccounting('credit')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {accounts.map((account) => (
-              <tr
-                key={account.account_code}
-                className="transition-colors hover:opacity-80"
-                style={{ borderBottom: '1px solid var(--border)' }}
-              >
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm font-mono font-bold"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {account.account_code}
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {account.account_name}
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {account.account_type}
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {account.debit > 0
-                    ? account.debit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '-'}
-                </td>
-                <td
-                  className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {account.credit > 0
-                    ? account.credit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr
-              className="font-bold"
-              style={{
-                backgroundColor: 'var(--surface-elevated)',
-                borderTop: '3px solid var(--text-primary)',
-              }}
-            >
-              <td
-                colSpan={3}
-                className="px-6 py-4 text-sm"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {tCommon('total')}
-              </td>
-              <td
-                className="px-6 py-4 text-sm text-right"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-              <td
-                className="px-6 py-4 text-sm text-right"
-                style={{ color: 'var(--text-primary)' }}
-              >
-                {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* Mobile Card Layout */}
-      <div className="md:hidden space-y-3">
-        {accounts.map((account) => (
-          <div
-            key={account.account_code}
-            className="card p-4"
-          >
-            <div className="flex justify-between items-start gap-3 mb-2">
-              <div className="min-w-0">
-                <span
-                  className="text-xs font-mono font-bold"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  {account.account_code}
-                </span>
-                <p
-                  className="text-sm font-medium break-words"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {account.account_name}
-                </p>
-              </div>
-              <span
-                className="shrink-0 text-xs px-2 py-0.5 rounded"
-                style={{
-                  backgroundColor: 'var(--surface-elevated)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {account.account_type}
-              </span>
-            </div>
-            <div
-              className="flex justify-between text-sm pt-2"
-              style={{ borderTop: '1px solid var(--border)' }}
-            >
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>{tAccounting('debit')}: </span>
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {account.debit > 0
-                    ? account.debit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '-'}
-                </span>
-              </div>
-              <div>
-                <span style={{ color: 'var(--text-muted)' }}>{tAccounting('credit')}: </span>
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>
-                  {account.credit > 0
-                    ? account.credit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                    : '-'}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Mobile Totals Card */}
-        <div
-          className="card p-4 font-bold"
-          style={{ borderTop: '3px solid var(--text-primary)' }}
-        >
-          <p className="text-sm mb-2" style={{ color: 'var(--text-primary)' }}>
-            {tCommon('total')}
-          </p>
-          <div className="flex justify-between text-sm">
-            <div>
-              <span style={{ color: 'var(--text-muted)' }}>{tAccounting('debit')}: </span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-            <div>
-              <span style={{ color: 'var(--text-muted)' }}>{tAccounting('credit')}: </span>
-              <span style={{ color: 'var(--text-primary)' }}>
-                {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Balance Status Cards */}
-      <div className="mt-6 md:mt-8 grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
-        <div className="card min-w-0 p-4 md:p-6">
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {tAccounting('debit')}
-          </p>
-          <p className="text-lg md:text-2xl font-bold mt-2 break-words" style={{ color: 'var(--text-primary)' }}>
-            {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="card min-w-0 p-4 md:p-6">
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {tAccounting('credit')}
-          </p>
-          <p className="text-lg md:text-2xl font-bold mt-2 break-words" style={{ color: 'var(--text-primary)' }}>
-            {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </p>
-        </div>
-        <div className="card col-span-2 md:col-span-1 min-w-0 p-4 md:p-6">
-          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-            {tCommon('status')}
-          </p>
-          <p
-            className="text-lg md:text-2xl font-bold mt-2 break-words"
-            style={{ color: isBalanced ? 'var(--success)' : 'var(--danger)' }}
-          >
-            {isBalanced
-              ? t('trialBalance') + ' \u2713'
-              : Math.abs(totalDebit - totalCredit).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-          </p>
-        </div>
-      </div>
-    </div>
+      )}
+      drill={(row, close) => (
+        <AccountLedgerDrill
+          accountId={row.data!.accountId}
+          code={row.data!.code}
+          name={row.data!.name}
+          from={drillFrom}
+          to={period.asOf!}
+          line={`Pearaamat · ${rangeText(drillFrom, period.asOf!)} · ${row.data!.group}`}
+          onClose={close}
+        />
+      )}
+    />
   );
 }

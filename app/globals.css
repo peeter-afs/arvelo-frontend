@@ -283,3 +283,9 @@ textarea {
    lg: 1024px — tablets → desktop (sidebar visibility switch point)
    xl: 1280px — desktop → wide desktop
 */
+
+/* Report print view (components/reports/PrintSheet): only the sheet is printed. */
+@media print {
+  body:has([data-report-print]) > *:not([data-report-print]) { display: none !important; }
+  body:has([data-report-print]) { overflow: visible !important; background: #fff !important; }
+}

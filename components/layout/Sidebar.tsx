@@ -180,23 +180,8 @@ export default function Sidebar({ onClose, isMobile = false }: SidebarProps) {
         { label: tAccounting('exchangeRates'), href: '/accounting/exchange-rates' },
       ],
     },
-    {
-      id: 'reports',
-      label: tNavigation('reports'),
-      icon: BarChart3,
-      children: [
-        { label: tReports('profitLoss'), href: '/reports/profit-loss' },
-        { label: tReports('balanceSheet'), href: '/reports/balance-sheet' },
-        { label: tReports('trialBalance'), href: '/reports/trial-balance' },
-        { label: tReports('turnoverReport'), href: '/reports/turnover' },
-        { label: tReports('dimensionReport'), href: '/reports/dimensions' },
-        { label: tReports('generalLedger'), href: '/reports/general-ledger' },
-        { label: tReports('vatReport'), href: '/reports/vat' },
-        { label: tReports('agingReport'), href: '/reports/aging' },
-        { label: tReports('partnerStatement'), href: '/reports/partner-statement' },
-        { label: tReports('annualReport'), href: '/reports/annual-report' },
-      ],
-    },
+    // Reports have their own rail (> 5 subpages, SIDEBAR_AUTO_COLLAPSE.md §7): one link, no flyout.
+    { label: tNavigation('reports'), href: '/reports', icon: BarChart3 },
     { label: tNavigation('fixedAssets'), href: '/assets', icon: PiggyBank },
     { label: tNavigation('help'), href: '/help', icon: BookOpen },
     {

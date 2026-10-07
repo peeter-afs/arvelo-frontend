@@ -1,5 +1,6 @@
 import apiClient from './client';
 import { createCachedFetcher } from './cache';
+import type { ReportLine } from './reports.api';
 
 type ApiResponse<T> = {
   success: boolean;
@@ -224,6 +225,10 @@ export type AccountRecord = {
   is_active: boolean;
   is_system: boolean;
   system_code?: string | null;
+  /** Schema 1 report line pinned by the user (null = derived from the code). */
+  report_line?: ReportLine | null;
+  /** The line the reports actually use. */
+  report_line_effective?: ReportLine | null;
   created_at: string;
   updated_at: string;
 };
@@ -372,7 +377,7 @@ export const accountingApi = {
     return response.data.data;
   },
 
-  async updateAccount(id: string, payload: Partial<Pick<AccountRecord, 'code' | 'name' | 'type' | 'parent_id' | 'is_active'>>) {
+  async updateAccount(id: string, payload: Partial<Pick<AccountRecord, 'code' | 'name' | 'type' | 'parent_id' | 'is_active' | 'report_line'>>) {
     const response = await apiClient.put<ApiResponse<AccountRecord>>(`/api/accounting/accounts/${id}`, payload);
     activeAccountsCache.invalidate();
     return response.data.data;

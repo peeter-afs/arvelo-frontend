@@ -30,9 +30,12 @@ function isoWeek(d: Date) {
   return Math.ceil(((t.getTime() - Date.UTC(t.getUTCFullYear(), 0, 1)) / DAY + 1) / 7);
 }
 
-export function NewPaymentBatchModal({ invoices, openLines, bankAccounts, accounts, seed, onClose, onCreated }: {
+export function NewPaymentBatchModal({ invoices, openLines, bankAccounts, accounts, seed, preselect, onClose, onCreated }: {
   invoices: InvoiceListItem[]; openLines: OpenLine[]; bankAccounts: BankAccountRecord[]; accounts: AccountOption[];
-  seed?: BatchSeed | null; onClose: () => void; onCreated: (batchId: string) => void | Promise<void>;
+  seed?: BatchSeed | null;
+  /** Invoices to tick instead of "due within a week" (Aegumisaruanne → Lisa maksepaketti). */
+  preselect?: string[] | null;
+  onClose: () => void; onCreated: (batchId: string) => void | Promise<void>;
 }) {
   const today = startOfDay(new Date());
   const tomorrow = isoDate(new Date(today.getTime() + DAY));
@@ -77,7 +80,9 @@ export function NewPaymentBatchModal({ invoices, openLines, bankAccounts, accoun
         const soon = new Date(today.getTime() + 7 * DAY);
         setSelected(new Set(seed
           ? seed.lines.map((l) => l.invoice_id).filter((id): id is string => !!id && rows.some((r) => r.id === id && ok(r)))
-          : rows.filter((r) => ok(r) && new Date(r.due_date || r.invoice_date) <= soon).map((r) => r.id)));
+          : preselect?.length
+            ? rows.filter((r) => ok(r) && preselect.includes(r.id)).map((r) => r.id)
+            : rows.filter((r) => ok(r) && new Date(r.due_date || r.invoice_date) <= soon).map((r) => r.id)));
       })
       .catch((e) => { if (live) { setPrefill(new Map()); setError(getErrorMessage(e)); } });
     return () => { live = false; };

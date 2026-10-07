@@ -657,7 +657,27 @@
     "dimPolicySaved": "Oikeus tallennettu",
     "projectStatusInProgress": "Kesken",
     "projectStatusCompleted": "Valmis",
-    "projectStatusHint": "Projektin tila: napsauta merkitäksesi valmiiksi tai takaisin keskeneräiseksi."
+    "projectStatusHint": "Projektin tila: napsauta merkitäksesi valmiiksi tai takaisin keskeneräiseksi.",
+    "reportLine": "Raporttirivi",
+    "reportLineAuto": "Automaattinen · {line}",
+    "reportLineHint": "Taseen ja tuloslaskelman ryhmä (Viron kaava 1). Automaattinen valinta tulee tilinumerosta.",
+    "reportLineSaved": "Raporttirivi tallennettu",
+    "reportLines": {
+      "current_assets": "Vaihtuvat vastaavat",
+      "fixed_assets": "Pysyvät vastaavat",
+      "current_liabilities": "Lyhytaikainen vieras pääoma",
+      "long_term_liabilities": "Pitkäaikainen vieras pääoma",
+      "equity": "Oma pääoma",
+      "revenue": "Liikevaihto",
+      "other_income": "Liiketoiminnan muut tuotot",
+      "goods_materials_services": "Tavarat, aineet ja palvelut",
+      "operating_expenses": "Liiketoiminnan muut kulut",
+      "labour": "Henkilöstökulut",
+      "depreciation": "Poistot",
+      "other_expenses": "Muut kulut",
+      "financial": "Rahoitustuotot ja -kulut",
+      "income_tax": "Tuloverot"
+    }
   },
   "reports": {
     "dimensionReport": "Kustannuspaikat ja projektit",

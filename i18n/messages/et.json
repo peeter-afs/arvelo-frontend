@@ -1221,7 +1221,27 @@
     "dimPolicySaved": "Õigus salvestatud",
     "projectStatusInProgress": "Pooleli",
     "projectStatusCompleted": "Lõpetatud",
-    "projectStatusHint": "Projekti olek: vajuta, et märkida lõpetatuks või uuesti pooleliolevaks. Olek on näha projektide aruandes."
+    "projectStatusHint": "Projekti olek: vajuta, et märkida lõpetatuks või uuesti pooleliolevaks. Olek on näha projektide aruandes.",
+    "reportLine": "Aruande rida",
+    "reportLineAuto": "Automaatne · {line}",
+    "reportLineHint": "Bilansi ja kasumiaruande rühm (skeem 1). Automaatne valik tuleb kontokoodist.",
+    "reportLineSaved": "Aruande rida salvestatud",
+    "reportLines": {
+      "current_assets": "Käibevara",
+      "fixed_assets": "Põhivara",
+      "current_liabilities": "Lühiajalised kohustised",
+      "long_term_liabilities": "Pikaajalised kohustised",
+      "equity": "Omakapital",
+      "revenue": "Müügitulu",
+      "other_income": "Muud äritulud",
+      "goods_materials_services": "Kaubad, toore, materjal ja teenused",
+      "operating_expenses": "Mitmesugused tegevuskulud",
+      "labour": "Tööjõukulud",
+      "depreciation": "Põhivara kulum",
+      "other_expenses": "Muud ärikulud",
+      "financial": "Finantstulud ja -kulud",
+      "income_tax": "Tulumaks"
+    }
   },
   "exchangeRates": {
     "title": "Vahetuskursid",

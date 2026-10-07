@@ -651,7 +651,27 @@
     "dimPolicySaved": "Behörighet sparad",
     "projectStatusInProgress": "Pågår",
     "projectStatusCompleted": "Avslutat",
-    "projectStatusHint": "Projektstatus: klicka för att markera som avslutat eller pågående."
+    "projectStatusHint": "Projektstatus: klicka för att markera som avslutat eller pågående.",
+    "reportLine": "Rapportrad",
+    "reportLineAuto": "Automatisk · {line}",
+    "reportLineHint": "Grupp i balansräkning och resultaträkning (estniskt schema 1). Automatisk följer kontokoden.",
+    "reportLineSaved": "Rapportrad sparad",
+    "reportLines": {
+      "current_assets": "Omsättningstillgångar",
+      "fixed_assets": "Anläggningstillgångar",
+      "current_liabilities": "Kortfristiga skulder",
+      "long_term_liabilities": "Långfristiga skulder",
+      "equity": "Eget kapital",
+      "revenue": "Nettoomsättning",
+      "other_income": "Övriga rörelseintäkter",
+      "goods_materials_services": "Varor, material och tjänster",
+      "operating_expenses": "Övriga rörelsekostnader",
+      "labour": "Personalkostnader",
+      "depreciation": "Avskrivningar",
+      "other_expenses": "Övriga kostnader",
+      "financial": "Finansiella intäkter och kostnader",
+      "income_tax": "Inkomstskatt"
+    }
   },
   "reports": {
     "dimensionReport": "Kostnadsställen och projekt",

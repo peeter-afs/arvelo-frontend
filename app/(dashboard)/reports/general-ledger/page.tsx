@@ -1,316 +1,106 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { BookOpen } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { ExternalLink } from 'lucide-react';
+import { reportsApi } from '@/lib/api/reports.api';
 import { accountingApi, type AccountOption } from '@/lib/api/accounting.api';
-import { reportsApi, type GeneralLedgerData } from '@/lib/api/reports.api';
-import { getErrorMessage } from '@/lib/api/client';
-import { useClientDateInput } from '@/lib/hooks/useClientDateInput';
-import { getIsoCurrentYearStart, getIsoToday } from '@/lib/utils/date';
-import { PageSkeleton } from '@/components/ui/LoadingSkeleton';
-import { ErrorState } from '@/components/ui/ErrorState';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { FormField, FormInput, FormSelect } from '@/components/ui/FormField';
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+import { buildGeneralLedger, type LedgerRowData } from '@/lib/reports/build/ledger';
+import { dmy, fmtAmount, fmtEur, fmtNum } from '@/lib/reports/format';
+import { DrillHead, ReportPage, Strip, reportStyles as styles } from '@/components/reports/ReportPage';
+import { Combobox } from '@/components/reports/ReportFilters';
+import { entryHref } from '@/components/reports/AccountLedgerDrill';
+import { useReport } from '@/components/reports/useReport';
+import { useReportData } from '@/components/reports/useReportData';
 
 export default function GeneralLedgerPage() {
-  const searchParams = useSearchParams();
-  const t = useTranslations('reports');
-  const tAccounting = useTranslations('accounting');
-  const tCommon = useTranslations('common');
-
+  const report = useReport('general-ledger');
+  const { period, ready, filters } = report;
+  const accountId = filters.account_id || '';
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
-  const [accountsLoading, setAccountsLoading] = useState(true);
-  const [accountsError, setAccountsError] = useState<string | null>(null);
 
-  const [selectedAccountId, setSelectedAccountId] = useState(searchParams.get('account_id') || '');
-  const [startDate, setStartDate] = useClientDateInput(() => searchParams.get('start_date') || getIsoCurrentYearStart());
-  const [endDate, setEndDate] = useClientDateInput(() => searchParams.get('end_date') || getIsoToday());
-
-  const [ledgerData, setLedgerData] = useState<GeneralLedgerData | null>(null);
-  const [ledgerLoading, setLedgerLoading] = useState(false);
-  const [ledgerError, setLedgerError] = useState<string | null>(null);
-
-  // Fetch accounts on mount
   useEffect(() => {
-    let cancelled = false;
-    async function fetchAccounts() {
-      setAccountsLoading(true);
-      setAccountsError(null);
-      try {
-        const data = await accountingApi.getAccounts();
-        if (!cancelled) setAccounts(data);
-      } catch (err) {
-        if (!cancelled) setAccountsError(getErrorMessage(err));
-      } finally {
-        if (!cancelled) setAccountsLoading(false);
-      }
-    }
-    fetchAccounts();
-    return () => { cancelled = true; };
+    let live = true;
+    accountingApi.getAccounts().then((rows) => { if (live) setAccounts(rows.sort((a, b) => a.code.localeCompare(b.code))); }).catch(() => {});
+    return () => { live = false; };
   }, []);
 
-  // Fetch ledger data when account or dates change
-  const fetchLedger = useCallback(async () => {
-    if (!selectedAccountId || !startDate || !endDate) {
-      setLedgerData(null);
-      return;
-    }
-    setLedgerLoading(true);
-    setLedgerError(null);
-    try {
-      const data = await reportsApi.getGeneralLedger(selectedAccountId, startDate, endDate);
-      setLedgerData(data);
-    } catch (err) {
-      setLedgerError(getErrorMessage(err));
-      setLedgerData(null);
-    } finally {
-      setLedgerLoading(false);
-    }
-  }, [selectedAccountId, startDate, endDate]);
-
-  useEffect(() => {
-    fetchLedger();
-  }, [fetchLedger]);
-
-  if (accountsLoading) {
-    return <PageSkeleton hasStats tableRows={8} tableColumns={6} />;
-  }
-
-  if (!startDate || !endDate) {
-    return <PageSkeleton hasStats tableRows={8} tableColumns={6} />;
-  }
-
-  if (accountsError) {
-    return (
-      <ErrorState
-        title={t('generalLedger')}
-        message={accountsError}
-        onRetry={() => window.location.reload()}
-      />
-    );
-  }
+  const { data, loading, error } = useReportData(
+    () => reportsApi.getGeneralLedger(accountId, period.from!, period.to!),
+    [accountId, period.from, period.to],
+    ready && !!accountId,
+  );
+  const built = useMemo(() => (data && accountId ? buildGeneralLedger(data) : null), [data, accountId]);
+  const account = accounts.find((a) => a.id === accountId);
+  const accountName = new Map(accounts.map((a) => [a.id, `${a.code} ${a.name}`]));
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)]">
-          {t('generalLedger')}
-        </h1>
-        <p className="text-[var(--text-secondary)] mt-1 text-sm sm:text-base">
-          {t('generalLedgerSingleAccountDescription')}
-        </p>
-      </div>
+    <ReportPage<LedgerRowData>
+      report={report}
+      model={built?.model}
+      loading={loading || !ready}
+      error={error}
+      empty={accountId ? 'Valitud perioodil kandeid ei ole' : 'Vali konto, et näha selle kandeid'}
+      metrics={data && accountId ? [
+        { label: 'Deebet', value: fmtEur(data.totalDebit) },
+        { label: 'Kreedit', value: fmtEur(data.totalCredit) },
+        { label: 'Lõppsaldo', value: fmtEur(data.closingBalance) },
+      ] : []}
+      filters={
+        <Combobox
+          items={accounts}
+          value={accountId}
+          onChange={(id) => report.set({ account_id: id })}
+          label={(a) => `${a.code} ${a.name}`}
+          placeholder="Vali konto"
+        />
+      }
+      listhead={data && accountId && <>
+        <b>{data.account.code} {data.account.name}</b>
+        <span className={styles.mut}>· {period.text} · {data.transactions.length} kannet</span>
+        <div className={styles.listheadR}><span>Summad eurodes</span></div>
+      </>}
+      print={{ title: account ? `Pearaamat · ${account.code} ${account.name}` : 'Pearaamat' }}
+      drill={(row, close) => <EntryDrill row={row.data!} accountName={accountName} onClose={close} />}
+    />
+  );
+}
 
-      {/* Filters */}
-      <div className="card p-4 sm:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <FormField label={tAccounting('accounts')}>
-            <FormSelect
-              value={selectedAccountId}
-              onChange={(e) => setSelectedAccountId(e.target.value)}
-            >
-              <option value="">{t('selectAccountOption')}</option>
-              {accounts.map((acc) => (
-                <option key={acc.id} value={acc.id}>
-                  {acc.code} - {acc.name}
-                </option>
+function EntryDrill({ row, accountName, onClose }: { row: LedgerRowData; accountName: Map<string, string>; onClose: () => void }) {
+  const { data, loading, error } = useReportData(() => accountingApi.getJournalEntry(row.entryId), [row.entryId]);
+  const lines = data?.rows ?? [];
+  return (
+    <>
+      <DrillHead
+        title={row.reference || row.description || 'Kanne'}
+        line={[dmy(row.date), data?.entry_number ? `Kanne ${data.entry_number}` : null, row.partner].filter(Boolean).join(' · ')}
+        onClose={onClose}
+      />
+      <div className={styles.dbody}>
+        <div className={styles.dsec}>
+          <Strip cells={[{ k: 'Deebet', v: fmtAmount(row.debit) }, { k: 'Kreedit', v: fmtAmount(row.credit) }]} />
+          {row.description && row.description !== row.reference && <div className={styles.dnote} style={{ color: 'var(--a-text-2)' }}>{row.description}</div>}
+        </div>
+        <div className={`${styles.dsec} ${styles.dsecLast}`}>
+          <div className={styles.sech}>Kande read{lines.length ? ` · ${lines.length}` : ''}</div>
+          {error ? <div className={styles.empty}>{error}</div> : !data ? <div className={styles.empty}>{loading ? 'Laadin…' : ''}</div> : (
+            <div className={styles.lines} style={{ ['--lc' as string]: 'minmax(0,1fr) 80px 80px' }}>
+              <div className={styles.lhead}><div>Konto</div><div className={styles.r}>Deebet</div><div className={styles.r}>Kreedit</div></div>
+              {lines.map((l) => (
+                <div key={l.id} className={styles.lrow}>
+                  <div>{accountName.get(l.account_id) || l.account_id.slice(0, 8)}{l.description ? <span className={styles.lsub}>{l.description}</span> : null}</div>
+                  <div className={`${styles.r} ${styles.mono}`}>{l.debit ? fmtNum(Number(l.debit)) : ''}</div>
+                  <div className={`${styles.r} ${styles.mono}`}>{l.credit ? fmtNum(Number(l.credit)) : ''}</div>
+                </div>
               ))}
-            </FormSelect>
-          </FormField>
-
-          <FormField label={t('dateFrom')}>
-            <FormInput
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-            />
-          </FormField>
-
-          <FormField label={t('dateTo')}>
-            <FormInput
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-            />
-          </FormField>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Content Area */}
-      {!selectedAccountId && (
-        <EmptyState
-          icon={BookOpen}
-          title={t('selectAccountTitle')}
-          message={t('selectAccountMessage')}
-        />
-      )}
-
-      {selectedAccountId && ledgerLoading && (
-        <PageSkeleton tableRows={8} tableColumns={6} />
-      )}
-
-      {selectedAccountId && ledgerError && (
-        <ErrorState
-          title={t('generalLedger')}
-          message={ledgerError}
-          onRetry={fetchLedger}
-        />
-      )}
-
-      {selectedAccountId && !ledgerLoading && !ledgerError && ledgerData && ledgerData.transactions.length === 0 && (
-        <EmptyState
-          icon={BookOpen}
-          title={tCommon('noData')}
-          message={t('noTransactionsForAccount')}
-        />
-      )}
-
-      {selectedAccountId && !ledgerLoading && !ledgerError && ledgerData && ledgerData.transactions.length > 0 && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Account info & summary cards */}
-          <div className="card p-4 sm:p-6">
-            <h2 className="text-lg sm:text-xl font-semibold text-[var(--text-primary)] mb-4 break-words">
-              {ledgerData.account.code} - {ledgerData.account.name}
-              <span className="ml-2 text-sm font-normal text-[var(--text-secondary)]">
-                ({ledgerData.account.type})
-              </span>
-            </h2>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  {tCommon('openingBalance')}
-                </p>
-                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
-                  {formatCurrency(ledgerData.openingBalance)}
-                </p>
-              </div>
-              <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  {tAccounting('debit')}
-                </p>
-                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
-                  {formatCurrency(ledgerData.totalDebit)}
-                </p>
-              </div>
-              <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  {tAccounting('credit')}
-                </p>
-                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
-                  {formatCurrency(ledgerData.totalCredit)}
-                </p>
-              </div>
-              <div className="rounded-lg bg-[var(--surface-elevated)] p-3 sm:p-4">
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
-                  {tCommon('closingBalance')}
-                </p>
-                <p className="text-base sm:text-xl font-semibold text-[var(--text-primary)] mt-1 max-sm:truncate">
-                  {formatCurrency(ledgerData.closingBalance)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Transactions table */}
-          <div className="card overflow-hidden">
-            <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--border)] bg-[var(--surface-elevated)]">
-                    <th className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      {tCommon('date')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden sm:table-cell">
-                      {tCommon('reference')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      {tCommon('description')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider hidden md:table-cell">
-                      {tCommon('partner')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      {tAccounting('debit')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      {tAccounting('credit')}
-                    </th>
-                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
-                      {tAccounting('balance')}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[var(--border)]">
-                  {/* Opening balance row */}
-                    <tr className="bg-[var(--surface-elevated)]">
-                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={4}>
-                      {tCommon('openingBalance')}
-                      </td>
-                    <td className="px-4 sm:px-6 py-3 hidden sm:table-cell" />
-                    <td className="px-4 sm:px-6 py-3 hidden md:table-cell" />
-                    <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
-                      {formatCurrency(ledgerData.openingBalance)}
-                    </td>
-                  </tr>
-
-                  {/* Transaction rows */}
-                  {ledgerData.transactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-[var(--surface-elevated)] transition-colors">
-                      <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--a-surface)] px-4 sm:px-6 py-3 whitespace-nowrap text-[var(--text-primary)]">
-                        {tx.date}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 whitespace-nowrap font-mono text-[var(--text-secondary)] hidden sm:table-cell">
-                        {tx.reference || '-'}
-                      </td>
-                      <td className="max-sm:min-w-[160px] px-4 sm:px-6 py-3 text-[var(--text-secondary)]">
-                        {tx.description || '-'}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 text-[var(--text-secondary)] hidden md:table-cell">
-                        {tx.partner || '-'}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-[var(--text-primary)]">
-                        {tx.debit ? formatCurrency(tx.debit) : '-'}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right text-[var(--text-primary)]">
-                        {tx.credit ? formatCurrency(tx.credit) : '-'}
-                      </td>
-                      <td className="px-4 sm:px-6 py-3 whitespace-nowrap text-right font-semibold text-[var(--text-primary)]">
-                        {formatCurrency(tx.balance)}
-                      </td>
-                    </tr>
-                  ))}
-
-                  {/* Closing balance row */}
-                  <tr className="bg-[var(--surface-elevated)] border-t-2 border-[var(--border)]">
-                    <td className="max-sm:sticky max-sm:left-0 max-sm:z-[1] max-sm:bg-[var(--surface-elevated)] px-4 sm:px-6 py-3 text-[var(--text-secondary)] font-medium" colSpan={2}>
-                      {tCommon('closingBalance')}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 hidden sm:table-cell" />
-                    <td className="px-4 sm:px-6 py-3 hidden md:table-cell" />
-                    <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
-                      {formatCurrency(ledgerData.totalDebit)}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 text-right font-semibold text-[var(--text-primary)]">
-                      {formatCurrency(ledgerData.totalCredit)}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 text-right font-bold text-[var(--text-primary)]">
-                      {formatCurrency(ledgerData.closingBalance)}
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <div className={styles.dfoot}>
+        <span className={styles.dhint}>↑↓ järgmine kanne · Esc sulgeb</span>
+        <div className={styles.dfootR}><Link className={styles.btn} href={entryHref(row.entryId)}><ExternalLink size={13} /> Ava kanne</Link></div>
+      </div>
+    </>
   );
 }

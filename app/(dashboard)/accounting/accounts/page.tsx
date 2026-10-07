@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { ChevronDown, Edit2, Filter, Loader2, Plus, Search, Upload, X } from 'lucide-react';
 import { accountingApi, type AccountRecord } from '@/lib/api/accounting.api';
+import { REPORT_LINES_BY_TYPE } from '@/lib/reports/reportLines';
 import { getErrorMessage } from '@/lib/api/client';
 import { Button } from '@/components/ui/Button';
 import { Kbd } from '@/components/ui/Kbd';
@@ -409,6 +410,7 @@ function AccountDetailPanel({
               <TypeBadge type={account.type} label={t(account.type)} />
             )}
           </div>
+          <ReportLineField account={account} onUpdated={onUpdated} />
           <DetailRow label={t('systemAccount')} value={account.is_system ? t('yes') : t('no')} />
           <DetailRow label={t('created')} value={<span className="font-mono">{formatDate(account.created_at)}</span>} />
           <DetailRow label={t('updated')} value={<span className="font-mono">{formatDate(account.updated_at)}</span>} />
@@ -432,6 +434,45 @@ function AccountDetailPanel({
           </Button>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Schema 1 report line: editable on system accounts too (it changes no posting). */
+function ReportLineField({ account, onUpdated }: { account: AccountRecord; onUpdated: () => void }) {
+  const t = useTranslations('accounting');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const lines = REPORT_LINES_BY_TYPE[account.type] ?? [];
+  if (!lines.length) return null;
+  const effective = account.report_line_effective;
+
+  const save = async (value: string) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await accountingApi.updateAccount(account.id, { report_line: (value || null) as AccountRecord['report_line'] });
+      onUpdated();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="border-b border-[var(--a-border)] pb-3">
+      <div className="micro mb-1 text-[var(--a-text-3)]">{t('reportLine')}</div>
+      <select
+        value={account.report_line || ''}
+        disabled={saving}
+        onChange={(event) => save(event.target.value)}
+        className="h-9 w-full rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-2.5 text-sm outline-none disabled:opacity-60"
+      >
+        <option value="">{t('reportLineAuto', { line: effective && !account.report_line ? t(`reportLines.${effective}`) : '…' })}</option>
+        {lines.map((line) => <option key={line} value={line}>{t(`reportLines.${line}`)}</option>)}
+      </select>
+      <div className="mt-1 text-[11.5px] text-[var(--a-text-3)]">{error ? <span className="text-[var(--a-neg)]">{error}</span> : t('reportLineHint')}</div>
     </div>
   );
 }

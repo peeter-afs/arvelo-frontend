@@ -27,7 +27,7 @@ type OriginKey = 'all' | 'purchase_invoices' | 'payroll' | 'manual';
 type ColId = 'n' | 'o' | 'bk' | 'ex' | 'ln' | 'a' | 's';
 type Detail = { batch: PaymentBatchListItem; lines: PaymentBatchLine[] };
 type OpenLine = { batch: PaymentBatchListItem; line: PaymentBatchLine };
-type Modal = { kind: 'new'; seed?: BatchSeed } | { kind: 'void'; batch: PaymentBatchListItem; lines: number } | { kind: 'file'; batch: PaymentBatchListItem; lines: number } | null;
+type Modal = { kind: 'new'; seed?: BatchSeed; preselect?: string[] } | { kind: 'void'; batch: PaymentBatchListItem; lines: number } | { kind: 'file'; batch: PaymentBatchListItem; lines: number } | null;
 
 const TABS: Array<[TabKey, string]> = [['active', 'Pooleli'], ['done', 'Täidetud'], ['voided', 'Tühistatud'], ['all', 'Kõik']];
 const TAB_ST: Record<TabKey, BatchStKey[]> = { active: ['draft', 'generated', 'uploaded', 'sent', 'rejected'], done: ['confirmed'], voided: ['voided'], all: Object.keys(BATCH_ST) as BatchStKey[] };
@@ -74,6 +74,15 @@ export default function PaymentBatchesWorkspace() {
   const panel = usePanel('arvelo.batch.pw');
   const columns = useColumns(COLS, HIDE_ORDER);
   useOutsideClose(useCallback(() => setMenu(null), []));
+
+  // ?new=1&invoices=a,b (from Aegumisaruanne): open a new batch with those invoices ticked, once loaded.
+  const preselectParam = params.get('new') === '1' ? params.get('invoices') : null;
+  const preselectOpened = useRef(false);
+  useEffect(() => {
+    if (loading || !preselectParam || preselectOpened.current) return;
+    preselectOpened.current = true;
+    setModal({ kind: 'new', preselect: preselectParam.split(',').filter(Boolean) });
+  }, [loading, preselectParam]);
 
   const load = useCallback(async (preferred?: string | null) => {
     setError(null);
@@ -288,7 +297,7 @@ export default function PaymentBatchesWorkspace() {
       </div>
 
       {modal?.kind === 'new' && (
-        <NewPaymentBatchModal invoices={invoices} openLines={openLines} bankAccounts={bankAccounts} accounts={accounts} seed={modal.seed}
+        <NewPaymentBatchModal invoices={invoices} openLines={openLines} bankAccounts={bankAccounts} accounts={accounts} seed={modal.seed} preselect={modal.preselect}
           onClose={() => setModal(null)}
           onCreated={async (id) => { const old = modal.seed?.batch.id; setModal(null); setTab('active'); if (old) setDetails((d) => { const n = { ...d }; delete n[old]; return n; }); await refresh(id); }} />
       )}

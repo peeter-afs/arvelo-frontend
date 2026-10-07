@@ -1221,7 +1221,27 @@
     "dimPolicySaved": "Permission saved",
     "projectStatusInProgress": "In progress",
     "projectStatusCompleted": "Completed",
-    "projectStatusHint": "Project status: click to mark it completed or back in progress. Shown in the project report."
+    "projectStatusHint": "Project status: click to mark it completed or back in progress. Shown in the project report.",
+    "reportLine": "Report line",
+    "reportLineAuto": "Automatic · {line}",
+    "reportLineHint": "Balance sheet and P&L group (Estonian schema 1). Automatic follows the account code.",
+    "reportLineSaved": "Report line saved",
+    "reportLines": {
+      "current_assets": "Current assets",
+      "fixed_assets": "Non-current assets",
+      "current_liabilities": "Current liabilities",
+      "long_term_liabilities": "Non-current liabilities",
+      "equity": "Equity",
+      "revenue": "Revenue",
+      "other_income": "Other operating income",
+      "goods_materials_services": "Goods, raw materials and services",
+      "operating_expenses": "Other operating expenses",
+      "labour": "Employee expenses",
+      "depreciation": "Depreciation",
+      "other_expenses": "Other expenses",
+      "financial": "Financial income and expenses",
+      "income_tax": "Income tax"
+    }
   },
   "exchangeRates": {
     "title": "Exchange Rates",

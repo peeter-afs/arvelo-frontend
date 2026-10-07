@@ -20,13 +20,8 @@ export const TASK_ROUTES = [
   '/invoices/purchase-imports',
   '/invoices/recurring',
   '/invoices/reminders',
-  '/reports/balance-sheet',
-  '/reports/profit-loss',
-  '/reports/trial-balance',
-  '/reports/turnover',
-  '/reports/general-ledger',
-  '/reports/vat',
-  '/reports/aging',
+  // Every report (/reports/*): the report rail replaces the sidebar submenu.
+  '/reports',
 ] as const;
 
 const NON_TASK_ROUTES = new Set([

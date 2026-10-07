@@ -1,15 +1,25 @@
 import apiClient from './client';
 
+/** Estonian annual-report schema 1 lines (backend src/services/reportLine.ts). */
+export type ReportLine =
+  | 'current_assets' | 'fixed_assets' | 'current_liabilities' | 'long_term_liabilities' | 'equity'
+  | 'revenue' | 'other_income' | 'goods_materials_services' | 'operating_expenses' | 'labour'
+  | 'depreciation' | 'other_expenses' | 'financial' | 'income_tax';
+
 type ApiResponse<T> = {
   success: boolean;
   data: T;
 };
 
 export type BalanceSheetLine = {
+  /** Null on computed equity lines (open P&L result). */
+  account_id?: string | null;
   account_code: string;
   account_name: string;
   account_type: string;
   balance: number;
+  /** Schema 1 line (current_assets, fixed_assets, …); absent on older backends. */
+  report_line?: ReportLine | null;
   /** Balance at the comparison date; present only when one was requested. */
   compare_balance?: number;
   /** Computed (non-ledger) equity lines: open P&L result rolled into equity. */
@@ -31,10 +41,13 @@ export type BalanceSheetData = {
 };
 
 export type ProfitLossLine = {
+  account_id?: string;
   account_code: string;
   account_name: string;
   account_type: string;
   amount: number;
+  /** Schema 1 line (revenue, labour, …); absent on older backends. */
+  report_line?: ReportLine | null;
   /** Amount in the comparison period; present only when one was requested. */
   compare_amount?: number;
 };
@@ -55,6 +68,7 @@ export type ProfitLossData = {
 };
 
 export type TrialBalanceLine = {
+  account_id?: string;
   account_code: string;
   account_name: string;
   account_type: string;
