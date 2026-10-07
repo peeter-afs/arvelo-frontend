@@ -58,6 +58,7 @@ export function usePathCrumbs(crumbs?: string[]) {
     orders: tNavigation('cashOrder'),
     journal: tAccounting('journalEntries'),
     'opening-balances': tAccounting('openingBalances'),
+    migration: tAccounting('migration'),
     partners: tAccounting('partners'),
     invoices: tInvoices('overview'),
     sales: tInvoices('salesList'),
