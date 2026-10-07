@@ -2683,7 +2683,14 @@
       "sendNew": "Send a new link"
     },
     "demoPrompt": "Want to try it first?",
-    "demoCta": "Open the demo"
+    "demoCta": "Open the demo",
+    "brand": {
+      "tagline": "Bookkeeping for companies and accounting firms",
+      "feature1": "All client companies with one sign-in",
+      "feature2": "Bank, invoices, payroll and VAT in one place",
+      "feature3": "Two-factor sign-in and passkeys",
+      "footer": "Made in Estonia, for Estonian bookkeeping"
+    }
   },
   "aiInvoice": {
     "title": "AI Invoice",
@@ -3755,7 +3762,8 @@
         "tarnijad": "Supplier balances {transition}",
         "kontroll": "Balance sheet {transition}"
       }
-    }
+    },
+    "tryMigration": "Try a migration"
   },
   "migration": {
     "title": "Migration",

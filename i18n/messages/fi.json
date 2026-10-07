@@ -1178,7 +1178,14 @@
       "sendNew": "Lähetä uusi linkki"
     },
     "demoPrompt": "Haluatko kokeilla ensin?",
-    "demoCta": "Avaa demo"
+    "demoCta": "Avaa demo",
+    "brand": {
+      "tagline": "Kirjanpito yrityksille ja tilitoimistoille",
+      "feature1": "Kaikki asiakasyritykset yhdellä kirjautumisella",
+      "feature2": "Pankki, laskut, palkat ja ALV yhdessä paikassa",
+      "feature3": "Kaksivaiheinen kirjautuminen ja pääsyavaimet",
+      "footer": "Tehty Virossa, virolaiseen kirjanpitoon"
+    }
   },
   "aiInvoice": {
     "title": "AI-lasku",
@@ -2321,7 +2328,8 @@
         "tarnijad": "Supplier balances {transition}",
         "kontroll": "Balance sheet {transition}"
       }
-    }
+    },
+    "tryMigration": "Kokeile siirtoa"
   },
   "migration": {
     "title": "Migration",

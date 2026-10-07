@@ -1164,7 +1164,14 @@
       "sendNew": "Skicka en ny länk"
     },
     "demoPrompt": "Vill du prova först?",
-    "demoCta": "Öppna demon"
+    "demoCta": "Öppna demon",
+    "brand": {
+      "tagline": "Bokföring för företag och redovisningsbyråer",
+      "feature1": "Alla kundföretag med en inloggning",
+      "feature2": "Bank, fakturor, lön och moms på ett ställe",
+      "feature3": "Tvåstegsinloggning och passkeys",
+      "footer": "Gjort i Estland, för estnisk bokföring"
+    }
   },
   "aiInvoice": {
     "title": "AI-faktura",
@@ -2307,7 +2314,8 @@
         "tarnijad": "Supplier balances {transition}",
         "kontroll": "Balance sheet {transition}"
       }
-    }
+    },
+    "tryMigration": "Prova en flytt"
   },
   "migration": {
     "title": "Migration",

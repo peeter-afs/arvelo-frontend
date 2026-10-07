@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { FlaskConical } from 'lucide-react';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -44,6 +45,9 @@ export function DemoNotice() {
           ? t('banner', { date: new Date(expiresAt).toLocaleDateString('et-EE') })
           : t('bannerNoDate')}
       </span>
+      <Link href="/accounting/migration" className="shrink-0 font-semibold underline max-sm:ml-7 max-sm:py-1">
+        {t('tryMigration')}
+      </Link>
     </div>
   );
 }

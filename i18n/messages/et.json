@@ -2683,7 +2683,14 @@
       "sendNew": "Saada uus link"
     },
     "demoPrompt": "Tahad enne proovida?",
-    "demoCta": "Ava demo"
+    "demoCta": "Ava demo",
+    "brand": {
+      "tagline": "Raamatupidamine ettevõtetele ja raamatupidamisbüroodele",
+      "feature1": "Kõik klientettevõtted ühe sisselogimisega",
+      "feature2": "Pank, arved, palk ja KMD ühes kohas",
+      "feature3": "Kaheastmeline sisselogimine ja pääsuvõtmed",
+      "footer": "Tehtud Eestis, Eesti raamatupidamise jaoks"
+    }
   },
   "aiInvoice": {
     "title": "AI arve",
@@ -3755,7 +3762,8 @@
         "tarnijad": "Tarnijate saldod {transition}",
         "kontroll": "Bilanss {transition}"
       }
-    }
+    },
+    "tryMigration": "Proovi ülekolimist"
   },
   "migration": {
     "title": "Ülekolimine",

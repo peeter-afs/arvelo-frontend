@@ -1,25 +1,18 @@
 'use client';
 
-import { Shield, TrendingUp, Globe } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Building2, Landmark, ShieldCheck } from 'lucide-react';
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const t = useTranslations('auth.brand');
   const features = [
-    {
-      icon: Shield,
-      text: 'Bank-level security for your financial data',
-    },
-    {
-      icon: TrendingUp,
-      text: 'Real-time insights and reporting',
-    },
-    {
-      icon: Globe,
-      text: 'Built for Estonian businesses',
-    },
+    { icon: Building2, text: t('feature1') },
+    { icon: Landmark, text: t('feature2') },
+    { icon: ShieldCheck, text: t('feature3') },
   ];
 
   return (
@@ -43,7 +36,7 @@ export default function AuthLayout({
               Arvelo
             </h1>
             <p className="text-lg text-slate-300 max-w-md">
-              Modern bookkeeping for Estonian businesses
+              {t('tagline')}
             </p>
           </div>
 
@@ -64,9 +57,7 @@ export default function AuthLayout({
 
           {/* Bottom */}
           <div>
-            <p className="text-xs text-slate-500">
-              Trusted by 500+ Estonian companies
-            </p>
+            <p className="text-xs text-slate-500">{t('footer')}</p>
           </div>
         </div>
       </div>
@@ -81,7 +72,7 @@ export default function AuthLayout({
             Arvelo
           </h1>
           <p className="text-xs text-slate-500">
-            Modern bookkeeping for Estonian businesses
+            {t('tagline')}
           </p>
         </div>
 
