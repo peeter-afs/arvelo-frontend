@@ -10,6 +10,7 @@ import { TwoFactorNotice } from '@/components/layout/TwoFactorNotice';
 import { DemoNotice } from '@/components/layout/DemoNotice';
 import { AssistantPanel } from '@/components/assistant/AssistantPanel';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { TwoFactorGate } from '@/components/auth/TwoFactorGate';
 import { useAuthStore } from '@/lib/stores/auth.store';
 
 export default function DashboardLayout({
@@ -57,7 +58,7 @@ export default function DashboardLayout({
           </main>
         </div>
       ) : (
-        <>
+        <TwoFactorGate page={children}>
           <div className="flex h-screen overflow-hidden bg-[var(--a-bg)] print:block print:h-auto print:overflow-visible print:bg-white">
             <div className="hidden lg:block print:hidden">
               <Sidebar />
@@ -78,7 +79,7 @@ export default function DashboardLayout({
             <MobileNav />
             <AssistantPanel />
           </div>
-        </>
+        </TwoFactorGate>
       )}
     </ProtectedRoute>
   );

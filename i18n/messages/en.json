@@ -1959,7 +1959,9 @@
     "companyPolicyGraceHint": "How long each person has to set 2FA up, counted from the requirement start or the day they joined — whichever is later.",
     "noticeGrace": "Your company requires two-factor authentication. Set it up by {date}.",
     "noticeBlocked": "Your company requires two-factor authentication. Set it up to continue working.",
-    "noticeAction": "Set up now"
+    "noticeAction": "Set up now",
+    "gateInvoices": "This company already has invoices, so two-factor authentication is required. Set up an authenticator app or a passkey to continue.",
+    "gateSignOut": "Sign out"
   },
   "settings": {
     "title": "Settings",

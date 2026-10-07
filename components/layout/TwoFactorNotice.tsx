@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { ShieldAlert } from 'lucide-react';
-import { tenantSecurityApi, type TwoFactorUserStatus } from '@/lib/api/tenantSecurity.api';
+import { useTwoFactorGate } from '@/components/auth/TwoFactorGate';
 
 /**
  * Warns during the grace period, so the requirement never arrives as a
@@ -15,22 +14,7 @@ import { tenantSecurityApi, type TwoFactorUserStatus } from '@/lib/api/tenantSec
 export function TwoFactorNotice() {
   const t = useTranslations('twoFactor');
   const pathname = usePathname();
-  const [status, setStatus] = useState<TwoFactorUserStatus | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    tenantSecurityApi
-      .getMyStatus()
-      .then((data) => {
-        if (!cancelled) setStatus(data);
-      })
-      .catch(() => {
-        // A failed status check must never block the app.
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { status } = useTwoFactorGate();
 
   if (!status || !status.required || status.satisfied) return null;
   if (pathname?.endsWith('/settings/security')) return null;

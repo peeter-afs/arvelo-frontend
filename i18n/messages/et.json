@@ -1959,7 +1959,9 @@
     "companyPolicyGraceHint": "Kui kaua on igal kasutajal aega 2FA seadistada — arvestatakse nõude jõustumisest või liitumise päevast, kumb hilisem.",
     "noticeGrace": "Sinu ettevõte nõuab kaheastmelist autentimist. Seadista see hiljemalt {date}.",
     "noticeBlocked": "Sinu ettevõte nõuab kaheastmelist autentimist. Töö jätkamiseks seadista see ära.",
-    "noticeAction": "Seadista kohe"
+    "noticeAction": "Seadista kohe",
+    "gateInvoices": "Ettevõttes on juba arveid, seetõttu on kaheastmeline autentimine kohustuslik. Jätkamiseks seadista autentimisrakendus või turvavõti (passkey).",
+    "gateSignOut": "Logi välja"
   },
   "settings": {
     "title": "Seaded",

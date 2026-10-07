@@ -18,6 +18,8 @@ export type TwoFactorUserStatus = {
   satisfied: boolean;
   deadline: string | null;
   blocked: boolean;
+  /** Why 2FA is required: the company's own policy, or because the company has invoices. */
+  reason: 'tenant_policy' | 'invoices' | null;
 };
 
 export const tenantSecurityApi = {

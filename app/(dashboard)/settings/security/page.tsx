@@ -9,6 +9,7 @@ import apiClient from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { TenantTwoFactorPolicyCard } from '@/components/settings/TenantTwoFactorPolicyCard';
 import { getErrorMessage } from '@/lib/api/client';
+import { useTwoFactorGate } from '@/components/auth/TwoFactorGate';
 
 type ApiResponse<T> = { success: boolean; data: T };
 
@@ -23,7 +24,9 @@ export default function SecuritySettingsPage() {
   const t = useTranslations('twoFactor');
   const tc = useTranslations('common');
   const role = useAuthStore((state) => state.role);
-  const canManagePolicy = role === 'owner' || role === 'admin';
+  const { status: gateStatus, refresh: refreshGate } = useTwoFactorGate();
+  // A blocked user only sets up their own 2FA; the company policy API is closed to them.
+  const canManagePolicy = (role === 'owner' || role === 'admin') && !gateStatus?.blocked;
 
   const [enabled, setEnabled] = useState(false);
   const [totpEnabled, setTotpEnabled] = useState(false);
@@ -74,6 +77,7 @@ export default function SecuritySettingsPage() {
         response: attestation,
       });
       await fetchStatus();
+      if (gateStatus?.blocked) void refreshGate();
     } catch (err) {
       // User cancelling the browser passkey dialog throws NotAllowedError
       if ((err as Error)?.name !== 'NotAllowedError') {
@@ -90,6 +94,8 @@ export default function SecuritySettingsPage() {
     try {
       await apiClient.delete(`/api/auth/2fa/webauthn/credentials/${id}`);
       await fetchStatus();
+      // Removing the last method brings a 2FA block back
+      if (gateStatus?.required) void refreshGate();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -116,6 +122,7 @@ export default function SecuritySettingsPage() {
       setTotpEnabled(true);
       setSetupData(null);
       setVerifyCode('');
+      if (gateStatus?.blocked) void refreshGate();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -132,6 +139,7 @@ export default function SecuritySettingsPage() {
       setEnabled(passkeys.length > 0);
       setShowDisable(false);
       setDisableCode('');
+      if (gateStatus?.required) void refreshGate();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
