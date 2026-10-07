@@ -2285,9 +2285,9 @@
   },
   "demo": {
     "title": "Kokeile Arveloa tilitoimistona",
-    "subtitle": "Saat oman demoympäristön: tilitoimisto ja neljä esimerkkiasiakasta realistisilla tiedoilla. Tiliä tai korttia ei tarvita.",
+    "subtitle": "Saat oman demoympäristön: tilitoimisto ja viisi esimerkkiasiakasta realistisilla tiedoilla. Tiliä tai korttia ei tarvita.",
     "points": {
-      "clients": "Neljä asiakasyritystä: rakennusyritys, kahvila, lepäävä holding ja yhdistys",
+      "clients": "Viisi asiakasyritystä: rakennusyritys, kahvila, lepäävä holding, yhdistys ja yritys, jonka kirjanpidon siirrät itse",
       "oneLogin": "Yksi kirjautuminen — vaihda yritysten välillä yhdellä klikkauksella",
       "safe": "Mitään ei lähetetä: sähköpostit, verkkolaskut ja maksut ovat demossa pois päältä",
       "duration": "Demo on voimassa 14 päivää ja poistetaan sitten kokonaan"
@@ -2304,7 +2304,24 @@
     "haveAccount": "Onko sinulla jo tili?",
     "signIn": "Kirjaudu",
     "banner": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä. Voimassa {date} asti.",
-    "bannerNoDate": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä."
+    "bannerNoDate": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä.",
+    "samples": {
+      "title": "Try the opening balance import",
+      "body": "Download the sample files, as they would come from the previous software, and import them in order on the Opening balances page. The transition is already set to mid-year. Year end is {yearEnd}, the transition date {transition}. The numbers tie out, so the check passes and you can lock the opening balances.",
+      "otherCompany": "You can try the opening balance import in {company}: its books are still empty and the transition is chosen.",
+      "openClients": "Open bureau clients",
+      "stepYearEnd": "Step 1: year-end balance sheet",
+      "stepTurnover": "Step 2: turnover",
+      "stepOpenItems": "Step 3: receivables and payables",
+      "stepControl": "Step 4: control balance sheet",
+      "files": {
+        "bilanss": "Balance sheet {yearEnd}",
+        "kaibeandmik": "Turnover up to {transition}",
+        "ostjad": "Customer balances {transition}",
+        "tarnijad": "Supplier balances {transition}",
+        "kontroll": "Balance sheet {transition}"
+      }
+    }
   },
   "migration": {
     "title": "Migration",

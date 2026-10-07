@@ -7,6 +7,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, Circle, FileDown, Loader2 } fr
 import { getErrorMessage } from '@/lib/api/client';
 import { migrationApi, type MigrationStatus } from '@/lib/api/migration.api';
 import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
+import { DemoSampleFiles } from '@/components/demo/DemoSampleFiles';
 
 function formatDate(value: string | null | undefined) {
   if (!value) return null;
@@ -131,6 +132,8 @@ export default function MigrationPage() {
       </div>
 
       {error && <div className="rounded-lg border border-[var(--a-neg)]/40 bg-[var(--a-neg-soft)] px-3 py-2 text-[12.5px] text-[var(--a-neg)]">{error}</div>}
+
+      <DemoSampleFiles />
 
       {s && (
         <div className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] px-5 py-4">

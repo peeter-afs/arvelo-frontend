@@ -3719,9 +3719,9 @@
   },
   "demo": {
     "title": "Proovi Arvelot büroo vaates",
-    "subtitle": "Saad oma demokeskkonna: raamatupidamisbüroo ja neli näidisklienti päris moodi andmetega. Kontot ega kaarti pole vaja.",
+    "subtitle": "Saad oma demokeskkonna: raamatupidamisbüroo ja viis näidisklienti päris moodi andmetega. Kontot ega kaarti pole vaja.",
     "points": {
-      "clients": "Neli klientettevõtet: aktiivne ehitusfirma, kohvik, seisev holding ja MTÜ",
+      "clients": "Viis klientettevõtet: aktiivne ehitusfirma, kohvik, seisev holding, MTÜ ja ettevõte, mille raamatupidamise saad ise üle tuua",
       "oneLogin": "Üks sisselogimine — ettevõtete vahel liigud ühe klikiga",
       "safe": "Midagi ei lähe välja: e-kirjad, e-arved ja pangamaksed on demos välja lülitatud",
       "duration": "Demo kehtib 14 päeva ja kustutatakse siis täielikult"
@@ -3738,7 +3738,24 @@
     "haveAccount": "On juba konto?",
     "signIn": "Logi sisse",
     "banner": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta. Kehtib kuni {date}.",
-    "bannerNoDate": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta."
+    "bannerNoDate": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta.",
+    "samples": {
+      "title": "Proovi algsaldode importi",
+      "body": "Laadi alla näidisfailid, nagu need tuleksid eelmisest programmist, ja impordi need lehel Algsaldod järjest. Ülemineku viis on juba valitud: keset aastat. Aasta lõpp on {yearEnd}, üleminekupäev {transition}. Numbrid klapivad, nii et kontroll läheb läbi ja saad algsaldod lukustada.",
+      "otherCompany": "Algsaldode importi saad proovida ettevõttes {company}: seal on raamatupidamine alles tühi ja ülemineku viis valitud.",
+      "openClients": "Ava büroo kliendid",
+      "stepYearEnd": "1. samm: aasta lõpu bilanss",
+      "stepTurnover": "2. samm: käibeandmik",
+      "stepOpenItems": "3. samm: nõuded ja kohustused",
+      "stepControl": "4. samm: kontrollbilanss",
+      "files": {
+        "bilanss": "Bilanss {yearEnd}",
+        "kaibeandmik": "Käibeandmik kuni {transition}",
+        "ostjad": "Ostjate saldod {transition}",
+        "tarnijad": "Tarnijate saldod {transition}",
+        "kontroll": "Bilanss {transition}"
+      }
+    }
   },
   "migration": {
     "title": "Ülekolimine",

@@ -2271,9 +2271,9 @@
   },
   "demo": {
     "title": "Prova Arvelo som byrå",
-    "subtitle": "Du får en egen demomiljö: en redovisningsbyrå och fyra exempelkunder med realistiska data. Inget konto eller kort behövs.",
+    "subtitle": "Du får en egen demomiljö: en redovisningsbyrå och fem exempelkunder med realistiska data. Inget konto eller kort behövs.",
     "points": {
-      "clients": "Fyra kundföretag: en byggfirma, ett kafé, ett vilande holdingbolag och en förening",
+      "clients": "Fem kundföretag: en byggfirma, ett kafé, ett vilande holdingbolag, en förening och ett företag vars bokföring du flyttar själv",
       "oneLogin": "En inloggning — byt mellan företag med ett klick",
       "safe": "Inget skickas ut: e-post, e-fakturor och betalningar är avstängda i demon",
       "duration": "Demon gäller i 14 dagar och raderas sedan helt"
@@ -2290,7 +2290,24 @@
     "haveAccount": "Har du redan ett konto?",
     "signIn": "Logga in",
     "banner": "Demomiljö: exempeldata, inga e-postmeddelanden eller e-fakturor skickas. Gäller till {date}.",
-    "bannerNoDate": "Demomiljö: exempeldata, inga e-postmeddelanden eller e-fakturor skickas."
+    "bannerNoDate": "Demomiljö: exempeldata, inga e-postmeddelanden eller e-fakturor skickas.",
+    "samples": {
+      "title": "Try the opening balance import",
+      "body": "Download the sample files, as they would come from the previous software, and import them in order on the Opening balances page. The transition is already set to mid-year. Year end is {yearEnd}, the transition date {transition}. The numbers tie out, so the check passes and you can lock the opening balances.",
+      "otherCompany": "You can try the opening balance import in {company}: its books are still empty and the transition is chosen.",
+      "openClients": "Open bureau clients",
+      "stepYearEnd": "Step 1: year-end balance sheet",
+      "stepTurnover": "Step 2: turnover",
+      "stepOpenItems": "Step 3: receivables and payables",
+      "stepControl": "Step 4: control balance sheet",
+      "files": {
+        "bilanss": "Balance sheet {yearEnd}",
+        "kaibeandmik": "Turnover up to {transition}",
+        "ostjad": "Customer balances {transition}",
+        "tarnijad": "Supplier balances {transition}",
+        "kontroll": "Balance sheet {transition}"
+      }
+    }
   },
   "migration": {
     "title": "Migration",

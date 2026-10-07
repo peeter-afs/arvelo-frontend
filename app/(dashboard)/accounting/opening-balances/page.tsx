@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/Button';
 import { HelpLink } from '@/components/guides/HelpLink';
 import { AskAssistantButton } from '@/components/assistant/AskAssistantButton';
 import { getIsoToday } from '@/lib/utils/date';
+import { DemoSampleFiles } from '@/components/demo/DemoSampleFiles';
 
 const OPENING_BALANCES_GUIDE = 'algsaldode-import';
 
@@ -1031,6 +1032,8 @@ export default function OpeningBalancesPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* Demo sandbox only: sample exports to import. */}
+      <div className="shrink-0 empty:hidden [&>section]:mb-3"><DemoSampleFiles /></div>
       {/* Top zone. Mid-year: the compact step bar is the primary progress AND
           navigation (it drives mode/layer), sat at the very top with the document
           stepper + History beside it — the mode row is hidden to avoid a redundant
