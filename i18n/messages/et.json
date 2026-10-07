@@ -2680,7 +2680,9 @@
       "expiredTitle": "Link ei kehti enam",
       "invalid": "Sisselogimislink on vigane. Telli uus link.",
       "sendNew": "Saada uus link"
-    }
+    },
+    "demoPrompt": "Tahad enne proovida?",
+    "demoCta": "Ava demo"
   },
   "aiInvoice": {
     "title": "AI arve",
@@ -3711,5 +3713,28 @@
       "approversTitle": "Puhkuseavalduste kinnitajad",
       "approversHint": "Kui kedagi pole valitud, saavad kinnitada kõik omanikud, administraatorid ja raamatupidajad. Kinnitajad saavad uue avalduse kohta e-kirja."
     }
+  },
+  "demo": {
+    "title": "Proovi Arvelot büroo vaates",
+    "subtitle": "Saad oma demokeskkonna: raamatupidamisbüroo ja neli näidisklienti päris moodi andmetega. Kontot ega kaarti pole vaja.",
+    "points": {
+      "clients": "Neli klientettevõtet: aktiivne ehitusfirma, kohvik, seisev holding ja MTÜ",
+      "oneLogin": "Üks sisselogimine — ettevõtete vahel liigud ühe klikiga",
+      "safe": "Midagi ei lähe välja: e-kirjad, e-arved ja pangamaksed on demos välja lülitatud",
+      "duration": "Demo kehtib 14 päeva ja kustutatakse siis täielikult"
+    },
+    "start": "Ava demo",
+    "steps": {
+      "bureau": "Loome büroo…",
+      "clients": "Lisame klientettevõtted…",
+      "invoices": "Koostame arveid…",
+      "bank": "Impordime pangaväljavõtteid…"
+    },
+    "wait": "Demokeskkonna loomine võtab umbes poole minuti.",
+    "expired": "Sinu eelmine demo on aegunud ja kustutatud. Võid alustada uuega.",
+    "haveAccount": "On juba konto?",
+    "signIn": "Logi sisse",
+    "banner": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta. Kehtib kuni {date}.",
+    "bannerNoDate": "Demokeskkond: näidisandmed, e-kirju ega e-arveid välja ei saadeta."
   }
 }

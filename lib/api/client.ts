@@ -75,6 +75,14 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
     if (!originalRequest) return Promise.reject(error);
 
+    // The demo sandbox ran out: a token refresh cannot bring it back.
+    const errorCode = (error.response?.data as { error?: { code?: string } } | undefined)?.error?.code;
+    if (error.response?.status === 401 && errorCode === 'DEMO_EXPIRED' && typeof window !== 'undefined') {
+      getAuthStore().getState().logout();
+      window.location.href = '/demo?expired=1';
+      return Promise.reject(error);
+    }
+
     // If 401 and not already retried
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

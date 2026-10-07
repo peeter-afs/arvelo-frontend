@@ -1161,7 +1161,9 @@
       "expiredTitle": "Länken gäller inte längre",
       "invalid": "Inloggningslänken är ogiltig. Begär en ny.",
       "sendNew": "Skicka en ny länk"
-    }
+    },
+    "demoPrompt": "Vill du prova först?",
+    "demoCta": "Öppna demon"
   },
   "aiInvoice": {
     "title": "AI-faktura",
@@ -2263,5 +2265,28 @@
       "approversTitle": "Godkännare av ledighet",
       "approversHint": "Om ingen är vald kan alla ägare, administratörer och bokförare godkänna. Godkännarna får e-post om en ny ansökan."
     }
+  },
+  "demo": {
+    "title": "Prova Arvelo som byrå",
+    "subtitle": "Du får en egen demomiljö: en redovisningsbyrå och fyra exempelkunder med realistiska data. Inget konto eller kort behövs.",
+    "points": {
+      "clients": "Fyra kundföretag: en byggfirma, ett kafé, ett vilande holdingbolag och en förening",
+      "oneLogin": "En inloggning — byt mellan företag med ett klick",
+      "safe": "Inget skickas ut: e-post, e-fakturor och betalningar är avstängda i demon",
+      "duration": "Demon gäller i 14 dagar och raderas sedan helt"
+    },
+    "start": "Öppna demon",
+    "steps": {
+      "bureau": "Skapar byrån…",
+      "clients": "Lägger till kundföretag…",
+      "invoices": "Skapar fakturor…",
+      "bank": "Importerar kontoutdrag…"
+    },
+    "wait": "Det tar ungefär en halv minut att skapa demomiljön.",
+    "expired": "Din tidigare demo har gått ut och raderats. Du kan starta en ny.",
+    "haveAccount": "Har du redan ett konto?",
+    "signIn": "Logga in",
+    "banner": "Demomiljö: exempeldata, inga e-postmeddelanden eller e-fakturor skickas. Gäller till {date}.",
+    "bannerNoDate": "Demomiljö: exempeldata, inga e-postmeddelanden eller e-fakturor skickas."
   }
 }

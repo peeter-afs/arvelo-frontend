@@ -493,6 +493,12 @@ function LoginForm() {
       )}
 
       {/* TODO: Restore registration link when ready for public launch */}
+      <p className="mt-8 text-center text-sm text-slate-600">
+        {t('demoPrompt')}{' '}
+        <Link href="/demo" className="font-medium text-[var(--primary)] hover:text-[var(--primary-hover)]">
+          {t('demoCta')}
+        </Link>
+      </p>
     </div>
   );
 }

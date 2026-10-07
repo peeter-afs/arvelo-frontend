@@ -1175,7 +1175,9 @@
       "expiredTitle": "Linkki ei ole enää voimassa",
       "invalid": "Kirjautumislinkki on virheellinen. Tilaa uusi linkki.",
       "sendNew": "Lähetä uusi linkki"
-    }
+    },
+    "demoPrompt": "Haluatko kokeilla ensin?",
+    "demoCta": "Avaa demo"
   },
   "aiInvoice": {
     "title": "AI-lasku",
@@ -2277,5 +2279,28 @@
       "approversTitle": "Lomahakemusten hyväksyjät",
       "approversHint": "Jos ketään ei ole valittu, kaikki omistajat, ylläpitäjät ja kirjanpitäjät voivat hyväksyä. Hyväksyjät saavat sähköpostin uudesta hakemuksesta."
     }
+  },
+  "demo": {
+    "title": "Kokeile Arveloa tilitoimistona",
+    "subtitle": "Saat oman demoympäristön: tilitoimisto ja neljä esimerkkiasiakasta realistisilla tiedoilla. Tiliä tai korttia ei tarvita.",
+    "points": {
+      "clients": "Neljä asiakasyritystä: rakennusyritys, kahvila, lepäävä holding ja yhdistys",
+      "oneLogin": "Yksi kirjautuminen — vaihda yritysten välillä yhdellä klikkauksella",
+      "safe": "Mitään ei lähetetä: sähköpostit, verkkolaskut ja maksut ovat demossa pois päältä",
+      "duration": "Demo on voimassa 14 päivää ja poistetaan sitten kokonaan"
+    },
+    "start": "Avaa demo",
+    "steps": {
+      "bureau": "Luodaan tilitoimisto…",
+      "clients": "Lisätään asiakasyritykset…",
+      "invoices": "Laaditaan laskuja…",
+      "bank": "Tuodaan tiliotteita…"
+    },
+    "wait": "Demoympäristön luominen kestää noin puoli minuuttia.",
+    "expired": "Edellinen demosi on vanhentunut ja poistettu. Voit aloittaa uuden.",
+    "haveAccount": "Onko sinulla jo tili?",
+    "signIn": "Kirjaudu",
+    "banner": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä. Voimassa {date} asti.",
+    "bannerNoDate": "Demoympäristö: esimerkkitiedot, sähköposteja tai verkkolaskuja ei lähetetä."
   }
 }
