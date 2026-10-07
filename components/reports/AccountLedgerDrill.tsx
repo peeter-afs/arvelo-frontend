@@ -78,7 +78,7 @@ export function AccountLedgerDrill({
                 Kanded · {tx.length}
                 <span className={styles.sechR}><Link href={ledgerHref(accountId, from, to)}>Ava pearaamatus <ExternalLink size={10} /></Link></span>
               </div>
-              <div className={styles.lines} style={{ ['--lc' as string]: '66px minmax(0,1fr) 74px 74px 80px' }}>
+              <div className={styles.lines} style={{ ['--lc' as string]: '40px minmax(0,1fr) 66px 66px 74px' }}>
                 <div className={styles.lhead}><div>Kuupäev</div><div>Dokument</div><div className={styles.r}>Deebet</div><div className={styles.r}>Kreedit</div><div className={styles.r}>Saldo</div></div>
                 <div className={`${styles.lrow} ${styles.lrowOb}`}><div /><div>Algsaldo</div><div /><div /><div className={`${styles.a} ${styles.mono}`}>{fmtAmount(data.openingBalance)}</div></div>
                 {tx.map((t) => (
