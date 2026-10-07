@@ -88,6 +88,9 @@ export default function PaymentsWorkspace() {
     try {
       const rows = await paymentsApi.listPayments({ invoice_id: invoiceParam || undefined, limit: 200 });
       setPayments(rows);
+      // A posted/reversed payment may leave the current tab: follow it rather than losing the selection.
+      const keep = preferred ? rows.find((r) => r.id === preferred) : null;
+      if (keep) setTab((t) => (t === 'all' || stKey(keep) === t ? t : stKey(keep)));
       setSelectedId((current) => (preferred && rows.some((r) => r.id === preferred) ? preferred : current && rows.some((r) => r.id === current) ? current : rows[0]?.id || null));
     } catch (e) {
       setError(getErrorMessage(e));

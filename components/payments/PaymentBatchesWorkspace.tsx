@@ -80,7 +80,13 @@ export default function PaymentBatchesWorkspace() {
     try {
       const res = await bankingApi.listPaymentBatches({ limit: 100 });
       setBatches(res.items);
-      if (preferred) setSelectedId(preferred);
+      const keep = preferred ? res.items.find((x) => x.id === preferred) : null;
+      if (keep) {
+        // An action moved the batch to another status: follow it to its tab instead of losing the selection.
+        const st = batchSt(keep);
+        setTab((t) => (TAB_ST[t].includes(st) ? t : st === 'confirmed' ? 'done' : st === 'voided' ? 'voided' : 'active'));
+        setSelectedId(preferred!);
+      }
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
