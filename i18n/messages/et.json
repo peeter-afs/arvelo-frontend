@@ -1961,7 +1961,8 @@
     "noticeBlocked": "Sinu ettevõte nõuab kaheastmelist autentimist. Töö jätkamiseks seadista see ära.",
     "noticeAction": "Seadista kohe",
     "gateInvoices": "Ettevõttes on juba arveid, seetõttu on kaheastmeline autentimine kohustuslik. Jätkamiseks seadista autentimisrakendus või turvavõti (passkey).",
-    "gateSignOut": "Logi välja"
+    "gateSignOut": "Logi välja",
+    "gateSwitchCompany": "Vaheta ettevõtet"
   },
   "settings": {
     "title": "Seaded",

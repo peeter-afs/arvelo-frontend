@@ -6,7 +6,9 @@ import { useTranslations } from 'next-intl';
 import { LogOut, ShieldAlert } from 'lucide-react';
 import { tenantSecurityApi, type TwoFactorUserStatus } from '@/lib/api/tenantSecurity.api';
 import { authApi } from '@/lib/api/auth.api';
+import { tenantsApi, type TenantMembership } from '@/lib/api/tenants.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { useSwitchTenant } from '@/lib/hooks/useSwitchTenant';
 
 const SECURITY_PATH = '/settings/security';
 
@@ -22,6 +24,46 @@ const TwoFactorGateContext = createContext<TwoFactorGateValue>({
 });
 
 export const useTwoFactorGate = () => useContext(TwoFactorGateContext);
+
+/**
+ * The requirement is per company: someone blocked here may still work in
+ * another company that does not require 2FA (GET /api/tenants and the switch
+ * stay open to blocked users). Hidden when there is only one company.
+ */
+function GateCompanySwitch({ currentId }: { currentId: string | null }) {
+  const t = useTranslations('twoFactor');
+  const [memberships, setMemberships] = useState<TenantMembership[]>([]);
+  const { switchTenant, switchingId, error } = useSwitchTenant();
+
+  useEffect(() => {
+    tenantsApi.listUserTenants().then(setMemberships).catch(() => setMemberships([]));
+  }, []);
+
+  if (memberships.length < 2) return null;
+
+  return (
+    <label className="flex min-w-0 flex-col gap-1 text-[12px] text-[var(--a-text-3)]">
+      {t('gateSwitchCompany')}
+      <select
+        value={switchingId ?? currentId ?? ''}
+        disabled={switchingId !== null}
+        onChange={(event) => {
+          const target = memberships.find((m) => m.tenant.id === event.target.value);
+          if (target) void switchTenant(target.tenant, target.role);
+        }}
+        className="h-10 max-w-[16rem] rounded-lg border border-[var(--a-border)] bg-[var(--a-surface)] px-2 text-[13px] text-[var(--a-text)]"
+      >
+        {memberships
+          .slice()
+          .sort((a, b) => a.tenant.name.localeCompare(b.tenant.name, 'et'))
+          .map((m) => (
+            <option key={m.tenant.id} value={m.tenant.id}>{m.tenant.name}</option>
+          ))}
+      </select>
+      {error && <span className="text-[var(--a-neg)]">{error}</span>}
+    </label>
+  );
+}
 
 /**
  * A user blocked by the 2FA requirement can sign in, but all they get is the 2FA
@@ -80,13 +122,16 @@ export function TwoFactorGate({ page, children }: { page: React.ReactNode; child
               <div className="text-[12px] font-medium uppercase tracking-wide text-[var(--a-text-3)]">Arvelo</div>
               <div className="truncate text-[17px] font-semibold text-[var(--a-text)]">{tenant?.name ?? ''}</div>
             </div>
-            <button
-              type="button"
-              onClick={signOut}
-              className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
-            >
-              <LogOut className="h-4 w-4" /> {t('gateSignOut')}
-            </button>
+            <div className="flex items-end gap-2">
+              <GateCompanySwitch currentId={tenantId} />
+              <button
+                type="button"
+                onClick={signOut}
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-[13px] text-[var(--a-text-2)] hover:bg-[var(--a-surface-2)]"
+              >
+                <LogOut className="h-4 w-4" /> {t('gateSignOut')}
+              </button>
+            </div>
           </header>
 
           <div

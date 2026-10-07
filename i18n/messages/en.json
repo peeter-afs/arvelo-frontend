@@ -1961,7 +1961,8 @@
     "noticeBlocked": "Your company requires two-factor authentication. Set it up to continue working.",
     "noticeAction": "Set up now",
     "gateInvoices": "This company already has invoices, so two-factor authentication is required. Set up an authenticator app or a passkey to continue.",
-    "gateSignOut": "Sign out"
+    "gateSignOut": "Sign out",
+    "gateSwitchCompany": "Switch company"
   },
   "settings": {
     "title": "Settings",
