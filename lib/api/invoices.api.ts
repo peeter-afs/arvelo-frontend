@@ -190,9 +190,16 @@ export const invoicesApi = {
     return response.data.data;
   },
 
-  /** Delete an unposted draft. Posted invoices are reversed with a credit note instead. */
-  async deleteInvoice(id: string) {
-    const response = await apiClient.delete<ApiResponse<{ id: string }>>(`/api/invoices/${id}`);
+  /** Delete a draft. Purchase invoices can be deleted in any unpaid state: a confirmed one is
+   *  unconfirmed first (reversal entry). Sales invoices are reversed with a credit note instead. */
+  async deleteInvoice(id: string, reason?: string) {
+    const response = await apiClient.delete<ApiResponse<{ id: string; unconfirmed?: boolean; reversal_entry_id?: string | null }>>(`/api/invoices/${id}`, { data: reason ? { reason } : undefined });
+    return response.data.data;
+  },
+
+  /** Purchase invoice back to draft; a posted entry is reversed on its own date. */
+  async unconfirm(id: string, reason?: string) {
+    const response = await apiClient.post<ApiResponse<{ invoice_id: string; reversal_entry_id: string | null }>>(`/api/invoices/${id}/unconfirm`, reason ? { reason } : {});
     return response.data.data;
   },
 

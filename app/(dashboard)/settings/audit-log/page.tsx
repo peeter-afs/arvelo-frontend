@@ -19,11 +19,27 @@ const ACTION_COLORS: Record<string, string> = {
   post: '#8b5cf6',
   send: '#06b6d4',
   confirm: '#16a34a',
+  unconfirm: '#f59e0b',
   approve: '#16a34a',
   reject: '#ef4444',
   login: '#6366f1',
   logout: '#9ca3af',
 };
+
+/** One-line summary of what the event touched (e.g. a deleted invoice's number, partner and total). */
+function detailSummary(details: Record<string, unknown> | null): string {
+  if (!details) return '';
+  const d = details;
+  const parts = [
+    d.invoice_number ? `Arve ${String(d.invoice_number)}` : null,
+    d.partner ? String(d.partner) : null,
+    d.invoice_date ? String(d.invoice_date) : null,
+    d.total != null ? Number(d.total).toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : null,
+    d.reversal_entry_id ? 'kanne stornotud' : null,
+    d.reason ? `põhjus: ${String(d.reason)}` : null,
+  ].filter(Boolean);
+  return parts.join(' · ');
+}
 
 export default function AuditLogPage() {
   const t = useTranslations('auditLog');
@@ -100,7 +116,7 @@ export default function AuditLogPage() {
               style={inputStyle}
             >
               <option value="">{t('all')}</option>
-              {['create', 'update', 'delete', 'post', 'reverse', 'send', 'confirm', 'approve', 'reject', 'login', 'logout'].map(a => (
+              {['create', 'update', 'delete', 'post', 'reverse', 'send', 'confirm', 'unconfirm', 'approve', 'reject', 'login', 'logout'].map(a => (
                 <option key={a} value={a}>{a}</option>
               ))}
             </select>
@@ -147,6 +163,7 @@ export default function AuditLogPage() {
                   action: e.action,
                   resource_type: e.resource_type,
                   resource_id: e.resource_id || '',
+                  details: detailSummary(e.details),
                   ip: e.ip_address || '',
                 }));
                 downloadCsv(rows, 'audit-log.csv');
@@ -176,6 +193,7 @@ export default function AuditLogPage() {
                     {' · '}{event.resource_type}
                     {event.resource_id ? <span className="font-mono">{' · '}{event.resource_id.slice(0, 8)}</span> : null}
                   </div>
+                  {detailSummary(event.details) && <div className="mt-0.5 truncate text-xs" style={{ color: 'var(--text-secondary)' }}>{detailSummary(event.details)}</div>}
                 </div>
                 <span className="shrink-0 px-2 py-0.5 rounded text-xs font-medium" style={{
                   backgroundColor: `${ACTION_COLORS[event.action] || '#6b7280'}15`,
@@ -219,6 +237,7 @@ export default function AuditLogPage() {
                     <td className="py-2 px-4 text-xs" style={{ color: 'var(--text-secondary)' }}>{event.resource_type}</td>
                     <td className="py-2 px-4 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                       {event.resource_id ? event.resource_id.slice(0, 8) : '—'}
+                      {detailSummary(event.details) && <div className="font-sans" style={{ color: 'var(--text-secondary)' }}>{detailSummary(event.details)}</div>}
                     </td>
                     <td className="py-2 px-4 text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                       {event.ip_address || '—'}

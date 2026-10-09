@@ -198,7 +198,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
-  const [busy, setBusy] = useState<null | 'save' | 'submit' | 'approve' | 'reject' | 'delete' | 'upload' | 'import'>(null);
+  const [busy, setBusy] = useState<null | 'save' | 'submit' | 'approve' | 'reject' | 'delete' | 'unconfirm' | 'upload' | 'import'>(null);
 
   const [partners, setPartners] = useState<PartnerRecord[]>([]);
   const [accounts, setAccounts] = useState<AccountOption[]>([]);
@@ -230,6 +230,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [newTerm, setNewTerm] = useState('');
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmUnconfirm, setConfirmUnconfirm] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -371,6 +372,9 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   useLastCrumb(locked ? 'Vaata' : null);
   const voided = status === 'cancelled' || status === 'void';
   const payableNow = locked && !voided && status !== 'paid' && Number(invoice?.open_amount ?? invoice?.total ?? 0) > 0.005;
+  // Unpaid confirmed / approved / pending invoices can go back to draft (backend checks payments, batches, credit notes).
+  const canUnconfirm = !!id && !isDraft && !voided && !['paid', 'partially_paid'].includes(status) && Number(invoice?.paid_amount || 0) < 0.005;
+  const canDelete = !!id && (isDraft || canUnconfirm);
   const approverName = useMemo(() => {
     const m = members.find((x) => x.user.id === hdr.approverId);
     return m ? memberName(m) : '';
@@ -731,7 +735,19 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const deleteDraft = async () => {
     if (!id) return;
     setBusy('delete');
-    try { await invoicesApi.deleteInvoice(id); setDirty(false); showToast.success('Mustand kustutatud'); router.push('/invoices/purchase'); }
+    try { await invoicesApi.deleteInvoice(id); setDirty(false); showToast.success(isDraft ? 'Mustand kustutatud' : `Arve ${hdr.sinv || ''} kustutatud`); router.push('/invoices/purchase'); }
+    catch (e) { showToast.error(getErrorMessage(e)); }
+    finally { setBusy(null); }
+  };
+  const unconfirm = async () => {
+    if (!id) return;
+    setBusy('unconfirm');
+    try {
+      const r = await invoicesApi.unconfirm(id);
+      const detail = await invoicesApi.getInvoice(id);
+      setInvoice(detail.invoice); setHdr(headerFrom(detail, vatEnabled)); setLines(detail.lines.map(lineFrom)); setGlOverride(glFrom(detail)); setDirty(false);
+      showToast.success(r.reversal_entry_id ? 'Kinnitus tühistatud · kanne stornotud, arve on mustand' : 'Kinnitus tühistatud, arve on mustand');
+    }
     catch (e) { showToast.error(getErrorMessage(e)); }
     finally { setBusy(null); }
   };
@@ -917,7 +933,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         </div>
       </div>
 
-      {locked && <div className={styles.lockNote}>{status === 'paid' ? 'Arve on makstud' : voided ? 'Arve on tühistatud' : 'Arve on kinnitatud'} — seda ei saa muuta. Vajadusel koosta kreeditarve.</div>}
+      {locked && <div className={styles.lockNote}>{status === 'paid' ? 'Arve on makstud' : voided ? 'Arve on tühistatud' : 'Arve on kinnitatud'} — seda ei saa muuta. {canUnconfirm ? 'Parandamiseks tühista kinnitus (all) või koosta kreeditarve.' : 'Vajadusel koosta kreeditarve.'}</div>}
       <div className={`${styles.body} ${rail ? '' : styles.norail}`} style={{ '--pw': `${clampPw(pw, rtab)}px` } as CSSProperties}>
         <div className={styles.left}>
           {loading ? <div className={styles.loading}><Loader2 size={20} className="animate-spin" /></div> : (
@@ -1070,7 +1086,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
           <div className={styles.footbar}>
             <div className={styles.fhint}><span><kbd className={styles.kbd}>⌘S</kbd> salvesta</span><span><kbd className={styles.kbd}>⌘O</kbd> originaal</span><span><kbd className={styles.kbd}>Esc</kbd> loobu</span></div>
             <div className={styles.fr}>
-              <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost} ${styles.danger}`} disabled={!id || !!busy || !isDraft} onClick={() => setConfirmDelete(true)}>Kustuta mustand</button>
+              {canUnconfirm && <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost}`} disabled={!!busy} onClick={() => setConfirmUnconfirm(true)}>{busy === 'unconfirm' && <Loader2 size={13} className="animate-spin" />}{isPending ? 'Võta tagasi mustandiks' : 'Tühista kinnitus'}</button>}
+              <button type="button" className={`${styles.btn} ${styles.sm} ${styles.ghost} ${styles.danger}`} disabled={!canDelete || !!busy} onClick={() => setConfirmDelete(true)}>{isDraft ? 'Kustuta mustand' : 'Kustuta arve'}</button>
             </div>
           </div>
         </div>
@@ -1184,8 +1201,18 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         onApply={applySplit} />
       <ConfirmDialog open={confirmCancel} onOpenChange={setConfirmCancel} title="Jäta muudatused salvestamata?" description="Arvel on salvestamata muudatusi. Loobumisel lähevad need kaduma." confirmLabel="Loobu muudatustest" variant="warning"
         onConfirm={() => { setDirty(false); router.push('/invoices/purchase'); }} />
-      <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title="Kustuta mustand?" description={`Mustand ${hdr.sinv || ''} kustutatakse jäädavalt. Kinnitatud arveid ei saa kustutada.`} confirmLabel="Kustuta mustand"
+      <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title={isDraft ? 'Kustuta mustand?' : 'Kustuta arve?'}
+        description={isDraft
+          ? `Mustand ${hdr.sinv || ''} kustutatakse jäädavalt. Kustutamine jääb tegevuste logisse.`
+          : `Arve ${hdr.sinv || ''} kinnitus tühistatakse — kanne stornotakse arve kuupäevaga — ja arve kustutatakse jäädavalt. Kustutamine jääb tegevuste logisse.`}
+        confirmLabel={isDraft ? 'Kustuta mustand' : 'Kustuta arve'}
         onConfirm={deleteDraft} />
+      <ConfirmDialog open={confirmUnconfirm} onOpenChange={setConfirmUnconfirm} title={isPending ? 'Võta tagasi mustandiks?' : 'Tühista kinnitus?'}
+        description={invoice?.journal_entry_id
+          ? `Arve ${hdr.sinv || ''} kanne stornotakse arve kuupäevaga (periood peab olema avatud) ja arve muutub uuesti mustandiks. Pärast parandamist saab selle uuesti kinnitada. Toiming jääb tegevuste logisse.`
+          : `Arve ${hdr.sinv || ''} muutub uuesti mustandiks. Toiming jääb tegevuste logisse.`}
+        confirmLabel={isPending ? 'Võta tagasi' : 'Tühista kinnitus'} variant="warning"
+        onConfirm={unconfirm} />
     </div>
   );
 }
