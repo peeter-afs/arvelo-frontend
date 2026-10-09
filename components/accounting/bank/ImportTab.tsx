@@ -27,6 +27,7 @@ import {
 } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { showToast } from '@/components/ui/Toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { formatLabel, type BankInlineSummaryData } from './shared';
 
 type ImportFormat = 'csv' | 'camt53';
@@ -185,6 +186,9 @@ export function ImportTab({
   const [isUndoingDrafts, setIsUndoingDrafts] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const historyRequestRef = useRef(0);
+  const [unfinishedJobs, setUnfinishedJobs] = useState<BankImportHistoryItem[]>([]);
+  const [resumingJobId, setResumingJobId] = useState<string | null>(null);
+  const [discardTarget, setDiscardTarget] = useState<BankImportHistoryItem | null>(null);
 
   const stage: ImportStage = commitSummary ? 'committed' : job ? 'parsed' : 'start';
 
@@ -231,6 +235,21 @@ export function ImportTab({
   useEffect(() => {
     if (bankAccountId) void loadImportHistory(bankAccountId);
   }, [bankAccountId, loadImportHistory]);
+
+  // Uploaded-but-uncommitted jobs across all accounts — a closed tab, a timeout
+  // or a gateway statement with flagged rows must not strand them.
+  const loadUnfinishedJobs = useCallback(async () => {
+    try {
+      const result = await bankingApi.listImportJobs({ unfinished: true, limit: 10 });
+      setUnfinishedJobs(result.items);
+    } catch {
+      // Optional helper list; the upload area works without it.
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadUnfinishedJobs();
+  }, [loadUnfinishedJobs]);
 
   const applyResolvedBankAccount = (resolvedAccountId?: string | null) => {
     if (!resolvedAccountId || resolvedAccountId === bankAccountId) return;
@@ -446,6 +465,7 @@ export function ImportTab({
         setPollingJobId(result.job.id);
         onPostCommitChange?.('running');
       }
+      setUnfinishedJobs((current) => current.filter((item) => item.id !== result.job.id));
       await Promise.all([
         loadImportHistory(bankAccountId),
         running ? Promise.resolve() : applyPostCommitResult(result.job.id, result.summary),
@@ -547,6 +567,66 @@ export function ImportTab({
     }
   };
 
+  const resumeJob = async (item: BankImportHistoryItem) => {
+    setResumingJobId(item.id);
+    setErrorMessage(null);
+    setPendingMessage(null);
+    try {
+      const result = await bankingApi.getImportJob(item.id);
+      applyResolvedBankAccount(result.summary?.bank_account_id || item.bank_account_id);
+      setFile(null);
+      setDetectedFormat(item.source_type === 'csv' || item.source_type === 'camt53' ? item.source_type : null);
+      setDetectedStatementIban(result.summary?.detected_statement_iban || null);
+      setRowFilter('all');
+      setDraftError(null);
+      setJob(result.job);
+      setPreviewRows(result.preview_rows);
+      setSummary(result.summary);
+      setCommitSummary(result.stage === 'committed' ? result.commit_summary : null);
+      if (result.stage === 'committed' && result.commit_summary) {
+        if (result.commit_summary.post_commit_state === 'running') {
+          setPollingJobId(result.job.id);
+          onPostCommitChange?.('running');
+        }
+        else await applyPostCommitResult(result.job.id, result.commit_summary);
+      }
+      showToast.success(t('importResumed', { file: item.file_name || t('statementFile') }));
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setResumingJobId(null);
+    }
+  };
+
+  const discardJob = async (jobId: string) => {
+    await bankingApi.discardImportJob(jobId);
+    setUnfinishedJobs((current) => current.filter((item) => item.id !== jobId));
+    setImportHistory((current) => current.filter((item) => item.id !== jobId));
+  };
+
+  const confirmDiscard = async () => {
+    if (!discardTarget) return;
+    try {
+      await discardJob(discardTarget.id);
+      showToast.success(t('importDiscarded'));
+    } catch (error) {
+      showToast.error(getErrorMessage(error));
+    }
+  };
+
+  // "Cancel" on an uncommitted preview throws the job away; leaving the page
+  // instead keeps it under "Unfinished imports".
+  const cancelImport = async () => {
+    if (job && !commitSummary) {
+      try {
+        await discardJob(job.id);
+      } catch {
+        // Still reset the view; the job stays listed as unfinished.
+      }
+    }
+    resetImport();
+  };
+
   const resetImport = () => {
     setFile(null);
     setJob(null);
@@ -561,6 +641,7 @@ export function ImportTab({
     setSelectedDraftIds(new Set());
     setDraftError(null);
     setRowFilter('all');
+    void loadUnfinishedJobs();
   };
 
   const selectedAccount = bankAccounts.find((account) => account.id === bankAccountId);
@@ -569,6 +650,42 @@ export function ImportTab({
   return (
     <div className="flex h-full min-h-0 flex-col gap-2">
       <ImportSteps stage={stage} />
+
+      {stage === 'start' && unfinishedJobs.length > 0 && (
+        <section className="card flex-shrink-0 overflow-hidden border-amber-200">
+          <div className="flex items-start gap-2 border-b border-amber-200 bg-amber-50 px-4 py-2.5">
+            <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-amber-900">{t('unfinishedImports')}</h2>
+              <p className="text-[11px] text-amber-800">{t('unfinishedImportsDescription')}</p>
+            </div>
+          </div>
+          <div className="max-h-[180px] overflow-y-auto">
+            {unfinishedJobs.map((item) => {
+              const account = bankAccounts.find((entry) => entry.id === item.bank_account_id);
+              return (
+                <div key={item.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-slate-100 px-4 py-2 last:border-b-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-semibold text-slate-900" title={item.file_name || undefined}>{item.file_name || t('statementFile')}</div>
+                    <div className="mt-0.5 flex flex-wrap gap-x-2 text-[10.5px] text-slate-500">
+                      {account && <span>{account.name}</span>}
+                      {item.statement_date_from && item.statement_date_to && (
+                        <span className="font-mono tabular-nums">{formatBankDay(item.statement_date_from, locale)} – {formatBankDay(item.statement_date_to, locale)}</span>
+                      )}
+                      <span>{t('unfinishedImportMeta', { rows: item.parsed_row_count, date: formatBankDay(item.created_at.slice(0, 10), locale) })}</span>
+                    </div>
+                  </div>
+                  <button onClick={() => setDiscardTarget(item)} disabled={resumingJobId !== null} className="h-8 rounded-lg px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50">{t('discardImport')}</button>
+                  <button onClick={() => void resumeJob(item)} disabled={resumingJobId !== null} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">
+                    {resumingJobId === item.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {t('resumeImport')}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {stage === 'start' && (
         <div className="grid min-h-0 flex-1 gap-2 xl:grid-cols-[1.35fr_1fr]">
@@ -649,6 +766,9 @@ export function ImportTab({
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${item.status === 'imported' ? 'bg-emerald-50 text-emerald-700' : item.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
                     {item.status === 'imported' ? t('importedCountShort', { count: item.imported_count }) : item.status === 'failed' ? t('importFailed') : t('importNotCommitted')}
                   </span>
+                  {item.status !== 'imported' && item.status !== 'failed' && (
+                    <button onClick={() => void resumeJob(item)} disabled={resumingJobId !== null} className="flex-shrink-0 text-[11px] font-semibold text-[var(--primary)] hover:underline disabled:opacity-50">{t('resumeImport')}</button>
+                  )}
                 </div>
               </div>
             ))}
@@ -766,7 +886,7 @@ export function ImportTab({
             <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white px-3 py-2">
               <div className="text-xs text-slate-500"><strong className="font-mono text-slate-800">{counts.ready}</strong> {t('rowsReady')} · <strong className="font-mono text-slate-800">{counts.review}</strong> {t('needsReview').toLowerCase()} · <strong className="font-mono text-slate-800">{counts.duplicate}</strong> {t('duplicatesWillBeSkipped')}</div>
               <div className="ml-auto flex items-center gap-2">
-                <button onClick={resetImport} className="h-8 rounded-lg px-3 text-xs font-medium text-slate-600 hover:bg-slate-50">{t('cancelImport')}</button>
+                <button onClick={() => void cancelImport()} className="h-8 rounded-lg px-3 text-xs font-medium text-slate-600 hover:bg-slate-50">{t('cancelImport')}</button>
                 <button onClick={() => void handleCommit()} disabled={isCommitting || counts.ready === 0} className="inline-flex h-8 items-center gap-2 rounded-lg bg-[var(--primary)] px-3 text-xs font-semibold text-white hover:bg-[var(--primary-hover)] disabled:opacity-50">{isCommitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}{t('commitAndSendToReview', { count: counts.ready })}</button>
               </div>
             </div>
@@ -855,6 +975,15 @@ export function ImportTab({
           </section>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!discardTarget}
+        onOpenChange={(open) => { if (!open) setDiscardTarget(null); }}
+        title={t('discardImportTitle', { file: discardTarget?.file_name || t('statementFile') })}
+        description={t('discardImportDescription')}
+        confirmLabel={t('discardImport')}
+        onConfirm={confirmDiscard}
+      />
     </div>
   );
 }

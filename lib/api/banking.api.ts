@@ -30,6 +30,7 @@ export type BankImportHistoryItem = {
   parsed_row_count: number;
   imported_count: number;
   skipped_duplicate_count: number;
+  post_commit_state?: BankImportPostCommitState | null;
   created_at: string;
   completed_at: string | null;
 };
@@ -428,12 +429,28 @@ export const bankingApi = {
     return response.data.data;
   },
 
-  async listImportJobs(params?: { bank_account_id?: string; limit?: number }) {
+  async listImportJobs(params?: { bank_account_id?: string; limit?: number; unfinished?: boolean }) {
     const response = await apiClient.get<ApiResponse<{
       items: BankImportHistoryItem[];
       last_imported_bank_day: string | null;
     }>>('/api/banking/import-jobs', { params });
     return response.data.data;
+  },
+
+  /** Re-opens a job: stored preview rows for an uncommitted job, the commit summary for a committed one. */
+  async getImportJob(id: string) {
+    const response = await apiClient.get<ApiResponse<{
+      job: BankImportJob;
+      stage: 'parsed' | 'committed';
+      preview_rows: BankImportPreviewRow[];
+      summary: BankImportSummary;
+      commit_summary: BankImportCommitSummary | null;
+    }>>(`/api/banking/import-jobs/${id}`, { timeout: 120_000 });
+    return response.data.data;
+  },
+
+  async discardImportJob(id: string) {
+    await apiClient.delete(`/api/banking/import-jobs/${id}`);
   },
 
   async parseImportJob(id: string) {
