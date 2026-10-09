@@ -343,7 +343,12 @@ export type BankImportCommitSummary = {
   auto_create_enabled?: boolean;
   already_drafted?: number;
   strong_match_skipped?: number;
+  /** Counterparty enrichment + drafts run after the commit response; see getImportPostCommitStatus. */
+  post_commit_state?: BankImportPostCommitState;
+  error?: string | null;
 };
+
+export type BankImportPostCommitState = 'none' | 'running' | 'done' | 'failed';
 
 export type PaymentBatchSummary = {
   line_count?: number;
@@ -419,7 +424,7 @@ export const bankingApi = {
     source_type: 'csv' | 'camt53';
     bank_account_id?: string;
   }) {
-    const response = await apiClient.post<ApiResponse<{ job: BankImportJob }>>('/api/banking/import-jobs', payload);
+    const response = await apiClient.post<ApiResponse<{ job: BankImportJob }>>('/api/banking/import-jobs', payload, { timeout: 120_000 });
     return response.data.data;
   },
 
@@ -436,7 +441,7 @@ export const bankingApi = {
       job: BankImportJob;
       preview_rows: BankImportPreviewRow[];
       summary: BankImportSummary;
-    }>>(`/api/banking/import-jobs/${id}/parse`);
+    }>>(`/api/banking/import-jobs/${id}/parse`, undefined, { timeout: 120_000 });
     return response.data.data;
   },
 
@@ -453,7 +458,15 @@ export const bankingApi = {
     const response = await apiClient.post<ApiResponse<{
       job: BankImportJob;
       summary: BankImportCommitSummary;
-    }>>(`/api/banking/import-jobs/${id}/commit`);
+    }>>(`/api/banking/import-jobs/${id}/commit`, undefined, { timeout: 120_000 });
+    return response.data.data;
+  },
+
+  async getImportPostCommitStatus(id: string) {
+    const response = await apiClient.get<ApiResponse<{
+      state: BankImportPostCommitState;
+      summary: BankImportCommitSummary;
+    }>>(`/api/banking/import-jobs/${id}/post-commit`);
     return response.data.data;
   },
 

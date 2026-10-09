@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -23,6 +23,7 @@ import {
   type BankImportPreviewRow,
   type BankImportSummary,
   type DraftableOutgoingItem,
+  type BankImportPostCommitState,
 } from '@/lib/api/banking.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { showToast } from '@/components/ui/Toast';
@@ -109,7 +110,7 @@ function InlineError({ message }: { message: string | null }) {
   );
 }
 
-function KeyValue({ label, value }: { label: string; value: string | number }) {
+function KeyValue({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-baseline justify-between gap-3 py-1 text-xs">
       <span className="text-slate-500">{label}</span>
@@ -138,12 +139,17 @@ async function findMostRecentlyImportedAccount(): Promise<string | null> {
   }
 }
 
+const POST_COMMIT_POLL_MS = 3000;
+
 export function ImportTab({
   onCommitted,
+  onPostCommitChange,
   onReviewCountChange,
   onSummaryChange,
 }: {
   onCommitted: (draftTxIds?: string[], summary?: { imported_count: number }) => void;
+  /** Background follow-ups (counterparty enrichment, drafts) changed state. */
+  onPostCommitChange?: (state: BankImportPostCommitState, draftTxIds?: string[]) => void;
   onReviewCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
 }) {
@@ -413,6 +419,16 @@ export function ImportTab({
     }
   };
 
+  // Once the follow-ups are known (synchronously or after the background run),
+  // either list the outgoing payments for manual drafting or clear that list.
+  const applyPostCommitResult = async (jobId: string, nextSummary: BankImportCommitSummary) => {
+    if (nextSummary.auto_create_enabled === false) await loadDraftableOutgoing(jobId);
+    else {
+      setDraftableOutgoing([]);
+      setSelectedDraftIds(new Set());
+    }
+  };
+
   const handleCommit = async () => {
     if (!job) return;
     setIsCommitting(true);
@@ -422,19 +438,75 @@ export function ImportTab({
       setJob(result.job);
       setCommitSummary(result.summary);
       showToast.success(t('approvedBankRowsImported'));
-      const followUps: Array<Promise<void>> = [loadImportHistory(bankAccountId)];
-      if (result.summary.auto_create_enabled === false) followUps.push(loadDraftableOutgoing(result.job.id));
-      else {
-        setDraftableOutgoing([]);
-        setSelectedDraftIds(new Set());
+      const running = result.summary.post_commit_state === 'running';
+      // The transactions are in; don't make the user wait for enrichment and
+      // drafts — go straight to review and let the poll below catch up.
+      onCommitted(running ? [] : result.summary.draft_transaction_ids || [], { imported_count: counts.ready });
+      if (running) {
+        setPollingJobId(result.job.id);
+        onPostCommitChange?.('running');
       }
-      await Promise.all(followUps);
+      await Promise.all([
+        loadImportHistory(bankAccountId),
+        running ? Promise.resolve() : applyPostCommitResult(result.job.id, result.summary),
+      ]);
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsCommitting(false);
     }
   };
+
+  const postCommitRunning = commitSummary?.post_commit_state === 'running';
+  // Tracked apart from the committed view so "import next" mid-run doesn't
+  // orphan the background job; results only update the view it belongs to.
+  const [pollingJobId, setPollingJobId] = useState<string | null>(null);
+  const currentJobIdRef = useRef<string | null>(null);
+  currentJobIdRef.current = job?.id ?? null;
+
+  useEffect(() => {
+    if (!pollingJobId) return;
+    const committedJobId = pollingJobId;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      try {
+        const status = await bankingApi.getImportPostCommitStatus(committedJobId);
+        if (cancelled) return;
+        if (status.state === 'running') {
+          timer = setTimeout(poll, POST_COMMIT_POLL_MS);
+          return;
+        }
+        setPollingJobId(null);
+        onPostCommitChange?.(status.state, status.summary.draft_transaction_ids || []);
+        if (status.state === 'failed') showToast.error(t('postCommitFailed'));
+        else showToast.success(t('postCommitDone', { count: status.summary.drafts_created || 0 }));
+        if (currentJobIdRef.current !== committedJobId) return;
+        // A failed run falls back to the manual draft list.
+        setCommitSummary((current) => (current ? {
+          ...current,
+          ...status.summary,
+          post_commit_state: status.state,
+          ...(status.state === 'failed' ? { auto_create_enabled: false } : {}),
+        } : current));
+        if (status.state === 'failed') {
+          setDraftError(t('postCommitFailed'));
+          await loadDraftableOutgoing(committedJobId);
+        } else {
+          await applyPostCommitResult(committedJobId, status.summary);
+        }
+      } catch {
+        // Transient network error — keep polling; the job state lives on the server.
+        if (!cancelled) timer = setTimeout(poll, POST_COMMIT_POLL_MS * 2);
+      }
+    };
+    timer = setTimeout(poll, POST_COMMIT_POLL_MS);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollingJobId]);
 
   const handleCreateDrafts = async () => {
     const ids = [...selectedDraftIds];
@@ -714,7 +786,7 @@ export function ImportTab({
               <KeyValue label={t('importedRows')} value={importedCount} />
               <KeyValue label={t('skippedDuplicates')} value={commitSummary.skipped_duplicate_count ?? counts.duplicate} />
               <KeyValue label={t('manuallyApproved')} value={counts.manuallyApproved} />
-              <KeyValue label={t('autoDraftsCreated')} value={commitSummary.drafts_created || 0} />
+              <KeyValue label={t('autoDraftsCreated')} value={postCommitRunning ? <Loader2 className="inline h-3.5 w-3.5 animate-spin text-slate-400" /> : commitSummary.drafts_created || 0} />
               {(commitSummary.drafts_excluded?.length || 0) > 0 && <KeyValue label={t('autoDraftsExcluded')} value={commitSummary.drafts_excluded?.length || 0} />}
             </div>
             <InlineError message={errorMessage} />
@@ -731,11 +803,13 @@ export function ImportTab({
                 <h2 className="text-sm font-semibold text-slate-900">{(commitSummary.drafts_created || 0) > 0 ? t('autoDraftsCreated') : commitSummary.auto_create_enabled === false ? t('manualDraftsTitle') : t('draftFromOutgoingTitle')}</h2>
                 <p className="text-[11px] text-slate-500">{(commitSummary.drafts_created || 0) > 0 ? t('autoDraftsCreatedDescription') : t('optionalNextStep')}</p>
               </div>
-              {commitSummary.auto_create_enabled === false && <button onClick={() => { setDraftableOutgoing([]); setSelectedDraftIds(new Set()); }} className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-800">{t('skip')}</button>}
+              {!postCommitRunning && commitSummary.auto_create_enabled === false && <button onClick={() => { setDraftableOutgoing([]); setSelectedDraftIds(new Set()); }} className="ml-auto text-xs font-medium text-slate-500 hover:text-slate-800">{t('skip')}</button>}
             </div>
             <InlineError message={draftError || (commitSummary.drafts_errors?.length ? t('draftCreationErrors', { count: commitSummary.drafts_errors.length }) : null)} />
             <div className="min-h-0 flex-1 overflow-auto">
-              {(commitSummary.drafts_created || 0) > 0 ? (
+              {postCommitRunning ? (
+                <div className="flex h-full items-center justify-center gap-2 p-6 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" />{t('postCommitRunning')}</div>
+              ) : (commitSummary.drafts_created || 0) > 0 ? (
                 <>
                   {(commitSummary.drafts || []).map((item) => (
                     <div key={item.transaction_id} className="flex items-start gap-3 border-b border-slate-100 px-4 py-2.5">

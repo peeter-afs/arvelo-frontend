@@ -66,6 +66,7 @@ const isBulkReady = (item: BankReviewQueueItem) => Boolean(item.auto_match_summa
 
 export function ReviewTab({
   refreshKey = 0,
+  reloadKey = 0,
   onCountChange,
   onSummaryChange,
   autoDraftTxIds = NO_DRAFT_IDS,
@@ -73,6 +74,8 @@ export function ReviewTab({
   initialPhase = 'rest',
 }: {
   refreshKey?: number;
+  /** Refetches the queue without resetting the review phase (background import follow-ups). */
+  reloadKey?: number;
   onCountChange?: (count: number) => void;
   onSummaryChange?: (summary: BankInlineSummaryData) => void;
   autoDraftTxIds?: string[];
@@ -212,7 +215,7 @@ export function ReviewTab({
 
     void load();
     return () => { cancelled = true; };
-  }, [effectiveAutoMatchableOnly, hideDrafted, reviewFilter, refreshKey, reviewPhase]);
+  }, [effectiveAutoMatchableOnly, hideDrafted, reviewFilter, refreshKey, reloadKey, reviewPhase]);
 
   useEffect(() => {
     onCountChange?.(queueTotal);
