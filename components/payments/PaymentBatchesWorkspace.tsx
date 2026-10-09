@@ -162,8 +162,9 @@ export default function PaymentBatchesWorkspace() {
   }, []);
   const act = useMemo(() => ({
     send: (b: PaymentBatchListItem) => run('send', async () => { const r = await bankingApi.submitPaymentBatchToBank(b.id); await refresh(b.id); showToast.success(`Saadetud panka · ${connection(r.provider)}`); }),
-    pain: (b: PaymentBatchListItem) => run('dl', async () => {
-      let content = b.exported_file_format === 'pain.001.001.09' ? b.exported_file_content : null;
+    /** Downloads the stored pain.001 file; `fresh` (or a missing file) builds it again first. */
+    pain: (b: PaymentBatchListItem, fresh = false) => run('dl', async () => {
+      let content = !fresh && b.exported_file_format === 'pain.001.001.09' ? b.exported_file_content : null;
       if (!content) { const r = await bankingApi.generatePaymentBatchPain001(b.id); content = r.batch.exported_file_content || null; await refresh(b.id); }
       if (!content) throw new Error('Faili ei õnnestunud luua');
       downloadText(fileName(b, 'xml'), content, 'application/xml'); showToast.success(`Laaditud alla: ${fileName(b, 'xml')}`);
@@ -172,6 +173,7 @@ export default function PaymentBatchesWorkspace() {
       downloadText(fileName(b, 'csv'), csv([['Nr', 'Saaja', 'IBAN', 'Arve', 'Viitenumber', 'Selgitus', 'Summa', 'Valuuta'], ...lines.map((l) => [l.line_no, l.payee_name, l.payee_iban, l.invoice_number, l.reference, l.description, Number(l.amount), l.currency])]), 'text/csv;charset=utf-8');
       setMenu(null); showToast.success(`Laaditud alla: ${fileName(b, 'csv')}`);
     },
+    reset: (b: PaymentBatchListItem) => run('reset', async () => { await bankingApi.resetPaymentBatch(b.id); await refresh(b.id); showToast.success('Koostamine tühistatud – pakett on jälle mustand'); }),
     uploaded: (b: PaymentBatchListItem) => run('uploaded', async () => { await bankingApi.confirmPaymentBatchUploaded(b.id); await refresh(b.id); showToast.success('Märgitud üles laadituks'); }),
     exec: (b: PaymentBatchListItem, lines: number) => run('exec', async () => { const r = await bankingApi.confirmPaymentBatchExecuted(b.id); await refresh(b.id); showToast.success(`${r.payments_created ?? lines} makset loodud ja seotud arvetega`); }),
   }), [run, refresh]);
@@ -308,7 +310,8 @@ export default function PaymentBatchesWorkspace() {
 }
 
 type Act = {
-  send: (b: PaymentBatchListItem) => Promise<void>; pain: (b: PaymentBatchListItem) => Promise<void>; csv: (b: PaymentBatchListItem, lines: PaymentBatchLine[]) => void;
+  send: (b: PaymentBatchListItem) => Promise<void>; pain: (b: PaymentBatchListItem, fresh?: boolean) => Promise<void>; csv: (b: PaymentBatchListItem, lines: PaymentBatchLine[]) => void;
+  reset: (b: PaymentBatchListItem) => Promise<void>;
   uploaded: (b: PaymentBatchListItem) => Promise<void>; exec: (b: PaymentBatchListItem, lines: number) => Promise<void>;
 };
 
@@ -344,6 +347,7 @@ function BatchDetail({ b, lines, accounts, names, index, total, onMove, busy, me
   type MenuItem = { key: string; label: string; onClick?: () => void; href?: string; danger?: boolean } | '-';
   const more: MenuItem[] = [];
   const fileItem = () => { if (hasFile) more.push({ key: 'file', label: 'Vaata faili', onClick: () => onFile(b, n) }); };
+  const resetItem = () => more.push({ key: 'reset', label: 'Tühista koostamine', onClick: () => void act.reset(b) });
   const voidItem = () => { if (more.length) more.push('-'); more.push({ key: 'void', label: 'Tühista pakett', onClick: () => onVoid(b, n), danger: true }); };
   if (st === 'draft') {
     right = <>
@@ -363,17 +367,24 @@ function BatchDetail({ b, lines, accounts, names, index, total, onMove, busy, me
     fileItem(); voidItem();
   } else if (st === 'generated') {
     right = <>{B('uploaded', 'Märgi üles laaditud', () => void act.uploaded(b))}{B('send', <><Send size={13} />Saada panka</>, () => void act.send(b), styles.primary)}</>;
-    fileItem(); if (hasFile) more.push({ key: 'dlx', label: 'Lae alla uuesti', onClick: () => void act.pain(b) }); voidItem();
+    fileItem(); if (hasFile) more.push({ key: 'dlx', label: 'Lae alla uuesti', onClick: () => void act.pain(b) });
+    more.push({ key: 'regen', label: 'Koosta fail uuesti', onClick: () => void act.pain(b, true) });
+    resetItem(); voidItem();
   } else if (st === 'uploaded' || st === 'sent') {
     right = B('exec', <><Check size={13} />Kinnita täidetuks</>, () => void act.exec(b, n), styles.primary);
-    fileItem(); voidItem();
+    fileItem(); if (st === 'uploaded') resetItem(); voidItem();
   } else if (st === 'rejected') {
     right = payroll
       ? <Link className={`${styles.btn} ${styles.primary}`} href={runLink}>Paranda palgaarvestuses</Link>
       : B('redo', 'Paranda ja koosta uuesti', () => lines && onRebuild(b, lines, 'redo'), styles.primary);
-    fileItem(); voidItem();
+    fileItem(); resetItem(); voidItem();
   } else if (st === 'confirmed') {
     fileItem();
+  } else if (st === 'voided') {
+    // A voided batch is final; its invoices go into a new batch instead.
+    right = payroll
+      ? <Link className={styles.btn} href={runLink}>Ava palgaarvestus</Link>
+      : B('redo', 'Koosta uuesti', () => lines && onRebuild(b, lines, 'redo'));
   }
 
   const srcKv = payroll

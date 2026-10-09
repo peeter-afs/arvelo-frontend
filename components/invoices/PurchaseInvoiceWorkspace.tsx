@@ -534,7 +534,11 @@ function PaymentModal({ ids, invoices, ctx, bankAccounts, onClose, onDone }: { i
     setBusy(file ? 'file' : 'save');
     try {
       const created = await bankingApi.createPaymentBatch({ bank_account_id: bankAccountId, execution_date: date, lines: base.map((r) => ({ invoice_id: r.ids[0], amount: Math.round(r.amount * 100) / 100, payee_name: r.payee, payee_iban: r.iban, payee_bic: r.bic, reference: r.reference || undefined, description: r.description || undefined, transfer_group: grouping === 'payee' ? `${r.payee}|${r.iban}` : undefined })) });
-      if (file) { const gen = await bankingApi.generatePaymentBatchPain001(created.batch.id); const content = gen.batch.exported_file_content; if (content) downloadBlob(new Blob([String(content)], { type: 'application/xml' }), gen.batch.exported_file_name || `${gen.batch.batch_name || 'maksepakk'}.xml`); showToast.success('Pangafail loodud ja alla laaditud'); }
+      if (file) {
+        // The batch exists now: a failed export must not leave the dialog open, or a retry creates a second batch.
+        try { const gen = await bankingApi.generatePaymentBatchPain001(created.batch.id); const content = gen.batch.exported_file_content; if (content) downloadBlob(new Blob([String(content)], { type: 'application/xml' }), gen.batch.exported_file_name || `${gen.batch.batch_name || 'maksepakk'}.xml`); showToast.success('Pangafail loodud ja alla laaditud'); }
+        catch (e) { showToast.error(`Maksepakk salvestati mustandina, kuid pangafaili ei saanud koostada: ${getErrorMessage(e)} Paranda viga ja koosta fail Maksepakettide all.`); }
+      }
       else showToast.success(`Maksepakk ${created.batch.batch_name || ''} salvestatud`);
       onDone(lines.map((r) => r.id));
     } catch (e) { showToast.error(getErrorMessage(e)); } finally { setBusy(null); }

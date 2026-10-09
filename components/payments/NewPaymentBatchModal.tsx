@@ -111,9 +111,9 @@ export function NewPaymentBatchModal({ invoices, openLines, bankAccounts, accoun
           ...chosen.map((inv) => { const p = prefill?.get(inv.id); return { invoice_id: inv.id, amount: openOf(inv), payee_name: p?.payee_name || undefined, payee_iban: p?.payee_iban || undefined, payee_bic: p?.payee_bic || undefined, reference: p?.reference || undefined, description: p?.description || undefined }; }),
           ...manual.map((m) => ({ invoice_id: null, amount: parseAmount(m.amount), payee_name: m.payee.trim(), payee_iban: m.iban.replace(/\s+/g, '').toUpperCase(), counterpart_account_id: m.account })),
         ],
+        replaces_batch_id: seed?.batch.id,
       });
       const id = result.batch.id;
-      if (seed) await bankingApi.voidPaymentBatch(seed.batch.id, { reason: `Asendatud paketiga „${result.batch.batch_name || name}“` }).catch(() => {});
       if (send) {
         try {
           const sent = await bankingApi.submitPaymentBatchToBank(id);
@@ -137,7 +137,7 @@ export function NewPaymentBatchModal({ invoices, openLines, bankAccounts, accoun
     <div className={styles.modal} onPointerDown={(e) => { if (e.target === e.currentTarget && !saving) onClose(); }}>
       <div className={styles.mbox}>
         <div className={styles.mhead}>
-          <div><h3>{seed ? (seed.mode === 'redo' ? 'Paranda ja koosta uuesti' : 'Muuda paketi ridu') : 'Uus maksepakett'}</h3><div className={styles.line}>{seed ? `Luuakse uus pakett ja „${seed.batch.batch_name || 'Maksepakett'}“ tühistatakse.` : 'Vali makstavad ostuarved. Summad, saaja ja viitenumber tulevad arvelt.'}</div></div>
+          <div><h3>{seed ? (seed.mode === 'redo' ? 'Paranda ja koosta uuesti' : 'Muuda paketi ridu') : 'Uus maksepakett'}</h3><div className={styles.line}>{seed ? (seed.batch.status === 'voided' ? `Luuakse uus pakett tühistatud „${seed.batch.batch_name || 'Maksepakett'}“ põhjal.` : `Luuakse uus pakett ja „${seed.batch.batch_name || 'Maksepakett'}“ tühistatakse.`) : 'Vali makstavad ostuarved. Summad, saaja ja viitenumber tulevad arvelt.'}</div></div>
           <button className={`${styles.btn} ${styles.ghost}`} onClick={onClose} disabled={!!saving}><X size={14} /></button>
         </div>
         <div className={styles.mfields}>

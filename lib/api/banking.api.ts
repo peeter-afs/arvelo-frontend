@@ -646,6 +646,8 @@ export const bankingApi = {
       /** Invoice lines sharing a group are paid as one combined bank transfer. */
       transfer_group?: string;
     }>;
+    /** Rebuild: the backend voids this batch once the new one exists. */
+    replaces_batch_id?: string;
   }) {
     const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>('/api/banking/payment-batches', payload);
     return response.data.data;
@@ -665,6 +667,12 @@ export const bankingApi = {
 
   async generatePaymentBatchPain001(id: string) {
     const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/generate-pain001`);
+    return response.data.data;
+  },
+
+  /** Undo generation: back to draft so the batch can be fixed and generated again. */
+  async resetPaymentBatch(id: string) {
+    const response = await apiClient.post<ApiResponse<PaymentBatchMutationResult>>(`/api/banking/payment-batches/${id}/reset`);
     return response.data.data;
   },
 
