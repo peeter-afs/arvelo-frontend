@@ -245,7 +245,9 @@ export default function PurchaseInvoiceWorkspace() {
     const list = all.filter((f) => /\.(pdf|csv|xml)$/i.test(f.name) || f.type === 'application/pdf');
     if (list.length < all.length) showToast.error(`Toetatud on PDF-, e-arve XML- ja CSV-failid — ${all.length - list.length} faili jäeti vahele`);
     if (!list.length) return; void run('upload', async () => {
+    if (!target) showToast.info(list.length === 1 ? `Tuvastame arve andmed — ${list[0].name}…` : `Tuvastame ${list.length} faili andmed…`);
     let attached = 0, linked = 0, created = 0, duplicates = 0, linesReplaced = false; const review: string[] = [];
+    const resultInvoiceIds: string[] = [];
     for (const f of list) {
       if (/csv$/i.test(f.name)) {
         const summary = await importApi.importBoltCsv(f);
@@ -255,11 +257,13 @@ export default function PurchaseInvoiceWorkspace() {
       }
       if (/\.xml$/i.test(f.name)) {
         const einvoice = await importApi.uploadPurchaseInvoiceEinvoice(f);
-        einvoice.results.forEach((r) => { if (r.status === 'skipped_duplicate') duplicates += 1; else if (r.status === 'attached') linked += 1; else if (r.draft_invoice_id) created += 1; else review.push(r.import.id); });
+        einvoice.results.forEach((r) => { const invoiceId = r.linked_invoice_id || r.draft_invoice_id || r.import?.draft_invoice_id; if (invoiceId) resultInvoiceIds.push(invoiceId); if (r.status === 'skipped_duplicate') duplicates += 1; else if (r.status === 'attached') linked += 1; else if (r.draft_invoice_id) created += 1; else review.push(r.import.id); });
         continue;
       }
       const result = await importApi.uploadPurchaseInvoicePdf(f, target ? { target_invoice_id: target.id } : undefined);
       if ((result.import?.warning_flags || []).includes('bank_draft_lines_replaced')) linesReplaced = true;
+      const invoiceId = result.linked_invoice_id || result.draft_invoice_id || result.import?.draft_invoice_id;
+      if (invoiceId && !target) resultInvoiceIds.push(invoiceId);
       if (result.status === 'attached') { if (target) attached += 1; else linked += 1; }
       else if (target) continue;
       else if (result.status === 'skipped_duplicate') duplicates += 1;
@@ -268,12 +272,18 @@ export default function PurchaseInvoiceWorkspace() {
     }
     if (linesReplaced) await loadInvoices(target?.id);
     if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}${linesReplaced ? ' · pangarida asendati PDF-i ridadega' : ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
+    else if (resultInvoiceIds.length === 1 && review.length === 0) {
+      // One invoice came out of the upload: open it, like dropping a file on the editor does.
+      showToast.success(linked ? 'Originaal seoti pangamustandiga — kontrolli andmed üle' : duplicates ? 'See fail on juba imporditud — avan olemasoleva arve' : 'Arve tuvastatud — kontrolli andmed üle');
+      router.push(`/invoices/${resultInvoiceIds[0]}/edit`);
+      return;
+    }
     else {
       const parts = [created && `${created} arve${created > 1 ? 't' : ''} loodud`, linked && `${linked} originaal${linked > 1 ? 'i' : ''} seoti pangamustandiga`, duplicates && `${duplicates} juba imporditud`, review.length && `${review.length} vajab ülevaatust`].filter(Boolean);
       showToast.success(parts.join(' · ') || 'Fail laaditud üles');
       setImportReview(review.length ? review : null);
     }
-    await loadInvoices(target?.id || selectedId); importApi.listPurchaseInvoiceImports({ limit: 500 }).then((res) => setImports(importsByDraft(res.items))).catch(() => {}); }); };
+    await loadInvoices(target?.id || resultInvoiceIds[0] || selectedId); importApi.listPurchaseInvoiceImports({ limit: 500 }).then((res) => setImports(importsByDraft(res.items))).catch(() => {}); }); };
 
   const openJournal = async (inv: InvoiceListItem) => { if (!inv.journal_entry_id) return; setJournalLoading(true); setModal({ kind: 'journal' }); try { setJournal(await accountingApi.getJournalEntry(inv.journal_entry_id)); } catch (e) { showToast.error(getErrorMessage(e)); setModal(null); } finally { setJournalLoading(false); } };
   const exportRows = async (format: 'xlsx' | 'csv' | 'pdf') => { setMenu(null); const data = visible.map((r) => ({ Nr: r.invoice_number || r.id, Tarnija: partnerName(r, partnerMap), Summa: Number(r.total), Tasumata: payable(r) ? openAmount(r) : 0, 'Arve kp': dateText(r.invoice_date), Tähtaeg: dateText(r.due_date), Staatus: ST[stKey(r)].label, Allikas: SRC[srcKey(r)].l })); if (format === 'xlsx') { const XLSX = await import('xlsx'); const book = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(book, XLSX.utils.json_to_sheet(data), 'Ostuarved'); XLSX.writeFile(book, 'ostuarved.xlsx'); } else if (format === 'csv') { const XLSX = await import('xlsx'); const csv = XLSX.utils.sheet_to_csv(XLSX.utils.json_to_sheet(data), { FS: ';' }); downloadBlob(new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' }), 'ostuarved.csv'); } else { const { jsPDF } = await import('jspdf'); const doc = new jsPDF(); doc.setFontSize(14); doc.text('Ostuarved', 14, 16); doc.setFontSize(9); data.slice(0, 55).forEach((r, i) => doc.text(`${r.Nr}  ${r.Tarnija}  ${money(r.Summa)}`, 14, 25 + i * 4.5)); doc.save('ostuarved.pdf'); } };

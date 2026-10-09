@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ComponentType, type Dispatch, type SetStateAction } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -48,6 +49,7 @@ const emptyLine = (): EditableLine => ({
 });
 
 export default function PurchaseInvoiceImportsPage() {
+  const router = useRouter();
   const t = useTranslations('invoices');
   const tCommon = useTranslations('common');
   const locale = useLocale();
@@ -172,6 +174,13 @@ export default function PurchaseInvoiceImportsPage() {
         const result = /\.xml$/i.test(selectedFile.name)
           ? (await importApi.uploadPurchaseInvoiceEinvoice(selectedFile)).results[0]
           : await importApi.uploadPurchaseInvoicePdf(selectedFile);
+        // A clean import is already a draft (or was attached to a bank draft): open the invoice.
+        const invoiceId = result.linked_invoice_id || result.draft_invoice_id;
+        if (invoiceId) {
+          setSelectedFile(null);
+          router.push(`/invoices/${invoiceId}/edit`);
+          return;
+        }
         await refreshList(result.import.id);
         await refreshDetail(result.import.id);
         setSelectedFile(null);
