@@ -104,6 +104,21 @@ export type OpeningBalanceImportResult = {
 
 export type PurchaseInvoicePreviewData = Record<string, unknown> & {
   lines?: unknown[];
+  /** Set when the supplier is not in Arvelo: a card prefilled from the registry or the invoice. */
+  supplier_suggestion?: SupplierSuggestion | null;
+};
+
+export type SupplierSuggestion = {
+  source: 'business_registry' | 'invoice';
+  name: string;
+  reg_code: string | null;
+  vat_number: string | null;
+  address: string | null;
+  postal_code: string | null;
+  city: string | null;
+  country_code: string;
+  ibans: string[];
+  bic: string | null;
 };
 
 export type DraftInvoiceCreationResult = {
@@ -224,8 +239,15 @@ export const importApi = {
     return response.data.data;
   },
 
-  async resolveSupplier(id: string, payload: { candidate_id?: string; selected_partner_id?: string }) {
-    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail>>(
+  async resolveSupplier(id: string, payload: {
+    candidate_id?: string;
+    selected_partner_id?: string;
+    /** Create the supplier card (prefilled from the invoice / registry, checked by the user). */
+    create_new_supplier?: { name: string; reg_code?: string; vat_number?: string; country_code?: string; address?: string; postal_code?: string; city?: string; ibans?: string[] };
+    /** Create the draft invoice right away; `draft_error` says why when it needs review instead. */
+    create_draft?: boolean;
+  }) {
+    const response = await apiClient.post<ApiResponse<PurchaseInvoiceImportDetail & { draft_invoice_id?: string; draft_error?: string }>>(
       `/api/import/purchase-invoices/${id}/resolve-supplier`,
       payload
     );

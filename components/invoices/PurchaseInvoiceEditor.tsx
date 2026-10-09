@@ -18,7 +18,7 @@ import {
 import { Loader2 } from 'lucide-react';
 import { accountingApi, type AccountOption, type AccountingSettings, type PartnerRecord, type SupplierBankAccount } from '@/lib/api/accounting.api';
 import { getErrorMessage } from '@/lib/api/client';
-import { importApi, type PurchaseInvoiceImportListItem, type PurchaseUploadResult } from '@/lib/api/import.api';
+import { importApi, type PurchaseInvoiceImportListItem, type PurchaseUploadResult, type SupplierSuggestion } from '@/lib/api/import.api';
 import { invoicesApi, type InvoiceDetail, type InvoiceDraftPayload, type InvoiceLine, type InvoiceListItem } from '@/lib/api/invoices.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, dimensionLabel, groupProjects, type CostCenter, type Project } from '@/lib/api/dimensions.api';
@@ -27,6 +27,7 @@ import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SplitAccountsDialog, type SplitPart } from './SplitAccountsDialog';
+import { NewSupplierFromInvoiceDialog } from './NewSupplierFromInvoiceDialog';
 import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
@@ -231,6 +232,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [confirmUnconfirm, setConfirmUnconfirm] = useState(false);
+  const [newSupplier, setNewSupplier] = useState<{ importId: string; suggestion: SupplierSuggestion; fileName: string | null } | null>(null);
   const [splitOpen, setSplitOpen] = useState(false);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -815,6 +817,12 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         router.push(`/invoices/${draftId}/edit`);
         return;
       }
+      const suggestion = record.preview_data?.supplier_suggestion;
+      if (result.status !== 'skipped_duplicate' && suggestion && record.status === 'preview_ready' && !record.duplicate_check?.is_likely_duplicate) {
+        // Supplier not in Arvelo (nor in the Estonian registry): confirm a card prefilled from the invoice.
+        setNewSupplier({ importId: record.id, suggestion, fileName: record.file_name || files[0].name });
+        return;
+      }
       showToast.info(
         result.status === 'skipped_duplicate' ? 'See fail on juba imporditud — vaata import üle'
           : result.draft_error ? `Vaata import üle: ${result.draft_error}`
@@ -1210,6 +1218,9 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
         lines={lines.map((l) => ({ key: l.key, description: l.description, account_id: l.account_id, net: lineNet(l) }))}
         accounts={[...expenseAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name })), ...assetAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name, group: 'Vara' }))]}
         onApply={applySplit} />
+      <NewSupplierFromInvoiceDialog importId={newSupplier?.importId || null} suggestion={newSupplier?.suggestion || null} fileName={newSupplier?.fileName}
+        onOpenChange={(o) => { if (!o && newSupplier) { router.push(`/invoices/purchase-imports?import=${newSupplier.importId}`); setNewSupplier(null); } }}
+        onDone={({ draftInvoiceId, draftError, importId }) => { setNewSupplier(null); if (draftInvoiceId) { showToast.success('Tarnija lisatud — kontrolli arve andmed üle'); router.push(`/invoices/${draftInvoiceId}/edit`); } else { showToast.info(`Tarnija lisatud. ${draftError ? `Arve vajab ülevaatust: ${draftError}` : 'Vaata import üle.'}`); router.push(`/invoices/purchase-imports?import=${importId}`); } }} />
       <ConfirmDialog open={confirmCancel} onOpenChange={setConfirmCancel} title="Jäta muudatused salvestamata?" description="Arvel on salvestamata muudatusi. Loobumisel lähevad need kaduma." confirmLabel="Loobu muudatustest" variant="warning"
         onConfirm={() => { setDirty(false); router.push('/invoices/purchase'); }} />
       <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title={isDraft ? 'Kustuta mustand?' : 'Kustuta arve?'}

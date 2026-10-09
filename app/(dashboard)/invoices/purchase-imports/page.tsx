@@ -3,6 +3,8 @@
 import { useEffect, useState, type ComponentType, type Dispatch, type SetStateAction } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { NewSupplierFromInvoiceDialog } from '@/components/invoices/NewSupplierFromInvoiceDialog';
+import type { SupplierSuggestion } from '@/lib/api/import.api';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   AlertCircle,
@@ -48,6 +50,17 @@ const emptyLine = (): EditableLine => ({
   account_id: '',
 });
 
+/** Imports made before suggestions were stored: build the card from the recognised fields. */
+function supplierSuggestionOf(preview: Record<string, unknown> | null | undefined): SupplierSuggestion | null {
+  const p = preview || {};
+  if (p.supplier_suggestion) return p.supplier_suggestion as SupplierSuggestion;
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim() : null);
+  const ibans = [p.iban, ...(Array.isArray(p.ibans) ? p.ibans : [])].map(str).filter((v): v is string => !!v);
+  const vat = (str(p.vat_number) || '').toUpperCase();
+  const country = /^[A-Z]{2}/.test(vat) ? vat.slice(0, 2) : ibans[0]?.slice(0, 2) || 'EE';
+  return { source: 'invoice', name: str(p.supplier_name) || '', reg_code: str(p.registry_code), vat_number: str(p.vat_number), address: str(p.legal_address), postal_code: str(p.postal_code), city: str(p.city), country_code: country, ibans: [...new Set(ibans)], bic: str(p.bic) };
+}
+
 export default function PurchaseInvoiceImportsPage() {
   const router = useRouter();
   const t = useTranslations('invoices');
@@ -67,6 +80,7 @@ export default function PurchaseInvoiceImportsPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [manualPartnerId, setManualPartnerId] = useState('');
+  const [newSupplierOpen, setNewSupplierOpen] = useState(false);
   const [confirmDuplicateWarning, setConfirmDuplicateWarning] = useState(false);
   const [draftResult, setDraftResult] = useState<DraftInvoiceResult | null>(null);
   const [boltCsvResult, setBoltCsvResult] = useState<BoltCsvImportSummary | null>(null);
@@ -628,7 +642,8 @@ export default function PurchaseInvoiceImportsPage() {
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <div className="text-sm font-semibold text-slate-900">
-                                {candidate.candidate_payload?.matched_partner_name || candidate.candidate_payload?.name || t('supplierCandidate')}
+                                {candidate.candidate_payload?.matched_partner_name || candidate.candidate_payload?.name || (candidate.candidate_payload?.company as { name?: string } | undefined)?.name || t('supplierCandidate')}
+                                {candidate.candidate_payload?.source === 'business_registry' && <span className="ml-2 text-xs font-normal text-slate-500">äriregistrist · lisatakse uue tarnijana</span>}
                               </div>
                               <div className="mt-1 text-xs text-slate-500">
                                 {t('scoreValue', { score: String(candidate.match_score) })} · {normalizeStringArray(candidate.match_reasons).map(formatLabel).join(', ') || t('noMatchReasons')}
@@ -645,6 +660,17 @@ export default function PurchaseInvoiceImportsPage() {
                           </div>
                         </div>
                       ))
+                    )}
+
+                    {!detail.import.supplier_resolution?.selected_partner_id && (
+                      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 p-4">
+                        <div className="text-sm text-slate-600">Tarnijat pole Arvelos? Lisa ta arvel olevate andmete põhjal — kaart on eeltäidetud, sina kinnitad.</div>
+                        <button type="button" onClick={() => setNewSupplierOpen(true)} disabled={isResolvingSupplier}
+                          className="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                          <UserCheck className="h-4 w-4" />
+                          <span>Uus tarnija arve andmetest</span>
+                        </button>
+                      </div>
                     )}
 
                     <div className="rounded-xl border border-slate-200 p-4">
@@ -738,6 +764,21 @@ export default function PurchaseInvoiceImportsPage() {
           )}
         </section>
       </div>
+      <NewSupplierFromInvoiceDialog
+        importId={newSupplierOpen && detail ? detail.import.id : null}
+        suggestion={detail ? supplierSuggestionOf(detail.import.preview_data) : null}
+        fileName={detail?.import.file_name}
+        createDraft={false}
+        onOpenChange={(o) => { if (!o) setNewSupplierOpen(false); }}
+        onDone={async ({ importId }) => {
+          setNewSupplierOpen(false);
+          const refreshed = await importApi.getPurchaseInvoiceImport(importId).catch(() => null);
+          if (refreshed) { setDetail(refreshed); setManualPartnerId(String(refreshed.import.supplier_resolution?.selected_partner_id || '')); }
+          setPartners(await accountingApi.getPartners().catch(() => partners));
+          setSuccessMessage('Tarnija lisatud — nüüd saad arve mustandi luua');
+          await refreshList(importId);
+        }}
+      />
     </div>
   );
 }

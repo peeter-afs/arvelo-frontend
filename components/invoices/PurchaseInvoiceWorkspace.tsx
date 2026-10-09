@@ -13,10 +13,11 @@ import { Bell, CalendarDays, ChevronDown, Columns3, Loader2, Paperclip, Plus, Re
 import { getErrorMessage } from '@/lib/api/client';
 import { accountingApi, type AccountOption, type JournalEntryRecord, type PartnerRecord, type SupplierBankAccount } from '@/lib/api/accounting.api';
 import { bankingApi, type BankAccountRecord, type MissingReceiptSettings, type PaymentBatchLine, type PaymentBatchListItem, type PaymentBatchPrefillLine } from '@/lib/api/banking.api';
-import { importApi, type PurchaseInvoiceImportListItem } from '@/lib/api/import.api';
+import { importApi, type PurchaseInvoiceImportListItem, type SupplierSuggestion } from '@/lib/api/import.api';
 import { invoicesApi, type InvoiceDetail, type InvoiceLine, type InvoiceListItem, type ReceiptReminder } from '@/lib/api/invoices.api';
 import { paymentsApi, type PaymentListItem } from '@/lib/api/payments.api';
 import { RegisterPaymentDialog } from './RegisterPaymentDialog';
+import { NewSupplierFromInvoiceDialog } from './NewSupplierFromInvoiceDialog';
 import { invoiceInboxApi } from '@/lib/api/invoiceInbox.api';
 import { tenantsApi, type TenantMember } from '@/lib/api/tenants.api';
 import { costCentersApi, projectsApi, type CostCenter, type Project } from '@/lib/api/dimensions.api';
@@ -184,6 +185,7 @@ export default function PurchaseInvoiceWorkspace() {
   const checkedPayable = checkedRows.filter((r) => payable(r) && !batches.has(r.id)); const checkedPending = checkedRows.filter((r) => stKey(r) === 'pend');
   /* ── fit the columns to the list width instead of scrolling sideways ── */
   const [importReview, setImportReview] = useState<string[] | null>(null);
+  const [newSupplier, setNewSupplier] = useState<{ importId: string; suggestion: SupplierSuggestion; fileName: string | null } | null>(null);
   const router = useRouter(); const compact = useCompact(); const listRef = useRef<HTMLElement>(null); const [listWidth, setListWidth] = useState(0); const [rootWidth, setRootWidth] = useState(0);
   useEffect(() => { if (typeof ResizeObserver === 'undefined') return; const list = listRef.current, root = rootRef.current; const ro = new ResizeObserver(() => { setListWidth(list?.clientWidth || 0); setRootWidth(root?.clientWidth || 0); }); if (list) ro.observe(list); if (root) ro.observe(root); return () => ro.disconnect(); }, [mode]);
   const autoHidden = useMemo(() => {
@@ -250,7 +252,7 @@ export default function PurchaseInvoiceWorkspace() {
     if (!list.length) return; void run('upload', async () => {
     if (!target) showToast.info(list.length === 1 ? `Tuvastame arve andmed — ${list[0].name}…` : `Tuvastame ${list.length} faili andmed…`);
     let attached = 0, linked = 0, created = 0, duplicates = 0, linesReplaced = false; const review: string[] = [];
-    const resultInvoiceIds: string[] = []; const failed: string[] = [];
+    const resultInvoiceIds: string[] = []; const failed: string[] = []; let unknownSupplier: { importId: string; suggestion: SupplierSuggestion; fileName: string | null } | null = null;
     for (const f of list) {
       // One unreadable file must not stop the rest (nor skip the list refresh below).
       try {
@@ -269,6 +271,8 @@ export default function PurchaseInvoiceWorkspace() {
       if ((result.import?.warning_flags || []).includes('bank_draft_lines_replaced')) linesReplaced = true;
       const invoiceId = result.linked_invoice_id || result.draft_invoice_id || result.import?.draft_invoice_id;
       if (invoiceId && !target) resultInvoiceIds.push(invoiceId);
+      const suggestion = result.import?.preview_data?.supplier_suggestion;
+      if (!invoiceId && !target && suggestion && result.import.status === 'preview_ready' && !result.import.duplicate_check?.is_likely_duplicate) unknownSupplier = { importId: result.import.id, suggestion, fileName: result.import.file_name || f.name };
       if (result.status === 'attached') { if (target) attached += 1; else linked += 1; }
       else if (target) continue;
       else if (result.status === 'skipped_duplicate') duplicates += 1;
@@ -280,6 +284,10 @@ export default function PurchaseInvoiceWorkspace() {
     if (failed.length) showToast.error(failed.length === 1 ? `Faili ei õnnestunud importida — ${failed[0]}` : `${failed.length} faili ei õnnestunud importida — ${failed.join(' · ')}`);
     if (linesReplaced) await loadInvoices(target?.id);
     if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}${linesReplaced ? ' · pangarida asendati PDF-i ridadega' : ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
+    else if (list.length === 1 && unknownSupplier) {
+      // Supplier not in Arvelo (nor in the Estonian registry): confirm a card prefilled from the invoice.
+      setNewSupplier(unknownSupplier);
+    }
     else if (resultInvoiceIds.length === 1 && review.length === 0 && list.length === 1) {
       // One invoice came out of the upload: open it, like dropping a file on the editor does.
       showToast.success(linked ? 'Originaal seoti pangamustandiga — kontrolli andmed üle' : duplicates ? 'See fail on juba imporditud — avan olemasoleva arve' : 'Arve tuvastatud — kontrolli andmed üle');
@@ -331,6 +339,8 @@ export default function PurchaseInvoiceWorkspace() {
       <div className={styles.relative}><button className={`${styles.picker} ${vat !== 'all' ? styles.pickerActive : ''}`} onClick={() => setMenu(menu === 'vat' ? null : 'vat')}>KM: {VAT_CODES.find((x) => x.key === vat)?.short}<ChevronDown size={12} /></button>{menu === 'vat' && <div className={`${styles.menu} ${styles.menuLeft}`}>{VAT_CODES.map((code) => <button key={code.key} className={`${styles.menuItem} ${vat === code.key ? styles.menuOn : ''}`} onClick={() => { setVat(code.key); setMenu(null); }}>{code.label}<span className={styles.pill}>{baseFiltered.filter((r) => hasVatCode(r, code.key)).length}</span></button>)}</div>}</div>
     </div>}</div>
     {error && <div className={styles.notice}>{error}</div>}
+    <NewSupplierFromInvoiceDialog importId={newSupplier?.importId || null} suggestion={newSupplier?.suggestion || null} fileName={newSupplier?.fileName} onOpenChange={(o) => { if (!o) { if (newSupplier) setImportReview([newSupplier.importId]); setNewSupplier(null); } }}
+      onDone={({ draftInvoiceId, draftError, importId }) => { setNewSupplier(null); if (draftInvoiceId) { showToast.success('Tarnija lisatud — kontrolli arve andmed üle'); router.push(`/invoices/${draftInvoiceId}/edit`); } else { showToast.info(`Tarnija lisatud. ${draftError ? `Arve vajab ülevaatust: ${draftError}` : 'Vaata import üle.'}`); router.push(`/invoices/purchase-imports?import=${importId}`); } }} />
     {importReview && <div className={`${styles.warning} ${styles.importReview}`}><Upload size={14} /><span className={styles.warningText}><b>{importReview.length}</b> {importReview.length === 1 ? 'üleslaaditud arve vajab' : 'üleslaaditud arvet vajavad'} ülevaatust — tarnija on tuvastamata, arve võib olla duplikaat või read puuduvad</span><Link className={`${styles.button} ${styles.small} ${styles.primary}`} href={`/invoices/purchase-imports?import=${importReview[0]}`}>Vaata üle</Link><button className={`${styles.button} ${styles.small} ${styles.ghost}`} title="Sulge" onClick={() => setImportReview(null)}>✕</button></div>}
     {mode === 'list' ? <div className={`${styles.body} ${wide ? styles.bodyWide : ''}`}>
       <section ref={listRef} className={`${styles.card} ${styles.listColumn}`}>
