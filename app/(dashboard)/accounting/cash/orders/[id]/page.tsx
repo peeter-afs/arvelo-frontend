@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Printer } from 'lucide-react';
+import { Ban, Printer } from 'lucide-react';
 import { accountingApi } from '@/lib/api/accounting.api';
 import { cashOrdersApi, type CashOrder } from '@/lib/api/cashExpense.api';
 import { getErrorMessage } from '@/lib/api/client';
 import { invoicesApi } from '@/lib/api/invoices.api';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { showToast } from '@/components/ui/Toast';
 
 const money = (value: number) => value.toLocaleString('et-EE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dateText = (value: string) => value.split('-').reverse().join('.');
@@ -23,6 +24,7 @@ export default function CashOrderPrintPage() {
   const tenant = useAuthStore((state) => state.tenant);
   const [details, setDetails] = useState<Details | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [voiding, setVoiding] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -51,6 +53,20 @@ export default function CashOrderPrintPage() {
   if (!details) return <div className="py-10 text-center text-[13px] text-[var(--a-text-3)]">{t('loading')}</div>;
 
   const { order, partnerName, basis } = details;
+  const voidOrder = async () => {
+    const reason = window.prompt(t('voidPrompt', { number: order.order_number }));
+    if (reason === null) return;
+    setVoiding(true);
+    try {
+      const updated = await cashOrdersApi.void(order.id, reason || undefined);
+      setDetails({ ...details, order: updated });
+      showToast.success(t('voided', { number: order.order_number }));
+    } catch (err) {
+      showToast.error(getErrorMessage(err));
+    } finally {
+      setVoiding(false);
+    }
+  };
   const isReceipt = order.order_type === 'receipt';
   const counterparty = [partnerName, order.person_name].filter(Boolean).join(' · ') || '—';
 
@@ -58,10 +74,18 @@ export default function CashOrderPrintPage() {
     <div className="mx-auto w-full max-w-3xl py-4">
       <div className="mb-4 flex justify-between print:hidden">
         <Link href="/accounting/cash" className="text-[13px] text-[var(--a-accent)] hover:underline">← {t('title')}</Link>
-        <button type="button" onClick={() => window.print()} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)]">
-          <Printer className="h-3.5 w-3.5" />
-          {t('print')}
-        </button>
+        <div className="flex gap-2">
+          {order.status === 'posted' && (
+            <button type="button" onClick={() => void voidOrder()} disabled={voiding} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-[var(--a-border)] px-3 text-[13px] font-semibold text-[var(--a-neg)] disabled:opacity-60">
+              <Ban className="h-3.5 w-3.5" />
+              {t('void')}
+            </button>
+          )}
+          <button type="button" onClick={() => window.print()} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-[var(--a-accent)] px-3 text-[13px] font-semibold text-[var(--a-accent-on)]">
+            <Printer className="h-3.5 w-3.5" />
+            {t('print')}
+          </button>
+        </div>
       </div>
 
       <div className="rounded-[12px] border border-[var(--a-border)] bg-[var(--a-surface)] p-4 sm:p-8 print:border-0 print:p-0">
