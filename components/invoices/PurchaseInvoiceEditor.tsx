@@ -27,6 +27,7 @@ import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { SplitAccountsDialog, type SplitPart } from './SplitAccountsDialog';
+import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
 import styles from './PurchaseInvoiceEditor.module.css';
@@ -235,6 +236,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
 
   const shellRef = useRef<HTMLDivElement>(null);
   const partnerRef = useRef<HTMLInputElement>(null);
+  const [newPartner, setNewPartner] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const pdfBoxRef = useRef<HTMLDivElement | null>(null);
   const descRefs = useRef(new Map<number, HTMLInputElement | null>());
@@ -586,6 +588,19 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     setMenu(null);
     partnerRef.current?.blur();
   };
+  /** Opens the shared add-partner flow (registry lookup first), seeded with what was typed. */
+  const openNewPartner = () => {
+    const typed = hdr.partnerName.trim();
+    setMenu(null);
+    setNewPartner(partner && typed === partner.name ? '' : typed);
+  };
+  const partnerCreated = (p: PartnerRecord) => {
+    accountingApi.invalidatePartnersCache();
+    setPartners((rows) => [p, ...rows.filter((r) => r.id !== p.id)]);
+    setNewPartner(null);
+    pickPartner(p);
+    showToast.success(`Tarnija ${p.name} lisatud`);
+  };
   const setDue = (days: number) => { const due = addDaysEt(hdr.issued, days); if (due) setH({ due }); };
   const addTerm = () => {
     const n = parseInt(newTerm, 10);
@@ -801,8 +816,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
 
 
   /* ── keyboard: ⌘S save · ⌘K supplier · ⌘O original · Esc cancel · + − 0 zoom ── */
-  const latest = useRef({ save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete, editable });
-  latest.current = { save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete, editable };
+  const latest = useRef({ save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete || newPartner !== null, editable });
+  latest.current = { save, cancel, dirty, busy, menu, rtab, rail, dialogOpen: confirmCancel || confirmDelete || newPartner !== null, editable };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = latest.current, mod = e.metaKey || e.ctrlKey;
@@ -939,7 +954,7 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                       <span className={styles.av} style={{ background: `oklch(0.92 0.045 ${avatarHue})`, color: `oklch(0.36 0.09 ${avatarHue})` }}>{initials(hdr.partnerName || '?')}</span>
                       <input ref={partnerRef} value={hdr.partnerName} placeholder="Otsi tarnijat…" disabled={!editable} onChange={(e) => { setHdr((h) => ({ ...h, partnerName: e.target.value })); setMenu('partner'); }} onFocus={() => setMenu('partner')}
                         onBlur={() => { setMenu((m) => (m === 'partner' ? null : m)); if (partner) setHdr((h) => ({ ...h, partnerName: partner.name })); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && partnerMatches[0]) { e.preventDefault(); pickPartner(partnerMatches[0]); } }} />
+                        onKeyDown={(e) => { if (e.key !== 'Enter') return; e.preventDefault(); if (partnerMatches[0]) pickPartner(partnerMatches[0]); else if (hdr.partnerName.trim()) openNewPartner(); }} />
                       <button type="button" className={styles.pmeta} tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); partnerRef.current?.focus(); partnerRef.current?.select(); setMenu('partner'); }}>Vaheta<span className={styles.kh}> ⌘K</span></button>
                       {menu === 'partner' && editable && (
                         <div className={styles.plist}>
@@ -948,6 +963,9 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
                               <span className={styles.n}>{p.name}</span><span className={`${styles.d} ${styles.mono}`}>{p.reg_code ? `Reg ${p.reg_code}` : ''}</span>
                             </button>
                           )) : <div className={styles.pempty}>Tarnijat ei leitud</div>}
+                          <button type="button" className={`${styles.pitem} ${styles.pnew}`} onMouseDown={(e) => { e.preventDefault(); openNewPartner(); }}>
+                            <span className={styles.n}>+ Lisa uus tarnija{hdr.partnerName.trim() && hdr.partnerName.trim() !== partner?.name ? ` „${hdr.partnerName.trim()}"` : ''}</span><span className={styles.d}>{partnerMatches.length ? '' : 'Enter'}</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -1158,6 +1176,8 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
       </div>
 
       {dims.dialog}
+      <AddPartnerModal open={newPartner !== null} defaultType="supplier" prefillName={newPartner || undefined}
+        onClose={() => { setNewPartner(null); window.setTimeout(() => partnerRef.current?.focus(), 0); }} onCreated={partnerCreated} />
       <SplitAccountsDialog open={splitOpen} onOpenChange={setSplitOpen} currency={hdr.currency} defaultAccountId={expenseDefault}
         lines={lines.map((l) => ({ key: l.key, description: l.description, account_id: l.account_id, net: lineNet(l) }))}
         accounts={[...expenseAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name })), ...assetAccounts.map((a) => ({ id: a.id, code: a.code, name: a.name, group: 'Vara' }))]}
