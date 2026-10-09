@@ -23,6 +23,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { showToast } from '@/components/ui/Toast';
 import { useLastCrumb } from '@/lib/stores/crumbs.store';
+import { AddPartnerModal } from '@/components/partners/AddPartnerModal';
 import { SalesWipPanel } from './SalesWipPanel';
 import { useDimensionCreator } from '@/components/accounting/DimensionCreate';
 import type { InvoiceWipPlan, ProjectCompletion } from '@/lib/api/projectWip.api';
@@ -228,6 +229,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
 
   const shellRef = useRef<HTMLDivElement>(null);
   const partnerRef = useRef<HTMLInputElement>(null);
+  const [newPartner, setNewPartner] = useState<string | null>(null);
   const addrPaneRef = useRef<HTMLDivElement>(null);
   const descRefs = useRef(new Map<number, HTMLInputElement | null>());
   const pendingFocus = useRef<number | null>(null);
@@ -474,6 +476,19 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
     setMenu(null);
     partnerRef.current?.blur();
   };
+  /** Opens the shared add-partner flow (registry lookup first), seeded with what was typed. */
+  const openNewPartner = () => {
+    const typed = hdr.partnerName.trim();
+    setMenu(null);
+    setNewPartner(partner && typed === partner.name ? '' : typed);
+  };
+  const partnerCreated = (p: PartnerRecord) => {
+    accountingApi.invalidatePartnersCache();
+    setPartners((rows) => [p, ...rows.filter((r) => r.id !== p.id)]);
+    setNewPartner(null);
+    pickPartner(p);
+    showToast.success(`Klient ${p.name} lisatud`);
+  };
   const restoreBilling = () => { if (!partner) return; setH({ billing: partnerAddress(partner) }); showToast.info('Aadress taastatud kliendikaardilt'); };
   const copyBilling = () => { setH({ shipping: hdr.billing }); showToast.info('Arve aadress kopeeritud'); };
   const restoreContact = () => { if (!partner) return; setH({ contactName: partner.contact_name || '', contactEmail: partner.email || '', contactPhone: partner.phone || '' }); showToast.info('Kontakt taastatud kliendikaardilt'); };
@@ -619,8 +634,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
   const preview = () => { if (!id || dirty) { showToast.info('Salvesta mustand enne eelvaadet'); return; } window.open(`/invoices/${id}/preview`, '_blank', 'noopener'); };
 
   /* ── keyboard: ⌘S save · ⌘K client · Esc cancel ── */
-  const latest = useRef({ save, cancel, dirty, busy, menu, productRow, dialogOpen: confirmCancel || confirmDelete });
-  latest.current = { save, cancel, dirty, busy, menu, productRow, dialogOpen: confirmCancel || confirmDelete };
+  const latest = useRef({ save, cancel, dirty, busy, menu, productRow, dialogOpen: confirmCancel || confirmDelete || newPartner !== null });
+  latest.current = { save, cancel, dirty, busy, menu, productRow, dialogOpen: confirmCancel || confirmDelete || newPartner !== null };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const s = latest.current;
@@ -713,7 +728,7 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                       <span className={styles.av} style={{ background: `oklch(0.92 0.045 ${avatarHue})`, color: `oklch(0.36 0.09 ${avatarHue})` }}>{initials(hdr.partnerName || '?')}</span>
                       <input ref={partnerRef} value={hdr.partnerName} placeholder="Otsi klienti…" onChange={(e) => { setHdr((h) => ({ ...h, partnerName: e.target.value })); setMenu('partner'); }} onFocus={() => setMenu('partner')}
                         onBlur={() => { setMenu((m) => (m === 'partner' ? null : m)); if (partner) setHdr((h) => ({ ...h, partnerName: partner.name })); }}
-                        onKeyDown={(e) => { if (e.key === 'Enter' && partnerMatches[0]) { e.preventDefault(); pickPartner(partnerMatches[0]); } }} />
+                        onKeyDown={(e) => { if (e.key !== 'Enter') return; e.preventDefault(); if (partnerMatches[0]) pickPartner(partnerMatches[0]); else if (hdr.partnerName.trim()) openNewPartner(); }} />
                       <button type="button" className={styles.pmeta} tabIndex={-1} onMouseDown={(e) => { e.preventDefault(); partnerRef.current?.focus(); partnerRef.current?.select(); setMenu('partner'); }}>Vaheta<span className={styles.kh}> ⌘K</span></button>
                       {menu === 'partner' && (
                         <div className={styles.plist}>
@@ -722,6 +737,9 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
                               <span className={styles.n}>{p.name}</span><span className={`${styles.d} ${styles.mono}`}>{p.reg_code ? `Reg ${p.reg_code}` : ''}</span>
                             </button>
                           )) : <div className={styles.pempty}>Klienti ei leitud</div>}
+                          <button type="button" className={`${styles.pitem} ${styles.pnew}`} onMouseDown={(e) => { e.preventDefault(); openNewPartner(); }}>
+                            <span className={styles.n}>+ Lisa uus klient{hdr.partnerName.trim() && hdr.partnerName.trim() !== partner?.name ? ` „${hdr.partnerName.trim()}"` : ''}</span><span className={styles.d}>{partnerMatches.length ? '' : 'Enter'}</span>
+                          </button>
                         </div>
                       )}
                     </div>
@@ -925,6 +943,8 @@ export default function SalesInvoiceEditor({ mode, invoiceId, initial }: Props) 
       </div>
 
       {dims.dialog}
+      <AddPartnerModal open={newPartner !== null} defaultType="customer" prefillName={newPartner || undefined}
+        onClose={() => { setNewPartner(null); window.setTimeout(() => partnerRef.current?.focus(), 0); }} onCreated={partnerCreated} />
       <ConfirmDialog open={confirmCancel} onOpenChange={setConfirmCancel} title="Jäta muudatused salvestamata?" description="Arvel on salvestamata muudatusi. Loobumisel lähevad need kaduma." confirmLabel="Loobu muudatustest" variant="warning"
         onConfirm={() => { setDirty(false); router.push('/invoices/sales'); }} />
       <ConfirmDialog open={confirmDelete} onOpenChange={setConfirmDelete} title="Kustuta mustand?" description={`Mustand ${numberText || ''} kustutatakse jäädavalt. Kinnitatud arveid ei saa kustutada, neid saab ainult krediteerida.`} confirmLabel="Kustuta mustand"

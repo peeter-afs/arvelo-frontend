@@ -92,6 +92,8 @@ textarea.inp{height:auto;min-height:29px;padding:6px 9px;resize:vertical;line-he
 .pitem .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
 .pitem .d{font-size:10.5px;color:var(--a-text-3);white-space:nowrap}
 .pempty{padding:8px;font-size:11.5px;color:var(--a-text-3)}
+.pnew{position:sticky;bottom:-5px;margin-top:3px;border-top:1px solid var(--a-border);border-radius:0 0 7px 7px;background:var(--a-surface);color:var(--a-accent)}
+.pnew:hover{color:var(--a-accent)}
 .atabs{gap:12px}
 .atab{border:none;background:none;padding:0 0 2px;font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--a-text-3);cursor:pointer;display:inline-flex;align-items:center;gap:4px;box-shadow:inset 0 -1.5px 0 transparent}
 .atab:hover{color:var(--a-text-2)}
