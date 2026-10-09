@@ -245,7 +245,7 @@ export default function PurchaseInvoiceWorkspace() {
     const list = all.filter((f) => /\.(pdf|csv|xml)$/i.test(f.name) || f.type === 'application/pdf');
     if (list.length < all.length) showToast.error(`Toetatud on PDF-, e-arve XML- ja CSV-failid — ${all.length - list.length} faili jäeti vahele`);
     if (!list.length) return; void run('upload', async () => {
-    let attached = 0, linked = 0, created = 0, duplicates = 0; const review: string[] = [];
+    let attached = 0, linked = 0, created = 0, duplicates = 0, linesReplaced = false; const review: string[] = [];
     for (const f of list) {
       if (/csv$/i.test(f.name)) {
         const summary = await importApi.importBoltCsv(f);
@@ -259,13 +259,15 @@ export default function PurchaseInvoiceWorkspace() {
         continue;
       }
       const result = await importApi.uploadPurchaseInvoicePdf(f, target ? { target_invoice_id: target.id } : undefined);
+      if ((result.import?.warning_flags || []).includes('bank_draft_lines_replaced')) linesReplaced = true;
       if (result.status === 'attached') { if (target) attached += 1; else linked += 1; }
       else if (target) continue;
       else if (result.status === 'skipped_duplicate') duplicates += 1;
       else if (result.draft_invoice_id) created += 1;
       else review.push(result.import.id);
     }
-    if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
+    if (linesReplaced) await loadInvoices(target?.id);
+    if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}${linesReplaced ? ' · pangarida asendati PDF-i ridadega' : ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
     else {
       const parts = [created && `${created} arve${created > 1 ? 't' : ''} loodud`, linked && `${linked} originaal${linked > 1 ? 'i' : ''} seoti pangamustandiga`, duplicates && `${duplicates} juba imporditud`, review.length && `${review.length} vajab ülevaatust`].filter(Boolean);
       showToast.success(parts.join(' · ') || 'Fail laaditud üles');

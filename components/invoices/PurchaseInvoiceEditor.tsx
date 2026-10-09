@@ -759,9 +759,14 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     if (!currentId) { const saved = await save(); if (!saved) return; currentId = saved.invoice.id; }
     setBusy('upload');
     try {
-      await importApi.uploadPurchaseInvoicePdf(file, { target_invoice_id: currentId! });
+      const result = await importApi.uploadPurchaseInvoicePdf(file, { target_invoice_id: currentId! });
       setDocUrl(null); loadImports(); pickTab('pdf');
-      showToast.success(doc ? 'Originaal asendatud' : 'Originaal seotud arvega');
+      // A bank-created draft swaps its stand-in bank row for the PDF's rows on the server.
+      if ((result.import?.warning_flags || []).includes('bank_draft_lines_replaced')) {
+        const detail = await invoicesApi.getInvoice(currentId!);
+        setInvoice(detail.invoice); setHdr(headerFrom(detail, vatEnabled)); setLines(detail.lines.map(lineFrom)); setGlOverride(glFrom(detail)); setDirty(false);
+        showToast.success(`Originaal seotud · pangarida asendati PDF-i ${detail.lines.length} reaga`);
+      } else showToast.success(doc ? 'Originaal asendatud' : 'Originaal seotud arvega');
     } catch (e) { showToast.error(getErrorMessage(e)); }
     finally { setBusy(null); }
   };
