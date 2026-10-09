@@ -778,8 +778,14 @@ export default function PurchaseInvoiceEditor({ mode, invoiceId, initial }: Prop
     setBusy('import');
     try {
       if (files.length > 1 || /\.csv$/i.test(files[0].name)) {
-        for (const f of files) { if (/\.csv$/i.test(f.name)) await importApi.importBoltCsv(f); else if (/\.xml$/i.test(f.name)) await importApi.uploadPurchaseInvoiceEinvoice(f); else await importApi.uploadPurchaseInvoicePdf(f); }
-        showToast.success(files.length === 1 ? `${files[0].name} imporditud` : `${files.length} faili laaditud üles — tuvastame andmed`);
+        const failed: string[] = [];
+        for (const f of files) {
+          // Keep going when one file fails; report the failures together.
+          try { if (/\.csv$/i.test(f.name)) await importApi.importBoltCsv(f); else if (/\.xml$/i.test(f.name)) await importApi.uploadPurchaseInvoiceEinvoice(f); else await importApi.uploadPurchaseInvoicePdf(f); }
+          catch (e) { failed.push(`${f.name}: ${getErrorMessage(e)}`); }
+        }
+        if (failed.length) showToast.error(`${failed.length} faili ei õnnestunud importida — ${failed.join(' · ')}`);
+        if (failed.length < files.length) showToast.success(files.length === 1 ? `${files[0].name} imporditud` : `${files.length - failed.length} faili imporditud — leiad need ostuarvete nimekirjast`);
         router.push('/invoices/purchase');
         return;
       }

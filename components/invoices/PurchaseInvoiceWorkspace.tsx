@@ -161,7 +161,10 @@ export default function PurchaseInvoiceWorkspace() {
   const ccMap = useMemo(() => new Map(costCenters.map((c) => [c.id, c])), [costCenters]); const prjMap = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const range = useMemo<[Date | null, Date | null]>(() => { const now = new Date(), y = now.getFullYear(), m = now.getMonth(); if (period === 'custom') return [dateFrom ? new Date(`${dateFrom}T00:00:00`) : null, dateTo ? new Date(`${dateTo}T23:59:59`) : null]; if (period === 'month') return [new Date(y, m, 1), new Date(y, m + 1, 0, 23, 59, 59)]; if (period === 'prev') return [new Date(y, m - 1, 1), new Date(y, m, 0, 23, 59, 59)]; if (period === 'quarter') { const q = Math.floor(m / 3) * 3; return [new Date(y, q, 1), new Date(y, q + 3, 0, 23, 59, 59)]; } if (period === 'year') return [new Date(y, 0, 1), new Date(y, 11, 31, 23, 59, 59)]; if (period === '90') return [new Date(startOfDay(now).getTime() - 90 * DAY), now]; return [null, null]; }, [period, dateFrom, dateTo]);
   // Payable invoices are always shown regardless of period: an unpaid bill must never disappear.
-  const inPeriod = useCallback((inv: InvoiceListItem) => { const d = new Date(inv.invoice_date); if (range[0] && d < range[0] && !payable(inv)) return false; if (range[1] && d > range[1]) return false; return true; }, [range]);
+  // Unfinished work (drafts, pending approval, rejected) and just-uploaded invoices ignore the period
+  // entirely — an imported invoice dated last year or next week must still show up.
+  const [justImported, setJustImported] = useState<Set<string>>(new Set());
+  const inPeriod = useCallback((inv: InvoiceListItem) => { const k = stKey(inv); if (k === 'draft' || k === 'pend' || k === 'rej' || justImported.has(inv.id)) return true; const d = new Date(inv.invoice_date); if (range[0] && d < range[0] && !payable(inv)) return false; if (range[1] && d > range[1]) return false; return true; }, [range, justImported]);
   const matchesTab = useCallback((inv: InvoiceListItem, key: TabKey) => { const k = stKey(inv); if (key === 'all') return true; if (key === 'topay') return payable(inv); if (key === 'over') return k === 'over'; return k === key; }, []);
   const periodInvoices = useMemo(() => invoices.filter(inPeriod), [invoices, inPeriod]);
   const tabCount = useCallback((key: TabKey) => periodInvoices.filter((r) => matchesTab(r, key)).length, [periodInvoices, matchesTab]);
@@ -247,8 +250,10 @@ export default function PurchaseInvoiceWorkspace() {
     if (!list.length) return; void run('upload', async () => {
     if (!target) showToast.info(list.length === 1 ? `Tuvastame arve andmed — ${list[0].name}…` : `Tuvastame ${list.length} faili andmed…`);
     let attached = 0, linked = 0, created = 0, duplicates = 0, linesReplaced = false; const review: string[] = [];
-    const resultInvoiceIds: string[] = [];
+    const resultInvoiceIds: string[] = []; const failed: string[] = [];
     for (const f of list) {
+      // One unreadable file must not stop the rest (nor skip the list refresh below).
+      try {
       if (/csv$/i.test(f.name)) {
         const summary = await importApi.importBoltCsv(f);
         created += summary.items.filter((i) => i.draft_invoice_id).length; duplicates += summary.duplicate_count;
@@ -269,10 +274,13 @@ export default function PurchaseInvoiceWorkspace() {
       else if (result.status === 'skipped_duplicate') duplicates += 1;
       else if (result.draft_invoice_id) created += 1;
       else review.push(result.import.id);
+      } catch (e) { failed.push(`${f.name}: ${getErrorMessage(e)}`); }
     }
+    if (resultInvoiceIds.length) setJustImported((s) => new Set([...s, ...resultInvoiceIds]));
+    if (failed.length) showToast.error(failed.length === 1 ? `Faili ei õnnestunud importida — ${failed[0]}` : `${failed.length} faili ei õnnestunud importida — ${failed.join(' · ')}`);
     if (linesReplaced) await loadInvoices(target?.id);
     if (target) { showToast.success(attached ? `Originaal seotud arvega ${target.invoice_number || ''}${linesReplaced ? ' · pangarida asendati PDF-i ridadega' : ''}` : 'Fail laaditud üles'); setDocUrls((m) => { const n = { ...m }; const doc = imports.get(target.id); if (doc?.document_id) delete n[doc.document_id]; return n; }); }
-    else if (resultInvoiceIds.length === 1 && review.length === 0) {
+    else if (resultInvoiceIds.length === 1 && review.length === 0 && list.length === 1) {
       // One invoice came out of the upload: open it, like dropping a file on the editor does.
       showToast.success(linked ? 'Originaal seoti pangamustandiga — kontrolli andmed üle' : duplicates ? 'See fail on juba imporditud — avan olemasoleva arve' : 'Arve tuvastatud — kontrolli andmed üle');
       router.push(`/invoices/${resultInvoiceIds[0]}/edit`);
@@ -280,7 +288,7 @@ export default function PurchaseInvoiceWorkspace() {
     }
     else {
       const parts = [created && `${created} arve${created > 1 ? 't' : ''} loodud`, linked && `${linked} originaal${linked > 1 ? 'i' : ''} seoti pangamustandiga`, duplicates && `${duplicates} juba imporditud`, review.length && `${review.length} vajab ülevaatust`].filter(Boolean);
-      showToast.success(parts.join(' · ') || 'Fail laaditud üles');
+      if (parts.length || !failed.length) showToast.success(parts.join(' · ') || 'Fail laaditud üles');
       setImportReview(review.length ? review : null);
     }
     await loadInvoices(target?.id || resultInvoiceIds[0] || selectedId); importApi.listPurchaseInvoiceImports({ limit: 500 }).then((res) => setImports(importsByDraft(res.items))).catch(() => {}); }); };
